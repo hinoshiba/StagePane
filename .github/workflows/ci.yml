@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Select the installed Xcode 16 SDK on macOS 14
+        if: matrix.os == 'macos-14'
+        run: echo 'DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer' >> "$GITHUB_ENV"
+
+      - name: Report Apple toolchain
+        run: xcodebuild -version
+
+      - name: Verify checked-in Xcode project is current
+        run: ./Scripts/check-xcodegen-drift.sh
+
+      - name: Audit and test
+        run: ./Scripts/release-check.sh
+
+      - name: Treat compiler warnings as errors
+        run: swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
+
+      - name: Build application bundle
+        run: ./build.sh
+
+      - name: Verify bundle and entitlements
+        run: |
+          codesign --verify --strict --verbose=2 dist/StagePane.app
+          codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/direct-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null || true)" != true
+          test -s dist/StagePane.app/Contents/Resources/AppIcon.icns
+          test -s dist/StagePane.app/Contents/Resources/PrivacyInfo.xcprivacy
+          test -s dist/StagePane.app/Contents/Resources/en.lproj/InfoPlist.strings
+          test -s dist/StagePane.app/Contents/Resources/ja.lproj/InfoPlist.strings
+          test -s dist/StagePane.app/Contents/Resources/DEVELOPMENT_BUILD_DO_NOT_DISTRIBUTE.txt
+          cmp -s LICENSE dist/StagePane.app/Contents/Resources/LICENSE.txt
+          cmp -s NOTICE dist/StagePane.app/Contents/Resources/NOTICE.txt
+          cmp -s THIRD_PARTY_NOTICES.md dist/StagePane.app/Contents/Resources/THIRD_PARTY_NOTICES.md
+          cmp -s TRADEMARKS.md dist/StagePane.app/Contents/Resources/TRADEMARKS.md
+          cmp -s Assets/LICENSE.md dist/StagePane.app/Contents/Resources/BRAND_ASSET_LICENSE.md
+          cmp -s docs/PRIVACY.md dist/StagePane.app/Contents/Resources/PRIVACY.md
+          cmp -s docs/HELP.md dist/StagePane.app/Contents/Resources/HELP.md
+          ABSOLUTE_RPATHS="$(otool -l dist/StagePane.app/Contents/MacOS/StagePane | awk '$1 == "cmd" && $2 == "LC_RPATH" { getline; getline; if ($2 ~ /^\//) print $2 }')"
+          test -z "$ABSOLUTE_RPATHS"
+
+      - name: Build checked-in Mac App Store project
+        run: |
+          xcodebuild \
+            -project StagePane.xcodeproj \
+            -scheme StagePane-AppStore \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/stagepane-mas-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Verify Mac App Store build shape
+        run: |
+          APP="$RUNNER_TEMP/stagepane-mas-derived/Build/Products/Release/StagePane.app"
+          BINARY="$APP/Contents/MacOS/StagePane"
+          test -s "$APP/Contents/Resources/AppIcon.icns"
+          test -s "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+          test -s "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
+          test -s "$APP/Contents/Resources/ja.lproj/InfoPlist.strings"
+          cmp -s LICENSE "$APP/Contents/Resources/LICENSE.txt"
+          cmp -s NOTICE "$APP/Contents/Resources/NOTICE.txt"
+          cmp -s THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
+          cmp -s TRADEMARKS.md "$APP/Contents/Resources/TRADEMARKS.md"
+          cmp -s Assets/LICENSE.md "$APP/Contents/Resources/BRAND_ASSET_LICENSE.md"
+          cmp -s docs/PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
+          cmp -s docs/HELP.md "$APP/Contents/Resources/HELP.md"
+          ARCHS="$(lipo -archs "$BINARY")"
+          [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
+          MACHO_COUNT=0
+          while IFS= read -r -d '' CANDIDATE; do
+            if file "$CANDIDATE" | grep -q 'Mach-O'; then
+              MACHO_COUNT=$((MACHO_COUNT + 1))
+              ABSOLUTE_RPATHS="$(otool -l "$CANDIDATE" | awk '$1 == "cmd" && $2 == "LC_RPATH" { getline; getline; if ($2 ~ /^\//) print $2 }')"
+              test -z "$ABSOLUTE_RPATHS"
+            fi
+          done < <(find "$APP/Contents" -type f -print0)
+          test "$MACHO_COUNT" -ge 1
+          codesign --force --options runtime --entitlements StagePane.entitlements --sign - "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+          codesign -d --entitlements :- "$APP" > "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/mas-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null || true)" != true

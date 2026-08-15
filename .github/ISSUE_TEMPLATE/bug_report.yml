@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible StagePane defect using synthetic content only
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never attach private screen content, window titles, meeting links, credentials, or unredacted diagnostics. Security issues belong in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: StagePane version
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: macOS, hardware, and meeting app/browser version
+    validations:
+      required: true
+  - type: dropdown
+    id: consent
+    attributes:
+      label: Screen-capture consent state
+      options: [Not requested, Approved, Declined, Revoked later, Unknown]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps with synthetic content
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

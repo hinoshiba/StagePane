@@ -1,0 +1,158 @@
+name: StagePane
+
+options:
+  minimumXcodeGenVersion: 2.45.4
+  xcodeVersion: "16.0"
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  StagePanePackage:
+    path: .
+
+settings:
+  base:
+    ARCHS: "arm64 x86_64"
+    CLANG_ENABLE_MODULES: YES
+    CURRENT_PROJECT_VERSION: 1
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MARKETING_VERSION: 0.1.0
+    ONLY_ACTIVE_ARCH: NO
+    SWIFT_VERSION: "5.0"
+
+targets:
+  StagePaneAppStore:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    productName: StagePane
+    sources:
+      - path: Sources/StagePane
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/ja.lproj
+        buildPhase: resources
+    dependencies:
+      - package: StagePanePackage
+        product: StagePaneCore
+      - sdk: AppKit.framework
+      - sdk: AVFoundation.framework
+      - sdk: Combine.framework
+      - sdk: CoreMedia.framework
+      - sdk: CoreVideo.framework
+      - sdk: ScreenCaptureKit.framework
+      - sdk: SwiftUI.framework
+    entitlements:
+      path: StagePane.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: StagePane.entitlements
+        CODE_SIGN_STYLE: Automatic
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Config/StagePane-AppStore-Info.plist
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        PRODUCT_BUNDLE_IDENTIFIER: app.stagepane.StagePane
+        PRODUCT_NAME: StagePane
+        SKIP_INSTALL: NO
+        SUPPORTED_PLATFORMS: macosx
+        SWIFT_STRICT_CONCURRENCY: complete
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "Apple Development"
+          DEBUG_INFORMATION_FORMAT: dwarf
+        Release:
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          COPY_PHASE_STRIP: YES
+          DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+          DEPLOYMENT_POSTPROCESSING: YES
+          STRIP_INSTALLED_PRODUCT: YES
+          SWIFT_COMPILATION_MODE: wholemodule
+          SWIFT_OPTIMIZATION_LEVEL: -O
+          VALIDATE_PRODUCT: YES
+    postBuildScripts:
+      - name: Install legal and privacy resources
+        basedOnDependencyAnalysis: true
+        inputFiles:
+          - $(SRCROOT)/LICENSE
+          - $(SRCROOT)/NOTICE
+          - $(SRCROOT)/THIRD_PARTY_NOTICES.md
+          - $(SRCROOT)/TRADEMARKS.md
+          - $(SRCROOT)/Assets/LICENSE.md
+          - $(SRCROOT)/docs/PRIVACY.md
+          - $(SRCROOT)/docs/HELP.md
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/LICENSE.txt
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/NOTICE.txt
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/THIRD_PARTY_NOTICES.md
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/TRADEMARKS.md
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BRAND_ASSET_LICENSE.md
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/PRIVACY.md
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/HELP.md
+        script: |
+          set -euo pipefail
+          RESOURCE_DIR="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+          mkdir -p "$RESOURCE_DIR"
+          install -m 0644 "$SRCROOT/LICENSE" "$RESOURCE_DIR/LICENSE.txt"
+          install -m 0644 "$SRCROOT/NOTICE" "$RESOURCE_DIR/NOTICE.txt"
+          install -m 0644 "$SRCROOT/THIRD_PARTY_NOTICES.md" "$RESOURCE_DIR/THIRD_PARTY_NOTICES.md"
+          install -m 0644 "$SRCROOT/TRADEMARKS.md" "$RESOURCE_DIR/TRADEMARKS.md"
+          install -m 0644 "$SRCROOT/Assets/LICENSE.md" "$RESOURCE_DIR/BRAND_ASSET_LICENSE.md"
+          install -m 0644 "$SRCROOT/docs/PRIVACY.md" "$RESOURCE_DIR/PRIVACY.md"
+          install -m 0644 "$SRCROOT/docs/HELP.md" "$RESOURCE_DIR/HELP.md"
+      - name: Generate AppIcon.icns
+        basedOnDependencyAnalysis: true
+        inputFiles:
+          - $(SRCROOT)/Scripts/MakeIcon.swift
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/AppIcon.icns
+        script: |
+          set -euo pipefail
+          ICON_WORK_DIR="$DERIVED_FILE_DIR/StagePaneAppIcon"
+          rm -rf "$ICON_WORK_DIR"
+          mkdir -p "$ICON_WORK_DIR"
+          xcrun swift "$SRCROOT/Scripts/MakeIcon.swift" "$ICON_WORK_DIR" >/dev/null
+          xcrun iconutil -c icns "$ICON_WORK_DIR/StagePane.iconset" \
+            -o "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/AppIcon.icns"
+      - name: Remove absolute build RPATHs
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          BINARY_PATH="$TARGET_BUILD_DIR/$EXECUTABLE_PATH"
+          ABSOLUTE_RPATHS="$(/usr/bin/otool -l "$BINARY_PATH" | /usr/bin/awk '
+            $1 == "cmd" && $2 == "LC_RPATH" { getline; getline; if ($2 ~ /^\//) print $2 }
+          ' | /usr/bin/sort -u)"
+          if [ -n "$ABSOLUTE_RPATHS" ]; then
+            printf '%s\n' "$ABSOLUTE_RPATHS" | while IFS= read -r rpath; do
+              /usr/bin/install_name_tool -delete_rpath "$rpath" "$BINARY_PATH"
+            done
+          fi
+          if /usr/bin/otool -l "$BINARY_PATH" | /usr/bin/awk '
+            $1 == "cmd" && $2 == "LC_RPATH" { getline; getline; if ($2 ~ /^\//) found = 1 }
+            END { exit(found ? 0 : 1) }
+          '; then
+            echo "error: absolute LC_RPATH remained after normalization" >&2
+            exit 1
+          fi
+
+schemes:
+  StagePane-AppStore:
+    build:
+      targets:
+        StagePaneAppStore: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
