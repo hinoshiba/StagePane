@@ -144,7 +144,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
     override init() {
         let queue = DispatchQueue(
-            label: "app.stagepane.capture.video",
+            label: "stagepane.hinoshiba.com.capture.video",
             qos: .userInteractive
         )
         self.outputQueue = queue

@@ -19,3 +19,8 @@ Versioning once 1.0.0 is released.
   with App Sandbox, strict concurrency, universal slices, localized metadata,
   icon, privacy manifest, help, and legal-resource verification.
 - Portable relative DMG checksums and explicit development-only bundle marking.
+
+### Changed
+
+- Standardized the app, Store target, and release gates on the canonical bundle
+  identifier `stagepane.hinoshiba.com`.

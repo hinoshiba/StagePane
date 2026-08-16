@@ -59,7 +59,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Config/StagePane-AppStore-Info.plist
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
-        PRODUCT_BUNDLE_IDENTIFIER: app.stagepane.StagePane
+        PRODUCT_BUNDLE_IDENTIFIER: stagepane.hinoshiba.com
         PRODUCT_NAME: StagePane
         SKIP_INSTALL: NO
         SUPPORTED_PLATFORMS: macosx

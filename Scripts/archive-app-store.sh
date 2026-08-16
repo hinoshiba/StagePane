@@ -5,18 +5,19 @@ SCRIPT_DIR=${0:A:h}
 PROJECT_DIR=${SCRIPT_DIR:h}
 cd "$PROJECT_DIR"
 
+EXPECTED_APPSTORE_BUNDLE_ID='stagepane.hinoshiba.com'
+
 : "${STAGEPANE_APPSTORE_TEAM_ID:?Set STAGEPANE_APPSTORE_TEAM_ID to the Apple Developer Team ID}"
-: "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to a publisher-controlled App ID}"
+: "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to stagepane.hinoshiba.com}"
 
 if [[ ! "$STAGEPANE_APPSTORE_TEAM_ID" =~ '^[A-Z0-9]{10}$' ]]; then
     print -u2 "Refusing a malformed Apple Developer Team ID"
     exit 70
 fi
 
-if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" == "app.stagepane.StagePane" ]] ||
-   ! print -r -- "$STAGEPANE_APPSTORE_BUNDLE_ID" |
-       grep -qE '^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9][A-Za-z0-9-]*)+$'; then
-    print -u2 "Refusing the unconfigured or malformed App Store bundle identifier"
+if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" != "$EXPECTED_APPSTORE_BUNDLE_ID" ]]; then
+    print -u2 "Refusing unexpected App Store bundle identifier: $STAGEPANE_APPSTORE_BUNDLE_ID"
+    print -u2 "Expected: $EXPECTED_APPSTORE_BUNDLE_ID"
     exit 70
 fi
 

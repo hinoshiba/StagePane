@@ -6,6 +6,7 @@ PROJECT_DIR=${SCRIPT_DIR:h}
 cd "$PROJECT_DIR"
 
 MODE=${1:-development}
+EXPECTED_BUNDLE_ID='stagepane.hinoshiba.com'
 
 if [[ "$MODE" != "development" && "$MODE" != "--distribution" && \
       "$MODE" != "distribution" && "$MODE" != "--app-store" && \
@@ -17,6 +18,13 @@ fi
 swift test
 plutil -lint Info.plist StagePane.entitlements Resources/PrivacyInfo.xcprivacy
 "$PROJECT_DIR/Scripts/check-xcodegen-drift.sh"
+
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Info.plist)
+if [[ "$BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]]; then
+    print -u2 "Unexpected bundle identifier in Info.plist: $BUNDLE_ID"
+    print -u2 "Expected: $EXPECTED_BUNDLE_ID"
+    exit 70
+fi
 
 for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
     Assets/LICENSE.md docs/PRIVACY.md docs/LICENSE_AUDIT.md \
@@ -86,20 +94,11 @@ if [[ "$MODE" == "--distribution" || "$MODE" == "distribution" || \
     fi
 fi
 
-if [[ "$MODE" == "--distribution" || "$MODE" == "distribution" ]]; then
-    BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Info.plist)
-    if [[ "$BUNDLE_ID" == "app.stagepane.StagePane" ]]; then
-        print -u2 "Distribution blocked until bundle ID uses a publisher-controlled domain"
-        exit 70
-    fi
-fi
-
 if [[ "$MODE" == "--app-store" || "$MODE" == "app-store" ]]; then
-    : "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to a publisher-controlled App ID}"
-    if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" == "app.stagepane.StagePane" ]] || \
-       ! print -r -- "$STAGEPANE_APPSTORE_BUNDLE_ID" | \
-           grep -qE '^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9][A-Za-z0-9-]*)+$'; then
-        print -u2 "App Store bundle ID is unconfigured or malformed"
+    : "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to stagepane.hinoshiba.com}"
+    if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]]; then
+        print -u2 "Unexpected App Store bundle identifier: $STAGEPANE_APPSTORE_BUNDLE_ID"
+        print -u2 "Expected: $EXPECTED_BUNDLE_ID"
         exit 70
     fi
     for required in project.yml StagePane.xcodeproj/project.pbxproj \

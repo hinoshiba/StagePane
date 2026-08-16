@@ -36,8 +36,9 @@ is not a third shipping track.
      --password <APP_SPECIFIC_PASSWORD>
    ```
 
-5. Replace `app.stagepane.StagePane` with a reverse-DNS identifier controlled by
-   the publisher. Keep it stable forever after the first public release.
+5. Register the explicit App ID `stagepane.hinoshiba.com` in the publisher's
+   Apple Developer account. Keep this bundle identifier stable forever after
+   the first public release.
 6. Replace every `RELEASE_*_PLACEHOLDER`, finish trademark/legal review, and
    verify the privacy policy matches the exact shipping binary.
 7. Store certificates and recovery instructions outside the repository. Define
@@ -143,12 +144,13 @@ product, uses only public Apple frameworks, enables App Sandbox and Hardened
 Runtime, treats warnings as errors under complete strict-concurrency checking,
 and creates a universal macOS archive.
 
-Before archiving, replace every release placeholder and use a publisher-owned
-App ID that exists in the Apple Developer account. Then run:
+Before archiving, replace every release placeholder and confirm that the
+publisher's Apple Developer account contains the explicit App ID
+`stagepane.hinoshiba.com`. Then run:
 
 ```bash
 export STAGEPANE_APPSTORE_TEAM_ID='TEAMID1234'
-export STAGEPANE_APPSTORE_BUNDLE_ID='com.publisher.StagePane'
+export STAGEPANE_APPSTORE_BUNDLE_ID='stagepane.hinoshiba.com'
 ./Scripts/archive-app-store.sh
 ```
 
@@ -164,7 +166,8 @@ Japanese `InfoPlist.strings`.
 
 The Store build must also:
 
-- use a publisher-controlled App ID and distribution provisioning;
+- use the publisher-controlled `stagepane.hinoshiba.com` App ID and matching
+  distribution provisioning;
 - retain App Sandbox;
 - contain no Sparkle, self-updater, license-key screen, driver, private API, or
   separately installed executable;
