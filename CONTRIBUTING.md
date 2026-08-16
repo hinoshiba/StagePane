@@ -9,10 +9,9 @@ changes, open an issue first. Explain the user problem, security/privacy impact,
 App Store impact, alternatives, accessibility plan, and validation plan.
 
 Never include real meeting screenshots, private window titles, access tokens,
-private signing keys, exported signing identities, notarization credentials,
-user data, or proprietary assets in an issue, test, fixture, log, or pull
-request. Public certificate subjects and fingerprints may be recorded only
-when required by the repository signing policy in `AGENTS.md`.
+private signing keys, exported signing identities, App Store Connect keys,
+Apple Account credentials, user data, or proprietary assets in an issue, test,
+fixture, log, or pull request.
 
 ## Build and test
 

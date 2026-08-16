@@ -49,7 +49,7 @@ open dist/StagePane.app
 ```
 
 The default command creates a current-Mac development build. It is ad-hoc
-signed, not notarized, and marked **do not distribute** inside the bundle.
+signed and marked **do not distribute** inside the bundle.
 Never publish `dist/StagePane.app` from this command. Automated tests can be run
 independently:
 
@@ -57,17 +57,12 @@ independently:
 swift test
 ```
 
-Distribution builds require a Developer ID identity and a saved `notarytool`
-profile. See [`docs/RELEASE.md`](docs/RELEASE.md); the distribution path fails
-closed if signing, notarization, legal contact fields, or release checks are
-missing.
-
 A checked-in `StagePane.xcodeproj` and shared `StagePane-AppStore` scheme provide
-the separate Mac App Store archive path. XcodeGen is needed only when changing
-`project.yml`, not to build the checked-in project. Store archives use the
-canonical `com.hinoshiba.stagepane` bundle ID, require the publisher's Team ID,
-and are never uploaded automatically. See the
-[Mac App Store instructions](docs/RELEASE.md#mac-app-store-track).
+the Mac App Store archive path. XcodeGen is needed only when changing
+`project.yml`, not to build the checked-in project. A reviewed
+`v<major>.<minor>.<patch>` tag starts the `App Store Release` Xcode Cloud
+workflow, which archives with automatic signing and uploads the build to App
+Store Connect. See the [release instructions](docs/RELEASE.md).
 
 ## How to use it
 
@@ -131,7 +126,7 @@ work, not legal advice.
 
 StagePane was independently authored. The public MIT-licensed
 [`hinoshiba/youyaku`](https://github.com/hinoshiba/youyaku) repository was
-reviewed only as an operational reference for build, notarization, release, and
+reviewed only as an operational reference for build, release, and
 OSS documentation practices. No Youyaku code, assets, models, binaries, product
 copy, keys, or brand elements are incorporated. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

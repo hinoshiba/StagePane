@@ -15,12 +15,14 @@ Versioning once 1.0.0 is released.
 - Japanese/English interface selection from the system language.
 - Apache-2.0 licensing, trademark separation, SBOM, privacy manifest, release
   gates, CI, security and contribution documents.
-- Separate checked-in Mac App Store Xcode target and fail-closed archive path
+- Separate checked-in Mac App Store Xcode target and tagged Xcode Cloud path
   with App Sandbox, strict concurrency, universal slices, localized metadata,
   icon, privacy manifest, help, and legal-resource verification.
-- Portable relative DMG checksums and explicit development-only bundle marking.
+- Explicit development-only bundle marking.
 
 ### Changed
 
 - Standardized the app, Store target, and release gates on the canonical bundle
   identifier `com.hinoshiba.stagepane`.
+- Replaced local signing, notarization, DMG, archive, and upload steps with an
+  Xcode Cloud workflow triggered by semantic-version tags.

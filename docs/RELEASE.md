@@ -1,225 +1,129 @@
-# Release operations
+# App Store release operations
 
-StagePane has two separate shipping tracks: signed/notarized direct distribution
-and a sandboxed Mac App Store Xcode archive. Never reuse a DMG build as a Store
-submission. The default `./build.sh` output is a local development artifact and
-is not a third shipping track.
+StagePane is distributed through the Mac App Store. Official binaries are
+built and uploaded by Xcode Cloud from immutable semantic-version tags; there
+is no local signing, notarization, DMG, archive, or upload procedure.
 
-## Fail-closed principles
+`./build.sh` remains available only for local development. Its ad-hoc-signed
+`dist/StagePane.app` is marked as a development build and must never be
+published.
 
-- Distribution requires a universal `arm64` + `x86_64` binary.
-- A Developer ID identity and `notarytool` keychain profile are mandatory.
-- The app is sandboxed and signed with Hardened Runtime and secure timestamp.
-- Both the app and DMG are notarized and stapled before a checksum is emitted.
-- Contact/legal placeholders block distribution.
-- Final direct and Store app binaries contain no absolute `LC_RPATH` entries.
-- Tests, plist validation, narrow static guards for known forbidden API names,
-  forbidden-entitlement checks, notices, SBOM version, and privacy manifest are
-  release gates. They complement, but do not replace, Xcode validation, App
-  Review, or a human binary/API audit.
-- No auto-updater is bundled. This keeps the same source compatible with the
-  Mac App Store build and avoids an additional supply chain.
+## Xcode Cloud workflow
 
-## One-time setup
+Complete the app's initial Xcode Cloud setup from Xcode. Edit the suggested
+workflow to use a non-Archive **Build** action and run it once from `main`;
+the release guard intentionally rejects an Archive without a release tag.
+After that setup build, edit the workflow in Xcode or App Store Connect:
 
-1. Install Xcode 16 or newer. The macOS 15 SDK declaration used by the optional
-   share-handoff feature is required even though the deployment target is
-   macOS 14.
-2. Join the Apple Developer Program.
-3. Install the Team-approved existing **Developer ID Application** identity in
-   the authorized build Mac's Keychain. Reuse that Team-owned identity across
-   the Team's apps; do not create or rotate a distribution identity as part of
-   a normal build.
-4. Store notarization credentials in the Keychain:
+- **Name:** `App Store Release`
+- **General:** enable **Restrict Editing** and limit workflow administrators to
+  the designated release managers
+- **Product:** StagePane (`com.hinoshiba.stagepane`), Team `94HVVWXLK3`
+- **Repository:** `hinoshiba/StagePane`
+- **Start condition:** Tag Changes; include `v*`
+  and add no branch, pull-request, or schedule start condition; in this tag
+  condition's **Options**, set **Auto-cancel Builds** to **Off** so a later tag
+  cannot cancel an in-progress release archive
+- **Environment:** the latest released macOS and Xcode; enable **Clean**
+- **Action:** Archive, macOS, scheme `StagePane-AppStore`
+- **Deployment Preparation:** `TestFlight and App Store`
+- **Post-actions:** none by default. Add TestFlight distribution only after an
+  intended tester group exists and the release owner approves automatic
+  distribution to that exact group.
 
-   ```bash
-   xcrun notarytool store-credentials stagepane-notary \
-     --apple-id <APPLE_ID> \
-     --team-id 94HVVWXLK3
-   ```
+Keep automatic signing enabled. Xcode Cloud manages the distribution signing
+assets; do not store certificates, profiles, App Store Connect keys, or Apple
+Account credentials in this repository or in non-secret workflow variables.
 
-   Enter the app-specific password only at `notarytool`'s secure interactive
-   prompt. Never place it in a command argument, environment variable, shell
-   history, script, or repository file.
+After the non-Archive setup build succeeds, remove the generated branch/PR
+start conditions from this release workflow and retain only the tag condition
+above.
 
-5. Register the explicit App ID `com.hinoshiba.stagepane` in the publisher's
-   Apple Developer account. Keep this bundle identifier stable forever after
-   the first public release.
-6. Replace every `RELEASE_*_PLACEHOLDER`, finish trademark/legal review, and
-   verify the privacy policy matches the exact shipping binary.
-7. Store private keys, exported identities, credentials, and recovery
-   instructions outside the repository. Team IDs, certificate subjects, and
-   certificate fingerprints are public identifiers and may be recorded in the
-   repository policy. Define incident, revocation, rotation, and
-   successor-maintainer procedures.
-8. Protect the GitHub `main` branch with a ruleset that requires a pull request,
-   approving review, and successful CI before merge. Restrict bypass and Pages
-   deployment authority to designated maintainers.
+Xcode Cloud assigns the build number used by App Store Connect. Because this is
+a macOS app, the build number must increase across all marketing versions. For
+an existing app, open **App Store Connect > StagePane > Xcode Cloud > Settings
+> Build Number** and set **Next Build Number** to an integer greater than the
+largest build already uploaded for StagePane before the first tagged build.
 
-## Versioning
+## Protect release authority
 
-Before each release update all of the following in one reviewed change:
+Before enabling the release workflow, create an **Active** tag ruleset in
+GitHub **Settings > Rules > Rulesets** for the `v*` target pattern. Enable
+**Restrict creations**, **Restrict updates**, and **Restrict deletions**, and
+allow bypass only for the designated release manager. Create a release tag only
+on a reviewed `main` commit. Never move, replace, or reuse it. A permitted tag
+creation authorizes Xcode Cloud to build and upload a signed candidate.
 
-- `Info.plist`: `CFBundleShortVersionString` and monotonically increasing
-  `CFBundleVersion`
-- `CHANGELOG.md`
-- `THIRD_PARTY_NOTICES.md` version, if dependency scope changed
-- `docs/sbom.spdx.json`: name, namespace, version, and creation timestamp
-- App Store metadata and privacy answers, if behavior changed
-- `project.yml` plus the checked-in Xcode project build/version settings
+## Prepare a release change
 
-Do not tag before the exact release commit has passed CI and manual acceptance.
+Update and review these values in one pull request:
 
-## Local development bundle (never publish)
+- `Info.plist`: `CFBundleShortVersionString`
+- `project.yml`: `MARKETING_VERSION`
+- the checked-in Xcode project regenerated with XcodeGen 2.45.4
+- `CHANGELOG.md`, App Store metadata, privacy answers, and review notes when
+  behavior or claims changed
+- `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
+  version changes
 
-`./build.sh` creates `dist/StagePane.app` for local testing on the current Mac.
-It is ad-hoc signed, not notarized, not guaranteed universal, and contains
-`DEVELOPMENT_BUILD_DO_NOT_DISTRIBUTE.txt`. CI may build and inspect it, but it
-must never be uploaded to a release, store, package manager, or customer.
-
-## Build, sign, notarize, and package
+After changing `project.yml`, regenerate and verify the checked-in project:
 
 ```bash
-export STAGEPANE_RELEASE_COMMIT='<FULL_LOWERCASE_CI_APPROVED_COMMIT_SHA>'
-export STAGEPANE_DIST_IDENTITY='E4B85511B94B3161EC9EF0E6601AD8465D2A623D'
-export STAGEPANE_NOTARY_PROFILE='stagepane-notary'
-./build.sh --dist
+/opt/homebrew/bin/xcodegen generate
+./Scripts/check-xcodegen-drift.sh --print-lock > Config/XcodeGen.lock
+./Scripts/check-xcodegen-drift.sh
 ```
 
-The identity value is the approved direct-distribution certificate's public
-SHA-1 fingerprint. It selects an identity already present in Keychain; the
-private key and exported identity must never be stored in this repository.
-The release commit must be the full SHA that passed review and CI, must equal
-`HEAD`, and must have no staged, modified, or nonignored untracked files.
-Release tests and compilation use fresh temporary build directories, and the
-source state is checked again after compilation before an artifact is accepted.
-
-Outputs:
-
-- `dist/StagePane.app` — universal, signed, notarized, stapled
-- `dist/StagePane-X.Y.Z.dmg` — signed, notarized, stapled
-- `dist/StagePane-X.Y.Z.dmg.sha256`
-
-The script exits before distribution if credentials or compliance fields are
-missing. Do not weaken those checks to create a public build.
-The checksum file records only the DMG filename, not a developer-machine
-absolute path, so verification remains portable after download.
-
-## Independent verification
+Run the source gates and manual acceptance matrix before merging:
 
 ```bash
-codesign --verify --deep --strict --verbose=2 dist/StagePane.app
-codesign -d --entitlements :- dist/StagePane.app
-spctl --assess --type execute --verbose=4 dist/StagePane.app
-xcrun stapler validate dist/StagePane.app
-xcrun stapler validate dist/StagePane-*.dmg
-(cd dist && shasum -a 256 -c StagePane-*.dmg.sha256)
+./Scripts/release-check.sh
+swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 ```
 
-Mount the DMG on a clean, non-developer Mac. Copy the app to `/Applications`,
-launch it offline, verify Gatekeeper, then exercise first-run consent and every
-privacy state.
+Manual acceptance must cover supported macOS versions and architectures,
+permission allow/deny/revoke flows, source selection and stopping, all Stage
+shapes, Curtain behavior, Spaces/full-screen/display changes, accessibility,
+and the currently claimed meeting-app workflows. Record the exact commit,
+hardware, OS/app versions, results, and approved exceptions in the release
+record.
 
-## Signed manual acceptance
+## Start the cloud build
 
-Required before each stable release:
-
-- macOS 14, 15, and current macOS; Apple Silicon and Intel where available
-- clean install, update-over-existing install, and settings migration
-- consent approved, declined, later revoked, and re-approved
-- window, app, and display sources; minimized/closed source; child popover
-- 16:9, 4:3, 9:16, 1:1; Retina/non-Retina; one/multiple displays
-- Spaces, Stage Manager, full-screen source, sleep/wake, display unplug/replug
-- Curtain latency and clear disclosure that it does not stop capture
-- Stop Preview flushes the final image and system privacy indication ends
-- Presentation Lock can always be disabled from Control Room/menu bar
-- VoiceOver, keyboard-only, Voice Control, Increase Contrast, Reduce Motion,
-  Differentiate Without Color, and large text
-- two-hour 1080p run with CPU/GPU/memory/frame-drop observation
-- share candidate title, thumbnail, aspect, source changes, and stop behavior in
-  Zoom, Teams, Meet/Safari, Meet/Chrome, Webex, Slack Huddle, Discord, and OBS
-
-Record results, OS/app versions, hardware, regressions, and waivers in the
-release issue. A meeting application's behavior may change independently; never
-claim universal compatibility without current evidence.
-
-## Publication order
-
-1. Freeze and review source, licenses, SBOM, policy, metadata, and release notes.
-2. Pass CI and manual signed acceptance.
-3. Build and independently verify final artifacts.
-4. Create a signed annotated tag pointing to the reviewed commit.
-5. Create a draft GitHub Release and upload DMG, checksum, SBOM, and notes.
-6. Have a second maintainer verify tag/artifact hashes and Gatekeeper status.
-7. Publish the release; only then update the website/Homebrew metadata.
-8. Monitor crash/support channels and keep a rollback announcement ready.
-
-Staging, committing, pushing, tagging, and creating a GitHub Release are separate
-maintainer decisions and are not performed by `build.sh`.
-
-## Mac App Store track
-
-The checked-in `StagePane.xcodeproj` contains the `StagePaneAppStore` target and
-shared `StagePane-AppStore` scheme. It builds the local `StagePaneCore` package
-product, uses only public Apple frameworks, enables App Sandbox and Hardened
-Runtime, treats warnings as errors under complete strict-concurrency checking,
-and creates a universal macOS archive.
-
-Before archiving, install the Team's existing approved `Apple Distribution`
-identity in the authorized build Mac's Keychain, replace every release
-placeholder, and confirm that Team `94HVVWXLK3` owns the explicit App ID
-`com.hinoshiba.stagepane`. `Apple Distribution` is a separate certificate role;
-never use the direct-distribution `Developer ID Application` identity for this
-track. Then run:
+Only tag the reviewed commit after GitHub CI and manual acceptance pass. The tag
+must be exactly `v<major>.<minor>.<patch>` and its version must equal
+`MARKETING_VERSION`:
 
 ```bash
-export STAGEPANE_RELEASE_COMMIT='<FULL_LOWERCASE_CI_APPROVED_COMMIT_SHA>'
-export STAGEPANE_APPSTORE_TEAM_ID='94HVVWXLK3'
-export STAGEPANE_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
-./Scripts/archive-app-store.sh
+git tag -s v0.1.0 -m "StagePane 0.1.0"
+git push origin v0.1.0
 ```
 
-The archive script requires exactly one valid `Apple Distribution` identity
-for the official Team. If the authorized Keychain contains more than one, set
-`STAGEPANE_APPSTORE_IDENTITY` to the approved identity's 40-hex SHA-1; the
-script never chooses ambiguously. The selected fingerprint is verified again
-from the archived app's leaf certificate.
+`ci_scripts/ci_pre_xcodebuild.sh` rejects an Archive without Xcode Cloud, a
+release tag, or a positive Cloud build number, as well as malformed tags,
+tag/version mismatches,
+or a cloud action configured with the wrong platform, scheme, bundle ID, or
+team. It applies the Cloud build number to the temporary Xcode project. A
+passing tag build archives the Release configuration and makes the
+build available in App Store Connect for TestFlight/App Store use.
 
-The script creates an `.xcarchive` only. It does not validate with App Store
-Connect, upload, submit for review, or publish. After it succeeds, an authorized
-maintainer must use Xcode Organizer to validate and distribute the exact archive.
+## Verify and submit
 
-The archive gate verifies the requested bundle ID, official Team, selected
-Apple Distribution leaf certificate, signature, sandbox/no-network
-entitlements, `arm64` + `x86_64` slices, absence of absolute `LC_RPATH` entries,
-absence of release placeholders, and byte-identical legal/help resources. It
-also requires `AppIcon.icns`, `PrivacyInfo.xcprivacy`, and localized English and
-Japanese `InfoPlist.strings`.
+In the completed Xcode Cloud build and App Store Connect, verify:
 
-The Store build must also:
+- source tag and commit, Xcode/macOS versions, version/build, and archive logs;
+- bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
+  Hardened Runtime, privacy manifest, icon, localizations, and legal/help
+  resources;
+- no unexpected entitlement, embedded executable/framework, absolute
+  `LC_RPATH`, updater, analytics, recording, or network path; and
+- metadata, screenshots, privacy answers, export compliance, review notes,
+  pricing, territories, and release mode against the exact build.
 
-- use the publisher-controlled `com.hinoshiba.stagepane` App ID and matching
-  distribution provisioning with the Team-approved `Apple Distribution`
-  identity;
-- retain App Sandbox;
-- contain no Sparkle, self-updater, license-key screen, driver, private API, or
-  separately installed executable;
-- use App Store purchase/StoreKit rules for digital features;
-- provide an accurate privacy policy URL and App Privacy answers;
-- be archived/uploaded with Apple-provided Xcode tooling;
-- use the review notes and exact limitation copy in `APP_STORE.md`.
+Xcode Cloud artifacts are retained for a limited period, so preserve the
+release archive and logs in the private release record.
 
-Submit an early feature-complete prototype before investing in Store-exclusive
-commercial infrastructure. App Review approval cannot be guaranteed.
-
-`project.yml` is the source for project-structure changes. It currently targets
-XcodeGen 2.45.4. XcodeGen is an optional MIT-licensed development tool: its
-executable/source is not bundled, and the checked-in `.xcodeproj` can be built
-without installing it. If `project.yml` changes, regenerate with
-`/opt/homebrew/bin/xcodegen generate` (or an equivalent verified installation),
-review the generated diff, and run both CI build paths again.
-Run `./Scripts/check-xcodegen-drift.sh` before committing. After an intentional
-regeneration, refresh `Config/XcodeGen.lock` with
-`./Scripts/check-xcodegen-drift.sh --print-lock > Config/XcodeGen.lock`, review
-the lock diff, and rerun the check. CI verifies the locked input and generated
-project even when XcodeGen itself is not installed.
+Tagging authorizes the Xcode Cloud build and upload only. Selecting a build for
+an App Store version, distributing to testers, adding it for review, submitting
+for review, and releasing it are separate App Store Connect actions. Do not
+perform any of them without the release owner's explicit approval.

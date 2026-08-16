@@ -58,12 +58,39 @@ if [[ -n "$XCODEGEN_BIN" && -x "$XCODEGEN_BIN" ]]; then
             cd "$CHECK_ROOT"
             "$XCODEGEN_BIN" -q
         )
-        cmp -s "$PROJECT_DIR/StagePane.xcodeproj/project.pbxproj" \
-            "$CHECK_ROOT/StagePane.xcodeproj/project.pbxproj"
-        cmp -s "$PROJECT_DIR/StagePane.xcodeproj/project.xcworkspace/contents.xcworkspacedata" \
-            "$CHECK_ROOT/StagePane.xcodeproj/project.xcworkspace/contents.xcworkspacedata"
-        cmp -s "$PROJECT_DIR/StagePane.xcodeproj/xcshareddata/xcschemes/StagePane-AppStore.xcscheme" \
-            "$CHECK_ROOT/StagePane.xcodeproj/xcshareddata/xcschemes/StagePane-AppStore.xcscheme"
+        COMMITTED_FILES="$CHECK_PARENT/committed-project-files"
+        GENERATED_FILES="$CHECK_PARENT/generated-project-files"
+        (
+            cd "$PROJECT_DIR/StagePane.xcodeproj"
+            find . -type f ! -path '*/xcuserdata/*' ! -name '*.xcuserstate' \
+                -print | LC_ALL=C sort
+        ) > "$COMMITTED_FILES"
+        (
+            cd "$CHECK_ROOT/StagePane.xcodeproj"
+            find . -type f ! -path '*/xcuserdata/*' ! -name '*.xcuserstate' \
+                -print | LC_ALL=C sort
+        ) > "$GENERATED_FILES"
+        if ! cmp -s "$COMMITTED_FILES" "$GENERATED_FILES"; then
+            print -u2 'Generated Xcode project file list differs from the checked-in project'
+            diff -u "$COMMITTED_FILES" "$GENERATED_FILES" >&2 || true
+            exit 70
+        fi
+        while IFS= read -r relative_path; do
+            relative_path=${relative_path#./}
+            if ! cmp -s "$PROJECT_DIR/StagePane.xcodeproj/$relative_path" \
+                "$CHECK_ROOT/StagePane.xcodeproj/$relative_path"; then
+                print -u2 "Generated Xcode project file differs: $relative_path"
+                exit 70
+            fi
+        done < "$COMMITTED_FILES"
+        COMMITTED_ENTITLEMENTS=$(/usr/bin/plutil -convert json -o - \
+            "$PROJECT_DIR/StagePane.entitlements")
+        GENERATED_ENTITLEMENTS=$(/usr/bin/plutil -convert json -o - \
+            "$CHECK_ROOT/StagePane.entitlements")
+        if [[ "$COMMITTED_ENTITLEMENTS" != "$GENERATED_ENTITLEMENTS" ]]; then
+            print -u2 'Generated StagePane.entitlements differs semantically from the checked-in file'
+            exit 70
+        fi
     else
         print "Skipping live regeneration: XcodeGen $INSTALLED_VERSION is not locked version 2.45.4"
     fi
