@@ -21,14 +21,14 @@ creates a normal shareable window, not an `NSScreen`.
 
 ## Shipping build route
 
-Use the checked-in `StagePane.xcodeproj`, shared `StagePane-AppStore` scheme,
-and `Scripts/archive-app-store.sh`. The target is sandboxed, has no network
-entitlement, bundles the privacy manifest, English/Japanese usage strings,
+Push a reviewed `v<major>.<minor>.<patch>` tag and let the `App Store Release`
+Xcode Cloud workflow archive the checked-in `StagePane.xcodeproj` with the
+shared `StagePane-AppStore` scheme. The target is sandboxed, has no network
+entitlement, and bundles the privacy manifest, English/Japanese usage strings,
 `AppIcon.icns`, help, privacy policy, license, notices, trademark policy, and
-brand-asset license. The script requires a publisher-controlled Team ID and the
-canonical `com.hinoshiba.stagepane` bundle identifier, verifies the resulting
-archive, and deliberately performs no upload. See `RELEASE.md` for the exact
-commands and gates.
+brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
+and the canonical `com.hinoshiba.stagepane` bundle identifier. See
+`RELEASE.md` for workflow settings, tag/version gates, and handoff steps.
 
 ## Screenshot story
 

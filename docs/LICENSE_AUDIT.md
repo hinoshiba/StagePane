@@ -16,7 +16,7 @@ development artifact is approved for public distribution.
 There is no third-party runtime dependency in 0.1.0. The application dynamically
 links Apple frameworks already present on macOS and bundles only original
 StagePane code/artwork plus project legal/help documents. This substantially
-reduces license, supply-chain, privacy, and notarization risk.
+reduces license, supply-chain, and privacy risk.
 
 ## Chosen source license: Apache-2.0
 
@@ -28,8 +28,8 @@ applicable notices, prominent change notices in modified files, and maintenance
 of relevant NOTICE content.
 
 Open source does **not** mean official binaries must be free of charge. Revenue
-can come from signed/notarized convenience builds, App Store distribution,
-support, training, team features, or hosted services. A permissive license also
+can come from App Store distribution, support, training, team features, or
+hosted services. A permissive license also
 means others can lawfully redistribute compatible copies; exclusivity must not
 be promised.
 
@@ -48,17 +48,17 @@ identified rights owner are required before public launch.
 | Local Swift package product | `StagePaneCore` from this repository | Project-authored code; linked into the Xcode App Store target, not an external dependency |
 | External package dependencies | None | No third-party license notice required for runtime code |
 | Analytics/ads/updater | None | No SDK or transitive notice inventory |
-| XcodeGen 2.45.4 | Optional development-only generator, MIT | No executable or source is bundled; not required to build the checked-in Xcode project |
+| XcodeGen 2.45.4 | SHA-256-pinned GitHub CI drift generator and development tool, MIT | No executable or source is bundled; not required to build the checked-in Xcode project |
 | `actions/checkout` at `11bd71901bbe5b1630ceea73d27597364c9af683` | CI-only GitHub Action, MIT | Commit-pinned workflow tool; executes on the CI runner and is not included in the app |
 
 The machine-readable inventory is `docs/sbom.spdx.json`. Every release must
 compare `Package.swift`, linked frameworks, bundle contents, generated SBOM, and
 `THIRD_PARTY_NOTICES.md`.
 
-Direct and Store bundles include `LICENSE.txt`, `NOTICE.txt`,
+The App Store bundle includes `LICENSE.txt`, `NOTICE.txt`,
 `THIRD_PARTY_NOTICES.md`, `TRADEMARKS.md`, `BRAND_ASSET_LICENSE.md`,
-`PRIVACY.md`, and `HELP.md`. The Store archive script verifies that the legal
-and help copies remain byte-identical to repository sources. XcodeGen is used
+`PRIVACY.md`, and `HELP.md`. CI verifies that the legal and help copies remain
+byte-identical to repository sources. XcodeGen is used
 only to regenerate project metadata; its upstream MIT license is recorded at
 <https://github.com/yonaskolb/XcodeGen/blob/2.45.4/LICENSE>.
 The CI-only checkout action's MIT license is recorded at
@@ -71,8 +71,8 @@ is MIT-licensed and its current distribution includes separate notices for
 llama.cpp, Sparkle, and model licenses. StagePane did not copy or adapt source,
 scripts, text, icons, model catalogs, binaries, keys, bundle identifiers, or
 product identity from Youyaku. It independently implemented general operational
-ideas: Swift Package builds, Developer ID signing, notarization, DMG delivery,
-privacy documentation, and OSS community files.
+ideas: Swift Package builds, release automation, privacy documentation, and OSS
+community files.
 
 Because no copyrightable Youyaku material is incorporated, its MIT notice is
 not a StagePane redistribution requirement. The acknowledgement in README and
@@ -84,15 +84,12 @@ StagePane uses only documented APIs. It does not use private
 `CGVirtualDisplay`, install a driver, request root, inject input, or imitate an
 alternate macOS desktop.
 
-- **Direct distribution:** use Developer ID Application signing, Hardened
-  Runtime, secure timestamp, Apple notarization, and stapling for both app and
-  DMG. The build fails closed without credentials.
-- **Mac App Store:** archive the checked-in `StagePaneAppStore` Xcode target with
-  App Sandbox. The fail-closed archive script checks the final signature,
+- **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which
+  archives the checked-in `StagePaneAppStore` target with automatic signing and
+  App Sandbox for TestFlight and App Store use. CI and release review check the
   entitlements, universal slices, resources, placeholders, and absolute
-  `LC_RPATH` entries before Organizer validation. Do not add Sparkle, an external
-  license-key system, or an independent updater. Apple approval is never
-  guaranteed.
+  `LC_RPATH` entries. Do not add Sparkle, an external license-key system, or an
+  independent updater. Apple approval is never guaranteed.
 - **Marketing:** describe the product as a “screen share stage” or
   “presentation canvas,” never as a real/virtual display, second monitor, or
   alternate desktop. Misleading capability claims create review and consumer
@@ -115,8 +112,8 @@ alternate macOS desktop.
 6. Set final pricing, tax, refund, support, warranty, export/sanctions, and
    accessibility claims with professional review.
 7. Run the signed compatibility matrix and App Review notes in `APP_STORE.md`.
-8. Generate final SBOM/checksums, verify bundle notices, sign an annotated tag,
-   and preserve release provenance.
+8. Generate the final SBOM, verify bundle notices, sign an annotated tag, and
+   preserve the Xcode Cloud release provenance.
 
 ## Contribution policy
 

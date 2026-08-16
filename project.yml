@@ -16,6 +16,7 @@ settings:
     ARCHS: "arm64 x86_64"
     CLANG_ENABLE_MODULES: YES
     CURRENT_PROJECT_VERSION: 1
+    DEVELOPMENT_TEAM: "94HVVWXLK3"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     MARKETING_VERSION: 0.1.0
     ONLY_ACTIVE_ARCH: NO
@@ -67,10 +68,8 @@ targets:
         SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
       configs:
         Debug:
-          CODE_SIGN_IDENTITY: "Apple Development"
           DEBUG_INFORMATION_FORMAT: dwarf
         Release:
-          CODE_SIGN_IDENTITY: "Apple Distribution"
           COPY_PHASE_STRIP: YES
           DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
           DEPLOYMENT_POSTPROCESSING: YES

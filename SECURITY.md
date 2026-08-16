@@ -29,8 +29,8 @@ exposed. Remove unrelated private data.
 - Capture starts only from the macOS system picker after user action.
 - Audio and microphone capture remain disabled.
 - No network entitlement or third-party runtime dependency ships in 0.1.0.
-- App Sandbox, Hardened Runtime, notarization, stapling, and release checks stay
-  enabled.
+- App Sandbox, Hardened Runtime, Xcode Cloud/App Store signing, and release
+  checks stay enabled.
 - Private APIs, input injection, privilege escalation, and downloaded code are
   prohibited.
 
