@@ -26,7 +26,10 @@ is not a third shipping track.
    share-handoff feature is required even though the deployment target is
    macOS 14.
 2. Join the Apple Developer Program.
-3. Create/import a **Developer ID Application** certificate.
+3. Install the Team-approved existing **Developer ID Application** identity in
+   the authorized build Mac's Keychain. Reuse that Team-owned identity across
+   the Team's apps; do not create or rotate a distribution identity as part of
+   a normal build.
 4. Store notarization credentials in the Keychain:
 
    ```bash
@@ -41,8 +44,11 @@ is not a third shipping track.
    the first public release.
 6. Replace every `RELEASE_*_PLACEHOLDER`, finish trademark/legal review, and
    verify the privacy policy matches the exact shipping binary.
-7. Store certificates and recovery instructions outside the repository. Define
-   incident, revocation, rotation, and successor-maintainer procedures.
+7. Store private keys, exported identities, credentials, and recovery
+   instructions outside the repository. Team IDs, certificate subjects, and
+   certificate fingerprints are public identifiers and may be recorded in the
+   repository policy. Define incident, revocation, rotation, and
+   successor-maintainer procedures.
 
 ## Versioning
 
@@ -68,10 +74,14 @@ must never be uploaded to a release, store, package manager, or customer.
 ## Build, sign, notarize, and package
 
 ```bash
-export STAGEPANE_DIST_IDENTITY='Developer ID Application: Publisher (TEAMID)'
+export STAGEPANE_DIST_IDENTITY='E4B85511B94B3161EC9EF0E6601AD8465D2A623D'
 export STAGEPANE_NOTARY_PROFILE='stagepane-notary'
 ./build.sh --dist
 ```
+
+The identity value is the approved direct-distribution certificate's public
+SHA-1 fingerprint. It selects an identity already present in Keychain; the
+private key and exported identity must never be stored in this repository.
 
 Outputs:
 
@@ -144,12 +154,15 @@ product, uses only public Apple frameworks, enables App Sandbox and Hardened
 Runtime, treats warnings as errors under complete strict-concurrency checking,
 and creates a universal macOS archive.
 
-Before archiving, replace every release placeholder and confirm that the
-publisher's Apple Developer account contains the explicit App ID
-`com.hinoshiba.stagepane`. Then run:
+Before archiving, install the Team's existing approved `Apple Distribution`
+identity in the authorized build Mac's Keychain, replace every release
+placeholder, and confirm that Team `94HVVWXLK3` owns the explicit App ID
+`com.hinoshiba.stagepane`. `Apple Distribution` is a separate certificate role;
+never use the direct-distribution `Developer ID Application` identity for this
+track. Then run:
 
 ```bash
-export STAGEPANE_APPSTORE_TEAM_ID='TEAMID1234'
+export STAGEPANE_APPSTORE_TEAM_ID='94HVVWXLK3'
 export STAGEPANE_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
 ./Scripts/archive-app-store.sh
 ```
@@ -167,7 +180,8 @@ Japanese `InfoPlist.strings`.
 The Store build must also:
 
 - use the publisher-controlled `com.hinoshiba.stagepane` App ID and matching
-  distribution provisioning;
+  distribution provisioning with the Team-approved `Apple Distribution`
+  identity;
 - retain App Sandbox;
 - contain no Sparkle, self-updater, license-key screen, driver, private API, or
   separately installed executable;

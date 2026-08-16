@@ -19,6 +19,13 @@ xcuserdata/
 *.swo
 *~
 *.p12
+*.pfx
+*.p8
+*.key
+*.keychain
+*.keychain-db
+*.developerprofile
+*.certSigningRequest
 *.cer
 *.mobileprovision
 *.provisionprofile
