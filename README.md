@@ -65,7 +65,7 @@ missing.
 A checked-in `StagePane.xcodeproj` and shared `StagePane-AppStore` scheme provide
 the separate Mac App Store archive path. XcodeGen is needed only when changing
 `project.yml`, not to build the checked-in project. Store archives use the
-canonical `stagepane.hinoshiba.com` bundle ID, require the publisher's Team ID,
+canonical `com.hinoshiba.stagepane` bundle ID, require the publisher's Team ID,
 and are never uploaded automatically. See the
 [Mac App Store instructions](docs/RELEASE.md#mac-app-store-track).
 

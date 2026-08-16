@@ -47,7 +47,7 @@ jobs:
       - name: Verify bundle and entitlements
         run: |
           codesign --verify --strict --verbose=2 dist/StagePane.app
-          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' dist/StagePane.app/Contents/Info.plist)" = stagepane.hinoshiba.com
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' dist/StagePane.app/Contents/Info.plist)" = com.hinoshiba.stagepane
           codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/direct-entitlements.plist")" = true
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null || true)" != true
@@ -81,7 +81,7 @@ jobs:
         run: |
           APP="$RUNNER_TEMP/stagepane-mas-derived/Build/Products/Release/StagePane.app"
           BINARY="$APP/Contents/MacOS/StagePane"
-          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")" = stagepane.hinoshiba.com
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")" = com.hinoshiba.stagepane
           test -s "$APP/Contents/Resources/AppIcon.icns"
           test -s "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
           test -s "$APP/Contents/Resources/en.lproj/InfoPlist.strings"

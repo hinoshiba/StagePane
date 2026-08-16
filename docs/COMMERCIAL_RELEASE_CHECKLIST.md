@@ -4,8 +4,8 @@
 
 - [ ] Publisher legal entity and authorized signer identified
 - [ ] StagePane name/logo clearance completed in every launch market
-- [ ] Publisher-controlled `stagepane.hinoshiba.com` domain and explicit Apple
-      App ID, plus support address and privacy URL
+- [ ] Publisher-controlled `stagepane.hinoshiba.com` domain, explicit Apple App
+      ID `com.hinoshiba.stagepane`, support address, and privacy URL
 - [ ] Apache-2.0, NOTICE, trademark policy, SBOM, and bundle notices reviewed
 - [ ] Every dependency and asset has origin, version, hash, license, and notice
 - [ ] Contributor DCO provenance is complete; no incompatible inbound code

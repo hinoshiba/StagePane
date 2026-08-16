@@ -26,7 +26,7 @@ and `Scripts/archive-app-store.sh`. The target is sandboxed, has no network
 entitlement, bundles the privacy manifest, English/Japanese usage strings,
 `AppIcon.icns`, help, privacy policy, license, notices, trademark policy, and
 brand-asset license. The script requires a publisher-controlled Team ID and the
-canonical `stagepane.hinoshiba.com` bundle identifier, verifies the resulting
+canonical `com.hinoshiba.stagepane` bundle identifier, verifies the resulting
 archive, and deliberately performs no upload. See `RELEASE.md` for the exact
 commands and gates.
 

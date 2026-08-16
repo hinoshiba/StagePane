@@ -36,7 +36,7 @@ is not a third shipping track.
      --password <APP_SPECIFIC_PASSWORD>
    ```
 
-5. Register the explicit App ID `stagepane.hinoshiba.com` in the publisher's
+5. Register the explicit App ID `com.hinoshiba.stagepane` in the publisher's
    Apple Developer account. Keep this bundle identifier stable forever after
    the first public release.
 6. Replace every `RELEASE_*_PLACEHOLDER`, finish trademark/legal review, and
@@ -146,11 +146,11 @@ and creates a universal macOS archive.
 
 Before archiving, replace every release placeholder and confirm that the
 publisher's Apple Developer account contains the explicit App ID
-`stagepane.hinoshiba.com`. Then run:
+`com.hinoshiba.stagepane`. Then run:
 
 ```bash
 export STAGEPANE_APPSTORE_TEAM_ID='TEAMID1234'
-export STAGEPANE_APPSTORE_BUNDLE_ID='stagepane.hinoshiba.com'
+export STAGEPANE_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
 ./Scripts/archive-app-store.sh
 ```
 
@@ -166,7 +166,7 @@ Japanese `InfoPlist.strings`.
 
 The Store build must also:
 
-- use the publisher-controlled `stagepane.hinoshiba.com` App ID and matching
+- use the publisher-controlled `com.hinoshiba.stagepane` App ID and matching
   distribution provisioning;
 - retain App Sandbox;
 - contain no Sparkle, self-updater, license-key screen, driver, private API, or

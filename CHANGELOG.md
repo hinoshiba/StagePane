@@ -23,4 +23,4 @@ Versioning once 1.0.0 is released.
 ### Changed
 
 - Standardized the app, Store target, and release gates on the canonical bundle
-  identifier `stagepane.hinoshiba.com`.
+  identifier `com.hinoshiba.stagepane`.

@@ -6,7 +6,7 @@ PROJECT_DIR=${SCRIPT_DIR:h}
 cd "$PROJECT_DIR"
 
 MODE=${1:-development}
-EXPECTED_BUNDLE_ID='stagepane.hinoshiba.com'
+EXPECTED_BUNDLE_ID='com.hinoshiba.stagepane'
 
 if [[ "$MODE" != "development" && "$MODE" != "--distribution" && \
       "$MODE" != "distribution" && "$MODE" != "--app-store" && \
@@ -95,7 +95,7 @@ if [[ "$MODE" == "--distribution" || "$MODE" == "distribution" || \
 fi
 
 if [[ "$MODE" == "--app-store" || "$MODE" == "app-store" ]]; then
-    : "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to stagepane.hinoshiba.com}"
+    : "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to com.hinoshiba.stagepane}"
     if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]]; then
         print -u2 "Unexpected App Store bundle identifier: $STAGEPANE_APPSTORE_BUNDLE_ID"
         print -u2 "Expected: $EXPECTED_BUNDLE_ID"

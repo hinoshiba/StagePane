@@ -105,8 +105,9 @@ alternate macOS desktop.
 3. Complete J-PlatPat, USPTO, EUIPO/TMview, and WIPO/common-law trademark
    clearance for `StagePane`, `Stage Pane`, ステージペイン, and phonetic
    variants in relevant classes (at least 9 and 42; assess 38).
-4. Confirm publisher control of `stagepane.hinoshiba.com`, register it as the
-   explicit Apple App ID, and preserve it as the canonical bundle identifier.
+4. Confirm publisher control of `stagepane.hinoshiba.com`, register
+   `com.hinoshiba.stagepane` as the explicit Apple App ID, and preserve that
+   reverse-DNS identifier as the canonical bundle identifier.
 5. For Japanese consumer sales, publish a Specified Commercial Transactions Act
    disclosure covering seller identity, address/phone, responsible person,
    price and extra costs, payment timing/method, delivery, system requirements,

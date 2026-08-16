@@ -453,7 +453,7 @@
 				INFOPLIST_FILE = "Config/StagePane-AppStore-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = stagepane.hinoshiba.com;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hinoshiba.stagepane;
 				PRODUCT_NAME = StagePane;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
@@ -480,7 +480,7 @@
 				INFOPLIST_FILE = "Config/StagePane-AppStore-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = stagepane.hinoshiba.com;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hinoshiba.stagepane;
 				PRODUCT_NAME = StagePane;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;

@@ -5,10 +5,10 @@ SCRIPT_DIR=${0:A:h}
 PROJECT_DIR=${SCRIPT_DIR:h}
 cd "$PROJECT_DIR"
 
-EXPECTED_APPSTORE_BUNDLE_ID='stagepane.hinoshiba.com'
+EXPECTED_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
 
 : "${STAGEPANE_APPSTORE_TEAM_ID:?Set STAGEPANE_APPSTORE_TEAM_ID to the Apple Developer Team ID}"
-: "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to stagepane.hinoshiba.com}"
+: "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to com.hinoshiba.stagepane}"
 
 if [[ ! "$STAGEPANE_APPSTORE_TEAM_ID" =~ '^[A-Z0-9]{10}$' ]]; then
     print -u2 "Refusing a malformed Apple Developer Team ID"
