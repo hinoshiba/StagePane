@@ -5,8 +5,11 @@ forms with synthetic content. Never upload a real captured frame, private
 window title, meeting link, access token, TCC database, or unredacted
 diagnostics.
 
-Before a paid binary release, replace `RELEASE_SUPPORT_CONTACT_PLACEHOLDER` with
-a monitored customer channel and publish response targets, supported versions,
+For questions that should not be posted publicly, contact
+[support@hinoshiba.com](mailto:support@hinoshiba.com). This is the common contact
+address for privacy, security, conduct, trademark, and support matters.
+
+Before a paid binary release, publish response targets, supported versions,
 refund routing, accessibility support, language coverage, and business hours.
 
 Security vulnerabilities belong in the private process described by

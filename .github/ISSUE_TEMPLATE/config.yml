@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Private security report
-    url: https://github.com/hinoshiba/StagePane/security/advisories/new
-    about: Report vulnerabilities privately; do not disclose them in a public issue.
+  - name: Private security report — support@hinoshiba.com
+    url: https://stagepane.hinoshiba.com/#security
+    about: Use the private email contact; do not disclose vulnerabilities in a public issue.

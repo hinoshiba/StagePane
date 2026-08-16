@@ -29,3 +29,13 @@ policy.
 
 StagePane自身はフレームをローカル処理し、外部送信しません。ステージ共有時の送信は、
 会議アプリ側の機能とプライバシーポリシーに従います。
+
+## Support / サポート
+
+For support, privacy, security, Code of Conduct, or trademark inquiries, email
+[support@hinoshiba.com](mailto:support@hinoshiba.com). Do not include sensitive
+information in a public GitHub issue.
+
+サポート、プライバシー、セキュリティ、行動規範、商標に関するお問い合わせは、
+[support@hinoshiba.com](mailto:support@hinoshiba.com) へご連絡ください。機密情報は
+GitHub の公開 Issue に記載しないでください。

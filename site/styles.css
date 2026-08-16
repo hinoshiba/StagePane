@@ -48,6 +48,18 @@ a {
   text-decoration: none;
 }
 
+.contact-link {
+  color: var(--aqua);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgba(72, 216, 232, 0.45);
+  text-underline-offset: 0.2em;
+}
+
+.contact-link:hover {
+  text-decoration-color: currentColor;
+}
+
 img,
 svg {
   display: block;

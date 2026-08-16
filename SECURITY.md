@@ -11,11 +11,12 @@ window.
 Do not open a public issue for a vulnerability or attach sensitive screen
 content, permission databases, crash dumps, signing details, or exploits.
 
-Before accepting external security reports or distributing binaries, enable
-GitHub private vulnerability reporting and replace
-`RELEASE_SECURITY_CONTACT_PLACEHOLDER` with a monitored private reporting
-channel. Publish an acknowledgement target, triage target, disclosure
-coordination process, encryption key if offered, and safe-harbor terms.
+Send vulnerability reports privately to
+[support@hinoshiba.com](mailto:support@hinoshiba.com) with `StagePane Security`
+in the subject. If the report requires encrypted delivery, ask for a secure
+transfer method before attaching exploits or sensitive data. Acknowledgement
+and triage targets, disclosure coordination, any encryption key, and safe-harbor
+terms will be published before binary distribution.
 
 Include the affected version/macOS/hardware, consent state, minimal synthetic
 reproduction, impact, and whether source frames or another person's data may be

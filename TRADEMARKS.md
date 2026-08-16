@@ -16,5 +16,6 @@ This file records the project's intended brand policy. It is not a claim that a
 mark is registered and is not a substitute for jurisdiction-specific legal
 review. Before an official binary or commercial release, the maintainer should
 complete professional clearance for at least classes 9 and 42 in intended
-markets and replace `RELEASE_TRADEMARK_OWNER_PLACEHOLDER` with an owner/contact
-approved by counsel.
+markets and identify the trademark owner as approved by counsel. Trademark
+questions use the common project contact,
+[support@hinoshiba.com](mailto:support@hinoshiba.com).

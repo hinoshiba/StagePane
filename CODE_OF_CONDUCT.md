@@ -15,9 +15,10 @@ spaces or when representing the project.
 Maintainers may edit or remove content, reject contributions, temporarily limit
 participation, or permanently ban a participant when proportionate to behavior
 and community safety. Conflicts involving a maintainer must be escalated to an
-independent project contact once governance contacts are finalized.
+independent reviewer when one is available.
 
-Before accepting external contributions, replace
-`RELEASE_CONDUCT_CONTACT_PLACEHOLDER` with a confidential conduct-reporting
-address and publish an enforcement and appeal process appropriate to the
-project organization.
+Send conduct reports privately to
+[support@hinoshiba.com](mailto:support@hinoshiba.com). Include only the context
+needed to review the report, and do not copy private communications or personal
+data that are unrelated to it. The project will publish a fuller enforcement
+and appeal process as its governance matures.

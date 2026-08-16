@@ -3,10 +3,9 @@
 Effective date: 2026-08-15<br>
 Product: StagePane for macOS
 
-> **Release blocker:** Replace `RELEASE_CONTACT_PLACEHOLDER` with the legal
-> publisher's contact details and obtain jurisdiction-appropriate review before
-> publishing or selling the app. The distribution audit intentionally fails
-> while this placeholder remains.
+> **Pre-release draft:** Jurisdiction-appropriate review remains required before
+> publishing or selling the app. Project and privacy questions use the contact
+> address listed below.
 
 ## Summary
 
@@ -82,4 +81,4 @@ release notes before code ships.
 
 ## Contact
 
-RELEASE_CONTACT_PLACEHOLDER
+[support@hinoshiba.com](mailto:support@hinoshiba.com)
