@@ -95,8 +95,8 @@ must be exactly `v<major>.<minor>.<patch>` and its version must equal
 `MARKETING_VERSION`:
 
 ```bash
-git tag -s v0.1.0 -m "StagePane 0.1.0"
-git push origin v0.1.0
+git tag -s v0.1.1 -m "StagePane 0.1.1"
+git push origin v0.1.1
 ```
 
 `ci_scripts/ci_pre_xcodebuild.sh` rejects an Archive without Xcode Cloud, a
