@@ -35,9 +35,12 @@ is not a third shipping track.
    ```bash
    xcrun notarytool store-credentials stagepane-notary \
      --apple-id <APPLE_ID> \
-     --team-id <TEAM_ID> \
-     --password <APP_SPECIFIC_PASSWORD>
+     --team-id 94HVVWXLK3
    ```
+
+   Enter the app-specific password only at `notarytool`'s secure interactive
+   prompt. Never place it in a command argument, environment variable, shell
+   history, script, or repository file.
 
 5. Register the explicit App ID `com.hinoshiba.stagepane` in the publisher's
    Apple Developer account. Keep this bundle identifier stable forever after
@@ -49,6 +52,9 @@ is not a third shipping track.
    certificate fingerprints are public identifiers and may be recorded in the
    repository policy. Define incident, revocation, rotation, and
    successor-maintainer procedures.
+8. Protect the GitHub `main` branch with a ruleset that requires a pull request,
+   approving review, and successful CI before merge. Restrict bypass and Pages
+   deployment authority to designated maintainers.
 
 ## Versioning
 
@@ -74,6 +80,7 @@ must never be uploaded to a release, store, package manager, or customer.
 ## Build, sign, notarize, and package
 
 ```bash
+export STAGEPANE_RELEASE_COMMIT='<FULL_LOWERCASE_CI_APPROVED_COMMIT_SHA>'
 export STAGEPANE_DIST_IDENTITY='E4B85511B94B3161EC9EF0E6601AD8465D2A623D'
 export STAGEPANE_NOTARY_PROFILE='stagepane-notary'
 ./build.sh --dist
@@ -82,6 +89,10 @@ export STAGEPANE_NOTARY_PROFILE='stagepane-notary'
 The identity value is the approved direct-distribution certificate's public
 SHA-1 fingerprint. It selects an identity already present in Keychain; the
 private key and exported identity must never be stored in this repository.
+The release commit must be the full SHA that passed review and CI, must equal
+`HEAD`, and must have no staged, modified, or nonignored untracked files.
+Release tests and compilation use fresh temporary build directories, and the
+source state is checked again after compilation before an artifact is accepted.
 
 Outputs:
 
@@ -162,16 +173,24 @@ never use the direct-distribution `Developer ID Application` identity for this
 track. Then run:
 
 ```bash
+export STAGEPANE_RELEASE_COMMIT='<FULL_LOWERCASE_CI_APPROVED_COMMIT_SHA>'
 export STAGEPANE_APPSTORE_TEAM_ID='94HVVWXLK3'
 export STAGEPANE_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
 ./Scripts/archive-app-store.sh
 ```
 
+The archive script requires exactly one valid `Apple Distribution` identity
+for the official Team. If the authorized Keychain contains more than one, set
+`STAGEPANE_APPSTORE_IDENTITY` to the approved identity's 40-hex SHA-1; the
+script never chooses ambiguously. The selected fingerprint is verified again
+from the archived app's leaf certificate.
+
 The script creates an `.xcarchive` only. It does not validate with App Store
 Connect, upload, submit for review, or publish. After it succeeds, an authorized
 maintainer must use Xcode Organizer to validate and distribute the exact archive.
 
-The archive gate verifies the requested bundle ID, signature, sandbox/no-network
+The archive gate verifies the requested bundle ID, official Team, selected
+Apple Distribution leaf certificate, signature, sandbox/no-network
 entitlements, `arm64` + `x86_64` slices, absence of absolute `LC_RPATH` entries,
 absence of release placeholders, and byte-identical legal/help resources. It
 also requires `AppIcon.icns`, `PrivacyInfo.xcprivacy`, and localized English and

@@ -43,3 +43,6 @@ These instructions apply to the entire repository.
 - A build may inspect Keychain and select an already-installed approved
   identity. Do not generate, export, import, revoke, renew, or rotate signing
   identities without explicit maintainer authorization.
+- Official distribution builds must use a clean worktree at the explicitly
+  reviewed, CI-approved commit. They must fail closed unless the final artifact
+  matches the approved Team, certificate role, and selected leaf fingerprint.

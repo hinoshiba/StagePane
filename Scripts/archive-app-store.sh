@@ -4,14 +4,31 @@ set -euo pipefail
 SCRIPT_DIR=${0:A:h}
 PROJECT_DIR=${SCRIPT_DIR:h}
 cd "$PROJECT_DIR"
+DIST_DIR="$PROJECT_DIR/dist"
+
+DERIVED_DATA_TEMP=''
+ENTITLEMENTS_FILE=''
+cleanup() {
+    if [[ -n "$DERIVED_DATA_TEMP" && -d "$DERIVED_DATA_TEMP" && \
+          "$DERIVED_DATA_TEMP" == /tmp/stagepane-app-store-derived.* ]]; then
+        rm -rf -- "$DERIVED_DATA_TEMP"
+    fi
+    if [[ -n "$ENTITLEMENTS_FILE" && -f "$ENTITLEMENTS_FILE" && \
+          "$ENTITLEMENTS_FILE" == /tmp/stagepane-app-store-entitlements.* ]]; then
+        rm -f -- "$ENTITLEMENTS_FILE"
+    fi
+}
+trap cleanup EXIT
 
 EXPECTED_APPSTORE_BUNDLE_ID='com.hinoshiba.stagepane'
+EXPECTED_APPSTORE_TEAM_ID='94HVVWXLK3'
 
 : "${STAGEPANE_APPSTORE_TEAM_ID:?Set STAGEPANE_APPSTORE_TEAM_ID to the Apple Developer Team ID}"
 : "${STAGEPANE_APPSTORE_BUNDLE_ID:?Set STAGEPANE_APPSTORE_BUNDLE_ID to com.hinoshiba.stagepane}"
 
-if [[ ! "$STAGEPANE_APPSTORE_TEAM_ID" =~ '^[A-Z0-9]{10}$' ]]; then
-    print -u2 "Refusing a malformed Apple Developer Team ID"
+if [[ "$STAGEPANE_APPSTORE_TEAM_ID" != "$EXPECTED_APPSTORE_TEAM_ID" ]]; then
+    print -u2 "Refusing an unexpected Apple Developer Team ID: $STAGEPANE_APPSTORE_TEAM_ID"
+    print -u2 "Expected Team ID: $EXPECTED_APPSTORE_TEAM_ID"
     exit 70
 fi
 
@@ -22,28 +39,68 @@ if [[ "$STAGEPANE_APPSTORE_BUNDLE_ID" != "$EXPECTED_APPSTORE_BUNDLE_ID" ]]; then
 fi
 
 "$PROJECT_DIR/Scripts/release-check.sh" --app-store
+source "$PROJECT_DIR/Scripts/signing-identity.sh"
+
+if ! APPSTORE_SIGNING_IDENTITY=$(stagepane_select_app_store_identity \
+    "$STAGEPANE_APPSTORE_TEAM_ID" "${STAGEPANE_APPSTORE_IDENTITY:-}"); then
+    exit 70
+fi
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
 BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)
-ARCHIVE_PATH=${STAGEPANE_APPSTORE_ARCHIVE_PATH:-"$PROJECT_DIR/dist/StagePane-$VERSION-AppStore.xcarchive"}
 
-if [[ -e "$ARCHIVE_PATH" ]]; then
+if [[ -L "$DIST_DIR" ]]; then
+    print -u2 "Refusing symlinked distribution directory: $DIST_DIR"
+    exit 70
+fi
+if [[ -e "$DIST_DIR" && ! -d "$DIST_DIR" ]]; then
+    print -u2 "Refusing non-directory distribution path: $DIST_DIR"
+    exit 70
+fi
+mkdir -p "$DIST_DIR"
+
+REAL_PROJECT_DIR=${PROJECT_DIR:A}
+REAL_DIST_DIR=${DIST_DIR:A}
+if [[ "$REAL_DIST_DIR" != "$REAL_PROJECT_DIR/dist" ]]; then
+    print -u2 "Refusing distribution directory outside the project: $REAL_DIST_DIR"
+    exit 70
+fi
+
+if [[ -n "${STAGEPANE_APPSTORE_ARCHIVE_PATH:-}" ]]; then
+    REQUESTED_ARCHIVE_PATH="$STAGEPANE_APPSTORE_ARCHIVE_PATH"
+    ARCHIVE_PARENT=${REQUESTED_ARCHIVE_PATH:h}
+    if [[ ! -d "$ARCHIVE_PARENT" ]]; then
+        print -u2 "Custom archive parent does not exist: $ARCHIVE_PARENT"
+        exit 70
+    fi
+    REAL_ARCHIVE_PARENT=${ARCHIVE_PARENT:A}
+    ARCHIVE_PATH="$REAL_ARCHIVE_PARENT/${REQUESTED_ARCHIVE_PATH:t}"
+else
+    ARCHIVE_PATH="$REAL_DIST_DIR/StagePane-$VERSION-AppStore.xcarchive"
+fi
+
+if [[ -e "$ARCHIVE_PATH" || -L "$ARCHIVE_PATH" ]]; then
     print -u2 "Refusing to overwrite an existing archive: $ARCHIVE_PATH"
     exit 70
 fi
 
+DERIVED_DATA_TEMP=$(mktemp -d /tmp/stagepane-app-store-derived.XXXXXX)
 xcodebuild \
     -project "$PROJECT_DIR/StagePane.xcodeproj" \
     -scheme StagePane-AppStore \
     -configuration Release \
     -destination 'generic/platform=macOS' \
+    -derivedDataPath "$DERIVED_DATA_TEMP" \
     -archivePath "$ARCHIVE_PATH" \
     DEVELOPMENT_TEAM="$STAGEPANE_APPSTORE_TEAM_ID" \
     PRODUCT_BUNDLE_IDENTIFIER="$STAGEPANE_APPSTORE_BUNDLE_ID" \
     MARKETING_VERSION="$VERSION" \
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
     CODE_SIGN_STYLE=Automatic \
+    CODE_SIGN_IDENTITY="$APPSTORE_SIGNING_IDENTITY" \
     archive
+
+"$PROJECT_DIR/Scripts/release-check.sh" --verify-release-source
 
 APP_PATH="$ARCHIVE_PATH/Products/Applications/StagePane.app"
 BINARY_PATH="$APP_PATH/Contents/MacOS/StagePane"
@@ -72,13 +129,13 @@ for required in \
     fi
 done
 
-codesign --verify --strict --verbose=2 "$APP_PATH"
+stagepane_verify_signed_identity \
+    "$APP_PATH" \
+    "$APPSTORE_SIGNING_IDENTITY" \
+    "$EXPECTED_APPSTORE_TEAM_ID" \
+    apple-distribution
 
 ENTITLEMENTS_FILE=$(mktemp /tmp/stagepane-app-store-entitlements.XXXXXX)
-cleanup() {
-    rm -f "$ENTITLEMENTS_FILE"
-}
-trap cleanup EXIT
 codesign -d --entitlements :- "$APP_PATH" > "$ENTITLEMENTS_FILE" 2>/dev/null
 
 if [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$ENTITLEMENTS_FILE")" != "true" ]]; then
