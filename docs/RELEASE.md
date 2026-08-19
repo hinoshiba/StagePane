@@ -2,11 +2,17 @@
 
 StagePane is distributed through the Mac App Store. Official binaries are
 built and uploaded by Xcode Cloud from immutable semantic-version tags; there
-is no local signing, notarization, DMG, archive, or upload procedure.
+is no local release signing, notarization, DMG, archive, or upload procedure.
 
-`./build.sh` remains available only for local development. Its ad-hoc-signed
-`dist/StagePane.app` is marked as a development build and must never be
-published.
+`./build.sh` remains available only for local development. By default its
+`dist/StagePane.app` is ad-hoc signed. A developer may set
+`STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed Keychain
+identity when stable local code identity is needed for repeated Accessibility
+testing. The value stays outside the repository and the script neither
+discovers nor prints it. Both signing modes remain unsandboxed development
+builds, retain Hardened Runtime, are marked as development-only, and must never
+be published. This opt-in has no effect on the separate Xcode Cloud Mac App
+Store archive path.
 
 ## Xcode Cloud workflow
 
@@ -63,6 +69,11 @@ Update and review these values in one pull request:
 - the checked-in Xcode project regenerated with XcodeGen 2.45.4
 - `CHANGELOG.md`, App Store metadata, privacy answers, and review notes when
   behavior or claims changed
+- localized website screenshots and Open Graph images regenerated from the exact
+  Mac App Store UI whenever an audience-visible default, Workspace, or Control
+  Room layout changes; Store screenshots must show Arrange and Draw only, never
+  Control or an Accessibility permission prompt, and any Permissions screenshot
+  must hide the Accessibility card
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
   version changes
 
@@ -81,12 +92,112 @@ Run the source gates and manual acceptance matrix before merging:
 swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 ```
 
-Manual acceptance must cover supported macOS versions and architectures,
-permission allow/deny/revoke flows, source selection and stopping, all Stage
-shapes, Curtain behavior, Spaces/full-screen/display changes, accessibility,
-and the currently claimed meeting-app workflows. Record the exact commit,
-hardware, OS/app versions, results, and approved exceptions in the release
-record.
+Manual acceptance must cover supported macOS versions and architectures plus:
+
+- per-selection `SCContentSharingPicker` approval and cancellation, including
+  confirmation that the app requests no separate broad Screen Recording access
+  and exposes no Screen Recording settings step in the source flow; end access
+  by removing the source or stopping all sources;
+- one-item window/application/display selection, mixed-source addition up to
+  four, and a disabled Add Source action at 4/4;
+- per-source pause and resume (stop the stream, retain the last frame in both
+  renderers, then restart it), replace (with cancel preserving the old item),
+  per-source removal while other streams remain live, and Stop All draining
+  both renderers for every running or paused source;
+- initial picture-in-picture placement, Auto Arrange, boundary-clamped drag,
+  free resize/minimum tile size, front ordering, matching Workspace/Stage
+  layouts, the Workspace's 1040×680-point minimum content size, and Control
+  Room's 820×580-point minimum content size;
+- strict window separation: the large private Workspace is the only live editor
+  and hosts Arrange, Draw, and Control only in eligible non-Store builds; Control
+  Room has no live editor; the public Stage has no private toolbar, mode control,
+  selection outline, resize handle, notice, or other editing chrome;
+- exact-window sharing guidance that never claims Workspace or Control Room can
+  be technically excluded from capture; verify application and full-display
+  sharing can expose private windows and the UI directs users to choose the
+  exact `StagePane Stage` window;
+- Workspace close/reopen while live, drawing, resizing, choosing, paused, and in
+  Control mode: closing ends an active stroke and cancels pending input without
+  stopping capture, clearing completed ink, closing Stage, or corrupting layout;
+  closing the public Stage continues to cover output and stop active capture;
+- live source-window aspect changes, including a static slide after a layout or
+  source resize, with no double letterbox and no transient black tile;
+- Curtain hiding only the public Stage while the private Workspace remains
+  live, without bringing Stage to the front, plus a fresh-container default-on
+  translucent lower-right StagePane mark on the holding screen, shared content,
+  and Curtain and its WYSIWYG Workspace mirror; toggle it off, relaunch, and
+  confirm the disabled preference persists;
+- all Stage shapes and all three pointer styles, including one laser dot aligned
+  only to the frontmost source, no dot and no fallback when that source is
+  paused, exact fresh-container and Reset defaults of 22 pt, `#FF3B30`, and 55%
+  glow, adjustable color/size/glow, relaunch persistence, live style/source
+  changes, a static System-to-Laser transition
+  with no native/laser double pointer (advance the slide if macOS defers the first
+  cursorless complete frame), and removal on Curtain/stop;
+- Arrange-mode drag/resize affecting only composition, with Arrange and Draw
+  available in Workspace in the exact sandboxed Mac App Store candidate on
+  every supported OS;
+  confirm that Control/Allow Control UI, cross-application Accessibility
+  implementation and symbols, Accessibility cards, settings links, and prompts
+  are absent from that candidate; confirm its persistent Permissions view describes only
+  picker-scoped screen-sharing session access;
+- Draw-mode Stage/Workspace alignment, single-point and long strokes, memory
+  bounds, Undo/Clear confirmation, Curtain hiding ink, intermediate-source
+  removal preserving ink, and Stop All/final-source removal clearing it;
+- destructive confirmation from both source-list and Workspace-context Remove,
+  including destructive/cancel semantics, VoiceOver and keyboard paths,
+  cancellation preserving stream/frame/layout, and source-state changes while
+  the dialog is open;
+- no redundant privacy slogans in the Stage dashboard or Control Room sidebar,
+  no Important Limitation card in About, and the complete Privacy screen still
+  available;
+- explicit one-shot screenshot Copy and Save for every Stage preset: exact
+  preset pixel dimensions; clean Audience Stage only; correct source layout and
+  current content-or-Curtain, ink, watermark, safe-area, and pointer; no
+  Workspace/Control Room/title-bar UI; Copy provides a readable PNG on the
+  pasteboard; Save writes one readable PNG only to the selected location; save
+  cancellation writes nothing and does not alter the clipboard; missing fresh
+  frames fail visibly instead of exporting a black tile;
+- screenshot permission/privacy behavior: no action at launch or in the
+  background, no recording or network request, no new Screen Recording or other
+  permission, no unrelated-window enumeration, and no retained screenshot
+  history after the explicit copy/save completes;
+- no Accessibility or Input Monitoring request in the Mac App Store candidate,
+  and no raw mouse/keyboard event synthesis, keyboard capture/forwarding, or event
+  tap; keyboard/VoiceOver Arrange and Draw actions; Spaces/full-screen/display
+  changes; four-source CPU/memory; and the currently claimed meeting-app
+  workflows.
+
+Record the exact commit, hardware, OS/app versions, results, and approved
+exceptions in the release record.
+
+### Separate unsandboxed Control acceptance
+
+Control is not part of the Mac App Store release candidate. If the unsandboxed
+local development build is tested, record it in a separate matrix and do not
+reuse its screenshots or reviewer media for App Store submission. On macOS 14
+through 15.1, Control must remain unavailable without requesting Accessibility
+access.
+On macOS 15.2 or later, verify that selecting Control only routes to the
+persistent Permissions view and that its explicit **Continue Setup** action is
+the sole trigger for the system request and is offered only until that request
+has been attempted. Reopen and revisit Control while untrusted to confirm it
+shows repair steps without another system prompt. For an existing installation
+updated to a default ad-hoc build, confirm it migrates directly to repair without
+one additional prompt, that the repair copy shows the exact running app path,
+and that it explains removing the stale StagePane row before re-adding that app.
+For repeated testing,
+prefer the same caller-managed `STAGEPANE_LOCAL_SIGNING_IDENTITY` across
+rebuilds so macOS can evaluate a consistent code identity. Then test
+allow/deny/revoke; status refresh after returning from system UI; exact
+single-window supported Press
+actions; unsupported generic canvas/text regions; app/display rejection;
+selected-window mismatch; black padding/overlap; negative display origins;
+pause/resume/replace/remove/Stop All; an unchanged physical pointer and
+source-app focus; and supported PowerPoint Presenter View controls. Use a
+consistently identified unsandboxed test build so TCC results are meaningful.
+Passing this separate matrix does not authorize direct distribution; the current
+`./build.sh` artifact remains development-only.
 
 ## Start the cloud build
 
@@ -115,8 +226,14 @@ In the completed Xcode Cloud build and App Store Connect, verify:
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
+- Arrange and Draw present, with no exposed Control UI and with every
+  cross-application Accessibility implementation, permission, and action path
+  absent from the archived Mac App Store candidate; the Permissions view must
+  show the picker-scoped sharing explanation but no Accessibility card;
 - no unexpected entitlement, embedded executable/framework, absolute
-  `LC_RPATH`, updater, analytics, recording, or network path; and
+  `LC_RPATH`, updater, analytics, automatic screenshot, recording, or network
+  path; confirm the only image export is the documented explicit local PNG
+  copy/save path; and
 - metadata, screenshots, privacy answers, export compliance, review notes,
   pricing, territories, and release mode against the exact build.
 

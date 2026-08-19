@@ -4,6 +4,8 @@ set -euo pipefail
 PROJECT_DIR=${0:A:h}
 cd "$PROJECT_DIR"
 DIST_DIR="$PROJECT_DIR/dist"
+typeset -r LOCAL_SIGNING_IDENTITY=${STAGEPANE_LOCAL_SIGNING_IDENTITY:--}
+unset STAGEPANE_LOCAL_SIGNING_IDENTITY
 
 if [[ $# -ne 0 ]]; then
     print -u2 "Usage: ./build.sh"
@@ -54,8 +56,16 @@ cp "$PROJECT_DIR/TRADEMARKS.md" "$APP_PATH/Contents/Resources/TRADEMARKS.md"
 cp "$PROJECT_DIR/Assets/LICENSE.md" "$APP_PATH/Contents/Resources/BRAND_ASSET_LICENSE.md"
 cp "$PROJECT_DIR/docs/PRIVACY.md" "$APP_PATH/Contents/Resources/PRIVACY.md"
 cp "$PROJECT_DIR/docs/HELP.md" "$APP_PATH/Contents/Resources/HELP.md"
+if [[ "$LOCAL_SIGNING_IDENTITY" == '-' ]]; then
+    DEVELOPMENT_SIGNING_DESCRIPTION='ad-hoc signed'
+    print -r -- \
+        'This development build uses an ad-hoc code identity.' \
+        > "$APP_PATH/Contents/Resources/DEVELOPMENT_BUILD_AD_HOC_SIGNING.txt"
+else
+    DEVELOPMENT_SIGNING_DESCRIPTION='signed with a caller-provided local identity'
+fi
 print -r -- \
-    "Development build only: ad-hoc signed and not approved for public distribution." \
+    "Development build only: $DEVELOPMENT_SIGNING_DESCRIPTION and not approved for public distribution." \
     > "$APP_PATH/Contents/Resources/DEVELOPMENT_BUILD_DO_NOT_DISTRIBUTE.txt"
 
 swift "$PROJECT_DIR/Scripts/MakeIcon.swift" "$REAL_DIST_DIR" >/dev/null
@@ -78,8 +88,7 @@ if otool -l "$BUNDLED_BINARY" | awk '
 fi
 
 codesign --force --options runtime \
-    --entitlements "$PROJECT_DIR/StagePane.entitlements" \
-    --sign - \
+    --sign "$LOCAL_SIGNING_IDENTITY" \
     "$APP_PATH"
 codesign --verify --strict --verbose=2 "$APP_PATH"
 plutil -lint "$APP_PATH/Contents/Info.plist" "$APP_PATH/Contents/Resources/PrivacyInfo.xcprivacy"

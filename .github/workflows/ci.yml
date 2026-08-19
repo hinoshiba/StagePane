@@ -62,14 +62,15 @@ jobs:
         run: |
           codesign --verify --strict --verbose=2 dist/StagePane.app
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' dist/StagePane.app/Contents/Info.plist)" = com.hinoshiba.stagepane
-          codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null
-          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/direct-entitlements.plist")" = true
-          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null || true)" != true
+          codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/local-development-entitlements.plist" 2>/dev/null
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/local-development-entitlements.plist" 2>/dev/null || true)" != true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/local-development-entitlements.plist" 2>/dev/null || true)" != true
           test -s dist/StagePane.app/Contents/Resources/AppIcon.icns
           test -s dist/StagePane.app/Contents/Resources/PrivacyInfo.xcprivacy
           test -s dist/StagePane.app/Contents/Resources/en.lproj/InfoPlist.strings
           test -s dist/StagePane.app/Contents/Resources/ja.lproj/InfoPlist.strings
           test -s dist/StagePane.app/Contents/Resources/DEVELOPMENT_BUILD_DO_NOT_DISTRIBUTE.txt
+          test -s dist/StagePane.app/Contents/Resources/DEVELOPMENT_BUILD_AD_HOC_SIGNING.txt
           cmp -s LICENSE dist/StagePane.app/Contents/Resources/LICENSE.txt
           cmp -s NOTICE dist/StagePane.app/Contents/Resources/NOTICE.txt
           cmp -s THIRD_PARTY_NOTICES.md dist/StagePane.app/Contents/Resources/THIRD_PARTY_NOTICES.md
@@ -107,6 +108,10 @@ jobs:
           cmp -s Assets/LICENSE.md "$APP/Contents/Resources/BRAND_ASSET_LICENSE.md"
           cmp -s docs/PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
           cmp -s docs/HELP.md "$APP/Contents/Resources/HELP.md"
+          if nm -u "$BINARY" | grep -E '_(AXIsProcessTrusted|AXUIElement)'; then
+            echo "Mac App Store binary unexpectedly references cross-application Accessibility APIs" >&2
+            exit 1
+          fi
           ARCHS="$(lipo -archs "$BINARY")"
           [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
           MACHO_COUNT=0

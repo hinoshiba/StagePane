@@ -42,7 +42,8 @@ identified rights owner are required before public launch.
 | Item | Status | Distribution consequence |
 |---|---|---|
 | Swift standard/runtime libraries | Apple toolchain/system | Governed by Apple toolchain terms; embedded components, if any, are produced by Apple's linker |
-| AppKit, AVFoundation, Combine, CoreMedia, CoreVideo, Foundation, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked; not copied into app bundle |
+| AppKit, AVFoundation, Combine, CoreGraphics, CoreMedia, CoreVideo, Foundation, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked by the Mac App Store build; not copied into the app bundle |
+| ApplicationServices Accessibility | Apple system framework | Used only by the unsandboxed local development Control build; excluded from the Mac App Store Control/permission path |
 | SF Symbols | Requested from macOS at runtime | No symbol artwork files are bundled |
 | StagePane icon/mark | Original project artwork | Apache-2.0 covers copyright permission; `TRADEMARKS.md` separately reserves official brand identity |
 | Local Swift package product | `StagePaneCore` from this repository | Project-authored code; linked into the Xcode App Store target, not an external dependency |
@@ -81,15 +82,31 @@ not a StagePane redistribution requirement. The acknowledgement in README and
 ## Apple distribution analysis
 
 StagePane uses only documented APIs. It does not use private
-`CGVirtualDisplay`, install a driver, request root, inject input, or imitate an
-alternate macOS desktop.
+`CGVirtualDisplay`, install a driver, request root, install an event tap,
+synthesize raw mouse/keyboard events, forward keyboard/drag input, or imitate an
+alternate macOS desktop. Apple requires App Sandbox for Mac App Store apps and
+identifies assistive Accessibility API use as incompatible with that sandbox in
+its [App Sandbox compatibility guidance](https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox).
+The Mac App Store build therefore omits Control mode and its Accessibility
+permission/action path entirely; Arrange, Draw, and the rest of the presentation
+canvas remain.
+
+On macOS 15.2 or later, the unsandboxed local development Control build can use
+documented `AXIsProcessTrustedWithOptions`, application-scoped
+`AXUIElementCopyElementAtPosition`, selected-window validation, and
+`AXUIElementPerformAction(kAXPressAction)` for a pressable control inside an
+exact single-window source. Generic canvas/content regions are not controlled.
+This variant is not the Mac App Store binary. Any future direct distribution
+requires its own signed/notarized release policy and review; the current
+development `dist/StagePane.app` remains non-distributable.
 
 - **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which
   archives the checked-in `StagePaneAppStore` target with automatic signing and
   App Sandbox for TestFlight and App Store use. CI and release review check the
-  entitlements, universal slices, resources, placeholders, and absolute
-  `LC_RPATH` entries. Do not add Sparkle, an external license-key system, or an
-  independent updater. Apple approval is never guaranteed.
+  absence of Control/Accessibility permission paths as well as entitlements,
+  universal slices, resources, placeholders, and absolute `LC_RPATH` entries.
+  Do not add Sparkle, an external license-key system, or an independent updater.
+  Apple approval is never guaranteed.
 - **Marketing:** describe the product as a “screen share stage” or
   “presentation canvas,” never as a real/virtual display, second monitor, or
   alternate desktop. Misleading capability claims create review and consumer

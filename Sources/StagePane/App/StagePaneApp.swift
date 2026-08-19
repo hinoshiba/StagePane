@@ -163,17 +163,31 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         let stageItem = NSMenuItem()
         let stageMenu = NSMenu(title: L10n.text("ステージ", "Stage"))
         stageMenu.addItem(menuItem(
+            L10n.text("ステージワークスペースを表示", "Show Stage Workspace"),
+            action: #selector(AppController.showStageWorkspace),
+            key: "1",
+            modifiers: [.command],
+            target: controller
+        ))
+        stageMenu.addItem(menuItem(
             L10n.text("共有ステージを表示", "Show Share Stage"),
             action: #selector(AppController.showStage),
-            key: "s",
+            key: "2",
+            modifiers: [.command],
+            target: controller
+        ))
+        stageMenu.addItem(menuItem(
+            L10n.text("ソースを追加…", "Add Source…"),
+            action: #selector(AppController.chooseSource),
+            key: "p",
             modifiers: [.command, .shift],
             target: controller
         ))
         stageMenu.addItem(menuItem(
-            L10n.text("ソースを選択…", "Choose Source…"),
-            action: #selector(AppController.chooseSource),
-            key: "p",
-            modifiers: [.command, .shift],
+            L10n.text("アクセス権限を確認…", "Review Permissions…"),
+            action: #selector(AppController.showPermissions),
+            key: "",
+            modifiers: [],
             target: controller
         ))
         stageMenu.addItem(menuItem(
@@ -183,8 +197,24 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: [.command, .shift],
             target: controller
         ))
+        stageMenu.addItem(.separator())
         stageMenu.addItem(menuItem(
-            L10n.text("プレビューを停止", "Stop Preview"),
+            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
+            action: #selector(AppController.copyStageScreenshot),
+            key: "s",
+            modifiers: [.command, .shift],
+            target: controller
+        ))
+        stageMenu.addItem(menuItem(
+            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
+            action: #selector(AppController.saveStageScreenshot),
+            key: "s",
+            modifiers: [.command, .option, .shift],
+            target: controller
+        ))
+        stageMenu.addItem(.separator())
+        stageMenu.addItem(menuItem(
+            L10n.text("すべてのソースを停止", "Stop All Sources"),
             action: #selector(AppController.stopPreview),
             key: ".",
             modifiers: [.command],
@@ -212,6 +242,20 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             L10n.text("コントロールルーム", "Control Room"),
             action: #selector(AppController.showControlRoom),
             key: "0",
+            modifiers: [.command],
+            target: controller
+        ))
+        windowMenu.addItem(menuItem(
+            L10n.text("ステージワークスペース", "Stage Workspace"),
+            action: #selector(AppController.showStageWorkspace),
+            key: "1",
+            modifiers: [.command],
+            target: controller
+        ))
+        windowMenu.addItem(menuItem(
+            L10n.text("共有ステージ", "Share Stage"),
+            action: #selector(AppController.showStage),
+            key: "2",
             modifiers: [.command],
             target: controller
         ))

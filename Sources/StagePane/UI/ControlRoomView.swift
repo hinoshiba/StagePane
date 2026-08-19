@@ -3,6 +3,7 @@ import SwiftUI
 
 private enum ControlSection: String, CaseIterable, Identifiable {
     case stage
+    case permissions
     case appearance
     case privacy
     case about
@@ -12,6 +13,7 @@ private enum ControlSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .stage: L10n.text("ステージ", "Stage")
+        case .permissions: L10n.text("アクセス権限", "Permissions")
         case .appearance: L10n.text("見た目と動作", "Appearance")
         case .privacy: L10n.text("プライバシー", "Privacy")
         case .about: L10n.text("このアプリについて", "About")
@@ -21,6 +23,7 @@ private enum ControlSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .stage: "rectangle.inset.filled"
+        case .permissions: "checkmark.shield.fill"
         case .appearance: "paintpalette.fill"
         case .privacy: "hand.raised.fill"
         case .about: "info.circle.fill"
@@ -63,6 +66,9 @@ struct ControlRoomView: View {
             .ignoresSafeArea()
         )
         .preferredColorScheme(nil)
+        .onChange(of: controller.permissionPanelRequestRevision) { _, _ in
+            selection = .permissions
+        }
     }
 
     @ViewBuilder
@@ -70,6 +76,8 @@ struct ControlRoomView: View {
         switch selection {
         case .stage:
             StageDashboard(controller: controller, capture: capture)
+        case .permissions:
+            PermissionsPanel(controller: controller, capture: capture)
         case .appearance:
             AppearancePanel(controller: controller)
         case .privacy:
@@ -90,9 +98,13 @@ struct ControlRoomView: View {
                 ForEach(ControlSection.allCases) { section in
                     Button {
                         selection = section
+                        if section == .permissions {
+                            controller.clearPermissionPanelFocus()
+                            controller.refreshPermissionStatus()
+                        }
                     } label: {
                         HStack(spacing: 11) {
-                            Image(systemName: section.symbol)
+                            Image(systemName: sectionSymbol(section))
                                 .font(.system(size: 14, weight: .semibold))
                                 .frame(width: 20)
                             Text(section.title)
@@ -109,39 +121,37 @@ struct ControlRoomView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(section.title)
-                    .accessibilityValue(
-                        selection == section ? L10n.text("選択中", "Selected") : ""
-                    )
+                    .accessibilityValue(sectionAccessibilityValue(section))
                 }
             }
             .padding(.horizontal, 10)
 
             Spacer()
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 7) {
-                    Circle()
-                        .fill(StagePanePalette.mintReadable)
-                        .frame(width: 7, height: 7)
-                    Text(L10n.text("ローカル処理", "Local only"))
-                        .font(.caption.weight(.semibold))
-                }
-                Text(L10n.text(
-                    "アカウント・広告・解析・録画なし",
-                    "No account, ads, analytics, or recording"
-                ))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(StagePanePalette.mintReadable.opacity(0.08))
-            )
-            .padding(14)
         }
         .background(Color.primary.opacity(colorScheme == .dark ? 0.018 : 0.025))
+    }
+
+    private var permissionsNeedAttention: Bool {
+        return controller.stageInteractionMode == .control &&
+            !controller.previewInputAccessGranted
+    }
+
+    private func sectionSymbol(_ section: ControlSection) -> String {
+        if section == .permissions, permissionsNeedAttention {
+            return "exclamationmark.shield.fill"
+        }
+        return section.symbol
+    }
+
+    private func sectionAccessibilityValue(_ section: ControlSection) -> String {
+        var values: [String] = []
+        if selection == section {
+            values.append(L10n.text("選択中", "Selected"))
+        }
+        if section == .permissions, permissionsNeedAttention {
+            values.append(L10n.text("確認が必要", "Needs attention"))
+        }
+        return values.joined(separator: ", ")
     }
 }
 
@@ -172,51 +182,25 @@ struct StageDashboard: View {
 
                 if let notice = controller.transientNotice {
                     NoticeBanner(message: notice) {
-                        controller.transientNotice = nil
+                        controller.dismissTransientNotice()
                     }
                 }
 
-                HStack(alignment: .top, spacing: 18) {
-                    StagePreviewSummary(controller: controller, capture: capture)
-                        .frame(maxWidth: .infinity)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 18) {
+                        StageWorkspaceLaunchCard(controller: controller, capture: capture)
+                            .frame(minWidth: 340, maxWidth: .infinity)
+                            .layoutPriority(1)
 
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text(L10n.text("安全に共有する4ステップ", "Share safely in four steps"))
-                            .font(.headline)
-                        ChecklistRow(number: 1, title: L10n.text("ステージを表示", "Open the Stage"), done: controller.stageIsVisible)
-                        ChecklistRow(number: 2, title: L10n.text("映す内容を選択", "Choose what to show"), done: capture.isCaptureActive)
-                        ChecklistRow(number: 3, title: L10n.text("会議アプリでステージを共有", "Share the Stage in your meeting app"), done: nil)
-                        ChecklistRow(
-                            number: 4,
-                            title: L10n.text("準備できたらカーテンを開く", "Reveal the Curtain when ready"),
-                            done: capture.isCaptureActive && !controller.privacyCurtain
-                        )
-
-                        Spacer(minLength: 4)
-
-                        Button(action: controller.chooseSource) {
-                            Label(
-                                capture.isCaptureActive
-                                    ? L10n.text("ソースを変更", "Change Source")
-                                    : L10n.text("ソースを選択", "Choose Source"),
-                                systemImage: "rectangle.and.hand.point.up.left.fill"
-                            )
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(PrimaryActionButtonStyle())
-                        .keyboardShortcut("p", modifiers: [.command, .shift])
-
-                        Button(action: controller.requestConferenceShare) {
-                            Label(conferenceShareButtonTitle, systemImage: "arrow.up.forward.app")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(SecondaryActionButtonStyle())
-                        .help(conferenceShareButtonHelp)
+                        sourceColumn
+                            .frame(width: 292)
                     }
-                    .frame(width: 252)
-                    .cardSurface()
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        StageWorkspaceLaunchCard(controller: controller, capture: capture)
+                        sourceColumn
+                    }
                 }
-                .frame(minHeight: 278)
 
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 190), spacing: 12)],
@@ -241,13 +225,13 @@ struct StageDashboard: View {
                         action: controller.showStage
                     )
                     QuickAction(
-                        title: L10n.text("プレビューを停止", "Stop Preview"),
-                        detail: L10n.text("画面取得を完全に終了", "End local capture"),
+                        title: L10n.text("すべて停止", "Stop All"),
+                        detail: L10n.text("全ソースの画面取得を終了", "End capture for every source"),
                         symbol: "stop.fill",
                         tint: .secondary,
                         action: controller.stopPreview
                     )
-                    .disabled(!capture.isCaptureActive)
+                    .disabled(!capture.isCaptureActive || capture.isPickerPresented)
                 }
 
                 VStack(alignment: .leading, spacing: 13) {
@@ -263,7 +247,6 @@ struct StageDashboard: View {
                 }
                 .cardSurface()
 
-                TrustStrip()
         }
         .padding(.top, 38)
         .padding(.horizontal, 32)
@@ -275,6 +258,20 @@ struct StageDashboard: View {
             return L10n.text("共有先をステージへ切替", "Switch Active Share")
         }
         return L10n.text("共有方法を見る", "How to Share")
+    }
+
+    private var sourceColumn: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            CaptureSourceList(controller: controller, capture: capture)
+                .cardSurface()
+
+            Button(action: controller.requestConferenceShare) {
+                Label(conferenceShareButtonTitle, systemImage: "arrow.up.forward.app")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(SecondaryActionButtonStyle())
+            .help(conferenceShareButtonHelp)
+        }
     }
 
     private var conferenceShareButtonHelp: String {
@@ -291,13 +288,131 @@ struct StageDashboard: View {
     }
 }
 
+private struct StageWorkspaceLaunchCard: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 10) {
+                Label(
+                    L10n.text("STAGE WORKSPACE / 共有しない", "STAGE WORKSPACE / KEEP PRIVATE"),
+                    systemImage: "rectangle.inset.filled.and.person.filled"
+                )
+                .font(.caption2.weight(.bold))
+                .tracking(0.8)
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Label(
+                    controller.workspaceIsVisible
+                        ? L10n.text("開いています", "OPEN")
+                        : L10n.text("閉じています", "CLOSED"),
+                    systemImage: controller.workspaceIsVisible ? "circle.fill" : "circle"
+                )
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(controller.workspaceIsVisible
+                    ? StagePanePalette.mintReadable
+                    : Color.secondary)
+            }
+
+            workspaceIllustration
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(L10n.text(
+                    "配置・操作・手書きは、大きな専用画面で。",
+                    "Arrange, control, and draw on a dedicated big canvas."
+                ))
+                .font(.title3.weight(.bold))
+
+                Text(L10n.text(
+                    "観客側のStageを汚さず、手元だけで正確に仕上げます。画像のコピーやPNG保存もWorkspaceから行えます。",
+                    "Shape the audience Stage precisely without putting editing chrome on it. Copy or save a clean PNG from the Workspace too."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button(action: controller.showStageWorkspace) {
+                Label(
+                    L10n.text("ステージワークスペースを開く", "Open Stage Workspace"),
+                    systemImage: "arrow.up.right.square"
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryActionButtonStyle())
+            .keyboardShortcut("1", modifiers: [.command])
+            .accessibilityHint(L10n.text(
+                "共有しない大きな編集ウインドウを開きます。",
+                "Opens the large private editing window."
+            ))
+        }
+        .cardSurface()
+    }
+
+    private var workspaceIllustration: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(0.82))
+
+            StageBackground(theme: controller.theme)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(18)
+
+            VStack {
+                HStack(spacing: 7) {
+                    workspaceChip("配置", "Arrange", symbol: "rectangle.3.group")
+                    workspaceChip("操作", "Control", symbol: "hand.tap")
+                    workspaceChip("手書き", "Draw", symbol: "pencil.tip")
+                }
+                Spacer()
+                HStack {
+                    Label(
+                        L10n.text("\(capture.sources.count)ソース", "\(capture.sources.count) source\(capture.sources.count == 1 ? "" : "s")"),
+                        systemImage: "square.stack.3d.up"
+                    )
+                    Spacer()
+                    Label(L10n.text("画像に保存", "Audience PNG"), systemImage: "camera")
+                }
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.76))
+            }
+            .padding(28)
+        }
+        .frame(height: 168)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.11), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.20), radius: 18, y: 9)
+        .accessibilityHidden(true)
+    }
+
+    private func workspaceChip(_ japanese: String, _ english: String, symbol: String) -> some View {
+        Label(L10n.text(japanese, english), systemImage: symbol)
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 9)
+            .frame(minHeight: 28)
+            .background(.ultraThinMaterial, in: Capsule())
+    }
+}
+
 private struct CaptureStatusBadge: View {
     @ObservedObject var capture: CaptureCoordinator
     let curtain: Bool
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 6) {
-            if capture.isCaptureActive {
+            if allSourcesPaused {
+                StatusCapsule(
+                    title: L10n.text("一時停止中", "PAUSED"),
+                    symbol: "pause.fill",
+                    color: .secondary
+                )
+            } else if capture.isCaptureActive {
                 StatusCapsule(
                     title: L10n.text("画面取得中", "CAPTURE ACTIVE"),
                     symbol: "rectangle.inset.filled",
@@ -362,7 +477,9 @@ private struct CaptureStatusBadge: View {
 
     private var accessibilitySummary: String {
         var parts: [String] = []
-        if capture.isCaptureActive {
+        if allSourcesPaused {
+            parts.append(L10n.text("すべてのソースを一時停止中", "All sources paused"))
+        } else if capture.isCaptureActive {
             parts.append(L10n.text("画面取得中", "Capture active"))
         } else if !phaseNeedsAttention {
             parts.append(phaseTitle)
@@ -374,6 +491,10 @@ private struct CaptureStatusBadge: View {
             parts.append(L10n.text("カーテン中", "Curtain on"))
         }
         return parts.joined(separator: L10n.text("。", ". "))
+    }
+
+    private var allSourcesPaused: Bool {
+        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
     }
 
 }
@@ -402,11 +523,15 @@ private struct StatusCapsule: View {
 private struct StagePreviewSummary: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    @State private var isClearInkConfirmationPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label(L10n.text("相手に見える画面", "AUDIENCE VIEW"), systemImage: "person.2.fill")
+                Label(
+                    L10n.text("配置プレビュー / 手元だけ", "LAYOUT PREVIEW / PRIVATE"),
+                    systemImage: "rectangle.3.group"
+                )
                     .font(.caption2.weight(.bold))
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
@@ -416,49 +541,101 @@ private struct StagePreviewSummary: View {
                     .foregroundStyle(.secondary)
             }
 
-            ZStack {
-                StageBackground(theme: controller.theme)
-
-                if controller.privacyCurtain {
-                    VStack(spacing: 9) {
-                        Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 28, weight: .semibold))
-                        Text(controller.privacyMessage)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.78) : .white)
-                } else if capture.isCaptureActive {
-                    VStack(spacing: 10) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(Color.black.opacity(0.28))
-                                .frame(width: 108, height: 68)
-                            Image(systemName: "rectangle.inset.filled")
-                                .font(.system(size: 25))
+            if !capture.sources.isEmpty {
+                HStack(spacing: 10) {
+                    Picker(
+                        L10n.text("プレビューのモード", "Preview mode"),
+                        selection: interactionModeBinding
+                    ) {
+                        ForEach(controller.availableStageInteractionModes, id: \.rawValue) { mode in
+                            Text(L10n.stageInteractionModeName(mode))
+                                .tag(mode)
                         }
-                        Text(L10n.text("プレビュー中", "Preview active"))
-                            .font(.subheadline.weight(.semibold))
                     }
-                    .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.78) : .white)
-                } else {
-                    VStack(spacing: 9) {
-                        BrandMark(size: 42)
-                        Text(L10n.text("Stageの準備ができました", "Stage is ready"))
-                            .font(.subheadline.weight(.semibold))
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 330)
+                    .accessibilityLabel(L10n.text("プレビューのモード", "Preview mode"))
+                    .accessibilityValue(L10n.stageInteractionModeName(
+                        controller.stageInteractionMode
+                    ))
+                    .accessibilityHint(L10n.stageInteractionModeDetail(
+                        controller.stageInteractionMode
+                    ))
+
+                    Spacer(minLength: 6)
+
+                    switch controller.stageInteractionMode {
+                    case .arrange:
+                        EmptyView()
+                    case .control:
+                        if controller.previewInputAccessGranted {
+                            Label(
+                                L10n.text("操作許可済み", "Control allowed"),
+                                systemImage: "checkmark.shield.fill"
+                            )
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(StagePanePalette.mintReadable)
+                        } else {
+                            Button {
+                                controller.presentPermissionCheck(focus: .accessibility)
+                            } label: {
+                                Label(
+                                    L10n.text("アクセス権限を確認", "Review Permissions"),
+                                    systemImage: "hand.tap.fill"
+                                )
+                            }
+                            .buttonStyle(.borderless)
+                            .controlSize(.small)
+                        }
+                    case .annotate:
+                        Button {
+                            controller.annotations.undo()
+                        } label: {
+                            Label(L10n.text("取り消す", "Undo"), systemImage: "arrow.uturn.backward")
+                        }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .disabled(!controller.hasAnnotations)
+
+                        Button(role: .destructive) {
+                            isClearInkConfirmationPresented = true
+                        } label: {
+                            Label(L10n.text("すべて消す", "Clear"), systemImage: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .disabled(!controller.hasAnnotations)
                     }
-                    .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.78) : .white)
+                }
+                .confirmationDialog(
+                    L10n.text("手書きをすべて消しますか？", "Clear all drawings?"),
+                    isPresented: $isClearInkConfirmationPresented,
+                    titleVisibility: .visible
+                ) {
+                    Button(L10n.text("すべて消す", "Clear All"), role: .destructive) {
+                        controller.annotations.removeAll()
+                    }
+                    Button(L10n.text("キャンセル", "Cancel"), role: .cancel) {}
+                } message: {
+                    Text(L10n.text(
+                        "共有Stageと手元のプレビューから、すべての線を削除します。",
+                        "Remove every line from the shared Stage and private preview."
+                    ))
                 }
             }
+
+            StageLayoutEditor(controller: controller, capture: capture)
             .aspectRatio(controller.preset.aspectRatio, contentMode: .fit)
-            .frame(maxWidth: .infinity, maxHeight: 210)
+            .frame(maxWidth: .infinity, maxHeight: 300)
             .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .stroke(Color.white.opacity(0.13), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.18), radius: 16, y: 8)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(L10n.text("相手に見える画面", "Audience preview"))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(L10n.text("手元だけの配置プレビュー", "Private layout preview"))
             .accessibilityValue(previewAccessibilityValue)
 
             if !capture.statusDetail.isEmpty {
@@ -476,10 +653,15 @@ private struct StagePreviewSummary: View {
         if controller.privacyCurtain {
             state = capture.isCaptureActive
                 ? L10n.text(
-                    "カーテン中。共有内容は隠れていますが、画面取得は動作中です",
-                    "Curtain on; stage content is hidden, and capture remains active"
+                    "観客側のステージはカーテン中。手元の配置プレビューには\(capture.sources.count)件を表示中です",
+                    "Audience Stage curtain on; the private layout preview shows \(capture.sources.count) source\(capture.sources.count == 1 ? "" : "s")"
                 )
                 : L10n.text("カーテン中。共有内容は隠れています", "Curtain on; stage content is hidden")
+        } else if allSourcesPaused {
+            state = L10n.text(
+                "すべてのソースを一時停止中",
+                "All sources paused"
+            )
         } else if capture.isCaptureActive {
             state = L10n.text("画面取得中", "Capture active")
         } else if case .failed = capture.phase {
@@ -491,6 +673,17 @@ private struct StagePreviewSummary: View {
             "\(state)。\(controller.preset.pixelWidth)×\(controller.preset.pixelHeight)",
             "\(state). \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight)"
         )
+    }
+
+    private var interactionModeBinding: Binding<StageInteractionMode> {
+        Binding(
+            get: { controller.stageInteractionMode },
+            set: { controller.setStageInteractionMode($0) }
+        )
+    }
+
+    private var allSourcesPaused: Bool {
+        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
     }
 }
 
@@ -628,32 +821,5 @@ private struct NoticeBanner: View {
         .frame(minHeight: 40)
         .background(StagePanePalette.aquaReadable.opacity(0.09), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(StagePanePalette.aquaReadable.opacity(0.24)))
-    }
-}
-
-private struct TrustStrip: View {
-    var body: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 130), spacing: 18)],
-            spacing: 10
-        ) {
-            TrustItem(symbol: "internaldrive.fill", title: L10n.text("メモリ内だけ", "Memory only"))
-            TrustItem(symbol: "icloud.slash.fill", title: L10n.text("外部送信なし", "No upload"))
-            TrustItem(symbol: "recordingtape", title: L10n.text("録画なし", "No recording"))
-            TrustItem(symbol: "person.crop.circle.badge.xmark", title: L10n.text("アカウント不要", "No account"))
-        }
-        .frame(maxWidth: .infinity)
-        .foregroundStyle(.secondary)
-    }
-}
-
-private struct TrustItem: View {
-    let symbol: String
-    let title: String
-
-    var body: some View {
-        Label(title, systemImage: symbol)
-            .font(.caption2.weight(.semibold))
-            .accessibilityElement(children: .combine)
     }
 }

@@ -30,9 +30,15 @@ exposed. Remove unrelated private data.
 - Audio and microphone capture remain disabled.
 - No network entitlement or third-party runtime dependency ships in 0.1.1.
 - App Sandbox, Hardened Runtime, Xcode Cloud/App Store signing, and release
-  checks stay enabled.
-- Private APIs, input injection, privilege escalation, and downloaded code are
-  prohibited.
+  checks stay enabled. The Mac App Store build omits Control mode and every
+  cross-application Accessibility permission/action path.
+- Private APIs, raw mouse/keyboard event synthesis, unconsented or ambiguous
+  input targets, keyboard/drag forwarding, event taps, privilege escalation, and
+  generic canvas/content control, and downloaded code are prohibited. Only an
+  unsandboxed local development build may expose Control. On macOS 15.2 or later
+  and after explicit Accessibility consent, it may perform one supported
+  accessibility Press action only on a pressable control inside the exact
+  selected window after fresh-frame and window validation.
 
 If an invariant changes, treat it as a security architecture change, not a
 routine feature.

@@ -121,6 +121,8 @@ extension View {
 }
 
 struct PrimaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
@@ -138,11 +140,14 @@ struct PrimaryActionButtonStyle: ButtonStyle {
                 in: RoundedRectangle(cornerRadius: 11, style: .continuous)
             )
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .saturation(isEnabled ? 1 : 0.25)
+            .opacity(isEnabled ? 1 : 0.48)
     }
 }
 
 struct SecondaryActionButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -162,6 +167,7 @@ struct SecondaryActionButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(Color.primary.opacity(0.09), lineWidth: 1)
             )
+            .opacity(isEnabled ? 1 : 0.43)
     }
 }
 

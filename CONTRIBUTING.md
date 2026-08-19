@@ -36,7 +36,14 @@ manual leak/retention check.
 ## Architectural constraints
 
 - Public Apple APIs only; never add undocumented `CGVirtualDisplay` calls.
-- No Accessibility input injection, synthetic clicks, or remote control.
+- No raw mouse/keyboard event synthesis, keyboard/drag forwarding, event taps,
+  unattended remote control, generic canvas/content control, or input to
+  ambiguous/app/display sources. The sandboxed Mac App Store build must omit
+  Control and its cross-application Accessibility permission/action path. In an
+  unsandboxed local development build on macOS 15.2 or later, a Control-mode
+  accessibility Press must retain explicit Accessibility consent, exact
+  single-window scope, supported-action checks, and fresh displayed-frame
+  validation.
 - No network, analytics, advertising, recording, audio, account, or updater
   dependency without an approved product/privacy proposal.
 - Use `SCContentSharingPicker` for consent. Do not build a covert window-title

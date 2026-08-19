@@ -13,46 +13,148 @@ StagePane does not collect personal data, create accounts, show advertising,
 run analytics, or send telemetry. It has no network client entitlement and no
 third-party SDKs.
 
+StagePane can create one clean Audience Stage PNG only when the user explicitly
+chooses Copy Audience Image or Save Audience Image. This local export is not
+collection by StagePane or its publisher and is never automatic or transmitted.
+
 ## Screen content
 
 StagePane accesses screen content only after the user opens Apple's system
-content-sharing picker and explicitly chooses a window, application, or display.
-The chosen video frames are rendered into the local StagePane Stage window.
+content-sharing picker and explicitly adds one window, application, or display.
+This may be repeated for up to four independently pausable and removable
+sources. The chosen video frames are rendered into the local StagePane Stage
+window and the private Stage Workspace editor. Control Room contains source
+management and settings but no live editor.
+
+Each `SCContentSharingPicker` choice grants access only to the selected content
+for that capture session. StagePane does not request separate, broad Screen
+Recording access. Canceling the picker grants no source access; removing a
+source or stopping all sources ends the corresponding streams and discards their
+displayed frames.
 
 StagePane does not:
 
 - record or encode those frames;
-- write them to disk, logs, the clipboard, or a database;
+- write them to disk, logs, the clipboard, or a database except for the
+  explicit one-shot Audience Stage PNG described below;
 - perform OCR, object recognition, or AI processing;
 - transmit them to StagePane, its publisher, or any third party;
 - capture system audio or microphone audio.
 
+When the optional Laser pointer style is active, StagePane reads only the current
+pointer location needed to place one dot over the frontmost Stage source. If that
+source is paused, no dot is shown and StagePane does not use a source behind it
+instead. Laser pointer mode itself does not install an event tap or request
+Accessibility/Input Monitoring permission. StagePane does not retain pointer
+history or write pointer coordinates to disk; each sampled position is discarded
+continuously and cleared when capture stops or the source changes.
+
+## Preview modes and build variants
+
+The sandboxed Mac App Store build provides **Arrange** and **Draw**. It omits
+Control mode and its cross-application Accessibility path entirely, and it never
+requests Accessibility or Input Monitoring permission.
+
+The unsandboxed local development build can additionally provide **Control** on
+macOS 15.2 or later. Choosing Control without access opens the persistent
+Permissions view; it does not itself trigger a system prompt. Only an explicit
+**Continue Setup** action on that view's Accessibility card asks macOS for
+permission.
+StagePane accepts a selected preview point only when the ScreenCaptureKit filter
+identifies exactly one on-screen window, the point comes from the exact fresh
+frame displayed in the private Workspace, and an application-scoped Accessibility
+hit test finds a pressable control belonging to that same selected window. It
+then asks that control to perform its supported Press action. StagePane does not
+synthesize arbitrary mouse events, move the physical pointer, activate or focus
+the source app, read keyboard input, install an event tap, forward keys or drags,
+enumerate unrelated windows, log actions, or retain coordinates.
+Application/display sources, generic canvas/content regions, and stale,
+ambiguous, or mismatched windows are rejected. The permission can be revoked in
+System Settings → Privacy & Security → Accessibility.
+
+In **Draw** mode, StagePane keeps a bounded set of normalized vector strokes in
+memory and renders the same ink in the private Workspace and public Stage. Ink is
+not automatically written to disk, uploaded, analyzed, or attached to captured
+source frames. An explicit Audience Stage screenshot includes the currently
+visible ink as rasterized pixels. The Curtain hides it from the audience; Stop
+All or removal of the final source clears the in-memory vector document.
+
 Frames exist transiently in system/application memory for display and are
-discarded as playback advances. **Stop Preview** ends the capture stream and
-flushes the last displayed image. The Privacy Curtain visually covers the Stage
-but does not stop capture; this is disclosed beside the control.
+discarded as playback advances. Pausing one source stops its ScreenCaptureKit
+stream but intentionally retains its last displayed frame in memory on both
+local render surfaces; resuming restarts that source. Removing the source
+flushes the retained frame, and **Stop All** does this for every source. The
+Privacy Curtain visually covers the public Stage but does not stop or pause
+capture. The private Workspace remains visible so the user can prepare the
+composition; this is disclosed in the interface.
+
+The “Keep Private” labels on Stage Workspace and Control Room are workflow
+guidance, not a privacy or security boundary. Application or full-display
+sharing can expose them, and a meeting app may still list or capture either
+window. StagePane tells the user to select the exact Stage window, rather than
+the StagePane application or an entire display, when those private windows must
+remain hidden.
+
+## User-initiated screenshots
+
+StagePane does not take screenshots on a timer, in the background, at launch,
+or in response to capture changes. Only the user's **Copy Audience Image** or
+**Save Audience Image…** action in Stage Workspace creates one lossless PNG of
+the clean Audience Stage.
+The PNG uses the selected Stage pixel dimensions and includes what the audience
+Stage currently shows: shared content or Curtain, ink, watermark, safe-area
+guide, and pointer. It excludes Workspace and Control Room controls, title-bar
+chrome, and unrelated application windows.
+
+The screenshot is composed locally from the latest pixels already approved by
+the user through Apple's content-sharing picker and the Stage's own local
+artwork. This path does not enumerate unrelated windows, request a new screen
+permission, record video, or use the network. Copy places the PNG on the macOS
+general pasteboard, where other local applications and clipboard managers may
+access it according to their behavior. Save opens the macOS save panel and
+writes the PNG only to the user-selected location. Canceling Save writes
+nothing. After the copy or write finishes, StagePane retains no separate
+screenshot history or screenshot file of its own.
 
 ## Settings stored on the device
 
 StagePane stores interface preferences such as aspect preset, theme, pointer
-visibility, safe-area visibility, curtain message, and window behavior in the
-app's sandboxed `UserDefaults`. It does not persist the chosen source, window
-title, application name, screen image, file path, or meeting information.
+style and appearance, watermark/safe-area visibility, curtain message, and
+window behavior in the app's sandboxed `UserDefaults`. It does not persist the
+chosen source, window title, application name, screenshot history, chosen
+screenshot file path, or meeting information. The standard window-frame
+preferences can include the private Workspace position and size, but not its
+pixels. A PNG saved through the explicit screenshot action is the user's chosen
+local file, not an app preference or hidden retained copy.
+Source titles may be displayed transiently in the in-memory source list while
+capture is active. Dragged positions and sizes are session-only in this version.
 
 Users can remove settings by deleting the app's container or using macOS app
 data controls. A future reset control must be added before claiming in-app data
 deletion support.
 
-## Screen Recording permission
+## Permissions
 
-macOS controls screen-capture consent. Users can review or revoke access in
-System Settings → Privacy & Security → Screen & System Audio Recording. If
-permission is revoked, StagePane remains usable as an empty/holding share
-window, but cannot mirror external content until the user approves it again.
+The persistent Permissions view explains that screen-sharing access is granted
+per selection and per capture session by Apple's system picker. It does not
+present a global Screen Recording allow/deny state, request separate broad
+Screen Recording access, or require a System Settings step in the normal source
+flow. Removing a source or stopping all sources ends its session-scoped access.
+StagePane remains usable as an empty/holding share window before a source is
+selected.
+
+The Mac App Store build requests no Accessibility or Input Monitoring
+permission; Arrange and Draw do not need either, and the Permissions view hides
+the Accessibility card. In the unsandboxed local development Control build,
+Accessibility permission is separate from picker-scoped screen sharing, is
+requested only from the card's explicit **Continue Setup** action, and is used
+only for the application-scoped hit test and supported Press action described
+above. No variant requests Input Monitoring.
 
 ## Network and third parties
 
-StagePane makes no network requests. The meeting application that shares the
+StagePane makes no network requests, including for copied or saved screenshots.
+The meeting application that shares the
 StagePane Stage is separate software. Its transmission, recording, accounts,
 and data practices are governed by that provider, not by StagePane.
 
@@ -63,8 +165,10 @@ governed by Apple's terms and privacy information.
 
 Because StagePane does not collect screen content or personal data, it has no
 server-side retention, disclosure, sale, cross-context behavioral advertising,
-or tracking process. `NSPrivacyTracking` is declared false and collected data
-types are empty in the privacy manifest.
+or tracking process. A screenshot explicitly copied or saved by the user exists
+only in the local pasteboard or chosen file location and is not retained by the
+publisher. `NSPrivacyTracking` is declared false and collected data types are
+empty in the privacy manifest.
 
 ## Children and international use
 

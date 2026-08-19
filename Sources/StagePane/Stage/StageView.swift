@@ -10,16 +10,18 @@ struct StageView: View {
             StageBackground(theme: controller.theme)
 
             if capture.isCaptureActive && !controller.privacyCurtain {
-                SampleBufferDisplayView(renderer: capture.renderer)
-                    .background(Color.black)
-                    .transition(.opacity)
-                    .accessibilityLabel(L10n.text("共有ステージのプレビュー", "Share stage preview"))
+                ZStack {
+                    StageCompositeDisplayView(entries: stageEntries)
+                    StageAnnotationOverlay(store: controller.annotations)
+                }
+                    .accessibilityLabel(L10n.text(
+                        "共有ステージ。ソースは\(capture.sources.count)件です。",
+                        "Share stage with \(capture.sources.count) sources."
+                    ))
             } else if controller.privacyCurtain {
                 curtain
-                    .transition(.opacity)
             } else {
                 idleStage
-                    .transition(.opacity)
             }
 
             if controller.showsSafeArea {
@@ -28,28 +30,13 @@ struct StageView: View {
             }
 
             if controller.showsWatermark {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 7) {
-                            BrandMark(size: 20)
-                            Text("StagePane")
-                                .font(.caption.weight(.semibold))
-                        }
-                        .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.64) : Color.white.opacity(0.72))
-                        .padding(16)
-                    }
-                }
-                .allowsHitTesting(false)
+                StageWatermark(
+                    prefersDarkForeground: controller.theme.prefersDarkForeground
+                )
             }
         }
         .frame(minWidth: 480, minHeight: 270)
         .clipped()
-        .animation(
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .easeOut(duration: 0.16),
-            value: controller.privacyCurtain
-        )
         .accessibilityElement(children: .contain)
     }
 
@@ -151,5 +138,16 @@ struct StageView: View {
 
     private var foreground: Color {
         controller.theme.prefersDarkForeground ? Color.black.opacity(0.82) : Color.white
+    }
+
+    private var stageEntries: [StageCompositeEntry] {
+        capture.layout.sources.compactMap { item in
+            guard let source = capture.source(for: item.id) else { return nil }
+            return StageCompositeEntry(
+                id: item.id,
+                frame: item.frame,
+                renderer: source.stageRenderer
+            )
+        }
     }
 }
