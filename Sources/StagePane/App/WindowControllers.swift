@@ -3,6 +3,16 @@ import StagePaneCore
 import SwiftUI
 
 @MainActor
+private final class StageShareWindow: NSWindow {
+    // Borderless NSWindow instances are not key or main by default. The Stage
+    // deliberately stays chrome-free, but it must still become the front
+    // window when the user clicks it or chooses Show Share Stage so standard
+    // commands such as Close Window target the surface they can see.
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+@MainActor
 final class ControlRoomWindowController: NSWindowController, NSWindowDelegate {
     init(controller: AppController, capture: CaptureCoordinator) {
         let window = NSWindow(
@@ -56,7 +66,10 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
-        window.contentMinSize = NSSize(width: 1040, height: 680)
+        // Prevent the destructive tiny layouts that AppKit otherwise permits,
+        // while still fitting a 1024-point-wide display. Below the wide-canvas
+        // threshold the source rail intentionally becomes an overlay.
+        window.contentMinSize = NSSize(width: 900, height: 620)
         window.setFrameAutosaveName("StagePane.Workspace")
         window.tabbingMode = .disallowed
         // AppKit no longer provides a supported window-capture exclusion
@@ -79,6 +92,18 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
     func windowWillClose(_ notification: Notification) {
         controller?.workspaceDidClose()
     }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        controller?.workspaceDidBecomeVisible()
+    }
+
+    func windowDidMiniaturize(_ notification: Notification) {
+        controller?.workspaceDidBecomeHidden()
+    }
+
+    func windowDidDeminiaturize(_ notification: Notification) {
+        controller?.workspaceDidBecomeVisible()
+    }
 }
 
 @MainActor
@@ -88,21 +113,23 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     init(controller: AppController, capture: CaptureCoordinator) {
         self.controller = controller
         let suggested = controller.preset.suggestedPointSize
-        let window = NSWindow(
+        let window = StageShareWindow(
             contentRect: NSRect(
                 x: 0,
                 y: 0,
                 width: suggested.width,
                 height: suggested.height
             ),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            // The Stage is the exact window users share. A titled window is
+            // still captured with a titlebar band even when its title and
+            // traffic-light controls are hidden, so keep the audience surface
+            // genuinely chrome-free. The Window menu remains the keyboard
+            // route for Close, and the background stays draggable.
+            styleMask: [.borderless, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = L10n.stageWindowTitle
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
         window.isOpaque = true
         window.alphaValue = 1
@@ -114,6 +141,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.contentViewController = NSHostingController(
             rootView: StageView(controller: controller, capture: capture)
         )
+        window.isMovableByWindowBackground = true
 
         super.init(window: window)
         window.delegate = self
@@ -149,6 +177,11 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.standardWindowButton(.miniaturizeButton)?.isEnabled = !controller.presentationLock
     }
 
+    func requestClose() {
+        guard let window, windowShouldClose(window) else { return }
+        window.close()
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard controller?.presentationLock == true else { return true }
         NSSound.beep()
@@ -161,5 +194,17 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         controller?.stageDidClose()
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        controller?.stageDidBecomeVisible()
+    }
+
+    func windowDidMiniaturize(_ notification: Notification) {
+        controller?.stageDidBecomeHidden()
+    }
+
+    func windowDidDeminiaturize(_ notification: Notification) {
+        controller?.stageDidBecomeVisible()
     }
 }

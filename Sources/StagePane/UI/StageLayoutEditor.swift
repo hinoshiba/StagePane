@@ -1,3 +1,4 @@
+import AppKit
 import StagePaneCore
 import SwiftUI
 
@@ -24,7 +25,8 @@ struct StageLayoutEditor: View {
                     switch controller.stageInteractionMode {
                     case .arrange:
                         ForEach(capture.layout.sources) { item in
-                            if let source = capture.source(for: item.id) {
+                            if let source = capture.source(for: item.id),
+                               isPresented(source) {
                                 StageSourceEditingOverlay(
                                     source: source,
                                     frame: item.frame,
@@ -36,7 +38,8 @@ struct StageLayoutEditor: View {
                         }
                     case .control:
                         ForEach(capture.layout.sources) { item in
-                            if let source = capture.source(for: item.id) {
+                            if let source = capture.source(for: item.id),
+                               isPresented(source) {
                                 StageSourceControlOverlay(
                                     source: source,
                                     frame: item.frame,
@@ -85,7 +88,8 @@ struct StageLayoutEditor: View {
 
     private var previewEntries: [StageCompositeEntry] {
         capture.layout.sources.compactMap { item in
-            guard let source = capture.source(for: item.id) else { return nil }
+            guard let source = capture.source(for: item.id),
+                  isPresented(source) else { return nil }
             return StageCompositeEntry(
                 id: item.id,
                 frame: item.frame,
@@ -94,22 +98,65 @@ struct StageLayoutEditor: View {
         }
     }
 
+    private func isPresented(_ source: CaptureSource) -> Bool {
+        !source.isOutputSuppressed && source.phase != .stopping
+    }
+
     private var idleContent: some View {
-        VStack(spacing: 9) {
-            BrandMark(size: 42)
-            Text(L10n.text("ソースを追加してください", "Add a source"))
-                .font(.subheadline.weight(.semibold))
-            Text(L10n.text(
-                "追加後、このプレビューで配置を編集できます。",
-                "After adding it, arrange it directly in this preview."
+        VStack(spacing: 15) {
+            BrandMark(size: 40)
+
+            VStack(spacing: 5) {
+                Text(L10n.text("最初のStageをつくりましょう", "Build your first Stage"))
+                    .font(.headline.weight(.bold))
+                Text(L10n.text(
+                    "選んだ内容だけを、整えて、ひとつの共有ウインドウへ。",
+                    "Choose only what you need, compose it, then share one clean window."
+                ))
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { emptyStageSteps }
+                VStack(spacing: 6) { emptyStageSteps }
+            }
+
+            Button(action: controller.chooseSource) {
+                Label(L10n.text("最初のソースを追加", "Add Your First Source"), systemImage: "plus")
+                    .frame(minWidth: 154)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(StagePanePalette.indigo)
+            .disabled(!capture.canAddSource)
+            .accessibilityHint(L10n.text(
+                "macOSの共有ピッカーを開きます。",
+                "Opens the macOS sharing picker."
             ))
-            .font(.caption2)
-            .multilineTextAlignment(.center)
-            .foregroundStyle(.secondary)
         }
-        .padding(20)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.78) : .white)
+        .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.82) : .white)
+    }
+
+    @ViewBuilder
+    private var emptyStageSteps: some View {
+        StageEmptyStep(
+            number: 1,
+            symbol: "plus.rectangle.on.rectangle",
+            title: L10n.text("ソースを追加", "Add a source")
+        )
+        StageEmptyStep(
+            number: 2,
+            symbol: "rectangle.3.group",
+            title: L10n.text("配置・手書き", "Arrange and draw")
+        )
+        StageEmptyStep(
+            number: 3,
+            symbol: "arrow.up.forward.app",
+            title: L10n.text("Stageを共有", "Share the Stage")
+        )
     }
 
     private var previewAccessibilityLabel: String {
@@ -138,6 +185,42 @@ struct StageLayoutEditor: View {
                 "Drag to draw a line on the audience Stage."
             )
         }
+    }
+}
+
+private struct StageEmptyStep: View {
+    let number: Int
+    let symbol: String
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 28, height: 28)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+
+                Text("\(number)")
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 14, height: 14)
+                    .background(StagePanePalette.indigo, in: Circle())
+                    .offset(x: 4, y: -4)
+            }
+
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 42)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 11))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(L10n.text(
+            "ステップ\(number)、\(title)",
+            "Step \(number), \(title)"
+        ))
     }
 }
 
@@ -256,60 +339,114 @@ private struct StageSourceEditingOverlay: View {
     @State private var isRemoveConfirmationPresented = false
 
     var body: some View {
+        tileContent
+            .frame(width: tileWidth, height: tileHeight)
+            .position(x: tileMidX, y: tileMidY)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(source.title)
+            .accessibilityValue(sourcePhaseText)
+            .accessibilityHint(keyboardAccessibilityHint)
+            .focusable()
+            .onMoveCommand(perform: handleKeyboardMove)
+            .onDeleteCommand {
+                guard canRequestRemoval else { return }
+                isRemoveConfirmationPresented = true
+            }
+            .contextMenu { sourceContextMenu }
+            .removeSourceConfirmation(
+                isPresented: $isRemoveConfirmationPresented,
+                source: source,
+                controller: controller,
+                capture: capture
+            )
+            .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
+                capture.bringSourceToFront(source.id)
+            }
+            .accessibilityAction(named: L10n.text("左へ移動", "Move Left")) {
+                capture.moveSource(source.id, byX: -0.02, y: 0)
+            }
+            .accessibilityAction(named: L10n.text("右へ移動", "Move Right")) {
+                capture.moveSource(source.id, byX: 0.02, y: 0)
+            }
+            .accessibilityAction(named: L10n.text("上へ移動", "Move Up")) {
+                capture.moveSource(source.id, byX: 0, y: -0.02)
+            }
+            .accessibilityAction(named: L10n.text("下へ移動", "Move Down")) {
+                capture.moveSource(source.id, byX: 0, y: 0.02)
+            }
+            .accessibilityAction(named: L10n.text("大きくする", "Make Larger")) {
+                resizeBy(0.05)
+            }
+            .accessibilityAction(named: L10n.text("小さくする", "Make Smaller")) {
+                resizeBy(-0.05)
+            }
+            .accessibilityAction(named: L10n.sourceRemovalAccessibilityLabel(source.title)) {
+                guard canRequestRemoval else { return }
+                isRemoveConfirmationPresented = true
+            }
+    }
+
+    private var tileContent: some View {
         ZStack(alignment: .topLeading) {
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .gesture(moveGesture)
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        capture.bringSourceToFront(source.id)
-                    }
-                )
+            movementSurface
 
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .stroke(StagePanePalette.aquaReadable, lineWidth: 2)
                 .allowsHitTesting(false)
 
-            HStack(spacing: 5) {
-                Image(systemName: source.kind.symbolName)
-                Text(source.title)
-                    .lineLimit(1)
-            }
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 7)
-            .frame(minHeight: 22)
-            .background(Color.black.opacity(0.68), in: Capsule())
-            .padding(6)
-            .allowsHitTesting(false)
+            sourceTitleBadge
+            resizeHandle
+        }
+    }
 
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .black))
-                        .foregroundStyle(.white)
-                        .frame(width: 25, height: 25)
-                        .background(StagePanePalette.indigo, in: Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1))
-                        .padding(5)
-                        .contentShape(Circle())
-                        .highPriorityGesture(resizeGesture)
-                        .accessibilityLabel(L10n.text(
-                            "\(source.title)の大きさを変更",
-                            "Resize \(source.title)"
-                        ))
+    private var movementSurface: some View {
+        Rectangle()
+            .fill(Color.clear)
+            .contentShape(Rectangle())
+            .gesture(moveGesture)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    capture.bringSourceToFront(source.id)
                 }
+            )
+    }
+
+    private var sourceTitleBadge: some View {
+        HStack(spacing: 5) {
+            Image(systemName: source.kind.symbolName)
+            Text(source.title)
+                .lineLimit(1)
+        }
+        .font(.system(size: 10, weight: .bold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 7)
+        .frame(minHeight: 22)
+        .background(Color.black.opacity(0.68), in: Capsule())
+        .padding(6)
+        .allowsHitTesting(false)
+    }
+
+    private var resizeHandle: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(.white)
+                    .frame(width: 25, height: 25)
+                    .background(StagePanePalette.indigo, in: Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1))
+                    .padding(5)
+                    .contentShape(Circle())
+                    .highPriorityGesture(resizeGesture)
+                    .accessibilityLabel(resizeAccessibilityLabel)
             }
         }
-        .frame(width: tileWidth, height: tileHeight)
-        .position(x: tileMidX, y: tileMidY)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(source.title)
-        .accessibilityValue(sourcePhaseText)
-        .contextMenu {
+    }
+
+    @ViewBuilder
+    private var sourceContextMenu: some View {
             Button(L10n.text("最前面へ", "Bring to Front")) {
                 capture.bringSourceToFront(source.id)
             }
@@ -330,38 +467,41 @@ private struct StageSourceEditingOverlay: View {
             .accessibilityLabel(L10n.sourceRemovalAccessibilityLabel(source.title))
             .accessibilityHint(L10n.sourceRemovalAccessibilityHint)
             .disabled(!canRequestRemoval)
-        }
-        .removeSourceConfirmation(
-            isPresented: $isRemoveConfirmationPresented,
-            source: source,
-            controller: controller,
-            capture: capture
+    }
+
+    private var keyboardAccessibilityHint: String {
+        L10n.text(
+            "矢印キーで移動、Shiftで大きく移動、Option＋矢印でサイズ変更、Deleteで解除確認を開きます。",
+            "Use arrow keys to move, Shift for a larger step, Option-arrow to resize, and Delete to review removal."
         )
-        .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
-            capture.bringSourceToFront(source.id)
+    }
+
+    private func handleKeyboardMove(_ direction: MoveCommandDirection) {
+        capture.bringSourceToFront(source.id)
+        if NSEvent.modifierFlags.contains(.option) {
+            switch direction {
+            case .left, .down: resizeBy(-0.03)
+            case .right, .up: resizeBy(0.03)
+            @unknown default: break
+            }
+            return
         }
-        .accessibilityAction(named: L10n.text("左へ移動", "Move Left")) {
-            capture.moveSource(source.id, byX: -0.02, y: 0)
+
+        let step = NSEvent.modifierFlags.contains(.shift) ? 0.05 : 0.01
+        switch direction {
+        case .left: capture.moveSource(source.id, byX: -step, y: 0)
+        case .right: capture.moveSource(source.id, byX: step, y: 0)
+        case .up: capture.moveSource(source.id, byX: 0, y: -step)
+        case .down: capture.moveSource(source.id, byX: 0, y: step)
+        @unknown default: break
         }
-        .accessibilityAction(named: L10n.text("右へ移動", "Move Right")) {
-            capture.moveSource(source.id, byX: 0.02, y: 0)
-        }
-        .accessibilityAction(named: L10n.text("上へ移動", "Move Up")) {
-            capture.moveSource(source.id, byX: 0, y: -0.02)
-        }
-        .accessibilityAction(named: L10n.text("下へ移動", "Move Down")) {
-            capture.moveSource(source.id, byX: 0, y: 0.02)
-        }
-        .accessibilityAction(named: L10n.text("大きくする", "Make Larger")) {
-            resizeBy(0.05)
-        }
-        .accessibilityAction(named: L10n.text("小さくする", "Make Smaller")) {
-            resizeBy(-0.05)
-        }
-        .accessibilityAction(named: L10n.sourceRemovalAccessibilityLabel(source.title)) {
-            guard canRequestRemoval else { return }
-            isRemoveConfirmationPresented = true
-        }
+    }
+
+    private var resizeAccessibilityLabel: String {
+        L10n.text(
+            "\(source.title)の大きさを変更",
+            "Resize \(source.title)"
+        )
     }
 
     private var moveGesture: some Gesture {
@@ -489,6 +629,8 @@ struct CaptureSourceList: View {
     @ObservedObject var capture: CaptureCoordinator
     var showsHeading = true
     var showsWorkspaceHint = true
+    var expandsSourceList = false
+    var usesSecondaryAddAction = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -524,29 +666,44 @@ struct CaptureSourceList: View {
                         }
                     }
                 }
-                .frame(maxHeight: 174)
+                .frame(maxHeight: expandsSourceList ? .infinity : 174)
             }
 
-            Button(action: controller.chooseSource) {
-                Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
-                    .frame(maxWidth: .infinity)
+            if usesSecondaryAddAction {
+                Button(action: controller.chooseSource) {
+                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(SecondaryActionButtonStyle())
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(!capture.canAddSource)
+            } else {
+                Button(action: controller.chooseSource) {
+                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(PrimaryActionButtonStyle())
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(!capture.canAddSource)
             }
-            .buttonStyle(PrimaryActionButtonStyle())
-            .keyboardShortcut("p", modifiers: [.command, .shift])
-            .disabled(!capture.canAddSource)
 
             Button(action: capture.arrangeSourcesAutomatically) {
                 Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(SecondaryActionButtonStyle())
-            .disabled(capture.sources.count < 2 || capture.isPickerPresented)
+            .disabled(capture.sources.isEmpty || capture.isPickerPresented)
 
             if showsWorkspaceHint {
-                Text(L10n.text(
-                    "配置・操作・手書きは、大きなステージワークスペースで行えます。",
-                    "Arrange, control, and draw in the large Stage Workspace."
-                ))
+                Text(AppController.supportsControlMode
+                    ? L10n.text(
+                        "配置・操作・手書きは、大きなステージワークスペースで行えます。",
+                        "Arrange, control, and draw in the large Stage Workspace."
+                    )
+                    : L10n.text(
+                        "配置・手書きは、大きなステージワークスペースで行えます。",
+                        "Arrange and draw in the large Stage Workspace."
+                    ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -568,6 +725,7 @@ private struct CaptureSourceRow: View {
                 .foregroundStyle(iconColor)
                 .frame(width: 29, height: 29)
                 .background(iconColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.title)
@@ -617,6 +775,9 @@ private struct CaptureSourceRow: View {
             capture.bringSourceToFront(source.id)
         }
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
+            capture.bringSourceToFront(source.id)
+        }
         .removeSourceConfirmation(
             isPresented: $isRemoveConfirmationPresented,
             source: source,

@@ -12,6 +12,9 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     let stage: SampleBufferRenderer
     let preview: SampleBufferRenderer
     private let renderQueue: DispatchQueue
+    /// Accessed only on renderQueue. Each generation reopens only after both
+    /// presentation surfaces report that their old displayed image is gone.
+    private var presentationFlushCounts: [UUID: Int] = [:]
 
     init(renderQueue: DispatchQueue) {
         let usesSteppedPresentation: Bool
@@ -88,9 +91,21 @@ final class CaptureSourceRenderers: @unchecked Sendable {
         }
     }
 
-    func activate(token: UUID, showsCursor: Bool) {
-        stage.activate(token: token, showsCursor: showsCursor)
-        preview.activate(token: token, showsCursor: showsCursor)
+    func activate(
+        token: UUID,
+        showsCursor: Bool,
+        presentationGeneration: UUID
+    ) {
+        stage.activate(
+            token: token,
+            showsCursor: showsCursor,
+            presentationGeneration: presentationGeneration
+        )
+        preview.activate(
+            token: token,
+            showsCursor: showsCursor,
+            presentationGeneration: presentationGeneration
+        )
     }
 
     func deactivate(token: UUID, completion: (@Sendable () -> Void)? = nil) {
@@ -134,17 +149,83 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     func enqueue(
         _ sampleBuffer: CMSampleBuffer,
         token: UUID,
-        filterGeneration: Int
+        filterGeneration: Int,
+        presentationGeneration: UUID
     ) {
         stage.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: filterGeneration
+            filterGeneration: filterGeneration,
+            presentationGeneration: presentationGeneration
         )
         preview.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: filterGeneration
+            filterGeneration: filterGeneration,
+            presentationGeneration: presentationGeneration
+        )
+    }
+
+    /// Clears both public and private surfaces at one serial-queue boundary.
+    func invalidatePresentationOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        presentationFlushCounts[presentationGeneration] = 2
+        let didFlush: @Sendable () -> Void = { [weak self] in
+            self?.completePresentationRendererFlushOnRenderQueue(
+                token: token,
+                presentationGeneration: presentationGeneration
+            )
+        }
+        stage.invalidatePresentationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration,
+            completion: didFlush
+        )
+        preview.invalidatePresentationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration,
+            completion: didFlush
+        )
+    }
+
+    private func completePresentationRendererFlushOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard let remaining = presentationFlushCounts[presentationGeneration] else { return }
+        if remaining > 1 {
+            presentationFlushCounts[presentationGeneration] = remaining - 1
+            return
+        }
+        presentationFlushCounts.removeValue(forKey: presentationGeneration)
+        stage.finishPresentationInvalidationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
+        preview.finishPresentationInvalidationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
+    }
+
+    /// Advances both renderers together while retaining the deliberate Pause
+    /// still image. Pointer and interaction proof are revoked by each renderer.
+    func advancePresentationGenerationPreservingFrameOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        stage.advancePresentationGenerationPreservingFrameOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
+        preview.advancePresentationGenerationPreservingFrameOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
         )
     }
 
@@ -183,6 +264,35 @@ final class CaptureSourceRenderers: @unchecked Sendable {
             reason: reason,
             token: token,
             filterGeneration: filterGeneration
+        )
+    }
+
+    /// A first complete frame proves both current presentation content and a
+    /// running stream. Resolve compatible lifecycle blockers with that same PTS
+    /// so a sole static frame cannot be lost between independent callbacks.
+    func resumePreviewInteractionForFreshPresentationFrameOnRenderQueue(
+        token: UUID,
+        filterGeneration: Int,
+        presentationTimeStamp: CMTime
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        preview.resumeInteractionOnRenderQueue(
+            reason: .streamInactive,
+            token: token,
+            filterGeneration: filterGeneration,
+            minimumOutputPresentationTimeStamp: presentationTimeStamp
+        )
+        preview.resumeInteractionOnRenderQueue(
+            reason: .captureLifecycle,
+            token: token,
+            filterGeneration: filterGeneration,
+            minimumOutputPresentationTimeStamp: presentationTimeStamp
+        )
+        preview.resumeInteractionOnRenderQueue(
+            reason: .presentationUnavailable,
+            token: token,
+            filterGeneration: filterGeneration,
+            minimumOutputPresentationTimeStamp: presentationTimeStamp
         )
     }
 }

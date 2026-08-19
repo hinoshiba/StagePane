@@ -225,13 +225,20 @@ struct StageDashboard: View {
                         action: controller.showStage
                     )
                     QuickAction(
-                        title: L10n.text("すべて停止", "Stop All"),
-                        detail: L10n.text("全ソースの画面取得を終了", "End capture for every source"),
-                        symbol: "stop.fill",
-                        tint: .secondary,
+                        title: capture.hasResettableFailure
+                            ? L10n.text("画面取得をリセット", "Reset Capture")
+                            : L10n.text("すべて停止", "Stop All"),
+                        detail: capture.hasResettableFailure
+                            ? L10n.text("エラー状態を消して選び直す", "Clear the error and choose again")
+                            : L10n.text("全ソースの画面取得を終了", "End capture for every source"),
+                        symbol: capture.hasResettableFailure ? "arrow.counterclockwise" : "stop.fill",
+                        tint: capture.hasResettableFailure ? .orange : .secondary,
                         action: controller.stopPreview
                     )
-                    .disabled(!capture.isCaptureActive || capture.isPickerPresented)
+                    .disabled(
+                        (!capture.isCaptureActive && !capture.hasResettableFailure) ||
+                            capture.isPickerPresented
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 13) {
@@ -320,10 +327,15 @@ private struct StageWorkspaceLaunchCard: View {
             workspaceIllustration
 
             VStack(alignment: .leading, spacing: 7) {
-                Text(L10n.text(
-                    "配置・操作・手書きは、大きな専用画面で。",
-                    "Arrange, control, and draw on a dedicated big canvas."
-                ))
+                Text(AppController.supportsControlMode
+                    ? L10n.text(
+                        "配置・操作・手書きは、大きな専用画面で。",
+                        "Arrange, control, and draw on a dedicated big canvas."
+                    )
+                    : L10n.text(
+                        "配置・手書きは、大きな専用画面で。",
+                        "Arrange and draw on a dedicated big canvas."
+                    ))
                 .font(.title3.weight(.bold))
 
                 Text(L10n.text(
@@ -364,7 +376,9 @@ private struct StageWorkspaceLaunchCard: View {
             VStack {
                 HStack(spacing: 7) {
                     workspaceChip("配置", "Arrange", symbol: "rectangle.3.group")
-                    workspaceChip("操作", "Control", symbol: "hand.tap")
+                    if AppController.supportsControlMode {
+                        workspaceChip("操作", "Control", symbol: "hand.tap")
+                    }
                     workspaceChip("手書き", "Draw", symbol: "pencil.tip")
                 }
                 Spacer()
@@ -396,7 +410,11 @@ private struct StageWorkspaceLaunchCard: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 9)
             .frame(minHeight: 28)
-            .background(.ultraThinMaterial, in: Capsule())
+            .background(Color.black.opacity(0.54), in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+            }
     }
 }
 
@@ -517,173 +535,6 @@ private struct StatusCapsule: View {
         .background(color.opacity(0.10), in: Capsule())
         .overlay(Capsule().stroke(color.opacity(0.24), lineWidth: 1))
         .accessibilityHidden(true)
-    }
-}
-
-private struct StagePreviewSummary: View {
-    @ObservedObject var controller: AppController
-    @ObservedObject var capture: CaptureCoordinator
-    @State private var isClearInkConfirmationPresented = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label(
-                    L10n.text("配置プレビュー / 手元だけ", "LAYOUT PREVIEW / PRIVATE"),
-                    systemImage: "rectangle.3.group"
-                )
-                    .font(.caption2.weight(.bold))
-                    .tracking(0.8)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(L10n.presetName(controller.preset))
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-
-            if !capture.sources.isEmpty {
-                HStack(spacing: 10) {
-                    Picker(
-                        L10n.text("プレビューのモード", "Preview mode"),
-                        selection: interactionModeBinding
-                    ) {
-                        ForEach(controller.availableStageInteractionModes, id: \.rawValue) { mode in
-                            Text(L10n.stageInteractionModeName(mode))
-                                .tag(mode)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 330)
-                    .accessibilityLabel(L10n.text("プレビューのモード", "Preview mode"))
-                    .accessibilityValue(L10n.stageInteractionModeName(
-                        controller.stageInteractionMode
-                    ))
-                    .accessibilityHint(L10n.stageInteractionModeDetail(
-                        controller.stageInteractionMode
-                    ))
-
-                    Spacer(minLength: 6)
-
-                    switch controller.stageInteractionMode {
-                    case .arrange:
-                        EmptyView()
-                    case .control:
-                        if controller.previewInputAccessGranted {
-                            Label(
-                                L10n.text("操作許可済み", "Control allowed"),
-                                systemImage: "checkmark.shield.fill"
-                            )
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(StagePanePalette.mintReadable)
-                        } else {
-                            Button {
-                                controller.presentPermissionCheck(focus: .accessibility)
-                            } label: {
-                                Label(
-                                    L10n.text("アクセス権限を確認", "Review Permissions"),
-                                    systemImage: "hand.tap.fill"
-                                )
-                            }
-                            .buttonStyle(.borderless)
-                            .controlSize(.small)
-                        }
-                    case .annotate:
-                        Button {
-                            controller.annotations.undo()
-                        } label: {
-                            Label(L10n.text("取り消す", "Undo"), systemImage: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .disabled(!controller.hasAnnotations)
-
-                        Button(role: .destructive) {
-                            isClearInkConfirmationPresented = true
-                        } label: {
-                            Label(L10n.text("すべて消す", "Clear"), systemImage: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .disabled(!controller.hasAnnotations)
-                    }
-                }
-                .confirmationDialog(
-                    L10n.text("手書きをすべて消しますか？", "Clear all drawings?"),
-                    isPresented: $isClearInkConfirmationPresented,
-                    titleVisibility: .visible
-                ) {
-                    Button(L10n.text("すべて消す", "Clear All"), role: .destructive) {
-                        controller.annotations.removeAll()
-                    }
-                    Button(L10n.text("キャンセル", "Cancel"), role: .cancel) {}
-                } message: {
-                    Text(L10n.text(
-                        "共有Stageと手元のプレビューから、すべての線を削除します。",
-                        "Remove every line from the shared Stage and private preview."
-                    ))
-                }
-            }
-
-            StageLayoutEditor(controller: controller, capture: capture)
-            .aspectRatio(controller.preset.aspectRatio, contentMode: .fit)
-            .frame(maxWidth: .infinity, maxHeight: 300)
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(Color.white.opacity(0.13), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 16, y: 8)
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(L10n.text("手元だけの配置プレビュー", "Private layout preview"))
-            .accessibilityValue(previewAccessibilityValue)
-
-            if !capture.statusDetail.isEmpty {
-                Text(capture.statusDetail)
-                    .font(.caption)
-                    .foregroundStyle(capture.isCaptureActive ? Color.secondary : Color.orange)
-                    .lineLimit(2)
-            }
-        }
-        .cardSurface()
-    }
-
-    private var previewAccessibilityValue: String {
-        let state: String
-        if controller.privacyCurtain {
-            state = capture.isCaptureActive
-                ? L10n.text(
-                    "観客側のステージはカーテン中。手元の配置プレビューには\(capture.sources.count)件を表示中です",
-                    "Audience Stage curtain on; the private layout preview shows \(capture.sources.count) source\(capture.sources.count == 1 ? "" : "s")"
-                )
-                : L10n.text("カーテン中。共有内容は隠れています", "Curtain on; stage content is hidden")
-        } else if allSourcesPaused {
-            state = L10n.text(
-                "すべてのソースを一時停止中",
-                "All sources paused"
-            )
-        } else if capture.isCaptureActive {
-            state = L10n.text("画面取得中", "Capture active")
-        } else if case .failed = capture.phase {
-            state = L10n.text("プレビューの確認が必要", "Preview needs attention")
-        } else {
-            state = L10n.text("画面取得なし", "No capture")
-        }
-        return L10n.text(
-            "\(state)。\(controller.preset.pixelWidth)×\(controller.preset.pixelHeight)",
-            "\(state). \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight)"
-        )
-    }
-
-    private var interactionModeBinding: Binding<StageInteractionMode> {
-        Binding(
-            get: { controller.stageInteractionMode },
-            set: { controller.setStageInteractionMode($0) }
-        )
-    }
-
-    private var allSourcesPaused: Bool {
-        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
     }
 }
 

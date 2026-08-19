@@ -1,17 +1,13 @@
-# StagePane Privacy Policy — pre-release draft
+# StagePane Privacy Policy
 
-Effective date: 2026-08-15<br>
+Effective date: 2026-08-20<br>
 Product: StagePane for macOS
-
-> **Pre-release draft:** Jurisdiction-appropriate review remains required before
-> publishing or selling the app. Project and privacy questions use the contact
-> address listed below.
 
 ## Summary
 
 StagePane does not collect personal data, create accounts, show advertising,
-run analytics, or send telemetry. It has no network client entitlement and no
-third-party SDKs.
+run analytics, send telemetry, or make network requests. It has no third-party
+SDKs. The sandboxed Mac App Store build has no network client entitlement.
 
 StagePane can create one clean Audience Stage PNG only when the user explicitly
 chooses Copy Audience Image or Save Audience Image. This local export is not
@@ -119,19 +115,18 @@ screenshot history or screenshot file of its own.
 ## Settings stored on the device
 
 StagePane stores interface preferences such as aspect preset, theme, pointer
-style and appearance, watermark/safe-area visibility, curtain message, and
-window behavior in the app's sandboxed `UserDefaults`. It does not persist the
+style and appearance, drawing tool/color/width, watermark/safe-area visibility,
+curtain message, and window behavior in local `UserDefaults`. It does not persist the
 chosen source, window title, application name, screenshot history, chosen
 screenshot file path, or meeting information. The standard window-frame
-preferences can include the private Workspace position and size, but not its
-pixels. A PNG saved through the explicit screenshot action is the user's chosen
+preferences can include the positions and sizes of Stage, Workspace, and
+Control Room windows, but not their pixels. A PNG saved through the explicit screenshot action is the user's chosen
 local file, not an app preference or hidden retained copy.
 Source titles may be displayed transiently in the in-memory source list while
 capture is active. Dragged positions and sizes are session-only in this version.
 
-Users can remove settings by deleting the app's container or using macOS app
-data controls. A future reset control must be added before claiming in-app data
-deletion support.
+Users can remove settings by deleting the app's local container or using
+available macOS app-data controls.
 
 ## Permissions
 
@@ -170,18 +165,15 @@ only in the local pasteboard or chosen file location and is not retained by the
 publisher. `NSPrivacyTracking` is declared false and collected data types are
 empty in the privacy manifest.
 
-## Children and international use
+## Children
 
 StagePane is a general productivity utility and is not directed to children.
-The publisher must assess age-rating, consumer, and privacy obligations in each
-market before distribution.
 
 ## Changes
 
-Any future network service, crash reporting, analytics, recording, account,
-payment, cloud sync, or support-upload feature requires an updated data-flow
-audit, privacy manifest, App Store disclosure, policy, consent design, and
-release notes before code ships.
+This policy may be updated if StagePane's features or data practices change.
+The updated policy will be published with a revised effective date. Material
+changes will be communicated through an appropriate product or project channel.
 
 ## Contact
 

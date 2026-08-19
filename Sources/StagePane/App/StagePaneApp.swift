@@ -2,12 +2,13 @@ import AppKit
 import SwiftUI
 
 @main
-struct StagePaneApplication: App {
-    @NSApplicationDelegateAdaptor(StagePaneAppDelegate.self) private var appDelegate
-
-    var body: some Scene {
-        Settings {
-            EmptyView()
+enum StagePaneApplication {
+    static func main() {
+        let application = NSApplication.shared
+        let delegate = StagePaneAppDelegate()
+        application.delegate = delegate
+        withExtendedLifetime(delegate) {
+            application.run()
         }
     }
 }
@@ -15,6 +16,7 @@ struct StagePaneApplication: App {
 @MainActor
 final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
     private var controller: AppController?
+    private var configuredMainMenu: NSMenu?
     private var terminationReplyPending = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -22,7 +24,15 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
 
         let controller = AppController()
         self.controller = controller
-        NSApp.mainMenu = makeMainMenu(controller: controller)
+        let menu = makeMainMenu(controller: controller)
+        configuredMainMenu = menu
+        NSApp.mainMenu = menu
+        // SwiftUI installs its default menu after the delegate callback on
+        // some macOS releases. Re-apply the product menu on the next run-loop
+        // turn so Stage commands and their shortcuts remain available.
+        DispatchQueue.main.async { [weak self] in
+            self?.installConfiguredMainMenu()
+        }
 
         if let snapshotDirectory = snapshotDirectoryArgument() {
             controller.start(showWindows: false)
@@ -45,11 +55,18 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        installConfiguredMainMenu()
+    }
+
     func applicationShouldHandleReopen(
         _ sender: NSApplication,
         hasVisibleWindows flag: Bool
     ) -> Bool {
-        if !flag { controller?.showControlRoom() }
+        // The audience Stage can remain visible after the user closes the
+        // private editor. A Dock-icon click should always restore the primary
+        // Workspace, regardless of whether the share-output window is visible.
+        controller?.showStageWorkspace()
         return true
     }
 
@@ -91,7 +108,7 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         )
         appMenu.addItem(.separator())
         appMenu.addItem(menuItem(
-            L10n.text("設定…", "Settings…"),
+            L10n.text("コントロールルーム…", "Control Room…"),
             action: #selector(AppController.showControlRoom),
             key: ",",
             modifiers: [.command],
@@ -226,6 +243,13 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: L10n.text("ウインドウ", "Window"))
         windowMenu.addItem(menuItem(
+            L10n.text("ウインドウを閉じる", "Close Window"),
+            action: #selector(AppController.closeFrontWindow),
+            key: "w",
+            modifiers: [.command],
+            target: controller
+        ))
+        windowMenu.addItem(menuItem(
             L10n.text("しまう", "Minimize"),
             action: #selector(NSWindow.performMiniaturize(_:)),
             key: "m",
@@ -268,7 +292,6 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ))
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
-        NSApp.windowsMenu = windowMenu
 
         let helpItem = NSMenuItem()
         let helpMenu = NSMenu(title: L10n.text("ヘルプ", "Help"))
@@ -279,11 +302,31 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: [.command],
             target: controller
         ))
+        helpMenu.addItem(.separator())
+        helpMenu.addItem(menuItem(
+            L10n.text("プライバシーポリシー", "Privacy Policy"),
+            action: #selector(AppController.openPrivacyPolicy),
+            key: "",
+            modifiers: [],
+            target: controller
+        ))
+        helpMenu.addItem(menuItem(
+            L10n.text("サポート", "Support"),
+            action: #selector(AppController.openSupport),
+            key: "",
+            modifiers: [],
+            target: controller
+        ))
         helpItem.submenu = helpMenu
         main.addItem(helpItem)
         NSApp.helpMenu = helpMenu
 
         return main
+    }
+
+    private func installConfiguredMainMenu() {
+        guard let configuredMainMenu else { return }
+        NSApp.mainMenu = configuredMainMenu
     }
 
     private func snapshotDirectoryArgument() -> URL? {

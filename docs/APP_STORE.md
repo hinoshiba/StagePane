@@ -9,6 +9,10 @@
 - **Secondary category:** Utilities
 - **Tagline (EN):** A clean stage for everything you share.
 - **Tagline (JA):** 見せたいものだけ、ひとつのステージへ。
+- **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
+- **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
+- **Support URL (JA):** https://stagepane.hinoshiba.com/#support
+- **Support URL (EN):** https://stagepane.hinoshiba.com/en/#support
 
 Suggested English keyword concepts: screen sharing, presentation, meeting,
 workspace, privacy, 1080p, demo, presenter, window. Suggested Japanese concepts:
@@ -24,7 +28,8 @@ creates a normal shareable window, not an `NSScreen`.
 Push a reviewed `v<major>.<minor>.<patch>` tag and let the `App Store Release`
 Xcode Cloud workflow archive the checked-in `StagePane.xcodeproj` with the
 shared `StagePane-AppStore` scheme. The target is sandboxed, has no network
-entitlement, and bundles the privacy manifest, English/Japanese usage strings,
+entitlement, grants read/write access only to locations the user explicitly
+selects for Audience PNG export, and bundles the privacy manifest, English/Japanese usage strings,
 `AppIcon.icns`, help, privacy policy, license, notices, trademark policy, and
 brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
 and the canonical `com.hinoshiba.stagepane` bundle identifier. See
@@ -38,46 +43,56 @@ direct-distribution build currently ships.
 
 ## Screenshot story
 
-1. **見せたいものだけ、このステージへ。** — Stage and Control Room side by side.
-2. **最大4つを、追加・一時停止・確認して解除。** — source list and removal caution.
-3. **配置と手書きを、明確に切り替え。** — the Mac App Store build's Arrange
-   and Draw modes, including bounded in-memory ink and its clear controls.
+1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
+   private Stage Workspace, making the share/private boundary unmistakable.
+2. **最大4つを、追加・一時停止・確認して解除。** — the separate Control Room's
+   source list and removal caution.
+3. **配置・手書き・撮影を、大きな画面で。** — the private Workspace with the
+   Mac App Store build's Arrange and Draw modes, bounded in-memory ink, and
+   explicit Copy/Save Audience Image actions.
 4. **レーザーとロゴを、発表に合わせる。** — laser color/size/glow and the
    default-on StagePane mark.
 5. **ひと押しで隠し、終わったら完全停止。** — Curtain with the mark and Stop All.
 
 Use real shipping UI, no unsupported claims, no meeting-service logos suggesting
-partnership, and no “#1” or ranking guarantee. Localize screenshots and alt text
-for Japanese and English.
+partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 images
+from the exact Store candidate, and localize screenshots and alt text for
+Japanese and English.
 
 ## Review notes draft
 
-> StagePane is a focused screen-sharing utility. It provides a normal macOS
-> window named “StagePane Stage” and a separate Control Room. It does not add a
-> display, replace or imitate the macOS desktop, provide an app launcher, modify
-> Finder or the Dock, install a driver, use private APIs, or continue running
-> after the user quits.
+> StagePane is a focused screen-sharing utility with three normal macOS windows:
+> “StagePane Stage” is the clean window to share, “Stage Workspace” is the
+> private live canvas for arranging, drawing, and taking an Audience Stage PNG,
+> and “Control Room” is the private source-management and settings window. It
+> does not add a display, replace or imitate the macOS desktop, provide an app
+> launcher, modify Finder or the Dock, install a driver, use private APIs, or
+> continue running after the user quits.
 >
 > The app can be tested without permission by sharing its neutral Stage window.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
-> repeat for up to four sources. Each source appears in Control Room's list,
+> repeat for up to four sources. Each source appears in the private source list,
 > where “Pause” stops only that stream while its last frame stays visible,
 > “Resume” starts it again, “Replace” reopens the picker for only that item, and
 > “Remove” asks for confirmation, ends only its stream, and discards its frame.
-> Drag or resize tiles in Arrange mode, or use “Auto Arrange.” These gestures
-> change only StagePane's composition. The Mac App Store build provides Arrange
-> and Draw modes only. It does not include Control mode, perform actions in
-> another application, or request macOS Accessibility or Input Monitoring
-> permission. Draw mode adds bounded in-memory
-> vector ink to both the private preview and public Stage; the Curtain hides it
-> and Stop All/final-source removal clears it. The
-> StagePane process does not record, encode, write, or transmit frames. Audio
-> and microphone capture are disabled. “Stop All” ends every source and flushes
-> the final frames from both local display surfaces. “Curtain” hides only the
-> public Stage and does not bring its window to the front. It does not pause any
-> source; unpaused streams continue and the live Control Room preview remains
-> visible. Control Room must remain private.
+> In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
+> Arrange.” These gestures change only StagePane's composition. The Mac App
+> Store build provides Arrange and Draw modes only. It does not include Control
+> mode, perform actions in another application, or request macOS Accessibility
+> or Input Monitoring permission. Draw mode adds bounded in-memory vector ink to
+> both the private Workspace and public Stage; the Curtain hides it and Stop
+> All/final-source removal clears it. The StagePane process does not record,
+> encode, automatically save, or transmit frames. Only an explicit “Copy
+> Audience Image” or “Save Audience Image…” action creates one local PNG of the
+> clean Stage; Copy uses the pasteboard, and Save writes only to the location the
+> user chooses in the macOS save panel. Audio and microphone capture are
+> disabled. “Stop All” ends every source and flushes the final frames from both
+> local display surfaces. “Curtain” hides only the public Stage and does not
+> bring its window to the front. It does not pause any source; unpaused streams
+> continue and the private Stage Workspace remains available for preparation.
+> Control Room contains source management and settings, not a live preview.
+> Stage Workspace and Control Room must remain private.
 >
 > Under “Appearance,” the pointer can remain standard, appear as a local red
 > laser dot in the Stage, or be hidden. Its color, size, and glow are adjustable,
@@ -86,20 +101,21 @@ for Japanese and English.
 > behind it. Laser pointer mode does not request an additional permission and
 > does not retain pointer coordinates. A translucent
 > StagePane mark is enabled by default at the lower-right of the holding screen,
-> shared content, and Curtain, and is mirrored in the private preview.
+> shared content, and Curtain, and is mirrored in the private Workspace.
 >
 > StagePane uses SwiftUI, AppKit, AVFoundation display layers, and
 > ScreenCaptureKit public APIs. It is sandboxed and has no network entitlement,
 > analytics, ads, account, external updater, license-key mechanism,
 > cross-application control feature, or Accessibility permission request.
 
-Attach a short reviewer video showing both window titles, adding two sources,
-per-source pause/resume, replace, removal confirmation, drag, resize, Auto
-Arrange, the Arrange/Draw switch, unchanged physical pointer, Draw/Clear/Curtain
-behavior, the watermark, and Stop All. The video must use the exact Mac App Store
-candidate and must not show Control mode or an Accessibility permission prompt.
-Provide current Zoom, Teams, and Meet test results only as compatibility
-evidence, not as affiliations.
+Attach a short reviewer video showing all three window titles and roles, adding
+two sources, per-source pause/resume, replace, removal confirmation, drag,
+resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
+Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
+watermark, and Stop All. The video must use the exact Mac App Store candidate
+and must not show Control mode or an Accessibility permission prompt. Provide
+current Zoom, Teams, and Meet test results only as compatibility evidence, not
+as affiliations.
 
 ## Review-risk checklist
 
@@ -124,8 +140,9 @@ is a dated engineering interpretation, not approval or legal advice.
 Only claim an App Store Accessibility Nutrition Label feature after all common
 tasks pass with it. The release gate covers VoiceOver, Voice Control,
 keyboard-only control, sufficient contrast, non-color state cues, Reduce Motion,
-Increase Contrast, and text scaling. The live layout preview must expose stable
-editor/source-tile controls and must not announce individual video frames.
+Increase Contrast, and text scaling. The Stage Workspace canvas must expose
+stable editor/source-tile controls and must not announce individual video
+frames.
 
 ## Ratings and ranking ethics
 

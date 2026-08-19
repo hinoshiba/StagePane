@@ -73,7 +73,11 @@ Update and review these values in one pull request:
   Mac App Store UI whenever an audience-visible default, Workspace, or Control
   Room layout changes; Store screenshots must show Arrange and Draw only, never
   Control or an Accessibility permission prompt, and any Permissions screenshot
-  must hide the Accessibility card
+  must hide the Accessibility card. Run the candidate executable with
+  `STAGEPANE_LANGUAGE=ja` and `STAGEPANE_LANGUAGE=en` plus `--snapshot <dir>`;
+  `workspace.png`, `control-room.png`, `privacy.png`, and `appearance.png` must
+  be opaque 2880×1800 images. The 1920×1080 Stage-only snapshots are website and
+  QA assets, not valid Mac App Store upload dimensions
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
   version changes
 
@@ -104,9 +108,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   renderers, then restart it), replace (with cancel preserving the old item),
   per-source removal while other streams remain live, and Stop All draining
   both renderers for every running or paused source;
-- initial picture-in-picture placement, Auto Arrange, boundary-clamped drag,
+- initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   free resize/minimum tile size, front ordering, matching Workspace/Stage
-  layouts, the Workspace's 1040×680-point minimum content size, and Control
+  layouts, the Workspace's 900×620-point minimum content size, and Control
   Room's 820×580-point minimum content size;
 - strict window separation: the large private Workspace is the only live editor
   and hosts Arrange, Draw, and Control only in eligible non-Store builds; Control

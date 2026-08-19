@@ -106,8 +106,8 @@ jobs:
           cmp -s THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
           cmp -s TRADEMARKS.md "$APP/Contents/Resources/TRADEMARKS.md"
           cmp -s Assets/LICENSE.md "$APP/Contents/Resources/BRAND_ASSET_LICENSE.md"
-          cmp -s docs/PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
-          cmp -s docs/HELP.md "$APP/Contents/Resources/HELP.md"
+          cmp -s docs/APP_STORE_PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
+          cmp -s docs/APP_STORE_HELP.md "$APP/Contents/Resources/HELP.md"
           if nm -u "$BINARY" | grep -E '_(AXIsProcessTrusted|AXUIElement)'; then
             echo "Mac App Store binary unexpectedly references cross-application Accessibility APIs" >&2
             exit 1
@@ -127,4 +127,5 @@ jobs:
           codesign --verify --strict --verbose=2 "$APP"
           codesign -d --entitlements :- "$APP" > "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/mas-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.files.user-selected.read-write' "$RUNNER_TEMP/mas-entitlements.plist")" = true
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null || true)" != true

@@ -12,6 +12,8 @@
    or draw. Drag and resize sources there. Use **Pause / 一時停止**, **Resume /
    再開**, **Replace / 選び直す**, or **Remove / 解除** in Control Room's
    source list for one item, or **Auto Arrange / 自動配置** for an even grid.
+   In Arrange mode, **Quick Layout / クイック配置** also offers Side by
+   Side, Stacked, and Picture in Picture without changing source order.
 4. In your meeting app, share **StagePane Stage — Share This Window / このウインドウを共有**.
 5. Confirm the correct share target, then choose **Reveal Stage / カーテンを開く**.
 

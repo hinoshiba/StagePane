@@ -146,6 +146,112 @@ public struct StageInkStyle: Codable, Equatable, Sendable {
     }
 }
 
+/// The mark-making behavior selected in the private Stage Workspace.
+public enum StageInkTool: String, CaseIterable, Codable, Hashable, Sendable {
+    case pen
+    case highlighter
+
+    public static let defaultTool = StageInkTool.pen
+
+    /// Highlighter strokes remain translucent when copied or saved as an
+    /// audience image; pen strokes are fully opaque.
+    public var opacity: Double {
+        switch self {
+        case .pen: 1
+        case .highlighter: 0.36
+        }
+    }
+}
+
+/// A small, presentation-oriented palette that remains legible over video,
+/// slides, and both light and dark application content.
+public enum StageInkColorPreset: String, CaseIterable, Codable, Hashable, Sendable {
+    case red
+    case yellow
+    case green
+    case blue
+    case white
+
+    public static let defaultPreset = StageInkColorPreset.red
+
+    public var color: StageInkColor {
+        switch self {
+        case .red:
+            .red
+        case .yellow:
+            StageInkColor(red: 1, green: 0.78, blue: 0.05)
+        case .green:
+            StageInkColor(red: 0.22, green: 0.88, blue: 0.46)
+        case .blue:
+            StageInkColor(red: 0.17, green: 0.72, blue: 1)
+        case .white:
+            StageInkColor(red: 1, green: 1, blue: 1)
+        }
+    }
+}
+
+/// The locally remembered drawing-tool selection. Annotation strokes are not
+/// part of this value and remain memory-only for the current app session.
+public struct StageInkPreferences: Codable, Equatable, Sendable {
+    public static let minimumNormalizedWidth = 0.002
+    public static let maximumNormalizedWidth = 0.03
+    public static let defaultPreferences = StageInkPreferences(
+        tool: .defaultTool,
+        colorPreset: .defaultPreset,
+        normalizedWidth: StageInkStyle.defaultStyle.normalizedWidth
+    )
+
+    public let tool: StageInkTool
+    public let colorPreset: StageInkColorPreset
+    /// A fraction of the shorter Stage canvas dimension.
+    public let normalizedWidth: Double
+
+    public init(
+        tool: StageInkTool,
+        colorPreset: StageInkColorPreset,
+        normalizedWidth: Double
+    ) {
+        self.tool = tool
+        self.colorPreset = colorPreset
+        guard normalizedWidth.isFinite else {
+            self.normalizedWidth = StageInkStyle.defaultStyle.normalizedWidth
+            return
+        }
+        self.normalizedWidth = min(
+            max(normalizedWidth, Self.minimumNormalizedWidth),
+            Self.maximumNormalizedWidth
+        )
+    }
+
+    public var style: StageInkStyle {
+        let baseColor = colorPreset.color
+        return StageInkStyle(
+            color: StageInkColor(
+                red: baseColor.red,
+                green: baseColor.green,
+                blue: baseColor.blue,
+                alpha: tool.opacity
+            ),
+            normalizedWidth: normalizedWidth
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case tool
+        case colorPreset
+        case normalizedWidth
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            tool: try container.decode(StageInkTool.self, forKey: .tool),
+            colorPreset: try container.decode(StageInkColorPreset.self, forKey: .colorPreset),
+            normalizedWidth: try container.decode(Double.self, forKey: .normalizedWidth)
+        )
+    }
+}
+
 public struct StageAnnotationStroke: Identifiable, Codable, Equatable, Sendable {
     public let id: UUID
     public let style: StageInkStyle

@@ -340,8 +340,8 @@
 				"$(SRCROOT)/THIRD_PARTY_NOTICES.md",
 				"$(SRCROOT)/TRADEMARKS.md",
 				"$(SRCROOT)/Assets/LICENSE.md",
-				"$(SRCROOT)/docs/PRIVACY.md",
-				"$(SRCROOT)/docs/HELP.md",
+				"$(SRCROOT)/docs/APP_STORE_PRIVACY.md",
+				"$(SRCROOT)/docs/APP_STORE_HELP.md",
 			);
 			name = "Install legal and privacy resources";
 			outputFileListPaths = (
@@ -357,7 +357,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nRESOURCE_DIR=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nmkdir -p \"$RESOURCE_DIR\"\ninstall -m 0644 \"$SRCROOT/LICENSE\" \"$RESOURCE_DIR/LICENSE.txt\"\ninstall -m 0644 \"$SRCROOT/NOTICE\" \"$RESOURCE_DIR/NOTICE.txt\"\ninstall -m 0644 \"$SRCROOT/THIRD_PARTY_NOTICES.md\" \"$RESOURCE_DIR/THIRD_PARTY_NOTICES.md\"\ninstall -m 0644 \"$SRCROOT/TRADEMARKS.md\" \"$RESOURCE_DIR/TRADEMARKS.md\"\ninstall -m 0644 \"$SRCROOT/Assets/LICENSE.md\" \"$RESOURCE_DIR/BRAND_ASSET_LICENSE.md\"\ninstall -m 0644 \"$SRCROOT/docs/PRIVACY.md\" \"$RESOURCE_DIR/PRIVACY.md\"\ninstall -m 0644 \"$SRCROOT/docs/HELP.md\" \"$RESOURCE_DIR/HELP.md\"\n";
+			shellScript = "set -euo pipefail\nRESOURCE_DIR=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nmkdir -p \"$RESOURCE_DIR\"\ninstall -m 0644 \"$SRCROOT/LICENSE\" \"$RESOURCE_DIR/LICENSE.txt\"\ninstall -m 0644 \"$SRCROOT/NOTICE\" \"$RESOURCE_DIR/NOTICE.txt\"\ninstall -m 0644 \"$SRCROOT/THIRD_PARTY_NOTICES.md\" \"$RESOURCE_DIR/THIRD_PARTY_NOTICES.md\"\ninstall -m 0644 \"$SRCROOT/TRADEMARKS.md\" \"$RESOURCE_DIR/TRADEMARKS.md\"\ninstall -m 0644 \"$SRCROOT/Assets/LICENSE.md\" \"$RESOURCE_DIR/BRAND_ASSET_LICENSE.md\"\ninstall -m 0644 \"$SRCROOT/docs/APP_STORE_PRIVACY.md\" \"$RESOURCE_DIR/PRIVACY.md\"\ninstall -m 0644 \"$SRCROOT/docs/APP_STORE_HELP.md\" \"$RESOURCE_DIR/HELP.md\"\n";
 		};
 		69EBBC5E0A2B8A73970427B4 /* Generate AppIcon.icns */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -34,7 +34,8 @@ four sources one at a time, then arrange them in the Stage.
   separate Accessibility status; the Mac App Store build hides that card.
 - **A source list and free layout** — add, pause or resume, replace, or remove
   each source independently in Control Room; drag and resize tiles on the large
-  private Stage Workspace or return them to an automatic grid.
+  private Stage Workspace or choose Grid, Side by Side, Stacked, or Picture in
+  Picture from Quick Layout.
 - **Private Workspace modes matched to the build** — the Mac App Store build
   includes Arrange and Draw. It omits Control and never requests Accessibility
   permission. The unsandboxed local development build can additionally expose
@@ -104,8 +105,8 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
    session; repeat to add up to four independent sources.
 3. Open the large **Stage Workspace**, drag a tile to move it, and drag its
    lower-right handle to resize it. Use the Control Room source list to pause or
-   resume, replace, or remove one item, or choose **Auto Arrange** for an even
-   grid.
+   resume, replace, or remove one item. Use **Quick Layout** for Grid, Side by
+   Side, Stacked, or Picture in Picture.
 4. Switch the Workspace between **Arrange** and **Draw**. Arrange edits only the
    Stage composition; Draw places session-only ink over the Stage. The
    unsandboxed local development build also shows **Control** on macOS 15.2 or

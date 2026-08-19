@@ -578,47 +578,170 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         if showWindows {
             showStage()
-            showControlRoom()
+            showStageWorkspace()
         }
     }
 
     @MainActor
     func writeSnapshots(to directory: URL) throws {
+        let originalPreset = preset
+        let originalTheme = theme
+        let originalAlwaysOnTop = isAlwaysOnTop
+        let originalFollowsAllSpaces = followsAllSpaces
+        let originalPresentationLock = presentationLock
+        let originalPointerStyle = pointerStyle
+        let originalPointerAppearance = pointerAppearance
+        let originalShowsSafeArea = showsSafeArea
+        let originalShowsWatermark = showsWatermark
+        let originalPrivacyMessage = privacyMessage
+        let originalCurtain = privacyCurtain
+        defer {
+            preset = originalPreset
+            theme = originalTheme
+            isAlwaysOnTop = originalAlwaysOnTop
+            followsAllSpaces = originalFollowsAllSpaces
+            presentationLock = originalPresentationLock
+            pointerStyle = originalPointerStyle
+            pointerAppearance = originalPointerAppearance
+            showsSafeArea = originalShowsSafeArea
+            showsWatermark = originalShowsWatermark
+            privacyMessage = originalPrivacyMessage
+            privacyCurtain = originalCurtain
+        }
+
+        // Public assets must never depend on the developer's local defaults.
+        // Pin every visible preference to the shipping presentation fixture.
+        preset = .widescreen
+        theme = .aurora
+        isAlwaysOnTop = false
+        followsAllSpaces = false
+        presentationLock = false
+        pointerStyle = .system
+        pointerAppearance = .presentationDefault
+        showsSafeArea = false
+        showsWatermark = true
+        privacyMessage = L10n.text("少々お待ちください", "Back in a moment")
+        privacyCurtain = true
+
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try writePNG(
-            of: StageDashboard(controller: self, capture: capture)
-                .dashboardContent
-                .frame(width: 755, alignment: .top)
-                .fixedSize(horizontal: false, vertical: true)
-                .background(StagePanePalette.cloud),
+            of: ControlRoomView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("control-room.png")
         )
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("workspace.png")
+        )
+        try writePNG(
+            of: PrivacyPanel(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900)
+                .background(StagePanePalette.cloud),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("privacy.png")
+        )
+        pointerStyle = .redDot
+        pointerAppearance = .presentationDefault
+        try writePNG(
+            of: AppearancePanel(
+                controller: self,
+                focusesAudienceForSnapshot: true
+            )
+                .frame(width: 1_440, height: 900)
+                .background(StagePanePalette.cloud),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("appearance.png")
+        )
 
-        let originalCurtain = privacyCurtain
-        defer { privacyCurtain = originalCurtain }
         privacyCurtain = true
         try writePNG(
             of: StageView(controller: self, capture: capture)
                 .frame(width: 960, height: 540),
+            pointSize: CGSize(width: 960, height: 540),
             to: directory.appendingPathComponent("privacy-curtain.png")
         )
         privacyCurtain = false
         try writePNG(
             of: StageView(controller: self, capture: capture)
                 .frame(width: 960, height: 540),
+            pointSize: CGSize(width: 960, height: 540),
             to: directory.appendingPathComponent("stage-ready.png")
         )
     }
 
     @MainActor
-    private func writePNG<Content: View>(of content: Content, to url: URL) throws {
-        let renderer = ImageRenderer(content: content)
-        renderer.scale = 2
-        guard let image = renderer.cgImage else {
+    private func writePNG<Content: View>(
+        of content: Content,
+        pointSize: CGSize,
+        to url: URL
+    ) throws {
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.frame = CGRect(origin: .zero, size: pointSize)
+
+        // Render through a real AppKit window so platform-backed SwiftUI
+        // controls such as NavigationSplitView, Picker, and Menu appear exactly
+        // as they do in the shipping application. ImageRenderer substitutes
+        // placeholders for some of those controls on macOS.
+        let window = NSWindow(
+            contentRect: CGRect(origin: .zero, size: pointSize),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.ignoresMouseEvents = true
+        window.contentView = hostingView
+        window.setFrameOrigin(NSPoint(x: -20_000, y: -20_000))
+        window.orderFront(nil)
+        defer {
+            window.orderOut(nil)
+            window.contentView = nil
+        }
+
+        hostingView.layoutSubtreeIfNeeded()
+        hostingView.displayIfNeeded()
+
+        let pixelWidth = Int((pointSize.width * 2).rounded())
+        let pixelHeight = Int((pointSize.height * 2).rounded())
+        guard let representation = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixelWidth,
+            pixelsHigh: pixelHeight,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else {
             throw SnapshotError.renderFailed
         }
-        let representation = NSBitmapImageRep(cgImage: image)
-        guard let data = representation.representation(using: .png, properties: [:]) else {
+        representation.size = pointSize
+        hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+        guard let image = representation.cgImage else { throw SnapshotError.renderFailed }
+
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil,
+                  width: image.width,
+                  height: image.height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: colorSpace,
+                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+              ) else {
+            throw SnapshotError.renderFailed
+        }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard let opaqueImage = context.makeImage() else {
+            throw SnapshotError.renderFailed
+        }
+        let outputRepresentation = NSBitmapImageRep(cgImage: opaqueImage)
+        guard let data = outputRepresentation.representation(using: .png, properties: [:]) else {
             throw SnapshotError.encodingFailed
         }
         try data.write(to: url, options: .atomic)
@@ -630,7 +753,29 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    @objc func closeFrontWindow() {
+        if let frontWindow = NSApp.keyWindow ?? NSApp.mainWindow {
+            if frontWindow === stageWindowController?.window {
+                stageWindowController?.requestClose()
+            } else {
+                frontWindow.performClose(nil)
+            }
+            return
+        }
+
+        if let workspace = workspaceWindowController?.window, workspace.isVisible {
+            workspace.performClose(nil)
+        } else if let controlRoom = controlWindowController?.window, controlRoom.isVisible {
+            controlRoom.performClose(nil)
+        } else if stageWindowController?.window?.isVisible == true {
+            stageWindowController?.requestClose()
+        }
+    }
+
     @objc func showStageWorkspace() {
+        if workspaceWindowController?.window?.isMiniaturized == true {
+            workspaceWindowController?.window?.deminiaturize(nil)
+        }
         workspaceWindowController?.showWindow(nil)
         workspaceWindowController?.window?.makeKeyAndOrderFront(nil)
         workspaceIsVisible = true
@@ -642,13 +787,25 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func showStage() {
+        presentStage(makeKey: true)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func presentStage(makeKey: Bool) {
+        if stageWindowController?.window?.isMiniaturized == true {
+            stageWindowController?.window?.deminiaturize(nil)
+        }
         stageWindowController?.showWindow(nil)
-        stageWindowController?.window?.orderFront(nil)
+        if makeKey {
+            stageWindowController?.window?.makeKeyAndOrderFront(nil)
+        } else {
+            stageWindowController?.window?.orderFront(nil)
+        }
         stageIsVisible = true
     }
 
     @objc func chooseSource() {
-        showStage()
+        presentStage(makeKey: false)
         showStageWorkspace()
         capture.addSource()
     }
@@ -713,13 +870,20 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStageScreenshot), #selector(saveStageScreenshot):
-            !isStageScreenshotInProgress
+            return !isStageScreenshotInProgress
         case #selector(chooseSource):
-            capture.canAddSource
+            return capture.canAddSource
         case #selector(stopPreview):
-            capture.isCaptureActive
+            menuItem.title = capture.hasResettableFailure
+                ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
+                : L10n.text("すべてのソースを停止", "Stop All Sources")
+            return capture.isCaptureActive || capture.hasResettableFailure
+        case #selector(toggleCurtain):
+            menuItem.state = privacyCurtain ? .on : .off
+            menuItem.title = L10n.text("カーテン", "Curtain")
+            return true
         default:
-            true
+            return true
         }
     }
 
@@ -818,7 +982,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func setPreset(_ value: StagePreset) {
         preset = value
-        showStage()
+        presentStage(makeKey: false)
     }
 
     func setTheme(_ value: StageTheme) {
@@ -845,19 +1009,42 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func workspaceDidClose() {
+        workspaceDidBecomeHidden()
+    }
+
+    func workspaceDidBecomeHidden() {
         workspaceIsVisible = false
         previewInputForwarder.cancelPendingActions()
         annotations.endStroke()
     }
 
+    func workspaceDidBecomeVisible() {
+        workspaceIsVisible = true
+    }
+
+    func stageDidBecomeVisible() {
+        stageIsVisible = true
+    }
+
+    func stageDidBecomeHidden() {
+        stageIsVisible = false
+    }
+
     func requestConferenceShare() {
-        showStage()
+        let requester = [
+            workspaceWindowController?.window,
+            controlWindowController?.window
+        ]
+        .compactMap { $0 }
+        .first { $0.isVisible }
+
+        presentStage(makeKey: false)
         guard #available(macOS 15.0, *),
-              let requester = controlWindowController?.window,
+              let requester,
               let stage = stageWindowController?.window else {
             transientNotice = L10n.text(
-                "会議アプリの共有画面から「StagePane Stage」を選んでください。",
-                "Choose “StagePane Stage” in your meeting app's share picker."
+                "会議アプリの共有画面から「StagePane Stage」を選んでください。必要な場合はWorkspaceを開いてからもう一度お試しください。",
+                "Choose “StagePane Stage” in your meeting app's share picker. If needed, open Workspace and try again."
             )
             return
         }
@@ -928,6 +1115,37 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         openBundledDocument(resource: "HELP", extension: "md")
     }
 
+    @objc func openPrivacyPolicy() {
+        openExternalPage(
+            URL(string: L10n.text(
+                "https://stagepane.hinoshiba.com/privacy/",
+                "https://stagepane.hinoshiba.com/en/privacy/"
+            )),
+            fallbackResource: "PRIVACY",
+            fallbackExtension: "md"
+        )
+    }
+
+    @objc func openSupport() {
+        openExternalPage(
+            URL(string: L10n.text(
+                "https://stagepane.hinoshiba.com/#support",
+                "https://stagepane.hinoshiba.com/en/#support"
+            )),
+            fallbackResource: "HELP",
+            fallbackExtension: "md"
+        )
+    }
+
+    private func openExternalPage(
+        _ url: URL?,
+        fallbackResource: String,
+        fallbackExtension: String
+    ) {
+        if let url, NSWorkspace.shared.open(url) { return }
+        openBundledDocument(resource: fallbackResource, extension: fallbackExtension)
+    }
+
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
         let previousPhase = previousCapturePhase
         let wasActive = previousCaptureWasActive
@@ -956,8 +1174,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     "Capture needs attention and remains active. Check the Curtain or Stop Capture control."
                 )
                 : L10n.text(
-                    "画面取得で問題が発生しました。停止操作で状態をリセットしてからソースを選び直してください。",
-                    "Capture needs attention. Reset it with Stop Capture, then choose the source again."
+                    "画面取得で問題が発生しました。「画面取得をリセット」してからソースを選び直してください。",
+                    "Capture needs attention. Choose Reset Capture, then add the source again."
                 )
             return
         }

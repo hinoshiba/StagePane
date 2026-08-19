@@ -53,6 +53,7 @@ final class CaptureSource: ObservableObject, Identifiable {
     @Published fileprivate(set) var kind: CaptureSourceKind
     @Published fileprivate(set) var phase: CaptureSourcePhase = .preparing
     @Published fileprivate(set) var isPaused = false
+    @Published fileprivate(set) var isOutputSuppressed = false
 
     var stageRenderer: SampleBufferRenderer { renderers.stage }
     var previewRenderer: SampleBufferRenderer { renderers.preview }
@@ -97,39 +98,71 @@ private struct StreamStopFailure: Sendable {
     }
 }
 
+private enum CapturePresentationUpdate: Sendable {
+    case unavailable(previous: UUID, current: UUID)
+    case ready(UUID)
+}
+
 /// A stream-specific output/delegate prevents callbacks from one source or an
 /// old stream generation from being routed into another source tile.
 private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     typealias StopHandler = @Sendable (UUID, SendableBox<SCStream>, StreamStopFailure) -> Void
     typealias GeometryHandler = @Sendable (UUID, Int, CaptureSourceGeometry) -> Void
-    typealias ActivityHandler = @Sendable (UUID, SendableBox<SCStream>, Bool) -> Void
+    typealias PresentationHandler = @Sendable (UUID, CapturePresentationUpdate) -> Void
+
+    private enum PresentationState: Equatable {
+        case awaitingFreshFrame
+        case ready
+        case replacingContent
+    }
+
+    private enum ExplicitPauseState: Equatable {
+        case none
+        case paused
+        case resuming
+    }
 
     let token: UUID
     private let renderers: CaptureSourceRenderers
     private let outputQueue: DispatchQueue
     private let stopHandler: StopHandler
     private let geometryHandler: GeometryHandler
-    private let activityHandler: ActivityHandler
+    private let presentationHandler: PresentationHandler
     /// Screen callbacks are delivered serially on CaptureCoordinator.outputQueue.
     private var lastGeometry: CaptureSourceGeometry?
     /// Advanced on the same serial queue only after a content-filter update has
     /// completed, so callbacks already queued for the previous filter cannot be
     /// relabeled as geometry from its replacement.
     private var geometryGeneration = 0
+    /// Presentation generations are independent from geometry generations: an
+    /// unavailable source can return with unchanged dimensions but must not
+    /// republish any retained pixels from before the boundary.
+    private var presentationGeneration: UUID
+    private var presentationState: PresentationState = .awaitingFreshFrame
+    private var explicitPauseState: ExplicitPauseState = .none
+    /// Resume deliberately keeps the paused image until either a fresh complete
+    /// frame replaces it or an unavailable marker proves it is no longer valid.
+    private var isRetainingPausedPresentationDuringResume = false
+    /// Unavailable markers observed during an intentional Pause do not remove
+    /// its held image, but they must invalidate that image when Resume begins.
+    private var didObserveUnavailablePresentationWhilePaused = false
+    private var presentationUnavailableInteractionIsSuspended = false
 
     init(
         token: UUID,
         renderers: CaptureSourceRenderers,
         outputQueue: DispatchQueue,
+        initialPresentationGeneration: UUID,
         geometryHandler: @escaping GeometryHandler,
-        activityHandler: @escaping ActivityHandler,
+        presentationHandler: @escaping PresentationHandler,
         stopHandler: @escaping StopHandler
     ) {
         self.token = token
         self.renderers = renderers
         self.outputQueue = outputQueue
+        self.presentationGeneration = initialPresentationGeneration
         self.geometryHandler = geometryHandler
-        self.activityHandler = activityHandler
+        self.presentationHandler = presentationHandler
         self.stopHandler = stopHandler
     }
 
@@ -139,24 +172,140 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         of type: SCStreamOutputType
     ) {
         guard type == .screen else { return }
-        if let geometry = completeFrameGeometry(from: sampleBuffer),
-           geometryDiffersMeaningfully(geometry, from: lastGeometry) {
-            lastGeometry = geometry
-            geometryHandler(token, geometryGeneration, geometry)
+        guard let status = frameStatus(from: sampleBuffer) else { return }
+
+        switch status {
+        case .blank, .suspended:
+            beginUnavailablePresentationOnOutputQueue()
+            return
+        case .idle:
+            guard presentationState == .ready else { return }
+        case .complete:
+            guard presentationState != .replacingContent,
+                  explicitPauseState != .paused else { return }
+            if explicitPauseState == .resuming {
+                explicitPauseState = .none
+                isRetainingPausedPresentationDuringResume = false
+                didObserveUnavailablePresentationWhilePaused = false
+            }
+            if let geometry = completeFrameGeometry(from: sampleBuffer),
+               geometryDiffersMeaningfully(geometry, from: lastGeometry) {
+                lastGeometry = geometry
+                geometryHandler(token, geometryGeneration, geometry)
+            }
+        default:
+            // Start/stop lifecycle markers carry no replacement pixels. In
+            // particular, an explicit Pause must retain its last complete frame.
+            return
+        }
+
+        let becameReady = presentationState == .awaitingFreshFrame
+        if becameReady {
+            presentationState = .ready
+            presentationUnavailableInteractionIsSuspended = false
+            renderers.resumePreviewInteractionForFreshPresentationFrameOnRenderQueue(
+                token: token,
+                filterGeneration: geometryGeneration,
+                presentationTimeStamp:
+                    CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer)
+            )
         }
         renderers.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: geometryGeneration
+            filterGeneration: geometryGeneration,
+            presentationGeneration: presentationGeneration
+        )
+        if becameReady {
+            presentationHandler(token, .ready(presentationGeneration))
+        }
+    }
+
+    /// Begins a fail-closed replacement on the stream-output queue. The caller
+    /// has already installed the matching preview-interaction suspension.
+    func beginContentReplacementOnOutputQueue(
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        explicitPauseState = .none
+        isRetainingPausedPresentationDuringResume = false
+        didObserveUnavailablePresentationWhilePaused = false
+        if presentationUnavailableInteractionIsSuspended {
+            presentationUnavailableInteractionIsSuspended = false
+            renderers.resumePreviewInteractionOnRenderQueue(
+                reason: .presentationUnavailable,
+                token: token,
+                filterGeneration: geometryGeneration
+            )
+        }
+        self.presentationGeneration = presentationGeneration
+        presentationState = .replacingContent
+        renderers.invalidatePresentationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
         )
     }
 
-    /// Must run on the stream-output queue. Resetting `lastGeometry` makes the
-    /// replacement's first complete frame observable even when its dimensions
-    /// happen to equal those of the previous source.
-    func advanceGeometryGenerationOnOutputQueue(to generation: Int) {
-        geometryGeneration = generation
+    /// Must run after ScreenCaptureKit accepts the replacement filter. Queued
+    /// callbacks from before this point were discarded as replacing content.
+    func finishContentReplacementOnOutputQueue(
+        presentationGeneration: UUID,
+        geometryGeneration: Int
+    ) {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard self.presentationGeneration == presentationGeneration,
+              presentationState == .replacingContent else { return }
+        self.geometryGeneration = geometryGeneration
         lastGeometry = nil
+        presentationState = .awaitingFreshFrame
+    }
+
+    func beginExplicitPauseOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        explicitPauseState = .paused
+        isRetainingPausedPresentationDuringResume = false
+        didObserveUnavailablePresentationWhilePaused = false
+    }
+
+    func cancelExplicitPauseOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard explicitPauseState == .paused else { return }
+        explicitPauseState = .none
+        if didObserveUnavailablePresentationWhilePaused {
+            didObserveUnavailablePresentationWhilePaused = false
+            beginUnavailablePresentationOnOutputQueue()
+        }
+    }
+
+    func beginExplicitResumeOnOutputQueue(
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        explicitPauseState = .resuming
+        isRetainingPausedPresentationDuringResume = true
+        self.presentationGeneration = presentationGeneration
+        presentationState = .awaitingFreshFrame
+        renderers.advancePresentationGenerationPreservingFrameOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
+        if didObserveUnavailablePresentationWhilePaused {
+            didObserveUnavailablePresentationWhilePaused = false
+            isRetainingPausedPresentationDuringResume = false
+            suspendForUnavailablePresentationIfNeededOnOutputQueue()
+            renderers.invalidatePresentationOnRenderQueue(
+                token: token,
+                presentationGeneration: presentationGeneration
+            )
+        }
+    }
+
+    func cancelExplicitResumeOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        if explicitPauseState == .resuming {
+            explicitPauseState = .paused
+            isRetainingPausedPresentationDuringResume = false
+        }
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -173,27 +322,75 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
 
     @available(macOS 15.2, *)
     func streamDidBecomeInactive(_ stream: SCStream) {
-        let streamBox = SendableBox(stream)
         outputQueue.async { [self] in
             renderers.suspendPreviewInteractionOnRenderQueue(
                 reason: .streamInactive,
                 token: token
             )
-            activityHandler(token, streamBox, false)
+            beginUnavailablePresentationOnOutputQueue()
         }
     }
 
     @available(macOS 15.2, *)
     func streamDidBecomeActive(_ stream: SCStream) {
-        let streamBox = SendableBox(stream)
         outputQueue.async { [self] in
             renderers.resumePreviewInteractionOnRenderQueue(
                 reason: .streamInactive,
                 token: token,
                 filterGeneration: geometryGeneration
             )
-            activityHandler(token, streamBox, true)
         }
+    }
+
+    private func beginUnavailablePresentationOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard presentationState != .replacingContent else { return }
+        if explicitPauseState == .paused {
+            didObserveUnavailablePresentationWhilePaused = true
+            return
+        }
+
+        suspendForUnavailablePresentationIfNeededOnOutputQueue()
+        let hasPresentationToInvalidate = presentationState == .ready ||
+            (explicitPauseState == .resuming &&
+                isRetainingPausedPresentationDuringResume)
+        guard hasPresentationToInvalidate else { return }
+
+        let previousGeneration = presentationGeneration
+        let nextGeneration = UUID()
+        isRetainingPausedPresentationDuringResume = false
+        presentationGeneration = nextGeneration
+        presentationState = .awaitingFreshFrame
+        lastGeometry = nil
+        renderers.invalidatePresentationOnRenderQueue(
+            token: token,
+            presentationGeneration: nextGeneration
+        )
+        presentationHandler(
+            token,
+            .unavailable(previous: previousGeneration, current: nextGeneration)
+        )
+    }
+
+    private func suspendForUnavailablePresentationIfNeededOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !presentationUnavailableInteractionIsSuspended else { return }
+        presentationUnavailableInteractionIsSuspended = true
+        renderers.suspendPreviewInteractionOnRenderQueue(
+            reason: .presentationUnavailable,
+            token: token
+        )
+    }
+
+    private func frameStatus(from sampleBuffer: CMSampleBuffer) -> SCFrameStatus? {
+        guard sampleBuffer.isValid,
+              let attachmentArray = CMSampleBufferGetSampleAttachmentsArray(
+                  sampleBuffer,
+                  createIfNecessary: false
+              ) as? [[SCStreamFrameInfo: Any]],
+              let attachments = attachmentArray.first,
+              let rawStatus = attachments[.status] as? Int else { return nil }
+        return SCFrameStatus(rawValue: rawStatus)
     }
 
     private func completeFrameGeometry(
@@ -270,9 +467,11 @@ private final class CaptureSession {
     var filter: SCContentFilter
     var isStarted = false
     var isStreamRunning = false
-    /// macOS 15.2+ reports when every shared window has closed. Older systems
-    /// have no equivalent delegate state, so a started stream is assumed active.
-    var isStreamContentActive = true
+    /// True only after a complete frame for the current presentation generation
+    /// has been accepted. Delegate activity alone is not sufficient proof.
+    var isStreamContentActive = false
+    var awaitsFreshPresentationFrame = true
+    var presentationGeneration: UUID
     var startDidFail = false
     var isStopping = false
     var isFinalizing = false
@@ -309,6 +508,7 @@ private final class CaptureSession {
         stream: SCStream,
         proxy: CaptureStreamProxy,
         filter: SCContentFilter,
+        presentationGeneration: UUID,
         appliedConfigurationRevision: Int,
         appliedShowsCursor: Bool,
         appliedSurfaceWidth: Int,
@@ -319,6 +519,7 @@ private final class CaptureSession {
         self.stream = stream
         self.proxy = proxy
         self.filter = filter
+        self.presentationGeneration = presentationGeneration
         self.appliedConfigurationRevision = appliedConfigurationRevision
         self.appliedShowsCursor = appliedShowsCursor
         self.appliedSurfaceWidth = appliedSurfaceWidth
@@ -386,6 +587,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private var outputHeight = 1080
     private var configurationRevision = 0
     private var sourceOrdinal = 0
+
+    var hasResettableFailure: Bool {
+        guard !isCaptureActive else { return false }
+        if case .failed = phase { return true }
+        return false
+    }
     private var lastFailure: String?
 
     override init() {
@@ -590,6 +797,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     ) -> StageInteractionHit? {
         let interactionSources = layout.sources.compactMap { item -> StageInteractionSource? in
             guard let session = sessions[item.id],
+                  !session.outputSuppressed,
+                  !session.isStopping,
+                  !session.isFinalizing,
                   session.appliedSurfaceWidth > 0,
                   session.appliedSurfaceHeight > 0 else { return nil }
             return StageInteractionSource(
@@ -731,8 +941,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     func arrangeSourcesAutomatically() {
+        applyLayoutPreset(.grid)
+    }
+
+    func applyLayoutPreset(_ preset: StageLayoutPreset) {
         var updated = layout
-        updated.arrangeAutomatically()
+        updated.apply(preset: preset)
         layout = updated
         for session in sessions.values where !session.outputSuppressed {
             session.requestedSourceConfigurationRevision &+= 1
@@ -775,10 +989,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         )
 
         let token = UUID()
+        let initialPresentationGeneration = UUID()
         let proxy = CaptureStreamProxy(
             token: token,
             renderers: renderers,
             outputQueue: outputQueue,
+            initialPresentationGeneration: initialPresentationGeneration,
             geometryHandler: { [weak self] token, generation, geometry in
                 Task { @MainActor [weak self] in
                     self?.observeSourceGeometry(
@@ -788,12 +1004,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     )
                 }
             },
-            activityHandler: { [weak self] token, streamBox, isActive in
-                Task { @MainActor [weak self] in
-                    self?.handleStreamActivityChange(
+            presentationHandler: { [weak self] token, update in
+                // Preserve the output queue's unavailable -> ready order.
+                // Independent unstructured MainActor tasks do not guarantee it.
+                DispatchQueue.main.async { [weak self] in
+                    self?.handlePresentationUpdate(
                         token: token,
-                        stream: streamBox.value,
-                        isActive: isActive
+                        update: update
                     )
                 }
             },
@@ -824,6 +1041,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             stream: stream,
             proxy: proxy,
             filter: filter,
+            presentationGeneration: initialPresentationGeneration,
             appliedConfigurationRevision: configurationRevision,
             appliedShowsCursor: configuration.showsCursor,
             appliedSurfaceWidth: configuration.width,
@@ -836,7 +1054,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         lastFailure = nil
         renderers.setPointerAppearance(pointerAppearance)
         renderers.setPointerStyle(pointerStyle)
-        renderers.activate(token: token, showsCursor: configuration.showsCursor)
+        renderers.activate(
+            token: token,
+            showsCursor: configuration.showsCursor,
+            presentationGeneration: initialPresentationGeneration
+        )
         SCContentSharingPicker.shared.setConfiguration(makePickerConfiguration(), for: stream)
         publishSteadyState()
 
@@ -889,6 +1111,10 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
         session.sourceGeometryGeneration &+= 1
         let geometryGeneration = session.sourceGeometryGeneration
+        let presentationGeneration = UUID()
+        session.presentationGeneration = presentationGeneration
+        session.awaitsFreshPresentationFrame = true
+        session.isStreamContentActive = false
         session.sourceGeometryDebounceTask?.cancel()
         session.sourceGeometryDebounceTask = nil
         session.pendingSourceGeometry = nil
@@ -907,11 +1133,17 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             reason: .contentReplacement,
             token: token
         ) {
+            proxy.beginContentReplacementOnOutputQueue(
+                presentationGeneration: presentationGeneration
+            )
             streamBox.value.updateContentFilter(filterBox.value) { [weak self] error in
                 let message = error?.localizedDescription
                 outputQueue.async { [weak self] in
-                    proxy.advanceGeometryGenerationOnOutputQueue(to: geometryGeneration)
                     if message == nil {
+                        proxy.finishContentReplacementOnOutputQueue(
+                            presentationGeneration: presentationGeneration,
+                            geometryGeneration: geometryGeneration
+                        )
                         renderers.resumePreviewInteractionOnRenderQueue(
                             reason: .contentReplacement,
                             token: token,
@@ -959,9 +1191,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
         if startPendingContentUpdateIfNeeded(for: session) { return }
-        session.source.phase = session.activeAttention.map {
-            .needsAttention($0.message)
-        } ?? .active
+        session.source.phase = liveSourcePhase(for: session)
         updateConfigurationIfNeeded(for: session)
         publishSteadyState()
     }
@@ -983,16 +1213,19 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let token = session.token
         let filterGeneration = session.sourceGeometryGeneration
         let renderers = session.source.renderers
+        let proxy = session.proxy
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
         renderers.suspendPreviewInteraction(
             reason: .captureLifecycle,
             token: token
         ) {
+            proxy.beginExplicitPauseOnOutputQueue()
             streamBox.value.stopCapture { [weak self] error in
                 let message = error?.localizedDescription
                 outputQueue.async { [weak self] in
                     if message != nil {
+                        proxy.cancelExplicitPauseOnOutputQueue()
                         renderers.resumePreviewInteractionOnRenderQueue(
                             reason: .captureLifecycle,
                             token: token,
@@ -1066,6 +1299,10 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         clearPauseFailure(for: session)
         session.pauseTransition = .resuming
         session.source.phase = .resuming
+        let presentationGeneration = UUID()
+        session.presentationGeneration = presentationGeneration
+        session.awaitsFreshPresentationFrame = true
+        session.isStreamContentActive = false
         // Remain visually paused until ScreenCaptureKit confirms the same
         // stream has restarted.
         session.source.renderers.setPointerStyle(.hidden)
@@ -1075,25 +1312,33 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let token = session.token
         let filterGeneration = session.sourceGeometryGeneration
         let renderers = session.source.renderers
+        let proxy = session.proxy
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
-        streamBox.value.startCapture { [weak self] error in
-            let message = error?.localizedDescription
-            outputQueue.async { [weak self] in
-                if message == nil {
-                    renderers.resumePreviewInteractionOnRenderQueue(
-                        reason: .captureLifecycle,
-                        token: token,
-                        filterGeneration: filterGeneration
-                    )
-                }
-                Task { @MainActor [weak self] in
-                    self?.handleResumeCompletion(
-                        sourceID: sourceID,
-                        token: token,
-                        stream: streamBox.value,
-                        errorMessage: message
-                    )
+        outputQueue.async {
+            proxy.beginExplicitResumeOnOutputQueue(
+                presentationGeneration: presentationGeneration
+            )
+            streamBox.value.startCapture { [weak self] error in
+                let message = error?.localizedDescription
+                outputQueue.async { [weak self] in
+                    if message == nil {
+                        renderers.resumePreviewInteractionOnRenderQueue(
+                            reason: .captureLifecycle,
+                            token: token,
+                            filterGeneration: filterGeneration
+                        )
+                    } else {
+                        proxy.cancelExplicitResumeOnOutputQueue()
+                    }
+                    Task { @MainActor [weak self] in
+                        self?.handleResumeCompletion(
+                            sourceID: sourceID,
+                            token: token,
+                            stream: streamBox.value,
+                            errorMessage: message
+                        )
+                    }
                 }
             }
         }
@@ -1142,9 +1387,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         clearPauseFailure(for: session)
         restorePointerStyle(for: session)
         if startPendingContentUpdateIfNeeded(for: session) { return }
-        session.source.phase = session.activeAttention.map {
-            .needsAttention($0.message)
-        } ?? .active
+        session.source.phase = liveSourcePhase(for: session)
         updateConfigurationIfNeeded(for: session)
         publishSteadyState()
     }
@@ -1176,9 +1419,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         if session.activeAttention?.clearsAfterSuccessfulContentUpdate == true {
             session.activeAttention = nil
         }
-        session.source.phase = session.activeAttention.map {
-            .needsAttention($0.message)
-        } ?? .active
+        session.source.phase = liveSourcePhase(for: session)
         updateConfigurationIfNeeded(for: session)
         publishSteadyState()
     }
@@ -1339,9 +1580,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                         self.applyPointerStyleToRenderersIfSafe(for: current)
                     }
                     if self.startPendingContentUpdateIfNeeded(for: current) { return }
-                    current.source.phase = current.activeAttention.map {
-                        .needsAttention($0.message)
-                    } ?? .active
+                    current.source.phase = self.liveSourcePhase(for: current)
                     self.updateConfigurationIfNeeded(for: current)
                     self.publishSteadyState()
                 }
@@ -1403,6 +1642,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         target.activeAttention = nil
         target.isStopping = true
         target.outputSuppressed = true
+        target.source.isOutputSuppressed = true
         target.pendingFilter = nil
         target.sourceGeometryGeneration &+= 1
         target.sourceGeometryDebounceTask?.cancel()
@@ -1500,6 +1740,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.isStreamRunning = false
         session.isFinalizing = true
         session.isStopping = true
+        session.outputSuppressed = true
+        session.source.isOutputSuppressed = true
+        session.source.phase = .stopping
         var finalOutcome = outcome
         do {
             try session.stream.removeStreamOutput(session.proxy, type: .screen)
@@ -1569,15 +1812,33 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         )
     }
 
-    private func handleStreamActivityChange(
+    private func handlePresentationUpdate(
         token: UUID,
-        stream: SCStream,
-        isActive: Bool
+        update: CapturePresentationUpdate
     ) {
-        guard let session = session(for: stream),
-              session.token == token,
-              !session.isFinalizing else { return }
-        session.isStreamContentActive = isActive
+        guard let session = sessions.values.first(where: { $0.token == token }),
+              !session.isStopping,
+              !session.isFinalizing,
+              !session.outputSuppressed else { return }
+
+        switch update {
+        case let .unavailable(previousGeneration, currentGeneration):
+            // A content replacement or resume may already have installed a
+            // different UUID while this queue-to-main notification was pending.
+            guard session.presentationGeneration == previousGeneration else { return }
+            session.presentationGeneration = currentGeneration
+            session.awaitsFreshPresentationFrame = true
+            session.isStreamContentActive = false
+        case let .ready(generation):
+            guard session.presentationGeneration == generation else { return }
+            session.awaitsFreshPresentationFrame = false
+            session.isStreamContentActive = true
+        }
+
+        if session.pauseTransition == nil, !session.source.isPaused {
+            session.source.phase = liveSourcePhase(for: session)
+        }
+        publishSteadyState()
     }
 
     @discardableResult
@@ -1729,6 +1990,18 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
     }
 
+    private func liveSourcePhase(for session: CaptureSession) -> CaptureSourcePhase {
+        guard session.isStarted,
+              session.isStreamRunning,
+              !session.awaitsFreshPresentationFrame,
+              session.isStreamContentActive,
+              !session.isUpdatingContent,
+              !session.isUpdatingConfiguration else { return .preparing }
+        return session.activeAttention.map {
+            .needsAttention($0.message)
+        } ?? .active
+    }
+
     private func clearPauseFailure(for session: CaptureSession) {
         guard case let .pauseFailure(message) = session.activeAttention else { return }
         session.activeAttention = nil
@@ -1841,7 +2114,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 $0.isStopping ||
                 $0.pauseTransition != nil ||
                 $0.isUpdatingContent ||
-                $0.isUpdatingConfiguration
+                $0.isUpdatingConfiguration ||
+                (!$0.source.isPaused &&
+                    ($0.awaitsFreshPresentationFrame || !$0.isStreamContentActive))
         }) {
             phase = .preparing
             statusDetail = L10n.text(

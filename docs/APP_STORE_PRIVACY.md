@@ -1,0 +1,62 @@
+# StagePane Privacy Policy / StagePane プライバシーポリシー
+
+Effective date / 発効日: 2026-08-20
+Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
+
+## Summary / 概要
+
+StagePane does not collect personal data, create accounts, show advertising, run analytics, or send telemetry. It has no third-party SDKs and makes no network requests.
+
+StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKを含まず、ネットワーク通信も行いません。
+
+## Screen content / 画面内容
+
+StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. You can add up to four independently pausable and removable sources. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
+
+StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
+
+Selected frames are rendered locally into the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
+
+選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカル表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
+
+## One-shot Audience PNG / 1枚のAudience PNG
+
+Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide, and pointer, while excluding Workspace and Control Room controls and unrelated windows.
+
+明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含み、WorkspaceやControl Roomの操作UI、無関係なウインドウは含みません。
+
+Copy places the PNG on the macOS general pasteboard, where other local apps or clipboard managers may access it. Save opens the macOS save panel and writes only to the location you choose. Canceling Save writes nothing. StagePane keeps no separate screenshot history or hidden copy.
+
+コピーはmacOSの一般ペーストボードへ置くため、他のローカルアプリやクリップボード管理アプリがアクセスする場合があります。保存はmacOSの保存パネルを開き、選んだ場所だけへ書き込みます。キャンセル時は書き込みません。StagePaneはスクリーンショット履歴や隠しコピーを保持しません。
+
+## Pointer and drawings / ポインターと手書き
+
+Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
+
+レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
+
+## Settings stored on this Mac / このMacに保存する設定
+
+StagePane stores interface preferences such as Stage preset, theme, pointer appearance, drawing tool/color/width, watermark and safe-area visibility, Curtain message, and window behavior in the app's sandboxed preferences. It does not persist selected source content, source titles, application names, screenshot history, screenshot destinations, or meeting information.
+
+StagePaneは、Stageプリセット、テーマ、ポインター表示、手書きツール・色・太さ、ウォーターマークとセーフエリアの表示、カーテン文言、ウインドウ動作などのUI設定をサンドボックス内に保存します。選択したソース内容、ソース名、アプリ名、スクリーンショット履歴、保存先、会議情報は保存しません。
+
+## Permissions / アクセス許可
+
+Screen access is granted per selection and per capture session through Apple's picker. The Mac App Store edition provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and includes no cross-application Control mode.
+
+画面アクセスはAppleのピッカーで選択ごと・取得セッションごとに許可されます。Mac App Store版は配置と手書きを提供し、アクセシビリティや入力監視の許可を求めず、他アプリを操作する機能も含みません。
+
+## Network, retention, sale, and tracking / 通信・保持・販売・トラッキング
+
+StagePane does not upload screen content or screenshots. It has no server-side retention, disclosure, sale, cross-context behavioral advertising, or tracking. The privacy manifest declares tracking false and collected data types empty. A meeting app that transmits the Stage is separate software governed by that provider's terms and privacy information.
+
+StagePaneは画面内容やスクリーンショットをアップロードしません。サーバー側の保持、開示、販売、行動ターゲティング広告、トラッキングはありません。プライバシーマニフェストではトラッキングなし、収集データなしを宣言します。Stageを送信する会議アプリは別製品であり、その提供者の規約とプライバシー情報が適用されます。
+
+## Changes and contact / 変更と連絡先
+
+Any future network service, analytics, recording, account, cloud sync, or support-upload feature requires updated disclosures and this policy before release.
+
+将来、ネットワークサービス、解析、録画、アカウント、クラウド同期、サポートへのアップロードを追加する場合は、リリース前に開示と本ポリシーを更新します。
+
+Contact / 連絡先: [support@hinoshiba.com](mailto:support@hinoshiba.com)

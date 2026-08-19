@@ -33,6 +33,89 @@ final class StageAnnotationsTests: XCTestCase {
         )
     }
 
+    func testInkPreferencesResolvePenAndHighlighterStyles() {
+        let pen = StageInkPreferences(
+            tool: .pen,
+            colorPreset: .blue,
+            normalizedWidth: 0.012
+        )
+        let highlighter = StageInkPreferences(
+            tool: .highlighter,
+            colorPreset: .yellow,
+            normalizedWidth: 0.02
+        )
+
+        XCTAssertEqual(pen.style.color, StageInkColorPreset.blue.color)
+        XCTAssertEqual(pen.style.normalizedWidth, 0.012)
+        XCTAssertEqual(
+            highlighter.style.color,
+            StageInkColor(red: 1, green: 0.78, blue: 0.05, alpha: 0.36)
+        )
+        XCTAssertEqual(highlighter.style.normalizedWidth, 0.02)
+
+        var document = StageAnnotationDocument()
+        XCTAssertTrue(document.beginStroke(
+            at: StageAnnotationPoint(x: 0.5, y: 0.5),
+            style: highlighter.style
+        ))
+        XCTAssertEqual(document.strokes.last?.style, highlighter.style)
+    }
+
+    func testInkPreferencesClampWidthAndRoundTrip() throws {
+        XCTAssertEqual(StageInkPreferences.defaultPreferences.tool, .pen)
+        XCTAssertEqual(StageInkPreferences.defaultPreferences.colorPreset, .red)
+        XCTAssertEqual(
+            StageInkPreferences.defaultPreferences.normalizedWidth,
+            StageInkStyle.defaultStyle.normalizedWidth
+        )
+
+        let tooNarrow = StageInkPreferences(
+            tool: .pen,
+            colorPreset: .red,
+            normalizedWidth: -1
+        )
+        let tooWide = StageInkPreferences(
+            tool: .highlighter,
+            colorPreset: .white,
+            normalizedWidth: 1
+        )
+        let nonFinite = StageInkPreferences(
+            tool: .pen,
+            colorPreset: .green,
+            normalizedWidth: .infinity
+        )
+
+        XCTAssertEqual(
+            tooNarrow.normalizedWidth,
+            StageInkPreferences.minimumNormalizedWidth
+        )
+        XCTAssertEqual(
+            tooWide.normalizedWidth,
+            StageInkPreferences.maximumNormalizedWidth
+        )
+        XCTAssertEqual(
+            nonFinite.normalizedWidth,
+            StageInkStyle.defaultStyle.normalizedWidth
+        )
+
+        let data = try JSONEncoder().encode(tooNarrow)
+        XCTAssertEqual(
+            try JSONDecoder().decode(StageInkPreferences.self, from: data),
+            tooNarrow
+        )
+        let decodedWide = try JSONDecoder().decode(
+            StageInkPreferences.self,
+            from: Data(
+                #"{"tool":"pen","colorPreset":"blue","normalizedWidth":1}"#.utf8
+            )
+        )
+        XCTAssertEqual(
+            decodedWide.normalizedWidth,
+            StageInkPreferences.maximumNormalizedWidth
+        )
+        assertSendable(tooNarrow)
+    }
+
     func testDocumentBuildsOrderedStrokesAndSkipsDuplicatePoints() {
         let strokeID = UUID(uuidString: "C49780EE-84A1-4E16-BC29-E33F8306F8D7")!
         let first = StageAnnotationPoint(x: 0.1, y: 0.2)

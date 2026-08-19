@@ -140,6 +140,19 @@ public struct StageSourceLayout: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+/// A deterministic arrangement for the sources already present on a Stage.
+///
+/// Presets only change frames. Source identity and rendering order remain
+/// untouched so selecting a quick layout never changes which source is on top.
+public enum StageLayoutPreset: String, CaseIterable, Codable, Identifiable, Sendable {
+    case grid
+    case sideBySide
+    case stacked
+    case pictureInPicture
+
+    public var id: String { rawValue }
+}
+
 /// Ordered source tiles on a normalized stage canvas.
 ///
 /// Ordering is explicit so rendering order and automatic placement are both
@@ -202,7 +215,38 @@ public struct StageLayout: Codable, Equatable, Sendable {
     /// Replaces current positions with the deterministic automatic grid while
     /// retaining source IDs and their order.
     public mutating func arrangeAutomatically(gap: Double = StageLayout.defaultGap) {
-        self = Self(automaticallyArranging: sources.map(\.id), gap: gap)
+        apply(preset: .grid, gap: gap)
+    }
+
+    /// Applies a quick layout without replacing source values or changing
+    /// their order. The presets are designed for StagePane's supported range
+    /// of zero through four sources.
+    public mutating func apply(
+        preset: StageLayoutPreset,
+        gap: Double = StageLayout.defaultGap
+    ) {
+        let frames = Self.frames(for: preset, sourceCount: sources.count, gap: gap)
+        for index in sources.indices {
+            sources[index].frame = frames[index]
+        }
+    }
+
+    /// Returns the frames used by a quick layout in source-rendering order.
+    public static func frames(
+        for preset: StageLayoutPreset,
+        sourceCount: Int,
+        gap: Double = StageLayout.defaultGap
+    ) -> [NormalizedStageRect] {
+        switch preset {
+        case .grid:
+            automaticFrames(count: sourceCount, gap: gap)
+        case .sideBySide:
+            sideBySideFrames(count: sourceCount, gap: gap)
+        case .stacked:
+            stackedFrames(count: sourceCount, gap: gap)
+        case .pictureInPicture:
+            pictureInPictureFrames(count: sourceCount, gap: gap)
+        }
     }
 
     /// Moves one tile by a normalized drag delta.
@@ -251,10 +295,9 @@ public struct StageLayout: Codable, Equatable, Sendable {
 
         let columns = Int(ceil(sqrt(Double(count))))
         let rows = Int(ceil(Double(count) / Double(columns)))
-        let requestedGap = gap.isFinite ? max(gap, 0) : defaultGap
         let largestAxisCount = max(columns, rows)
         let maximumGap = 0.5 / Double(largestAxisCount + 1)
-        let actualGap = min(requestedGap, maximumGap)
+        let actualGap = boundedGap(gap, maximum: maximumGap)
         let width = (1 - actualGap * Double(columns + 1)) / Double(columns)
         let height = (1 - actualGap * Double(rows + 1)) / Double(rows)
 
@@ -268,6 +311,92 @@ public struct StageLayout: Codable, Equatable, Sendable {
                 height: height
             )
         }
+    }
+
+    private static func sideBySideFrames(
+        count: Int,
+        gap: Double
+    ) -> [NormalizedStageRect] {
+        guard count > 0 else { return [] }
+        guard count > 1 else { return [.fullCanvas] }
+
+        let actualGap = boundedGap(gap, maximum: 0.5 / Double(count + 1))
+        let width = (1 - actualGap * Double(count + 1)) / Double(count)
+        let height = 1 - 2 * actualGap
+        return (0 ..< count).map { index in
+            NormalizedStageRect(
+                x: actualGap + Double(index) * (width + actualGap),
+                y: actualGap,
+                width: width,
+                height: height
+            )
+        }
+    }
+
+    private static func stackedFrames(
+        count: Int,
+        gap: Double
+    ) -> [NormalizedStageRect] {
+        guard count > 0 else { return [] }
+        guard count > 1 else { return [.fullCanvas] }
+
+        let actualGap = boundedGap(gap, maximum: 0.5 / Double(count + 1))
+        let width = 1 - 2 * actualGap
+        let height = (1 - actualGap * Double(count + 1)) / Double(count)
+        return (0 ..< count).map { index in
+            NormalizedStageRect(
+                x: actualGap,
+                y: actualGap + Double(index) * (height + actualGap),
+                width: width,
+                height: height
+            )
+        }
+    }
+
+    private static func pictureInPictureFrames(
+        count: Int,
+        gap: Double
+    ) -> [NormalizedStageRect] {
+        guard count > 0 else { return [] }
+        guard count > 1 else { return [.fullCanvas] }
+
+        // StagePane exposes at most four simultaneous sources. A grid remains
+        // a safe deterministic recovery path for malformed future data.
+        guard count <= 4 else { return automaticFrames(count: count, gap: gap) }
+
+        let actualGap = boundedGap(gap, maximum: 0.08)
+        let overlayWidth = 0.36
+        let overlayHeight = 0.30
+        let left = actualGap
+        let right = 1 - actualGap - overlayWidth
+        let top = actualGap
+        let bottom = 1 - actualGap - overlayHeight
+        let overlays = [
+            NormalizedStageRect(
+                x: right,
+                y: bottom,
+                width: overlayWidth,
+                height: overlayHeight
+            ),
+            NormalizedStageRect(
+                x: left,
+                y: bottom,
+                width: overlayWidth,
+                height: overlayHeight
+            ),
+            NormalizedStageRect(
+                x: right,
+                y: top,
+                width: overlayWidth,
+                height: overlayHeight
+            )
+        ]
+        return [.fullCanvas] + overlays.prefix(count - 1)
+    }
+
+    private static func boundedGap(_ gap: Double, maximum: Double) -> Double {
+        let requestedGap = gap.isFinite ? max(gap, 0) : defaultGap
+        return min(requestedGap, maximum)
     }
 
     /// A predictable initial placement that never moves existing sources.

@@ -12,15 +12,43 @@ final class StageAnnotationStore: ObservableObject {
     private static let maximumPointsPerStroke = 4_096
     private static let maximumTotalPoints = 32_768
     private static let minimumPointDistance: CGFloat = 1.5
+    private static let preferencesKey = "stage.inkPreferences"
 
     @Published private(set) var document = StageAnnotationDocument()
+    @Published private(set) var preferences: StageInkPreferences
 
+    private let defaults: UserDefaults
     private var activeStrokeID: UUID?
     private var lastCanvasPoint: CGPoint?
     private var totalPointCount = 0
 
     var isEmpty: Bool { document.strokes.isEmpty }
     var canUndo: Bool { !document.strokes.isEmpty }
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: Self.preferencesKey),
+           let storedPreferences = try? JSONDecoder().decode(
+               StageInkPreferences.self,
+               from: data
+           ) {
+            preferences = storedPreferences
+        } else {
+            preferences = .defaultPreferences
+        }
+    }
+
+    func selectTool(_ tool: StageInkTool) {
+        updatePreferences(tool: tool)
+    }
+
+    func selectColor(_ colorPreset: StageInkColorPreset) {
+        updatePreferences(colorPreset: colorPreset)
+    }
+
+    func setNormalizedWidth(_ normalizedWidth: Double) {
+        updatePreferences(normalizedWidth: normalizedWidth)
+    }
 
     func beginStroke(at location: CGPoint, canvasSize: CGSize) {
         endStroke()
@@ -32,7 +60,11 @@ final class StageAnnotationStore: ObservableObject {
         }
         let strokeID = UUID()
         guard let point = StageAnnotationPoint(point: location, in: canvasSize) else { return }
-        guard document.beginStroke(id: strokeID, at: point) else { return }
+        guard document.beginStroke(
+            id: strokeID,
+            at: point,
+            style: preferences.style
+        ) else { return }
         totalPointCount += 1
         activeStrokeID = strokeID
         lastCanvasPoint = location
@@ -74,6 +106,24 @@ final class StageAnnotationStore: ObservableObject {
         endStroke()
         document.removeAll()
         totalPointCount = 0
+    }
+
+    private func updatePreferences(
+        tool: StageInkTool? = nil,
+        colorPreset: StageInkColorPreset? = nil,
+        normalizedWidth: Double? = nil
+    ) {
+        endStroke()
+        let updatedPreferences = StageInkPreferences(
+            tool: tool ?? preferences.tool,
+            colorPreset: colorPreset ?? preferences.colorPreset,
+            normalizedWidth: normalizedWidth ?? preferences.normalizedWidth
+        )
+        guard updatedPreferences != preferences else { return }
+        preferences = updatedPreferences
+        if let data = try? JSONEncoder().encode(updatedPreferences) {
+            defaults.set(data, forKey: Self.preferencesKey)
+        }
     }
 }
 

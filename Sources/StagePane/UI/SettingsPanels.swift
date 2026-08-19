@@ -4,6 +4,12 @@ import SwiftUI
 
 struct AppearancePanel: View {
     @ObservedObject var controller: AppController
+    private let focusesAudienceForSnapshot: Bool
+
+    init(controller: AppController, focusesAudienceForSnapshot: Bool = false) {
+        self.controller = controller
+        self.focusesAudienceForSnapshot = focusesAudienceForSnapshot
+    }
 
     var body: some View {
         ScrollView {
@@ -17,116 +23,124 @@ struct AppearancePanel: View {
                     )
                 )
 
-                VStack(alignment: .leading, spacing: 15) {
-                    Text(L10n.text("背景テーマ", "Background theme"))
-                        .font(.headline)
-                    HStack(spacing: 12) {
-                        ForEach(StageTheme.allCases) { theme in
-                            ThemeChoice(theme: theme, selected: controller.theme == theme) {
-                                controller.setTheme(theme)
+                if focusesAudienceForSnapshot {
+                    audienceViewCard
+                } else {
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text(L10n.text("背景テーマ", "Background theme"))
+                            .font(.headline)
+                        HStack(spacing: 12) {
+                            ForEach(StageTheme.allCases) { theme in
+                                ThemeChoice(theme: theme, selected: controller.theme == theme) {
+                                    controller.setTheme(theme)
+                                }
                             }
                         }
                     }
-                }
-                .cardSurface()
+                    .cardSurface()
 
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(L10n.text("カーテンのメッセージ", "Curtain message"))
-                                .font(.headline)
-                            Text(L10n.text(
-                                "共有内容を隠している間だけ表示されます。",
-                                "Shown only while the stage content is covered."
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(L10n.text("カーテンのメッセージ", "Curtain message"))
+                                    .font(.headline)
+                                Text(L10n.text(
+                                    "共有内容を隠している間だけ表示されます。",
+                                    "Shown only while the stage content is covered."
+                                ))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("\(controller.privacyMessage.count)/\(StageMessage.characterLimit)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        Text("\(controller.privacyMessage.count)/\(StageMessage.characterLimit)")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                        TextField(
+                            L10n.text("少々お待ちください", "Back in a moment"),
+                            text: $controller.privacyMessage
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel(L10n.text("カーテンのメッセージ", "Curtain message"))
                     }
-                    TextField(
-                        L10n.text("少々お待ちください", "Back in a moment"),
-                        text: $controller.privacyMessage
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel(L10n.text("カーテンのメッセージ", "Curtain message"))
-                }
-                .cardSurface()
+                    .cardSurface()
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.text("ウインドウ動作", "Window behavior"))
-                        .font(.headline)
-                        .padding(.bottom, 8)
-                    PreferenceToggle(
-                        title: L10n.text("常に手前に表示", "Keep Stage in front"),
-                        detail: L10n.text(
-                            "会議アプリがStageを見つけにくい場合の互換モードです。",
-                            "Compatibility option for meeting apps that lose track of the Stage."
-                        ),
-                        symbol: "pin.fill",
-                        value: $controller.isAlwaysOnTop
-                    )
-                    Divider().padding(.leading, 42)
-                    PreferenceToggle(
-                        title: L10n.text("すべての操作スペースに表示", "Show on every Space"),
-                        detail: L10n.text(
-                            "フルスクリーンアプリを含む各SpaceへStageを表示します。",
-                            "Let the Stage follow you across Spaces and full-screen apps."
-                        ),
-                        symbol: "square.grid.2x2.fill",
-                        value: $controller.followsAllSpaces
-                    )
-                    Divider().padding(.leading, 42)
-                    PreferenceToggle(
-                        title: L10n.text("プレゼンテーションロック", "Presentation Lock"),
-                        detail: L10n.text(
-                            "共有中の誤った終了・最小化を防ぎます。",
-                            "Prevent accidental closing or minimizing while presenting."
-                        ),
-                        symbol: "lock.fill",
-                        value: $controller.presentationLock
-                    )
-                }
-                .cardSurface()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.text("ウインドウ動作", "Window behavior"))
+                            .font(.headline)
+                            .padding(.bottom, 8)
+                        PreferenceToggle(
+                            title: L10n.text("常に手前に表示", "Keep Stage in front"),
+                            detail: L10n.text(
+                                "会議アプリがStageを見つけにくい場合の互換モードです。",
+                                "Compatibility option for meeting apps that lose track of the Stage."
+                            ),
+                            symbol: "pin.fill",
+                            value: $controller.isAlwaysOnTop
+                        )
+                        Divider().padding(.leading, 42)
+                        PreferenceToggle(
+                            title: L10n.text("すべての操作スペースに表示", "Show on every Space"),
+                            detail: L10n.text(
+                                "フルスクリーンアプリを含む各SpaceへStageを表示します。",
+                                "Let the Stage follow you across Spaces and full-screen apps."
+                            ),
+                            symbol: "square.grid.2x2.fill",
+                            value: $controller.followsAllSpaces
+                        )
+                        Divider().padding(.leading, 42)
+                        PreferenceToggle(
+                            title: L10n.text("プレゼンテーションロック", "Presentation Lock"),
+                            detail: L10n.text(
+                                "共有中の誤った終了・最小化を防ぎます。",
+                                "Prevent accidental closing or minimizing while presenting."
+                            ),
+                            symbol: "lock.fill",
+                            value: $controller.presentationLock
+                        )
+                    }
+                    .cardSurface()
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.text("相手に見える画面", "Audience view"))
-                        .font(.headline)
-                        .padding(.bottom, 8)
-                    PointerStylePicker(
-                        selection: $controller.pointerStyle,
-                        appearance: $controller.pointerAppearance
-                    )
-                    Divider().padding(.leading, 42)
-                    PreferenceToggle(
-                        title: L10n.text("セーフエリアを表示", "Show safe area"),
-                        detail: L10n.text(
-                            "投影や配信で切れやすい外周5%を確認します。",
-                            "Preview the outer 5% that projectors and streams may crop."
-                        ),
-                        symbol: "viewfinder",
-                        value: $controller.showsSafeArea
-                    )
-                    Divider().padding(.leading, 42)
-                    PreferenceToggle(
-                        title: L10n.text("StagePaneロゴを表示", "Show StagePane mark"),
-                        detail: L10n.text(
-                            "相手に見える画面の右下に、小さなブランド表示を追加します。",
-                            "Add a small brand mark to the lower-right of the Stage."
-                        ),
-                        symbol: "sparkles.rectangle.stack.fill",
-                        value: $controller.showsWatermark
-                    )
+                    audienceViewCard
                 }
-                .cardSurface()
             }
             .padding(.top, 38)
             .padding(.horizontal, 32)
             .padding(.bottom, 34)
         }
+    }
+
+    private var audienceViewCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.text("相手に見える画面", "Audience view"))
+                .font(.headline)
+                .padding(.bottom, 8)
+            PointerStylePicker(
+                selection: $controller.pointerStyle,
+                appearance: $controller.pointerAppearance
+            )
+            Divider().padding(.leading, 42)
+            PreferenceToggle(
+                title: L10n.text("セーフエリアを表示", "Show safe area"),
+                detail: L10n.text(
+                    "投影や配信で切れやすい外周5%を確認します。",
+                    "Preview the outer 5% that projectors and streams may crop."
+                ),
+                symbol: "viewfinder",
+                value: $controller.showsSafeArea
+            )
+            Divider().padding(.leading, 42)
+            PreferenceToggle(
+                title: L10n.text("StagePaneロゴを表示", "Show StagePane mark"),
+                detail: L10n.text(
+                    "相手に見える画面の右下に、小さなブランド表示を追加します。",
+                    "Add a small brand mark to the lower-right of the Stage."
+                ),
+                symbol: "sparkles.rectangle.stack.fill",
+                value: $controller.showsWatermark
+            )
+        }
+        .cardSurface()
     }
 }
 
@@ -380,7 +394,10 @@ struct PrivacyPanel: View {
                     DataFlowNode(
                         symbol: "rectangle.inset.filled",
                         title: "StagePane Stage",
-                        detail: L10n.text("保存せず破棄", "Displayed, then discarded")
+                        detail: L10n.text(
+                            "通常は表示後に破棄。明示したAudience PNGだけ作成",
+                            "Normally discarded after display; only an explicit Audience PNG is created"
+                        )
                     )
                 }
                 .padding(18)
@@ -417,7 +434,13 @@ struct PrivacyPanel: View {
                     Text(L10n.text("StagePaneがしないこと", "What StagePane never does"))
                         .font(.headline)
                         .padding(.bottom, 9)
-                    PrivacyPromise(symbol: "externaldrive.badge.xmark", title: L10n.text("画面フレームをディスクへ保存しません", "Never writes screen frames to disk"))
+                    PrivacyPromise(
+                        symbol: "externaldrive.badge.xmark",
+                        title: L10n.text(
+                            "画面を自動保存しません（明示したAudience PNGを除く）",
+                            "Never saves your screen automatically; only an explicit Audience PNG"
+                        )
+                    )
                     Divider().padding(.leading, 42)
                     PrivacyPromise(symbol: "network.slash", title: L10n.text("画面や利用状況をネットワーク送信しません", "Never sends your screen or usage over the network"))
                     Divider().padding(.leading, 42)
@@ -532,7 +555,7 @@ struct AboutPanel: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("StagePane")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("Version \(version)")
+                        Text(L10n.text("バージョン \(version)", "Version \(version)"))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                         Text(L10n.text(
@@ -545,11 +568,22 @@ struct AboutPanel: View {
                 }
                 .cardSurface()
 
-                HStack(spacing: 10) {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 150), spacing: 10)],
+                    spacing: 10
+                ) {
                     Button {
-                        controller.openBundledDocument(resource: "PRIVACY", extension: "md")
+                        controller.openPrivacyPolicy()
                     } label: {
                         Label(L10n.text("プライバシーポリシー", "Privacy Policy"), systemImage: "hand.raised.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(SecondaryActionButtonStyle())
+
+                    Button {
+                        controller.openSupport()
+                    } label: {
+                        Label(L10n.text("サポート", "Support"), systemImage: "lifepreserver.fill")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(SecondaryActionButtonStyle())

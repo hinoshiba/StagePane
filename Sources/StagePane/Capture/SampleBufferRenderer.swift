@@ -15,6 +15,7 @@ enum PreviewInteractionSuspensionReason: Hashable, Sendable {
     case streamInactive
     case streamStopped
     case contentReplacement
+    case presentationUnavailable
     case surfaceConfiguration
 }
 
@@ -121,6 +122,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         let sampleBuffer: CMSampleBuffer
         let token: UUID
         let filterGeneration: Int
+        let presentationGeneration: UUID
         /// Captured when ScreenCaptureKit delivers the frame, before a later
         /// configuration completion can change the stream's cursor state.
         let isConfirmedCursorless: Bool
@@ -166,10 +168,21 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// when the user asks for a screenshot.
     private let snapshotFrameLock = NSLock()
     private var snapshotPixelBuffer: CVPixelBuffer?
+    /// Snapshot publication is fenced independently from the render queue so a
+    /// teardown caller can revoke an in-flight callback before its queued token
+    /// invalidation runs.
+    private var snapshotToken: UUID?
+    private var snapshotPresentationGeneration: UUID?
     private var rendererNotificationObservers: [NSObjectProtocol] = []
     private let pointerSnapshotLock = NSLock()
     private var desiredToken: UUID?
     private var activeToken: UUID?
+    /// Accessed only on renderQueue. A retained callback or pending frame from
+    /// an earlier source presentation must never repopulate a cleared surface.
+    private var activePresentationGeneration: UUID?
+    /// New-generation frames are retained, not enqueued, until both source
+    /// renderers have completed removal of their previous displayed images.
+    private var presentationFlushGeneration: UUID?
     /// Accessed only on renderQueue.
     private var redDotTransition: RedDotTransition?
     /// Accessed only on renderQueue. Real-time input keeps at most one frame.
@@ -509,7 +522,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
     func resumeInteractionOnRenderQueue(
         reason: PreviewInteractionSuspensionReason,
         token: UUID,
-        filterGeneration: Int
+        filterGeneration: Int,
+        minimumOutputPresentationTimeStamp: CMTime? = nil
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard activeToken == token,
@@ -520,7 +534,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
         interactionFrameSnapshots.removeAll()
         guard interactionSuspensionReasons.isEmpty else { return }
 
-        let boundary = CMClockGetTime(CMClockGetHostTimeClock())
+        let boundary = minimumOutputPresentationTimeStamp ??
+            CMClockGetTime(CMClockGetHostTimeClock())
         guard boundary.isNumeric else { return }
         interactionPublicationFence = InteractionPublicationFence(
             token: token,
@@ -532,8 +547,16 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// Makes a stream's frames eligible for display. Initial activation uses an
     /// empty layer; every later activation follows a completed `deactivate`, so
     /// another asynchronous flush here would only create a frame-drop window.
-    func activate(token: UUID, showsCursor: Bool) {
-        clearSnapshotFrame()
+    func activate(
+        token: UUID,
+        showsCursor: Bool,
+        presentationGeneration: UUID
+    ) {
+        replaceSnapshotAcceptance(
+            token: token,
+            presentationGeneration: presentationGeneration,
+            retainingFrame: false
+        )
         pointerSnapshotLock.lock()
         requestedPointerToken = token
         deferredRedDotToken = nil
@@ -544,6 +567,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
             clearPendingVideoFrameOnRenderQueue()
             desiredToken = token
             activeToken = token
+            activePresentationGeneration = presentationGeneration
+            presentationFlushGeneration = nil
             redDotTransition = nil
             nativeCursorIsHidden = !showsCursor
             displayedFrameIsConfirmedCursorless = false
@@ -559,7 +584,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// The callback runs only after queued frame callbacks have drained and the
     /// displayed image has been removed.
     func deactivate(token: UUID, completion: (@Sendable () -> Void)? = nil) {
-        clearSnapshotFrame()
+        revokeSnapshotAcceptance(token: token)
         pointerSnapshotLock.lock()
         var availabilityHandler: PointerAvailabilityHandler?
         if requestedPointerToken == token {
@@ -573,6 +598,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
             if desiredToken == token { desiredToken = nil }
             if activeToken == token {
                 activeToken = nil
+                activePresentationGeneration = nil
+                presentationFlushGeneration = nil
                 displayedFrameIsConfirmedCursorless = false
                 latestPointerSnapshot = nil
                 interactionSuspensionReasons.removeAll()
@@ -582,6 +609,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
             }
             if redDotTransition?.token == token { redDotTransition = nil }
             clearPendingVideoFrameOnRenderQueue(token: token)
+            // A callback that was already executing could race the synchronous
+            // revocation above. Re-clear after queue-confined token invalidation.
+            clearSnapshotFrame()
             videoRenderer.flush(removingDisplayedImage: true) {
                 completion?()
             }
@@ -589,7 +619,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
     }
 
     func flush(completion: (@Sendable () -> Void)? = nil) {
-        clearSnapshotFrame()
+        revokeAllSnapshotAcceptance()
         pointerSnapshotLock.lock()
         requestedPointerToken = nil
         deferredRedDotToken = nil
@@ -599,6 +629,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
         renderQueue.async { [self] in
             desiredToken = nil
             activeToken = nil
+            activePresentationGeneration = nil
+            presentationFlushGeneration = nil
             redDotTransition = nil
             nativeCursorIsHidden = false
             displayedFrameIsConfirmedCursorless = false
@@ -608,10 +640,84 @@ final class SampleBufferRenderer: @unchecked Sendable {
             interactionPublicationFence = nil
             interactionValidity.invalidate()
             interactionFrameSnapshots.removeAll()
+            clearSnapshotFrame()
             videoRenderer.flush(removingDisplayedImage: true) {
                 completion?()
             }
         }
+    }
+
+    /// Fails a presentation closed while keeping the capture stream alive.
+    /// Both display and screenshot state stay empty until a complete frame for
+    /// this exact generation is accepted.
+    func invalidatePresentationOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID,
+        completion: @escaping @Sendable () -> Void
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard activeToken == token, desiredToken == token else {
+            completion()
+            return
+        }
+        activePresentationGeneration = presentationGeneration
+        presentationFlushGeneration = presentationGeneration
+        replaceSnapshotAcceptance(
+            token: token,
+            presentationGeneration: presentationGeneration,
+            retainingFrame: false
+        )
+        clearPendingVideoFrameOnRenderQueue(token: token)
+        displayedFrameIsConfirmedCursorless = false
+        latestPointerSnapshot = nil
+        interactionPublicationFence = nil
+        interactionValidity.invalidate()
+        interactionFrameSnapshots.removeAll()
+        clearPublishedPointerSnapshot(token: token)
+        videoRenderer.flush(removingDisplayedImage: true) { [weak self] in
+            self?.renderQueue.async(execute: completion)
+        }
+    }
+
+    /// Called only after both display renderers have completed their old-image
+    /// flush, so the public Stage and private preview reopen together.
+    func finishPresentationInvalidationOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard activeToken == token,
+              desiredToken == token,
+              activePresentationGeneration == presentationGeneration,
+              presentationFlushGeneration == presentationGeneration else { return }
+        presentationFlushGeneration = nil
+        if pendingVideoFrame != nil {
+            requestMediaDataWhenReadyIfNeeded()
+        }
+    }
+
+    /// Resume keeps the intentionally paused image and screenshot, but moves
+    /// every future publication to a new generation. Pointer/input proof is not
+    /// retained because it describes the pre-resume frame.
+    func advancePresentationGenerationPreservingFrameOnRenderQueue(
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard activeToken == token, desiredToken == token else { return }
+        activePresentationGeneration = presentationGeneration
+        presentationFlushGeneration = nil
+        replaceSnapshotAcceptance(
+            token: token,
+            presentationGeneration: presentationGeneration,
+            retainingFrame: true
+        )
+        clearPendingVideoFrameOnRenderQueue(token: token)
+        latestPointerSnapshot = nil
+        interactionPublicationFence = nil
+        interactionValidity.invalidate()
+        interactionFrameSnapshots.removeAll()
+        clearPublishedPointerSnapshot(token: token)
     }
 
     /// Called synchronously by a per-stream output proxy on `renderQueue`.
@@ -621,35 +727,48 @@ final class SampleBufferRenderer: @unchecked Sendable {
     func enqueue(
         _ sampleBuffer: CMSampleBuffer,
         token: UUID,
-        filterGeneration: Int
+        filterGeneration: Int,
+        presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
-        guard activeToken == token else { return }
+        guard activeToken == token,
+              activePresentationGeneration == presentationGeneration else { return }
         guard sampleBuffer.isValid,
               let attachments = frameAttachments(for: sampleBuffer),
-              let status = frameStatus(in: attachments) else {
-            clearPendingVideoFrameOnRenderQueue(token: token)
-            clearSnapshotFrame()
-            interactionValidity.invalidate()
-            interactionFrameSnapshots.removeAll()
-            return
-        }
+              let status = frameStatus(in: attachments) else { return }
 
         guard status == .complete else {
             // An idle frame means the pixels did not change, so the most recent
             // geometry remains valid while the independent pointer ticker moves.
-            if status != .idle {
-                clearPendingVideoFrameOnRenderQueue(token: token)
-                clearSnapshotFrame()
-                displayedFrameIsConfirmedCursorless = false
-                latestPointerSnapshot = nil
-                interactionValidity.invalidate()
-                interactionFrameSnapshots.removeAll()
-                clearPublishedPointerSnapshot(token: token)
+            // Pause lifecycle markers are also intentionally retained. Blank or
+            // suspended content, however, must remove every presentation copy.
+            if status == .blank || status == .suspended {
+                invalidatePresentationOnRenderQueue(
+                    token: token,
+                    presentationGeneration: presentationGeneration
+                ) { [weak self] in
+                    self?.finishPresentationInvalidationOnRenderQueue(
+                        token: token,
+                        presentationGeneration: presentationGeneration
+                    )
+                }
             }
             return
         }
 
+        let isConfirmedCursorless = nativeCursorIsHidden
+        let qualifyingRedDotTransitionID = qualifyingRedDotTransitionID(for: token)
+        if presentationFlushGeneration == presentationGeneration {
+            pendingVideoFrame = PendingVideoFrame(
+                sampleBuffer: sampleBuffer,
+                token: token,
+                filterGeneration: filterGeneration,
+                presentationGeneration: presentationGeneration,
+                isConfirmedCursorless: isConfirmedCursorless,
+                qualifyingRedDotTransitionID: qualifyingRedDotTransitionID
+            )
+            return
+        }
         if videoRenderer.status == .failed || videoRenderer.requiresFlushToResumeDecoding {
             invalidateInteractionForRendererRecoveryOnRenderQueue(
                 token: token,
@@ -659,14 +778,13 @@ final class SampleBufferRenderer: @unchecked Sendable {
             )
             videoRenderer.flush()
         }
-        let isConfirmedCursorless = nativeCursorIsHidden
-        let qualifyingRedDotTransitionID = qualifyingRedDotTransitionID(for: token)
         if videoRenderer.isReadyForMoreMediaData {
             clearPendingVideoFrameOnRenderQueue()
             enqueueReadyFrame(
                 sampleBuffer,
                 token: token,
                 filterGeneration: filterGeneration,
+                presentationGeneration: presentationGeneration,
                 isConfirmedCursorless: isConfirmedCursorless,
                 qualifyingRedDotTransitionID: qualifyingRedDotTransitionID
             )
@@ -675,6 +793,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 sampleBuffer: sampleBuffer,
                 token: token,
                 filterGeneration: filterGeneration,
+                presentationGeneration: presentationGeneration,
                 isConfirmedCursorless: isConfirmedCursorless,
                 qualifyingRedDotTransitionID: qualifyingRedDotTransitionID
             )
@@ -684,7 +803,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
     private func requestMediaDataWhenReadyIfNeeded() {
         dispatchPrecondition(condition: .onQueue(renderQueue))
-        guard !isRequestingMediaData else { return }
+        guard !isRequestingMediaData,
+              presentationFlushGeneration == nil else { return }
         isRequestingMediaData = true
         videoRenderer.requestMediaDataWhenReady(on: renderQueue) { [weak self] in
             self?.drainPendingVideoFrameIfReady()
@@ -694,12 +814,15 @@ final class SampleBufferRenderer: @unchecked Sendable {
     private func drainPendingVideoFrameIfReady() {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard isRequestingMediaData else { return }
+        guard presentationFlushGeneration == nil else { return }
         guard let pendingVideoFrame else {
             stopRequestingMediaDataOnRenderQueue()
             return
         }
         guard activeToken == pendingVideoFrame.token,
-              desiredToken == pendingVideoFrame.token else {
+              desiredToken == pendingVideoFrame.token,
+              activePresentationGeneration ==
+                pendingVideoFrame.presentationGeneration else {
             self.pendingVideoFrame = nil
             stopRequestingMediaDataOnRenderQueue()
             return
@@ -729,6 +852,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             pendingVideoFrame.sampleBuffer,
             token: pendingVideoFrame.token,
             filterGeneration: pendingVideoFrame.filterGeneration,
+            presentationGeneration: pendingVideoFrame.presentationGeneration,
             isConfirmedCursorless: pendingVideoFrame.isConfirmedCursorless,
             qualifyingRedDotTransitionID: pendingVideoFrame.qualifyingRedDotTransitionID
         )
@@ -739,13 +863,20 @@ final class SampleBufferRenderer: @unchecked Sendable {
         _ sampleBuffer: CMSampleBuffer,
         token: UUID,
         filterGeneration: Int,
+        presentationGeneration: UUID,
         isConfirmedCursorless: Bool,
         qualifyingRedDotTransitionID: UUID?
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
-        guard activeToken == token, desiredToken == token else { return }
+        guard activeToken == token,
+              desiredToken == token,
+              activePresentationGeneration == presentationGeneration else { return }
         videoRenderer.enqueue(sampleBuffer)
-        publishSnapshotFrame(from: sampleBuffer)
+        publishSnapshotFrame(
+            from: sampleBuffer,
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
         if let renderSynchronizer {
             let outputPresentationTimeStamp =
                 CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer)
@@ -888,11 +1019,48 @@ final class SampleBufferRenderer: @unchecked Sendable {
         return Self.snapshotImageContext.createCGImage(image, from: image.extent)
     }
 
-    private func publishSnapshotFrame(from sampleBuffer: CMSampleBuffer) {
+    private func publishSnapshotFrame(
+        from sampleBuffer: CMSampleBuffer,
+        token: UUID,
+        presentationGeneration: UUID
+    ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         snapshotFrameLock.lock()
-        snapshotPixelBuffer = pixelBuffer
+        if snapshotToken == token,
+           snapshotPresentationGeneration == presentationGeneration {
+            snapshotPixelBuffer = pixelBuffer
+        }
+        snapshotFrameLock.unlock()
+    }
+
+    private func replaceSnapshotAcceptance(
+        token: UUID,
+        presentationGeneration: UUID,
+        retainingFrame: Bool
+    ) {
+        snapshotFrameLock.lock()
+        snapshotToken = token
+        snapshotPresentationGeneration = presentationGeneration
+        if !retainingFrame { snapshotPixelBuffer = nil }
+        snapshotFrameLock.unlock()
+    }
+
+    private func revokeSnapshotAcceptance(token: UUID) {
+        snapshotFrameLock.lock()
+        if snapshotToken == token {
+            snapshotToken = nil
+            snapshotPresentationGeneration = nil
+            snapshotPixelBuffer = nil
+        }
+        snapshotFrameLock.unlock()
+    }
+
+    private func revokeAllSnapshotAcceptance() {
+        snapshotFrameLock.lock()
+        snapshotToken = nil
+        snapshotPresentationGeneration = nil
+        snapshotPixelBuffer = nil
         snapshotFrameLock.unlock()
     }
 

@@ -127,6 +127,8 @@ time, not merely hide a control at runtime.
     Curtain or content, ink, watermark, safe-area guide, and pointer, but never
     Workspace or Control Room chrome. Copy writes the one PNG to the macOS
     pasteboard; Save writes it only to the location selected in `NSSavePanel`.
+    The Store sandbox grants user-selected read/write access solely for that
+    explicit destination.
     Cancel writes nothing. No new screen-capture permission or unrelated-window
     enumeration is used.
 11. There is no `AVAssetWriter`, `VideoToolbox` recording encoder, automatic
@@ -182,10 +184,10 @@ only the picker-scoped screen-sharing explanation. Neither build requests Input 
   title. It contains no editing toolbar or private controls. `sharingType =
   .readOnly` communicates shareability to compatible APIs.
 - Stage Workspace and Control Room have explicit “Keep Private” titles. Their
-  `sharingType = .none` values are legacy hints only and are never treated as a
-  privacy or security boundary. Application sharing, full-display sharing, or a
-  meeting app may include either private window.
-- Stage Workspace enforces a 1040×680-point minimum for its large canvas and
+  names and in-product warnings, not an unsupported `sharingType = .none`
+  capture-exclusion hint, are the boundary. Application sharing, full-display
+  sharing, or a meeting app may include either private window.
+- Stage Workspace enforces a 900×620-point minimum for its large canvas and
   tools. Control Room enforces an 820×580-point minimum for its source list,
   navigation, and settings; it intentionally has no live renderer.
 - The user-facing workflow always instructs people to select the exact Stage

@@ -44,7 +44,7 @@
     <key>NSRequiresAquaSystemAppearance</key>
     <false/>
     <key>NSScreenCaptureUsageDescription</key>
-	<string>StagePane displays only windows, apps, or displays you explicitly add through Apple’s picker, up to four independent sources in your local share stage. Frames are not recorded, saved, or sent by StagePane.</string>
+	<string>StagePane displays only windows, apps, or displays you choose in Apple’s picker, up to four sources. It never records or sends them. Copy or Save Audience Image creates one local PNG only when you choose that action.</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
 </dict>

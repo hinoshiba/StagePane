@@ -185,6 +185,7 @@ struct SectionHeading: View {
             Text(title)
                 .font(.system(.title, design: .rounded, weight: .bold))
                 .tracking(-0.7)
+                .accessibilityHeading(.h1)
             Text(detail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

@@ -15,4 +15,16 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/" />
   </url>
+  <url>
+    <loc>https://stagepane.hinoshiba.com/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/privacy/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/privacy/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/privacy/" />
+  </url>
+  <url>
+    <loc>https://stagepane.hinoshiba.com/en/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/privacy/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/privacy/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/privacy/" />
+  </url>
 </urlset>

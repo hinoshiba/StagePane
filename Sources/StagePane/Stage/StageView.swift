@@ -36,6 +36,7 @@ struct StageView: View {
             }
         }
         .frame(minWidth: 480, minHeight: 270)
+        .ignoresSafeArea()
         .clipped()
         .accessibilityElement(children: .contain)
     }
@@ -93,8 +94,8 @@ struct StageView: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.70)
                     Text(L10n.text(
-                        "コントロールルームでソースを選ぶか、このまま待機画面として共有できます。",
-                        "Choose a source in Control Room, or share this as a clean holding screen."
+                        "Stage Workspaceでソースを選ぶか、このまま待機画面として共有できます。",
+                        "Choose a source in Stage Workspace, or share this as a clean holding screen."
                     ))
                     .font(compact ? .caption : .subheadline)
                     .multilineTextAlignment(.center)
@@ -142,7 +143,9 @@ struct StageView: View {
 
     private var stageEntries: [StageCompositeEntry] {
         capture.layout.sources.compactMap { item in
-            guard let source = capture.source(for: item.id) else { return nil }
+            guard let source = capture.source(for: item.id),
+                  !source.isOutputSuppressed,
+                  source.phase != .stopping else { return nil }
             return StageCompositeEntry(
                 id: item.id,
                 frame: item.frame,
