@@ -70,12 +70,12 @@ Update and review these values in one pull request:
 - `CHANGELOG.md`, App Store metadata, privacy answers, and review notes when
   behavior or claims changed
 - localized website screenshots and Open Graph images regenerated from the exact
-  Mac App Store UI whenever an audience-visible default, Workspace, or Control
-  Room layout changes; Store screenshots must show Arrange and Draw only, never
-  Control or an Accessibility permission prompt, and any Permissions screenshot
+  Mac App Store UI whenever an audience-visible default or Workspace layout
+  changes; Store screenshots must show Arrange and Draw only, never Press
+  Buttons or an Accessibility permission prompt, and any Permissions screenshot
   must hide the Accessibility card. Run the candidate executable with
   `STAGEPANE_LANGUAGE=ja` and `STAGEPANE_LANGUAGE=en` plus `--snapshot <dir>`;
-  `workspace.png`, `control-room.png`, `privacy.png`, and `appearance.png` must
+  `workspace.png`, `sources.png`, `privacy.png`, and `appearance.png` must
   be opaque 2880×1800 images. The 1920×1080 Stage-only snapshots are website and
   QA assets, not valid Mac App Store upload dimensions
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
@@ -110,18 +110,18 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   both renderers for every running or paused source;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   free resize/minimum tile size, front ordering, matching Workspace/Stage
-  layouts, the Workspace's 900×620-point minimum content size, and Control
-  Room's 820×580-point minimum content size;
-- strict window separation: the large private Workspace is the only live editor
-  and hosts Arrange, Draw, and Control only in eligible non-Store builds; Control
-  Room has no live editor; the public Stage has no private toolbar, mode control,
+  layouts, and the Workspace's 900×620-point minimum content size;
+- strict two-window separation: the private Workspace contains the Canvas and
+  Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
+  Privacy, and About; its Canvas hosts Arrange, Draw, and Press Buttons only in
+  eligible non-Store builds; the public Stage has no private toolbar, mode control,
   selection outline, resize handle, notice, or other editing chrome;
-- exact-window sharing guidance that never claims Workspace or Control Room can
+- exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
   sharing can expose private windows and the UI directs users to choose the
   exact `StagePane Stage` window;
 - Workspace close/reopen while live, drawing, resizing, choosing, paused, and in
-  Control mode: closing ends an active stroke and cancels pending input without
+  Press Buttons mode: closing ends an active stroke and cancels pending input without
   stopping capture, clearing completed ink, closing Stage, or corrupting layout;
   closing the public Stage continues to cover output and stop active capture;
 - live source-window aspect changes, including a static slide after a layout or
@@ -141,7 +141,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - Arrange-mode drag/resize affecting only composition, with Arrange and Draw
   available in Workspace in the exact sandboxed Mac App Store candidate on
   every supported OS;
-  confirm that Control/Allow Control UI, cross-application Accessibility
+  confirm that Press Buttons/Allow Button Press UI, cross-application Accessibility
   implementation and symbols, Accessibility cards, settings links, and prompts
   are absent from that candidate; confirm its persistent Permissions view describes only
   picker-scoped screen-sharing session access;
@@ -152,13 +152,13 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   including destructive/cancel semantics, VoiceOver and keyboard paths,
   cancellation preserving stream/frame/layout, and source-state changes while
   the dialog is open;
-- no redundant privacy slogans in the Stage dashboard or Control Room sidebar,
+- no redundant privacy slogans in the Stage dashboard or Workspace sidebar,
   no Important Limitation card in About, and the complete Privacy screen still
   available;
 - explicit one-shot screenshot Copy and Save for every Stage preset: exact
   preset pixel dimensions; clean Audience Stage only; correct source layout and
   current content-or-Curtain, ink, watermark, safe-area, and pointer; no
-  Workspace/Control Room/title-bar UI; Copy provides a readable PNG on the
+  Workspace navigation/controls or title-bar UI; Copy provides a readable PNG on the
   pasteboard; Save writes one readable PNG only to the selected location; save
   cancellation writes nothing and does not alter the clipboard; missing fresh
   frames fail visibly instead of exporting a black tile;
@@ -175,17 +175,17 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 Record the exact commit, hardware, OS/app versions, results, and approved
 exceptions in the release record.
 
-### Separate unsandboxed Control acceptance
+### Separate unsandboxed Press Buttons acceptance
 
-Control is not part of the Mac App Store release candidate. If the unsandboxed
+Press Buttons is not part of the Mac App Store release candidate. If the unsandboxed
 local development build is tested, record it in a separate matrix and do not
 reuse its screenshots or reviewer media for App Store submission. On macOS 14
-through 15.1, Control must remain unavailable without requesting Accessibility
+through 15.1, Press Buttons must remain unavailable without requesting Accessibility
 access.
-On macOS 15.2 or later, verify that selecting Control only routes to the
+On macOS 15.2 or later, verify that selecting Press Buttons only routes to the
 persistent Permissions view and that its explicit **Continue Setup** action is
 the sole trigger for the system request and is offered only until that request
-has been attempted. Reopen and revisit Control while untrusted to confirm it
+has been attempted. Reopen and revisit Press Buttons while untrusted to confirm it
 shows repair steps without another system prompt. For an existing installation
 updated to a default ad-hoc build, confirm it migrates directly to repair without
 one additional prompt, that the repair copy shows the exact running app path,
@@ -230,7 +230,7 @@ In the completed Xcode Cloud build and App Store Connect, verify:
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
-- Arrange and Draw present, with no exposed Control UI and with every
+- Arrange and Draw present, with no exposed Press Buttons UI and with every
   cross-application Accessibility implementation, permission, and action path
   absent from the archived Mac App Store candidate; the Permissions view must
   show the picker-scoped sharing explanation but no Accessibility card;

@@ -2,16 +2,15 @@
 
 ## Share safely / 安全に共有する
 
-1. Keep **StagePane Workspace — Keep Private** and **StagePane Control Room —
-   Keep Private** on your Mac.<br>
-   **StagePane Workspace — 共有しない編集画面** と **StagePane Control Room —
-   共有しない操作画面** は手元に置きます。
+1. Keep **StagePane Workspace — Keep Private** on your Mac.<br>
+   **StagePane Workspace — 共有しない編集画面** は手元に置きます。
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
    display in the macOS system picker. Repeat to add up to four sources.
-3. Open the large private Stage Workspace to arrange, control where available,
-   or draw. Drag and resize sources there. Use **Pause / 一時停止**, **Resume /
-   再開**, **Replace / 選び直す**, or **Remove / 解除** in Control Room's
-   source list for one item, or **Auto Arrange / 自動配置** for an even grid.
+3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange,
+   press supported buttons where available, or draw. Drag and resize sources
+   there. Use **Pause / 一時停止**, **Resume / 再開**, **Replace / 選び直す**,
+   or **Remove / 解除** in **Sources / ソース**, or **Auto Arrange / 自動配置**
+   for an even grid.
    In Arrange mode, **Quick Layout / クイック配置** also offers Side by
    Side, Stacked, and Picture in Picture without changing source order.
 4. In your meeting app, share **StagePane Stage — Share This Window / このウインドウを共有**.
@@ -25,28 +24,29 @@ window when you want to limit the source more narrowly.
 
 ## Permissions / アクセス権限
 
-Control Room's persistent **Permissions / アクセス権限** view explains every
+Workspace's persistent **Permissions / アクセス権限** view explains every
 access path StagePane can use. Screen sharing is approved one selection at a
 time in Apple's `SCContentSharingPicker`: choosing a window, app, or display
 authorizes only that content for its capture session. StagePane does not request
 separate, broad Screen Recording access, and canceling the picker grants no
 source access.
 
-Control Roomの常設 **アクセス権限** 画面では、StagePaneが利用できるアクセス経路を
+Workspaceの常設 **アクセス権限** 画面では、StagePaneが利用できるアクセス経路を
 確認できます。画面共有はAppleの `SCContentSharingPicker` で1件ずつ承認され、選んだ
 ウインドウ、アプリ、または画面だけが、その取得セッション中に許可されます。別途、
 広範な画面収録許可を求めることはなく、ピッカーをキャンセルした場合はソースへの
 アクセスも始まりません。
 
 In the unsandboxed local development build on macOS 15.2 or later, this view
-also contains a separate **Accessibility** card for Control mode. Selecting
-Control can take you to that card, but it does not itself open the macOS consent
+also contains a separate **Accessibility** card for Press Buttons. Selecting
+Press Buttons can take you to that card, but it does not itself open the macOS consent
 UI. Only choosing **Continue Setup / 設定を続ける** in the card requests
 Accessibility access. The Mac App Store build hides the entire Accessibility
 card and never requests that access.
 
-macOS 15.2以降の非サンドボックスのローカル開発ビルドでは、この画面に操作モード用の
-**アクセシビリティ** カードも表示されます。「操作」を選ぶとカードへ移動できますが、
+macOS 15.2以降の非サンドボックスのローカル開発ビルドでは、この画面に
+**ボタン操作** 用の **アクセシビリティ** カードも表示されます。「ボタン操作」を
+選ぶとカードへ移動できますが、
 その時点ではmacOSの確認画面を開きません。カード内の **設定を続ける** を明示的に選んだ場合
 だけ、アクセシビリティ許可を求めます。Mac App Store版ではカード自体を表示せず、
 この許可も求めません。
@@ -95,20 +95,22 @@ sent that frame yet, changing the slide or source content applies the new style.
 
 The private Workspace stays visible while the audience Curtain is on, so you can
 prepare a layout before revealing it. Dragging or resizing a tile changes only
-the Stage composition while **Arrange / 配置** mode is selected. Control Room
-contains sources, status, and settings, but no live editor.
+the Stage composition while **Arrange / 配置** mode is selected. Its sidebar
+contains Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and
+About.
 Toggling the Curtain does not bring the Stage window to the front.
 “Keep Private” is guidance, not a technical capture boundary. Application or
-full-display sharing can expose the Workspace and Control Room, and a meeting
-app may still list either window. Select the exact **StagePane Stage — Share
+full-display sharing can expose the Workspace, and a meeting app may still list
+it. Select the exact **StagePane Stage — Share
 This Window** window.
 
 観客側のカーテン中も手元のWorkspaceは表示されるため、公開前に準備できます。
 **配置** モードでのタイルのドラッグや大きさ変更は、Stage内の配置だけを変えます。
-Control Roomにはソース、状態、設定を表示し、ライブ編集画面は置きません。
+Workspaceのサイドバーに、キャンバス、ソース、Stage設定、見た目と動作、アクセス権限、
+プライバシー、このアプリについてをまとめています。
 カーテンを切り替えてもStageウインドウは前面へ移動しません。
 「共有しない」は使い方の案内であり、技術的な共有防止境界ではありません。アプリ全体や
-ディスプレイ全体を共有するとWorkspaceやControl Roomが映る可能性があります。会議アプリでは
+ディスプレイ全体を共有するとWorkspaceが映る可能性があります。会議アプリでは
 正確に **StagePane Stage — このウインドウを共有** を選んでください。
 
 The Curtain hides the Stage output, but it does not stop local capture. Use
@@ -120,17 +122,17 @@ The Curtain hides the Stage output, but it does not stop local capture. Use
 ## Workspace modes / Workspaceのモード
 
 The Mac App Store build provides **Arrange / 配置** and **Draw / 手書き**. It
-does not include Control mode and never asks for macOS Accessibility or Input
+does not include Press Buttons and never asks for macOS Accessibility or Input
 Monitoring permission. The unsandboxed local development build can additionally
-show **Control / 操作** on macOS 15.2 or later.
+show **Press Buttons / ボタン操作** on macOS 15.2 or later.
 
-Mac App Store版で利用できるのは **配置** と **手書き** です。**操作** モードは含まれず、
+Mac App Store版で利用できるのは **配置** と **手書き** です。**ボタン操作** は含まれず、
 macOSのアクセシビリティ許可や入力監視許可も求めません。macOS 15.2以降の
-非サンドボックスのローカル開発ビルドでは、追加で **操作** を表示できます。
+非サンドボックスのローカル開発ビルドでは、追加で **ボタン操作** を表示できます。
 
 - **Arrange / 配置** moves, resizes, and reorders Stage tiles. It never sends
   those editing gestures to a source app.
-- **Control / 操作** (unsandboxed local development build only) uses the
+- **Press Buttons / ボタン操作** (unsandboxed local development build only) uses the
   separate Accessibility access requested only when you choose **Continue Setup**
   in Permissions. Selecting a point in a source added as exactly one
   window performs the supported Press action only when the point maps to a
@@ -147,7 +149,7 @@ macOSのアクセシビリティ許可や入力監視許可も求めません。
 
 - **配置** はStage内のタイルを移動・サイズ変更・並べ替えします。編集ジェスチャーは
   取得元アプリへ送りません。
-- **操作**（非サンドボックスのローカル開発ビルドのみ）は、**アクセス権限** 画面で
+- **ボタン操作**（非サンドボックスのローカル開発ビルドのみ）は、**アクセス権限** 画面で
   **設定を続ける** を選んだ場合だけ求める、個別のアクセシビリティ許可を使います。
   「1つのウインドウ」として追加したソース内で、
   同じ選択済みウインドウに属する
@@ -166,14 +168,14 @@ Audience画像を保存…** in Stage Workspace only when you want a one-shot im
 of the clean audience Stage. The
 PNG uses the selected Stage dimensions and includes the exact audience state:
 shared content or Curtain, ink, watermark, safe-area guide, and pointer. It does
-not include the Workspace toolbar, Control Room, window title bar, or other app
-windows.
+not include Workspace navigation or controls, window title-bar chrome, or other
+app windows.
 
 観客側のきれいなStageを1枚だけ画像にしたいときは、Stage Workspaceの
 **Audience画像をコピー** または **Audience画像を保存…** を明示的に選びます。PNGは
 選択中のStageサイズで作成され、共有内容
 またはカーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含みます。
-Workspaceのツールバー、Control Room、ウインドウのタイトルバー、他アプリのウインドウは
+Workspaceのナビゲーションや操作UI、ウインドウのタイトルバー、他アプリのウインドウは
 含みません。
 
 Copy places that PNG on the macOS clipboard. Save writes it only to the location
@@ -208,20 +210,19 @@ of a pressable accessibility control in the exact Presenter View window.
 
 キー入力、ドラッグ、スライドキャンバスの移動、PowerPoint固有の操作はPowerPoint側で
 行います。Mac App Store版はPowerPointを操作せず、「配置」で変わるのは相手側の構図だけです。
-macOS 15.2以降の非サンドボックスのローカル開発ビルドでは、「操作」モードから、
+macOS 15.2以降の非サンドボックスのローカル開発ビルドでは、「ボタン操作」から、
 単一の発表者ビューウインドウ内で押下（Press）操作に対応するアクセシビリティコントロール
 だけを実行できます。
 
 ## Recovery / 困ったとき
 
-- Use the StagePane menu-bar icon to recover Control Room, Stage Workspace, or
-  the Share Stage.
+- Use the StagePane menu-bar icon to recover Stage Workspace or the Share Stage.
 - Press **Shift-Command-H** to toggle the Curtain.
 - Press **Shift-Command-P** to add one source.
-- Open **Permissions / アクセス権限** in Control Room to review the
+- Open **Permissions / アクセス権限** in Workspace to review the
   per-selection screen-sharing model. Add Source opens Apple's picker; no
   separate broad Screen Recording permission or settings step is required.
-- In the unsandboxed local development Control build only, use the Accessibility
+- In the unsandboxed local development build with Press Buttons only, use the Accessibility
   card's **Continue Setup / 設定を続ける** action to request access once. If a
   rebuilt app is still shown as On in System Settings but StagePane reports the
   current build as not allowed, follow the numbered instructions in the card,

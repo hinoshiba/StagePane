@@ -43,7 +43,7 @@ identified rights owner are required before public launch.
 |---|---|---|
 | Swift standard/runtime libraries | Apple toolchain/system | Governed by Apple toolchain terms; embedded components, if any, are produced by Apple's linker |
 | AppKit, AVFoundation, Combine, CoreGraphics, CoreMedia, CoreVideo, Foundation, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked by the Mac App Store build; not copied into the app bundle |
-| ApplicationServices Accessibility | Apple system framework | Used only by the unsandboxed local development Control build; excluded from the Mac App Store Control/permission path |
+| ApplicationServices Accessibility | Apple system framework | Used only by the unsandboxed local development build with Press Buttons; excluded from the Mac App Store permission/action path |
 | SF Symbols | Requested from macOS at runtime | No symbol artwork files are bundled |
 | StagePane icon/mark | Original project artwork | Apache-2.0 covers copyright permission; `TRADEMARKS.md` separately reserves official brand identity |
 | Local Swift package product | `StagePaneCore` from this repository | Project-authored code; linked into the Xcode App Store target, not an external dependency |
@@ -87,11 +87,11 @@ synthesize raw mouse/keyboard events, forward keyboard/drag input, or imitate an
 alternate macOS desktop. Apple requires App Sandbox for Mac App Store apps and
 identifies assistive Accessibility API use as incompatible with that sandbox in
 its [App Sandbox compatibility guidance](https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox).
-The Mac App Store build therefore omits Control mode and its Accessibility
+The Mac App Store build therefore omits Press Buttons and its Accessibility
 permission/action path entirely; Arrange, Draw, and the rest of the presentation
 canvas remain.
 
-On macOS 15.2 or later, the unsandboxed local development Control build can use
+On macOS 15.2 or later, the unsandboxed local development build with Press Buttons can use
 documented `AXIsProcessTrustedWithOptions`, application-scoped
 `AXUIElementCopyElementAtPosition`, selected-window validation, and
 `AXUIElementPerformAction(kAXPressAction)` for a pressable control inside an
@@ -103,7 +103,7 @@ development `dist/StagePane.app` remains non-distributable.
 - **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which
   archives the checked-in `StagePaneAppStore` target with automatic signing and
   App Sandbox for TestFlight and App Store use. CI and release review check the
-  absence of Control/Accessibility permission paths as well as entitlements,
+  absence of Press Buttons/Accessibility permission paths as well as entitlements,
   universal slices, resources, placeholders, and absolute `LC_RPATH` entries.
   Do not add Sparkle, an external license-key system, or an independent updater.
   Apple approval is never guaranteed.

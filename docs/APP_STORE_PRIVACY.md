@@ -21,9 +21,9 @@ Selected frames are rendered locally into the clean Stage window and the private
 
 ## One-shot Audience PNG / 1枚のAudience PNG
 
-Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide, and pointer, while excluding Workspace and Control Room controls and unrelated windows.
+Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide, and pointer, while excluding Workspace navigation and controls and unrelated windows.
 
-明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含み、WorkspaceやControl Roomの操作UI、無関係なウインドウは含みません。
+明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含み、Workspaceのナビゲーションや操作UI、無関係なウインドウは含みません。
 
 Copy places the PNG on the macOS general pasteboard, where other local apps or clipboard managers may access it. Save opens the macOS save panel and writes only to the location you choose. Canceling Save writes nothing. StagePane keeps no separate screenshot history or hidden copy.
 
@@ -43,7 +43,7 @@ StagePaneは、Stageプリセット、テーマ、ポインター表示、手書
 
 ## Permissions / アクセス許可
 
-Screen access is granted per selection and per capture session through Apple's picker. The Mac App Store edition provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and includes no cross-application Control mode.
+Screen access is granted per selection and per capture session through Apple's picker. The Mac App Store edition provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and includes no cross-application Press Buttons feature.
 
 画面アクセスはAppleのピッカーで選択ごと・取得セッションごとに許可されます。Mac App Store版は配置と手書きを提供し、アクセシビリティや入力監視の許可を求めず、他アプリを操作する機能も含みません。
 

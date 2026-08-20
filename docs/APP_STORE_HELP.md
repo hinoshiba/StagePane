@@ -18,9 +18,9 @@ This help describes the sandboxed Mac App Store edition of StagePane.
 4. 会議アプリでは、正確に **StagePane Stage — このウインドウを共有** を選びます。
 5. 共有対象を確認してから **カーテンを開く** を選びます。
 
-Workspace and Control Room are private working windows, but macOS does not guarantee that they are hidden from full-display or whole-application sharing. Share the exact Stage window when you want only the clean audience output.
+Workspace is a private working window, but macOS does not guarantee that it is hidden from full-display or whole-application sharing. Share the exact Stage window when you want only the clean audience output.
 
-WorkspaceとControl Roomは手元用ですが、画面全体やアプリ全体の共有から必ず隠れるとは限りません。観客向け出力だけを見せる場合は、正確にStageウインドウを共有してください。
+Workspaceは手元用ですが、画面全体やアプリ全体の共有から必ず隠れるとは限りません。観客向け出力だけを見せる場合は、正確にStageウインドウを共有してください。
 
 ## Manage sources / ソースを管理する
 
@@ -58,15 +58,15 @@ An app selection can include all windows owned by that app. Choose one window wh
 - **Audience画像をコピー** はStageのPNGをペーストボードへ置きます。
 - **Audience画像を保存…** は選んだ場所だけへStageのPNGを1枚書き込みます。
 
-Screenshots contain the clean audience composition, not Workspace or Control Room controls. StagePane does not record video and never saves images automatically.
+Screenshots contain the clean audience composition, not Workspace navigation or controls. StagePane does not record video and never saves images automatically.
 
-スクリーンショットには観客向けの合成結果だけが入り、WorkspaceやControl Roomの操作UIは入りません。動画は録画せず、画像を自動保存することもありません。
+スクリーンショットには観客向けの合成結果だけが入り、Workspaceのナビゲーションや操作UIは入りません。動画は録画せず、画像を自動保存することもありません。
 
 ## Access and privacy / アクセスとプライバシー
 
-Each source is approved in Apple's content-sharing picker for that capture session. Canceling the picker grants nothing. The Mac App Store edition does not request Accessibility or Input Monitoring access and does not include Control mode.
+Each source is approved in Apple's content-sharing picker for that capture session. Canceling the picker grants nothing. The Mac App Store edition does not request Accessibility or Input Monitoring access and does not include Press Buttons.
 
-各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は取得を始めません。Mac App Store版はアクセシビリティや入力監視の許可を求めず、操作モードも含みません。
+各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は取得を始めません。Mac App Store版はアクセシビリティや入力監視の許可を求めず、ボタン操作も含みません。
 
 StagePane has no account, advertising, analytics, microphone/audio capture, or network upload. See the bundled Privacy Policy for the complete data-flow description.
 
@@ -74,13 +74,13 @@ StagePaneには、アカウント、広告、解析、マイク・音声取得�
 
 ## If something is wrong / 問題がある場合
 
-- Make sure you shared **StagePane Stage**, not Workspace or Control Room.
+- Make sure you shared **StagePane Stage**, not Workspace.
 - If selection was canceled, choose **Add Source** again.
 - If a source stops, remove it or use **Reset Capture**, then add it again.
 - If a saved PNG cannot be written, choose another location in the macOS save panel.
 - Keep the Curtain on while you prepare or recover a source.
 
-- 会議アプリでWorkspaceやControl Roomではなく **StagePane Stage** を共有したことを確認します。
+- 会議アプリでWorkspaceではなく **StagePane Stage** を共有したことを確認します。
 - 選択をキャンセルした場合は、もう一度 **ソースを追加** を選びます。
 - ソースが停止した場合は、解除するか **画面取得をリセット** してから再度追加します。
 - PNGを保存できない場合は、macOSの保存パネルで別の場所を選びます。

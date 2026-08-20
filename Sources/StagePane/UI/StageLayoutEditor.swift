@@ -162,7 +162,7 @@ struct StageLayoutEditor: View {
     private var previewAccessibilityLabel: String {
         switch controller.stageInteractionMode {
         case .arrange: L10n.text("ステージ配置エディタ", "Stage layout editor")
-        case .control: L10n.text("ステージ操作プレビュー", "Stage control preview")
+        case .control: L10n.text("ステージボタン操作プレビュー", "Stage button-action preview")
         case .annotate: L10n.text("ステージ手書きキャンバス", "Stage drawing canvas")
         }
     }
@@ -176,8 +176,8 @@ struct StageLayoutEditor: View {
             )
         case .control:
             L10n.text(
-                "ウインドウソース内の対応ボタンやコントロールを押せます。",
-                "Press a supported button or control inside a window source."
+                "ウインドウソース内で、アクセシビリティのPressに対応するボタンだけを操作できます。",
+                "Only buttons that expose a supported Accessibility Press action inside a window source can be used."
             )
         case .annotate:
             L10n.text(
@@ -230,43 +230,115 @@ private struct StageSourceControlOverlay: View {
     let canvasSize: CGSize
     @ObservedObject var controller: AppController
 
+    @ViewBuilder
     var body: some View {
-        Rectangle()
-            .fill(Color.clear)
-            .contentShape(Rectangle())
-            .frame(width: tileWidth, height: tileHeight)
-            .position(x: tileMidX, y: tileMidY)
-            .gesture(
-                SpatialTapGesture(
-                    coordinateSpace: .named(stageLayoutCanvasCoordinateSpace)
-                )
-                .onEnded { value in
+        if canPerformButtonAction {
+            controlSurface
+                .accessibilityAction {
                     controller.forwardPreviewClick(
-                        at: value.location,
+                        at: CGPoint(x: tileMidX, y: tileMidY),
                         stageSize: canvasSize,
                         expectedSourceID: source.id
                     )
                 }
-            )
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(L10n.text(
-                "\(source.title)を操作",
-                "Control \(source.title)"
-            ))
-            .accessibilityValue(source.isPaused
-                ? L10n.text("一時停止中", "Paused")
-                : L10n.text("対応コントロールを操作", "Presses a supported control"))
-            .accessibilityHint(L10n.text(
-                "実行すると共有元ウインドウ中央にある対応コントロールを押します。",
-                "Activate to press a supported control at the center of the source window."
-            ))
-            .accessibilityAction {
-                controller.forwardPreviewClick(
-                    at: CGPoint(x: tileMidX, y: tileMidY),
-                    stageSize: canvasSize,
-                    expectedSourceID: source.id
+        } else {
+            controlSurface
+                .accessibilityRespondsToUserInteraction(false)
+        }
+    }
+
+    private var controlSurface: some View {
+        ZStack(alignment: .topLeading) {
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .gesture(
+                    SpatialTapGesture(
+                        coordinateSpace: .named(stageLayoutCanvasCoordinateSpace)
+                    )
+                    .onEnded { value in
+                        guard canPerformButtonAction else { return }
+                        controller.forwardPreviewClick(
+                            at: value.location,
+                            stageSize: canvasSize,
+                            expectedSourceID: source.id
+                        )
+                    }
                 )
+
+            capabilityBadge
+        }
+        .frame(width: tileWidth, height: tileHeight)
+        .position(x: tileMidX, y: tileMidY)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.text(
+            "\(source.title)のボタン操作",
+            "Button actions for \(source.title)"
+        ))
+        .accessibilityValue(capabilityTitle)
+        .accessibilityHint(capabilityAccessibilityHint)
+    }
+
+    private var capabilityBadge: some View {
+        Label(capabilityTitle, systemImage: capabilitySymbol)
+            .font(.system(size: 9, weight: .bold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .foregroundStyle(capabilityColor)
+            .padding(.horizontal, 7)
+            .frame(minHeight: 21)
+            .background(Color.black.opacity(0.74), in: Capsule())
+            .overlay {
+                Capsule().stroke(capabilityColor.opacity(0.52), lineWidth: 1)
             }
+            .padding(6)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
+    private var canPerformButtonAction: Bool {
+        source.kind == .window && !source.isPaused
+    }
+
+    private var capabilityTitle: String {
+        if source.isPaused {
+            return L10n.text("一時停止中", "Paused")
+        }
+        guard source.kind == .window else {
+            return L10n.text("表示のみ", "View only")
+        }
+        return L10n.text("対応ボタン", "Supported buttons")
+    }
+
+    private var capabilitySymbol: String {
+        if source.isPaused { return "pause.fill" }
+        return source.kind == .window ? "hand.tap.fill" : "eye.fill"
+    }
+
+    private var capabilityColor: Color {
+        if source.isPaused { return StagePanePalette.coralReadable }
+        return source.kind == .window
+            ? StagePanePalette.mintReadable
+            : Color.white.opacity(0.72)
+    }
+
+    private var capabilityAccessibilityHint: String {
+        if source.isPaused {
+            return L10n.text(
+                "ソースを再開すると、対応ボタンだけを操作できます。",
+                "Resume the source to use supported button actions."
+            )
+        }
+        guard source.kind == .window else {
+            return L10n.text(
+                "このソースは表示専用です。ボタン操作には、1つのウインドウとして追加してください。",
+                "This source is view only. Add one specific window to use supported button actions."
+            )
+        }
+        return L10n.text(
+            "アクセシビリティのPressに対応するボタンだけを操作します。一般的な画面領域、キー入力、ドラッグには対応しません。",
+            "Only buttons that expose an Accessibility Press action are supported. General content, keyboard input, and drags are not."
+        )
     }
 
     private var tileWidth: CGFloat { canvasSize.width * CGFloat(frame.width) }

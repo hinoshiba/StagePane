@@ -35,8 +35,8 @@ brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
 and the canonical `com.hinoshiba.stagepane` bundle identifier. See
 `RELEASE.md` for workflow settings, tag/version gates, and handoff steps.
 
-The submitted Mac App Store binary includes Arrange and Draw, but omits Control
-mode and every cross-application Accessibility permission/action path. Control
+The submitted Mac App Store binary includes Arrange and Draw, but omits Press
+Buttons and every cross-application Accessibility permission/action path. Press Buttons
 is available only in the unsandboxed local development build and must not appear
 in App Store metadata, screenshots, review media, or reviewer instructions. No
 direct-distribution build currently ships.
@@ -45,8 +45,8 @@ direct-distribution build currently ships.
 
 1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
    private Stage Workspace, making the share/private boundary unmistakable.
-2. **最大4つを、追加・一時停止・確認して解除。** — the separate Control Room's
-   source list and removal caution.
+2. **最大4つを、追加・一時停止・確認して解除。** — Workspace → Sources and its
+   removal caution.
 3. **配置・手書き・撮影を、大きな画面で。** — the private Workspace with the
    Mac App Store build's Arrange and Draw modes, bounded in-memory ink, and
    explicit Copy/Save Audience Image actions.
@@ -61,10 +61,11 @@ Japanese and English.
 
 ## Review notes draft
 
-> StagePane is a focused screen-sharing utility with three normal macOS windows:
-> “StagePane Stage” is the clean window to share, “Stage Workspace” is the
-> private live canvas for arranging, drawing, and taking an Audience Stage PNG,
-> and “Control Room” is the private source-management and settings window. It
+> StagePane is a focused screen-sharing utility with two normal macOS windows:
+> “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
+> private live Canvas for arranging, drawing, and taking an Audience Stage PNG.
+> Its Docker-style sidebar also contains Sources, Stage Settings, Appearance,
+> Permissions, Privacy, and About. It
 > does not add a display, replace or imitate the macOS desktop, provide an app
 > launcher, modify Finder or the Dock, install a driver, use private APIs, or
 > continue running after the user quits.
@@ -78,8 +79,8 @@ Japanese and English.
 > “Remove” asks for confirmation, ends only its stream, and discards its frame.
 > In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
 > Arrange.” These gestures change only StagePane's composition. The Mac App
-> Store build provides Arrange and Draw modes only. It does not include Control
-> mode, perform actions in another application, or request macOS Accessibility
+> Store build provides Arrange and Draw modes only. It does not include Press
+> Buttons, perform actions in another application, or request macOS Accessibility
 > or Input Monitoring permission. Draw mode adds bounded in-memory vector ink to
 > both the private Workspace and public Stage; the Curtain hides it and Stop
 > All/final-source removal clears it. The StagePane process does not record,
@@ -91,8 +92,7 @@ Japanese and English.
 > local display surfaces. “Curtain” hides only the public Stage and does not
 > bring its window to the front. It does not pause any source; unpaused streams
 > continue and the private Stage Workspace remains available for preparation.
-> Control Room contains source management and settings, not a live preview.
-> Stage Workspace and Control Room must remain private.
+> Stage Workspace must remain private.
 >
 > Under “Appearance,” the pointer can remain standard, appear as a local red
 > laser dot in the Stage, or be hidden. Its color, size, and glow are adjustable,
@@ -108,12 +108,12 @@ Japanese and English.
 > analytics, ads, account, external updater, license-key mechanism,
 > cross-application control feature, or Accessibility permission request.
 
-Attach a short reviewer video showing all three window titles and roles, adding
+Attach a short reviewer video showing both window titles and roles, adding
 two sources, per-source pause/resume, replace, removal confirmation, drag,
 resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
-and must not show Control mode or an Accessibility permission prompt. Provide
+and must not show Press Buttons or an Accessibility permission prompt. Provide
 current Zoom, Teams, and Meet test results only as compatibility evidence, not
 as affiliations.
 
@@ -121,7 +121,7 @@ as affiliations.
 
 - Guideline 2.3.1: metadata matches the normal-window implementation.
 - 2.5.1: documented public APIs only. The submitted sandboxed binary contains no
-  Control mode, cross-application Accessibility action path, raw mouse/keyboard
+  Press Buttons, cross-application Accessibility action path, raw mouse/keyboard
   event synthesis, keyboard/drag forwarding, or event tap.
 - 2.5.8: no alternate desktop/home-screen environment.
 - 2.5.14: explicit user consent and visible preview status/stop control.

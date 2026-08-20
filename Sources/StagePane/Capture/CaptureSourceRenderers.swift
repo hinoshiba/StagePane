@@ -5,7 +5,7 @@ import StagePaneCore
 /// Two zero-copy presentation surfaces fed by the same capture stream.
 ///
 /// One surface belongs to the public Stage window. The other belongs to the
-/// private, interactive layout preview in Control Room. Keeping them separate
+/// private, interactive layout preview in Workspace. Keeping them separate
 /// avoids moving one CALayer between two windows while still reusing the same
 /// ScreenCaptureKit IOSurface-backed sample buffer.
 final class CaptureSourceRenderers: @unchecked Sendable {

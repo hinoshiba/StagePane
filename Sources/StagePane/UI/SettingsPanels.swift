@@ -179,8 +179,8 @@ struct PermissionsPanel: View {
                 #if !STAGEPANE_APP_STORE
                 PermissionAccessCard(
                     symbol: "hand.tap.fill",
-                    title: L10n.text("プレビューから操作", "Control from preview"),
-                    role: L10n.text("操作モードのみ", "Control mode only"),
+                    title: L10n.text("ボタン操作", "Press Buttons"),
+                    role: L10n.text("ボタン操作のみ", "Press Buttons only"),
                     detail: accessibilityDetail,
                     statusTitle: accessibilityStatusTitle,
                     statusSymbol: accessibilityStatusSymbol,
@@ -228,8 +228,8 @@ struct PermissionsPanel: View {
         )
         #else
         L10n.text(
-            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除すると共有アクセスが終了し、操作用のアクセシビリティ許可はシステム設定からいつでも取り消せます。",
-            "Opening this page never shows a macOS consent dialog by itself. Removing a source ends its sharing access, and you can revoke Control's Accessibility access in System Settings at any time."
+            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除すると共有アクセスが終了し、ボタン操作用のアクセシビリティ許可はシステム設定からいつでも取り消せます。",
+            "Opening this page never shows a macOS consent dialog by itself. Removing a source ends its sharing access, and you can revoke Press Buttons Accessibility access in System Settings at any time."
         )
         #endif
     }
@@ -287,8 +287,8 @@ struct PermissionsPanel: View {
 
     private var accessibilityDetail: String {
         let base = L10n.text(
-            "1つのウインドウとして追加したソース内で、押下に対応するボタンやコントロールをプレビューから操作するためだけに使います。配置と手書きには不要です。",
-            "Used only to press supported buttons and controls from the preview in a source added as one window. Arrange and Draw don’t need it."
+            "1つのウインドウとして追加したソース内で、対応ボタンにAXPressを実行するためだけに使います。配置と手書きには不要です。",
+            "Used only to perform AXPress on supported buttons in a source added as one window. Arrange and Draw don’t need it."
         )
         guard !controller.previewInputAccessGranted,
               controller.previewInputRequestWasAttempted else { return base }

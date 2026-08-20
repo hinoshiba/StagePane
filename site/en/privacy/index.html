@@ -86,7 +86,7 @@
           <section id="screen-content">
             <h2>Screen content</h2>
             <p>StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose one window, application, or display. You can repeat this for up to four sources that can be paused and removed independently.</p>
-            <p>Chosen frames appear in “StagePane Stage,” the clean window intended for sharing, and “Stage Workspace,” the private live editor. “Control Room” is a separate private window for source management and settings; it has no live editor.</p>
+            <p>Chosen frames appear in “StagePane Stage,” the clean window intended for sharing, and the Canvas in “Stage Workspace.” Sources, Stage Settings, Appearance, Permissions, Privacy, and About are available from the Workspace sidebar.</p>
             <p>Each choice grants access only to that selected content for that capture session. StagePane does not request separate, broad Screen Recording access. Canceling the picker adds nothing. Removing a source or choosing Stop All ends the corresponding streams and discards their displayed frames.</p>
             <p>StagePane does not:</p>
             <ul>
@@ -106,27 +106,27 @@
               <div>
                 <span>Mac App Store</span>
                 <h3>Arrange and Draw</h3>
-                <p>This sandboxed build omits Control mode and every cross-application Accessibility path. It does not request Accessibility or Input Monitoring permission.</p>
+                <p>This sandboxed build omits Press Buttons and every cross-application Accessibility path. It does not request Accessibility or Input Monitoring permission.</p>
               </div>
               <div>
                 <span>Local development</span>
-                <h3>Arrange, Draw, and limited Control</h3>
-                <p>An unsandboxed build compiled locally from source may additionally provide Control on macOS 15.2 or later. No official direct-distribution build is currently offered.</p>
+                <h3>Arrange, Draw, and limited Press Buttons</h3>
+                <p>An unsandboxed build compiled locally from source may additionally provide Press Buttons on macOS 15.2 or later. No official direct-distribution build is currently offered.</p>
               </div>
             </div>
-            <p>In a local development build, selecting Control without access does not itself trigger a system prompt. StagePane asks macOS for Accessibility permission only after you explicitly choose Continue Setup on the Accessibility card in the persistent Permissions view.</p>
-            <p>Control accepts a point only when the selected source is exactly one on-screen window, the point comes from the exact fresh frame shown in Workspace, and an application-scoped Accessibility hit test finds a pressable control belonging to that same window. StagePane then asks the control to perform its supported Press action. It does not synthesize arbitrary mouse events, move the physical pointer, activate or focus the source app, read keyboard input, forward keys or drags, enumerate unrelated windows, log actions, or retain coordinates.</p>
+            <p>In a local development build, selecting Press Buttons without access does not itself trigger a system prompt. StagePane asks macOS for Accessibility permission only after you explicitly choose Continue Setup on the Accessibility card in the persistent Permissions view.</p>
+            <p>Press Buttons accepts a point only when the selected source is exactly one on-screen window, the point comes from a fresh lifecycle-fenced frame shown in Workspace, and an application-scoped Accessibility hit test finds a pressable control belonging to that same window. StagePane then asks the control to perform its supported Press action. It does not synthesize arbitrary mouse events, move the physical pointer, activate or focus the source app, read keyboard input, forward keys or drags, enumerate unrelated windows, log actions, or retain coordinates.</p>
             <h3>Draw, Pause, and Curtain behavior</h3>
             <p>Draw keeps a bounded set of normalized vector strokes in memory and renders the same ink in the private Workspace and public Stage. It does not automatically write, upload, or analyze ink. An explicit Audience Stage screenshot includes visible ink as rasterized pixels. Stop All or removal of the final source clears the in-memory drawing.</p>
             <p>During normal playback, frames are discarded as display advances. Pausing one source stops its stream but intentionally retains its last displayed frame in local memory. Resume restarts that source, while Remove flushes its retained frame. Stop All does this for every source.</p>
             <div class="policy-note"><strong>Privacy Curtain is not Stop Capture.</strong><p>The Curtain visually covers only the public Stage. It does not pause active sources, and the private Workspace remains visible so you can prepare the composition.</p></div>
-            <p>The “Keep Private” labels on Stage Workspace and Control Room are workflow guidance, not a technical privacy boundary. Sharing the StagePane application or a full display can expose those windows. When they must stay hidden, choose the exact “StagePane Stage” window in your meeting app.</p>
+            <p>The “Keep Private” label on Stage Workspace is workflow guidance, not a technical privacy boundary. Sharing the StagePane application or a full display can expose that window. When it must stay hidden, choose the exact “StagePane Stage” window in your meeting app.</p>
           </section>
 
           <section id="screenshots">
             <h2>User-initiated screenshots</h2>
             <p>StagePane does not take screenshots on a timer, in the background, at launch, or in response to capture changes. It creates one lossless PNG of the clean Audience Stage only when you choose Copy Audience Image or Save Audience Image… in Stage Workspace.</p>
-            <p>The PNG uses the selected Stage pixel dimensions and includes what the audience Stage currently shows: shared content or Curtain, ink, mark, safe-area guide, and pointer. It excludes Workspace and Control Room controls, title-bar chrome, and unrelated application windows.</p>
+            <p>The PNG uses the selected Stage pixel dimensions and includes what the audience Stage currently shows: shared content or Curtain, ink, mark, safe-area guide, and pointer. It excludes Workspace navigation and controls, title-bar chrome, and unrelated application windows.</p>
             <p>The image is composed locally from the latest pixels already approved through Apple's content-sharing picker and StagePane's own artwork. This path does not enumerate unrelated windows, request new screen permission, record video, or use the network.</p>
             <p>Copy places the PNG on the macOS general pasteboard. Other local applications and clipboard managers may access it according to their own behavior. Save opens the macOS save panel and writes only to the location you select; canceling writes nothing. After the copy or write finishes, StagePane keeps no separate screenshot history or screenshot file of its own.</p>
           </section>
@@ -134,14 +134,14 @@
           <section id="settings">
             <h2>Settings stored on your device</h2>
             <p>StagePane stores interface preferences such as aspect preset, theme, pointer style, color, size and glow, drawing tool/color/width, mark and safe-area visibility, Curtain message, and window behavior in local UserDefaults on your Mac.</p>
-            <p>It does not persist your chosen source, window title, application name, screenshot history, chosen screenshot path, or meeting information. Standard window-frame preferences may include the positions and sizes of Stage, Workspace, and Control Room windows, but not their pixels. A PNG created through Save is your chosen local file, not an app preference or hidden retained copy.</p>
+            <p>It does not persist your chosen source, window title, application name, screenshot history, chosen screenshot path, or meeting information. Standard window-frame preferences may include the positions and sizes of the Stage and Workspace windows, but not their pixels. A PNG created through Save is your chosen local file, not an app preference or hidden retained copy.</p>
             <p>Source titles may appear transiently in the in-memory source list while capture is active. Dragged positions and sizes are session-only in this version. You can remove preferences by deleting the app's local container or using available macOS app-data controls.</p>
           </section>
 
           <section id="permissions">
             <h2>Permissions</h2>
             <p>The persistent Permissions view explains that Apple's system picker grants screen-sharing access per selection and per capture session. The normal Add Source flow does not present a global Screen Recording status, request separate broad Screen Recording access, or require a System Settings step. Removing a source or choosing Stop All ends its session-scoped access. StagePane remains usable as a holding share window before you select a source.</p>
-            <p>The Mac App Store build requests no Accessibility or Input Monitoring permission, and its Permissions view hides the Accessibility card. In a local development build, Accessibility permission for Control is separate from picker-scoped screen sharing and is requested only from the card's explicit Continue Setup action. No build variant requests Input Monitoring.</p>
+            <p>The Mac App Store build requests no Accessibility or Input Monitoring permission, and its Permissions view hides the Accessibility card. In a local development build, Accessibility permission for Press Buttons is separate from picker-scoped screen sharing and is requested only from the card's explicit Continue Setup action. No build variant requests Input Monitoring.</p>
           </section>
 
           <section id="network">

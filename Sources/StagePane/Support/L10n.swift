@@ -20,10 +20,6 @@ enum L10n {
         usesJapanese ? WindowIdentity.stageJapaneseTitle : WindowIdentity.stageEnglishTitle
     }
 
-    static var controlWindowTitle: String {
-        usesJapanese ? WindowIdentity.controlJapaneseTitle : WindowIdentity.controlEnglishTitle
-    }
-
     static var workspaceWindowTitle: String {
         usesJapanese ? WindowIdentity.workspaceJapaneseTitle : WindowIdentity.workspaceEnglishTitle
     }
@@ -124,7 +120,7 @@ enum L10n {
     static func stageInteractionModeName(_ mode: StageInteractionMode) -> String {
         switch mode {
         case .arrange: text("配置", "Arrange")
-        case .control: text("操作", "Control")
+        case .control: text("ボタン操作", "Press Buttons")
         case .annotate: text("手書き", "Draw")
         }
     }
@@ -138,8 +134,8 @@ enum L10n {
             )
         case .control:
             text(
-                "単一ウインドウ内の対応ボタンやコントロールを押します。",
-                "Press a supported button or control in a single-window source."
+                "単一ウインドウ内の対応ボタンだけを押します。",
+                "Press supported buttons only in a single-window source."
             )
         case .annotate:
             text(

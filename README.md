@@ -4,10 +4,11 @@
 > A clean stage for everything you share.
 
 StagePane is an open-source macOS app that creates a dedicated, ordinary
-window for screen sharing. Arrange, control, and draw in the large private
-**Stage Workspace**, keep **Control Room** for sources and settings, and share
-only **StagePane Stage** in Zoom, Microsoft Teams, Google Meet, Webex, Slack
-Huddles, Discord, OBS, or another app that can share a window.
+window for screen sharing. Use the private **Stage Workspace** for the live
+Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and About,
+then share only the chrome-free **StagePane Stage** in Zoom, Microsoft Teams,
+Google Meet, Webex, Slack Huddles, Discord, OBS, or another app that can share a
+window.
 
 StagePane is deliberately **not** a virtual display driver or alternate
 desktop. It doesn't modify macOS display configuration and doesn't use private
@@ -20,7 +21,8 @@ four sources one at a time, then arrange them in the Stage.
 ## Why StagePane
 
 - **A clean share target** — the audience Stage contains no editing chrome.
-  Its private Stage Workspace and Control Room have unmistakable titles.
+  The private Stage Workspace has an unmistakable title and keeps every editing
+  and settings surface behind one Docker-style sidebar.
 - **Privacy Curtain** — cover the Stage instantly with `Shift-Command-H`.
 - **Exact shapes** — switch between 16:9, 4:3, 9:16, and 1:1 while preserving
   the Stage window identity used by meeting apps.
@@ -28,18 +30,18 @@ four sources one at a time, then arrange them in the Stage.
   not a hand-built list of private window names. Each picker choice authorizes
   only that source for its capture session, without a separate broad Screen
   Recording permission.
-- **A persistent permission guide** — Control Room's Permissions view explains
+- **A persistent permission guide** — Workspace's Permissions view explains
   the picker-scoped sharing model and keeps permission actions available without
-  prompting at launch. In the local development build it also reports Control's
+  prompting at launch. In the local development build it also reports Press Buttons'
   separate Accessibility status; the Mac App Store build hides that card.
 - **A source list and free layout** — add, pause or resume, replace, or remove
-  each source independently in Control Room; drag and resize tiles on the large
-  private Stage Workspace or choose Grid, Side by Side, Stacked, or Picture in
+  each source independently in Workspace → Sources; drag and resize tiles on
+  the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
   Picture from Quick Layout.
 - **Private Workspace modes matched to the build** — the Mac App Store build
-  includes Arrange and Draw. It omits Control and never requests Accessibility
-  permission. The unsandboxed local development build can additionally expose
-  the narrowly scoped Control mode on macOS 15.2 or later.
+  includes Arrange and Draw. It omits Press Buttons and never requests
+  Accessibility permission. The unsandboxed local development build can
+  additionally expose narrowly scoped Press Buttons on macOS 15.2 or later.
 - **One-shot audience screenshots** — explicitly copy a clean Stage image or
   save a PNG at the selected Stage dimensions. It includes the current Curtain,
   ink, watermark, and pointer, but never the private Workspace controls.
@@ -51,7 +53,7 @@ four sources one at a time, then arrange them in the Stage.
   holding screens.
 - **Public APIs and sandboxing** — SwiftUI, AppKit, AVFoundation, and
   ScreenCaptureKit in the sandboxed Mac App Store build. The optional
-  ApplicationServices-based Control path is restricted to the unsandboxed local
+  ApplicationServices-based Press Buttons path is restricted to the unsandboxed local
   development build and is not present in the App Store binary.
 
 ## Requirements
@@ -98,19 +100,18 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
 
 ## How to use it
 
-1. Open StagePane. Keep **Control Room — Keep Private** and **StagePane
-   Workspace — Keep Private** on your screen.
+1. Open StagePane. Keep **StagePane Workspace — Keep Private** on your screen.
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
    session; repeat to add up to four independent sources.
-3. Open the large **Stage Workspace**, drag a tile to move it, and drag its
-   lower-right handle to resize it. Use the Control Room source list to pause or
-   resume, replace, or remove one item. Use **Quick Layout** for Grid, Side by
-   Side, Stacked, or Picture in Picture.
+3. In **Workspace → Canvas**, drag a tile to move it and drag its lower-right
+   handle to resize it. Use **Workspace → Sources** to pause or resume, replace,
+   or remove one item. Use **Quick Layout** for Grid, Side by Side, Stacked, or
+   Picture in Picture.
 4. Switch the Workspace between **Arrange** and **Draw**. Arrange edits only the
    Stage composition; Draw places session-only ink over the Stage. The
-   unsandboxed local development build also shows **Control** on macOS 15.2 or
-   later.
+   unsandboxed local development build also shows **Press Buttons** on macOS
+   15.2 or later.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
 6. Use `Shift-Command-H` whenever you need the Privacy Curtain.
 7. Select **Stop All** to end every ScreenCaptureKit stream and discard all
@@ -133,17 +134,16 @@ frame in the Stage and private Workspace. Resume restarts that source; Remove or
 Stop All discards the retained frame.
 
 Toggling the Privacy Curtain updates the Stage without bringing its window to
-the front, so the Workspace, Control Room, or source app you are using keeps its
-place.
+the front, so the Workspace or source app you are using keeps its place.
 
 Dragging in **Arrange** changes only the Stage composition. **Draw** adds bounded
 vector ink to the Stage in memory; it is hidden by the Curtain and cleared by
 Stop All or removal of the final source. Both modes remain available in the Mac
-App Store build, which omits Control and does not request Accessibility
+App Store build, which omits Press Buttons and does not request Accessibility
 permission.
 
-In the unsandboxed local development build, **Control** is an explicit, narrower
-action on macOS 15.2 or later. Selecting Control without access opens the
+In the unsandboxed local development build, **Press Buttons** is an explicit,
+narrow action on macOS 15.2 or later. Selecting Press Buttons without access opens the
 persistent **Permissions** view; only its explicit **Continue Setup** button
 asks macOS for Accessibility access. After consent, selecting a point in an
 exactly-one-window source asks a pressable accessibility control at that point
@@ -163,11 +163,12 @@ accessibility Press action on a pressable control in that exact window. Slide
 canvases and controls that do not expose Press are not generic click targets;
 keep keyboard, drag, and presentation navigation in PowerPoint.
 
-The Stage Workspace contains the live editor; Control Room contains sources,
-status, and settings but no live editor. Both are intended to stay private.
-This is workflow guidance, not a technical capture boundary: sharing the whole
-display or the StagePane application can expose either private window. In your
-meeting app, choose the exact **StagePane Stage — Share This Window** window.
+The Stage Workspace contains the live Canvas plus Sources, Stage Settings,
+Appearance, Permissions, Privacy, and About in one sidebar. It is intended to
+stay private. This is workflow guidance, not a technical capture boundary:
+sharing the whole display or the StagePane application can expose the
+Workspace. In your meeting app, choose the exact **StagePane Stage — Share This
+Window** window.
 
 From the Stage Workspace, explicitly choose **Copy Audience Image** or **Save
 Audience Image…** to take a one-shot image of the clean audience Stage. The
@@ -191,9 +192,8 @@ Up to four user-approved windows / apps / displays
               │  memory only; no encoder or writer
               ├────► StagePane Stage ───► meeting app shares this exact window
               │                 └───────► explicit local PNG copy/save only
-              └────► private Stage Workspace live editor
-
-      Control Room: source list, status, and settings; no live editor
+              └────► private Stage Workspace
+                     Canvas + Sources + settings in one sidebar
 ```
 
 The project is a Swift Package with a testable framework-free core and a native
@@ -247,8 +247,9 @@ Certificate of Origin, and follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 StagePaneは、画面共有で選択するための専用ウインドウを作るmacOSアプリです。
 本物の仮想ディスプレイや別デスクトップではなく、Appleの公開APIだけを使った
-プレゼンテーション・キャンバスです。配置・操作・手書きは大きなStage Workspaceで行い、
-ソースと設定のControl Roomも手元に残して、相手にはStageだけを見せます。共有対象は
+プレゼンテーション・キャンバスです。手元のStage Workspaceには、キャンバス、ソース、
+Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてをまとめ、
+相手にはクロームのないStageだけを見せます。共有対象は
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
 求めません。明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
 自動撮影、録画、外部送信、アカウント、広告、解析はありません。

@@ -1,6 +1,32 @@
 import StagePaneCore
 import SwiftUI
 
+private extension WorkspaceSection {
+    var title: String {
+        switch self {
+        case .canvas: L10n.text("キャンバス", "Canvas")
+        case .sources: L10n.text("ソース", "Sources")
+        case .stage: L10n.text("Stage設定", "Stage Settings")
+        case .appearance: L10n.text("見た目と動作", "Appearance")
+        case .permissions: L10n.text("アクセス権限", "Permissions")
+        case .privacy: L10n.text("プライバシー", "Privacy")
+        case .about: L10n.text("このアプリについて", "About")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .canvas: "rectangle.inset.filled"
+        case .sources: "square.stack.3d.up.fill"
+        case .stage: "slider.horizontal.3"
+        case .appearance: "paintpalette.fill"
+        case .permissions: "checkmark.shield.fill"
+        case .privacy: "hand.raised.fill"
+        case .about: "info.circle.fill"
+        }
+    }
+}
+
 /// A private, large-format workspace for composing and operating the audience Stage.
 ///
 /// This view deliberately uses the preview renderers through `StageLayoutEditor`.
@@ -9,27 +35,43 @@ import SwiftUI
 struct StageWorkspaceView: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    private let focusesAppearanceForSnapshot: Bool
 
     @State private var isSourceRailVisible = true
     @State private var isClearInkConfirmationPresented = false
 
+    init(
+        controller: AppController,
+        capture: CaptureCoordinator,
+        focusesAppearanceForSnapshot: Bool = false
+    ) {
+        self.controller = controller
+        self.capture = capture
+        self.focusesAppearanceForSnapshot = focusesAppearanceForSnapshot
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            workspaceToolbar
-            privateWorkspaceWarning
+        GeometryReader { geometry in
+            let usesCompactNavigation = geometry.size.width < 1_100
 
-            if let notice = controller.transientNotice {
-                WorkspaceNoticeBanner(message: notice) {
-                    controller.dismissTransientNotice()
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 7)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+            HStack(spacing: 0) {
+                workspaceNavigation(compact: usesCompactNavigation)
+                    .frame(width: usesCompactNavigation ? 66 : 218)
+
+                Divider().overlay(Color.white.opacity(0.10))
+
+                workspaceContent
             }
-
-            ViewThatFits(in: .horizontal) {
-                wideWorkspace
-                compactWorkspace
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .onAppear {
+                if usesCompactNavigation {
+                    isSourceRailVisible = false
+                }
+            }
+            .onChange(of: usesCompactNavigation) { _, isCompact in
+                if isCompact {
+                    isSourceRailVisible = false
+                }
             }
         }
         .frame(minWidth: 900, minHeight: 620)
@@ -57,6 +99,240 @@ struct StageWorkspaceView: View {
         ))
     }
 
+    private var workspaceContent: some View {
+        VStack(spacing: 0) {
+            workspaceToolbar
+            privateWorkspaceWarning
+
+            if let notice = controller.transientNotice {
+                WorkspaceNoticeBanner(message: notice) {
+                    controller.dismissTransientNotice()
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 7)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            workspaceDetail
+        }
+    }
+
+    @ViewBuilder
+    private var workspaceDetail: some View {
+        switch controller.workspaceSection {
+        case .canvas:
+            ViewThatFits(in: .horizontal) {
+                wideWorkspace
+                compactWorkspace
+            }
+        case .sources:
+            WorkspaceSourcesPanel(controller: controller, capture: capture)
+        case .stage:
+            StageSettingsPanel(controller: controller, capture: capture)
+        case .appearance:
+            AppearancePanel(
+                controller: controller,
+                focusesAudienceForSnapshot: focusesAppearanceForSnapshot
+            )
+        case .permissions:
+            PermissionsPanel(controller: controller, capture: capture)
+        case .privacy:
+            PrivacyPanel(controller: controller, capture: capture)
+        case .about:
+            AboutPanel(controller: controller)
+        }
+    }
+
+    private func workspaceNavigation(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Group {
+                if compact {
+                    BrandMark(size: 30)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    BrandLockup()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(.horizontal, compact ? 10 : 18)
+            .padding(.top, 20)
+            .padding(.bottom, compact ? 21 : 24)
+
+            navigationGroup(
+                title: L10n.text("ワークスペース", "WORKSPACE"),
+                sections: [.canvas, .sources],
+                compact: compact
+            )
+
+            navigationDivider(compact: compact)
+
+            navigationGroup(
+                title: L10n.text("ステージ", "STAGE"),
+                sections: [.stage, .appearance],
+                compact: compact
+            )
+
+            navigationDivider(compact: compact)
+
+            navigationGroup(
+                title: L10n.text("アプリ", "APP"),
+                sections: [.permissions, .privacy, .about],
+                compact: compact
+            )
+
+            Spacer(minLength: 12)
+
+            if !compact {
+                HStack(spacing: 7) {
+                    Image(systemName: "eye.slash.fill")
+                        .foregroundStyle(StagePanePalette.aqua)
+                    Text(L10n.text("この画面は共有しない", "KEEP THIS PRIVATE"))
+                        .font(.caption2.weight(.bold))
+                        .tracking(0.35)
+                }
+                .foregroundStyle(Color.white.opacity(0.58))
+                .padding(.horizontal, 17)
+                .padding(.bottom, 17)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .background(Color.black.opacity(0.20))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text(
+            "StagePane ワークスペースのナビゲーション",
+            "StagePane Workspace navigation"
+        ))
+    }
+
+    private func navigationGroup(
+        title: String,
+        sections: [WorkspaceSection],
+        compact: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            if !compact {
+                Text(title)
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.8)
+                    .foregroundStyle(Color.white.opacity(0.38))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 3)
+            }
+
+            ForEach(sections) { section in
+                navigationButton(section, compact: compact)
+            }
+        }
+        .padding(.horizontal, compact ? 7 : 9)
+    }
+
+    private func navigationButton(
+        _ section: WorkspaceSection,
+        compact: Bool
+    ) -> some View {
+        let isSelected = controller.workspaceSection == section
+
+        return Button {
+            controller.selectWorkspaceSection(section)
+        } label: {
+            HStack(spacing: 10) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: navigationSymbol(for: section))
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(width: 23, height: 23)
+
+                    if compact, section == .sources, !capture.sources.isEmpty {
+                        Text("\(capture.sources.count)")
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(width: 14, height: 14)
+                            .background(StagePanePalette.indigo, in: Circle())
+                            .offset(x: 5, y: -4)
+                    } else if compact, section == .permissions, permissionsNeedAttention {
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 4, y: -2)
+                    }
+                }
+
+                if !compact {
+                    Text(section.title)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                        .lineLimit(1)
+
+                    Spacer(minLength: 4)
+
+                    if section == .sources {
+                        Text("\(capture.sources.count) / \(CaptureCoordinator.maximumSources)")
+                            .font(.caption2.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.48))
+                    } else if section == .permissions, permissionsNeedAttention {
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 7, height: 7)
+                            .accessibilityHidden(true)
+                    }
+                }
+            }
+            .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.65))
+            .padding(.horizontal, compact ? 9 : 11)
+            .frame(maxWidth: .infinity, minHeight: 39, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(isSelected ? StagePanePalette.indigo.opacity(0.34) : Color.clear)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(
+                        isSelected ? StagePanePalette.aqua.opacity(0.15) : .clear,
+                        lineWidth: 1
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        .help(section.title)
+        .accessibilityLabel(section.title)
+        .accessibilityValue(navigationAccessibilityValue(for: section))
+    }
+
+    private func navigationDivider(compact: Bool) -> some View {
+        Divider()
+            .overlay(Color.white.opacity(0.08))
+            .padding(.horizontal, compact ? 13 : 15)
+            .padding(.vertical, compact ? 10 : 13)
+    }
+
+    private var permissionsNeedAttention: Bool {
+        AppController.supportsControlMode &&
+            controller.stageInteractionMode == .control &&
+            !controller.previewInputAccessGranted
+    }
+
+    private func navigationSymbol(for section: WorkspaceSection) -> String {
+        if section == .permissions, permissionsNeedAttention {
+            return "exclamationmark.shield.fill"
+        }
+        return section.symbol
+    }
+
+    private func navigationAccessibilityValue(for section: WorkspaceSection) -> String {
+        var values: [String] = []
+        if controller.workspaceSection == section {
+            values.append(L10n.text("選択中", "Selected"))
+        }
+        if section == .sources {
+            values.append(L10n.text(
+                "\(capture.sources.count)件",
+                "\(capture.sources.count) of \(CaptureCoordinator.maximumSources)"
+            ))
+        }
+        if section == .permissions, permissionsNeedAttention {
+            values.append(L10n.text("確認が必要", "Needs attention"))
+        }
+        return values.joined(separator: ", ")
+    }
+
     private var workspaceToolbar: some View {
         GeometryReader { proxy in
             workspaceToolbarContent(compact: proxy.size.width < 1_040)
@@ -76,40 +352,41 @@ struct StageWorkspaceView: View {
 
     private func workspaceToolbarContent(compact: Bool) -> some View {
         HStack(spacing: 11) {
-            Button {
-                isSourceRailVisible.toggle()
-            } label: {
+            if controller.workspaceSection == .canvas {
+                Button {
+                    isSourceRailVisible.toggle()
+                } label: {
+                    if compact {
+                        Image(systemName: "sidebar.left")
+                    } else {
+                        Label(
+                            isSourceRailVisible
+                                ? L10n.text("ソースを隠す", "Hide Sources")
+                                : L10n.text("ソースを表示", "Show Sources"),
+                            systemImage: "sidebar.left"
+                        )
+                    }
+                }
+                .buttonStyle(WorkspaceToolbarButtonStyle())
+                .accessibilityLabel(isSourceRailVisible
+                    ? L10n.text("ソース一覧を隠す", "Hide source list")
+                    : L10n.text("ソース一覧を表示", "Show source list"))
+                .help(isSourceRailVisible
+                    ? L10n.text("ソース一覧を隠します", "Hide the source list")
+                    : L10n.text("ソース一覧を表示します", "Show the source list"))
+            } else {
                 if compact {
-                    Image(systemName: "sidebar.left")
+                    Image(systemName: controller.workspaceSection.symbol)
+                        .frame(width: 29, height: 29)
                 } else {
                     Label(
-                        isSourceRailVisible
-                            ? L10n.text("ソースを隠す", "Hide Sources")
-                            : L10n.text("ソースを表示", "Show Sources"),
-                        systemImage: "sidebar.left"
+                        controller.workspaceSection.title,
+                        systemImage: controller.workspaceSection.symbol
                     )
+                    .font(.caption.weight(.semibold))
                 }
-            }
-            .buttonStyle(WorkspaceToolbarButtonStyle())
-            .accessibilityLabel(isSourceRailVisible
-                ? L10n.text("ソース一覧を隠す", "Hide source list")
-                : L10n.text("ソース一覧を表示", "Show source list"))
-            .help(isSourceRailVisible
-                ? L10n.text("ソース一覧を隠します", "Hide the source list")
-                : L10n.text("ソース一覧を表示します", "Show the source list"))
 
-            Button(action: controller.showControlRoom) {
-                Image(systemName: "gearshape.fill")
             }
-            .buttonStyle(WorkspaceToolbarButtonStyle())
-            .accessibilityLabel(L10n.text(
-                "設定・コントロールルームを開く",
-                "Open Settings and Control Room"
-            ))
-            .help(L10n.text(
-                "設定とアクセス権限をコントロールルームで確認します",
-                "Review settings and access permissions in the Control Room"
-            ))
 
             WorkspaceOutputStatus(
                 isStageVisible: controller.stageIsVisible,
@@ -119,37 +396,39 @@ struct StageWorkspaceView: View {
 
             Spacer(minLength: 8)
 
-            Picker(
-                L10n.text("ワークスペースのモード", "Workspace mode"),
-                selection: interactionModeBinding
-            ) {
-                ForEach(controller.availableStageInteractionModes, id: \.rawValue) { mode in
-                    Label(
-                        L10n.stageInteractionModeName(mode),
-                        systemImage: modeSymbol(mode)
-                    )
-                    .tag(mode)
+            if controller.workspaceSection == .canvas {
+                Picker(
+                    L10n.text("ワークスペースのモード", "Workspace mode"),
+                    selection: interactionModeBinding
+                ) {
+                    ForEach(controller.availableStageInteractionModes, id: \.rawValue) { mode in
+                        Label(
+                            L10n.stageInteractionModeName(mode),
+                            systemImage: modeSymbol(mode)
+                        )
+                        .tag(mode)
+                    }
                 }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(
-                minWidth: compact ? 210 : 246,
-                idealWidth: compact ? 230 : 310,
-                maxWidth: compact ? 246 : 340
-            )
-            .accessibilityLabel(L10n.text(
-                "ワークスペースのモード",
-                "Workspace mode"
-            ))
-            .accessibilityValue(L10n.stageInteractionModeName(
-                controller.stageInteractionMode
-            ))
-            .accessibilityHint(L10n.stageInteractionModeDetail(
-                controller.stageInteractionMode
-            ))
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(
+                    minWidth: compact ? 260 : 300,
+                    idealWidth: compact ? 280 : 340,
+                    maxWidth: compact ? 300 : 380
+                )
+                .accessibilityLabel(L10n.text(
+                    "ワークスペースのモード",
+                    "Workspace mode"
+                ))
+                .accessibilityValue(L10n.stageInteractionModeName(
+                    controller.stageInteractionMode
+                ))
+                .accessibilityHint(L10n.stageInteractionModeDetail(
+                    controller.stageInteractionMode
+                ))
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
+            }
 
             screenshotMenu(compact: compact)
 
@@ -442,33 +721,33 @@ struct StageWorkspaceView: View {
             case .control:
                 if controller.previewInputAccessGranted {
                     Label(
-                        L10n.text("操作許可済み", "Control Allowed"),
+                        L10n.text("ボタン操作を許可済み", "Button Press Allowed"),
                         systemImage: "checkmark.shield.fill"
                     )
                     .foregroundStyle(StagePanePalette.mintReadable)
                     .accessibilityHint(L10n.text(
-                        "単一ウインドウ内の対応するPress操作だけを実行します。",
-                        "Only supported Press actions in a single window are performed."
+                        "単一ウインドウ内の対応ボタンにAXPressだけを実行します。",
+                        "Only AXPress on supported buttons in one window is performed."
                     ))
                 } else {
                     Button {
                         controller.presentPermissionCheck(focus: .accessibility)
                     } label: {
                         Label(
-                            L10n.text("操作権限を確認", "Review Control Access"),
+                            L10n.text("ボタン操作権限を確認", "Review Button Access"),
                             systemImage: "exclamationmark.shield.fill"
                         )
                     }
                     .foregroundStyle(StagePanePalette.coralReadable)
                     .help(L10n.text(
-                        "操作モードに必要なアクセシビリティ設定を確認します",
-                        "Review the Accessibility setting required by Control mode"
+                        "ボタン操作に必要なアクセシビリティ設定を確認します",
+                        "Review the Accessibility setting required by Press Buttons"
                     ))
                 }
 
                 Text(L10n.text(
-                    "ボタン等のPress操作のみ",
-                    "Supported Press actions only"
+                    "単一ウインドウの対応ボタンのみ",
+                    "Supported buttons in one window only"
                 ))
                 .font(.caption2)
                 .foregroundStyle(Color.white.opacity(0.56))

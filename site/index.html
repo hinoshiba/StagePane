@@ -116,7 +116,7 @@
           <div class="separation-line" aria-hidden="true"><span></span></div>
           <div class="separation-item separation-private">
             <span class="separation-icon">⌘</span>
-            <div><small>KEEP PRIVATE</small><strong>Workspace + Control Room</strong></div>
+            <div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
             <p>大きなライブ編集画面と、独立したソース一覧・設定画面</p>
           </div>
         </div>
@@ -132,7 +132,7 @@
           <div class="feature-grid">
             <article class="feature-card feature-card-wide">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2"/><path d="M7 20h14V9h-4M10 15v5"/></svg></div>
-              <div><h3>共有用と操作用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きは大きなWorkspace、ソースと設定はControl Roomで行います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
+              <div><h3>共有用と操作用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きはWorkspaceのキャンバス、ソースと設定はDocker風のサイドバーで扱います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
               <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>CONTROL</span><i></i><i></i><i></i></div></div>
             </article>
             <article class="feature-card">
@@ -143,7 +143,7 @@
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
               <h3>最大4ソースを配置・手書き</h3>
-              <p>Appleのシステムピッカーで1件ずつ追加し、Control Roomで一時停止・再開・選び直し・確認付き解除を行い、大きなWorkspaceで配置・手書きできます。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。Mac App Store版は「配置」と「手書き」を備え、「操作」やアクセシビリティ項目は含みません。macOS 15.2以降の非サンドボックスのローカル開発ビルドだけが、常設の「アクセス権限」で「設定を続ける」を明示的に選んだ後、選択した単一ウインドウ内の押下対応コントロールを実行できる限定的な「操作」を追加できます。直接配布版は現在提供していません。</p>
+              <p>Appleのシステムピッカーで1件ずつ追加し、Workspaceの「ソース」で一時停止・再開・選び直し・確認付き解除を行い、大きなキャンバスで配置・手書きできます。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。Mac App Store版は「配置」と「手書き」を備え、「ボタン操作」やアクセシビリティ項目は含みません。macOS 15.2以降の非サンドボックスのローカル開発ビルドだけが、常設の「アクセス権限」で「設定を続ける」を明示的に選んだ後、選択した単一ウインドウ内の押下対応コントロールを実行できる限定的な「ボタン操作」を追加できます。直接配布版は現在提供していません。</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
@@ -170,7 +170,7 @@
           <div class="section-heading">
             <p class="eyebrow"><span></span> Real interface</p>
             <h2>共有の前・最中・停止まで、<br>実画面で確認。</h2>
-            <p>以下はStagePane自身が合成データだけで描画した画面です。WorkspaceとControl Roomを手元に置き、会議アプリでは正確なStageウインドウだけを共有します。</p>
+            <p>以下はStagePane自身が合成データだけで描画した画面です。Workspaceを手元に置き、会議アプリでは正確なStageウインドウだけを共有します。</p>
           </div>
           <div class="screenshot-grid">
             <figure class="screenshot-card screenshot-card-tall">
@@ -179,8 +179,8 @@
               <figcaption><strong>迷わず、最初の一歩から。</strong> 空のWorkspaceが、ソース追加、配置・手書き、きれいなStage共有まで順番に案内します。</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-private">共有しない</span> Control Room</div>
-              <img src="assets/screenshots/ja/control-room.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="Workspace起動、最初のソース追加、カーテン状態、Stage形状をまとめた空のStagePane Control Room">
+              <div class="screenshot-label"><span class="label-private">共有しない</span> Workspace ソース</div>
+              <img src="assets/screenshots/ja/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="ソース追加とソースごとの一時停止、選び直し、解除をまとめたStagePane Workspaceのソース画面">
               <figcaption><strong>内容が届く前から、安全に準備。</strong> Workspaceを開き、最初のソースとStage形状を選び、観客向け操作を手元に揃えます。</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
@@ -213,10 +213,10 @@
             <p class="eyebrow"><span></span> How it works</p>
             <h2>Stageの準備は、<br>4つのステップ。</h2>
             <p>仮想ディスプレイや別のデスクトップは作りません。会議アプリから普通のウインドウとして選びます。</p>
-            <aside class="note-card"><strong>正確なウインドウ名を確認</strong><p>会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceやControl Roomを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。</p></aside>
+            <aside class="note-card"><strong>正確なウインドウ名を確認</strong><p>会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。</p></aside>
           </div>
           <ol class="steps">
-            <li><span>01</span><div><h3>StagePaneを開く</h3><p>きれいな共有Stage、大きなWorkspace、Control Roomには別々の役割があります。Control Roomにはライブ編集画面を置きません。</p></div></li>
+            <li><span>01</span><div><h3>StagePaneを開く</h3><p>StagePaneは、きれいな共有Stageと、キャンバス・ソース・設定をサイドバーにまとめた手元用Workspaceの2画面です。</p></div></li>
             <li><span>02</span><div><h3>見せるものを追加</h3><p>「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。別途広範な画面収録許可は不要で、必要に応じて最大4件まで繰り返せます。</p></div></li>
             <li><span>03</span><div><h3>配置してStageを共有</h3><p>手元のWorkspaceで移動・サイズ変更・手書きを行い、会議アプリでは正確な「StagePane Stage」ウインドウを選んでカーテンを開きます。</p></div></li>
             <li><span>04</span><div><h3>終わったら完全に停止</h3><p>「すべて停止」で全ストリームを終了し、保持中のフレームを破棄します。カーテンだけでは取得は止まりません。</p></div></li>
@@ -239,7 +239,7 @@
           <div class="privacy-grid">
             <article class="info-card"><h3>取得・保存</h3><ul class="check-list"><li>画面フレームを録画・自動保存しません</li><li>「画像をコピー」はきれいなPNGを1枚だけクリップボードへ置き、「PNGを保存」は選んだ場所だけへ書き込みます。キャンセル時は何も保存しません</li><li>音声やマイクを取得しません</li><li>OCRやAI解析はありません</li></ul></article>
             <article class="info-card"><h3>通信・追跡</h3><ul class="check-list"><li>画面や利用状況をStagePaneから外部送信しません</li><li>アカウント、広告、解析、テレメトリーはありません</li><li>第三者ランタイムSDKを同梱しません</li></ul></article>
-            <article class="info-card"><h3>設定・権限</h3><ul class="check-list"><li>テーマ、ポインター、ロゴ表示などの設定だけをMac上のローカル設定に保存します</li><li>ソース名、ウインドウ名、ファイル名、会議情報は保存しません</li><li>常設の「アクセス権限」では、Appleの選択画面が共有対象ごとにセッション許可することを説明し、別途広範な画面収録許可は求めません</li><li>Mac App Store版はアクセシビリティ項目を表示しません。ローカル開発版だけが「設定を続ける」を明示的に選んだときに操作用の許可を求めます</li></ul></article>
+            <article class="info-card"><h3>設定・権限</h3><ul class="check-list"><li>テーマ、ポインター、ロゴ表示などの設定だけをMac上のローカル設定に保存します</li><li>ソース名、ウインドウ名、ファイル名、会議情報は保存しません</li><li>常設の「アクセス権限」では、Appleの選択画面が共有対象ごとにセッション許可することを説明し、別途広範な画面収録許可は求めません</li><li>Mac App Store版はアクセシビリティ項目を表示しません。ローカル開発版だけが「設定を続ける」を明示的に選んだときにボタン操作用の許可を求めます</li></ul></article>
           </div>
           <aside class="warning-card"><strong>Privacy Curtainは「取得停止」ではありません。</strong><p>カーテンが隠すのは公開Stageだけです。個別の「一時停止」はそのストリームを止めて最後のフレームをメモリに保持します。保持フレームも破棄して完全に終了するには「解除」または「すべて停止」を選んでください。</p></aside>
           <p class="privacy-policy-link"><a class="text-link" href="privacy/">プライバシーポリシー全文を読む <span>→</span></a></p>
@@ -259,7 +259,7 @@
             <a class="button button-primary" href="https://github.com/hinoshiba/StagePane/issues/new/choose">GitHub Issueを作成</a>
           </div>
           <div class="support-cards">
-            <article class="support-card"><span>01</span><div><h3>ウインドウを見失った</h3><p>Control Room、Stage Workspace、共有Stageはメニューバーから再表示できます。<kbd>⇧⌘H</kbd> はカーテン、<kbd>⇧⌘P</kbd> は「ソースを追加」です。</p></div></article>
+            <article class="support-card"><span>01</span><div><h3>ウインドウを見失った</h3><p>Stage Workspaceまたは共有Stageはメニューバーから再表示できます。<kbd>⇧⌘H</kbd> はカーテン、<kbd>⇧⌘P</kbd> は「ソースを追加」です。</p></div></article>
             <article class="support-card"><span>02</span><div><h3>取得がうまく戻らない</h3><p>「すべて停止」で状態をリセットし、ソースを追加し直してください。Stageを閉じた場合も取得は停止します。</p></div></article>
             <article class="support-card"><span>03</span><div><h3>Issueに載せてよいもの</h3><p>macOS・StagePaneのバージョン、合成データで再現する手順、期待した結果と実際の結果を共有してください。</p></div></article>
             <article class="support-card support-card-alert"><span>!</span><div><h3>載せてはいけないもの</h3><p>実際の画面フレーム、私的なウインドウ名、会議URL、トークン、TCCデータベース、未編集の診断情報は投稿しないでください。</p></div></article>

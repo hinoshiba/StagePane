@@ -194,11 +194,15 @@ final class PreviewInputForwarder {
 
 /// Accessibility messaging is synchronous IPC. Keeping every AX object and
 /// call on this private queue prevents an unresponsive source application from
-/// freezing Control Room. Timeouts are applied to every element because AX
+/// freezing Workspace. Timeouts are applied to every element because AX
 /// messaging timeouts are object-local and are not inherited by child objects.
 private final class PreviewAccessibilityActionExecutor: @unchecked Sendable {
-    private static let messagingTimeout: Float = 0.16
-    private static let maximumAncestorDepth = 8
+    // PowerPoint and Electron apps can legitimately take several hundred
+    // milliseconds to answer Accessibility IPC while presenting. This work is
+    // already isolated from the UI, so allow a responsive app enough time
+    // without letting one action remain unbounded.
+    private static let messagingTimeout: Float = 0.7
+    private static let maximumAncestorDepth = 12
     private static let windowFrameTolerance: CGFloat = 2
 
     private let queue = DispatchQueue(

@@ -39,8 +39,8 @@ manual leak/retention check.
 - No raw mouse/keyboard event synthesis, keyboard/drag forwarding, event taps,
   unattended remote control, generic canvas/content control, or input to
   ambiguous/app/display sources. The sandboxed Mac App Store build must omit
-  Control and its cross-application Accessibility permission/action path. In an
-  unsandboxed local development build on macOS 15.2 or later, a Control-mode
+  Press Buttons and its cross-application Accessibility permission/action path. In an
+  unsandboxed local development build on macOS 15.2 or later, a Press-Buttons
   accessibility Press must retain explicit Accessibility consent, exact
   single-window scope, supported-action checks, and fresh displayed-frame
   validation.
@@ -49,7 +49,7 @@ manual leak/retention check.
 - Use `SCContentSharingPicker` for consent. Do not build a covert window-title
   inventory.
 - Preserve the explicit difference between Curtain (hide) and Stop (end capture).
-- Control Room is not assumed to be technically unshareable; titles and user
+- Workspace is not assumed to be technically unshareable; its title and user
   guidance remain part of the safety design.
 
 ## Dependencies and assets

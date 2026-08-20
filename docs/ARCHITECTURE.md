@@ -6,12 +6,12 @@ StagePane is a presentation canvas implemented as a normal `NSWindow`. It is
 intended to appear in meeting applications' *window* share pickers. It is not an
 `NSScreen`, is not listed in macOS Display Settings, and cannot host or directly
 reparent arbitrary application windows. On macOS 15.2 or later, its optional
-Control mode can perform one supported accessibility Press action on a pressable
+Press Buttons mode can perform one supported accessibility Press action on a pressable
 control inside an explicitly shared single-window source after Accessibility
 access is requested through Permissions **Continue Setup** and granted; it is
 not a general remote desktop or alternate input system. That mode exists only
 in the unsandboxed local development build. The
-sandboxed Mac App Store build omits Control and its Accessibility permission and
+sandboxed Mac App Store build omits Press Buttons and its Accessibility permission and
 action path, while retaining Arrange, Draw, source composition, pointer, Curtain,
 and watermark features.
 
@@ -31,12 +31,12 @@ a Finder/Dock-like alternate desktop.
 StagePaneApplication
 └── StagePaneAppDelegate
     └── AppController ─────────────── settings / actions / lifecycle
-        ├── ControlRoomWindowController
-        │   └── ControlRoomView       private sources / status / settings
-        │       └── PermissionsPanel  persistent access explanation/actions
         ├── StageWorkspaceWindowController
-        │   └── StageWorkspaceView    private large editor / screenshot actions
-        │       └── StageLayoutEditor Arrange / Control / Draw
+        │   └── StageWorkspaceView    private unified working window
+        │       ├── StageLayoutEditor Arrange / Press Buttons / Draw
+        │       ├── Sources           per-source lifecycle controls
+        │       ├── Stage Settings / Appearance
+        │       └── Permissions / Privacy / About
         ├── StageWindowController
         │   └── StageView             chrome-free public share surface
         ├── StageWindowSnapshotter    explicit clean Stage PNG copy/save
@@ -88,11 +88,12 @@ time, not merely hide a control at runtime.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
    rectangle and ordered z-position. Arrange-mode drag and resize update only
    this local composition.
-6. In the unsandboxed local development build on macOS 15.2 or later, Control
+6. In the unsandboxed local development build on macOS 15.2 or later, Press Buttons
    mode accepts a selected point only in the visible content of the frontmost tile.
    The current picker-authorized filter must identify exactly one on-screen
-   window. The preview renderer inverse-maps that point through the exact complete
-   frame it displayed, scoped by stream token and filter generation. After
+    window. The preview renderer inverse-maps that point through a fresh,
+    lifecycle-fenced complete frame presented in the Canvas, scoped by stream
+    token and filter generation. After
    Accessibility access is requested through the persistent Permissions view's
    explicit **Continue Setup** action and granted, an application-scoped
    `AXUIElementCopyElementAtPosition` hit test must resolve to the same selected
@@ -125,7 +126,7 @@ time, not merely hide a control at runtime.
     picker-authorized source frames while rendering, then restores the live
     layers synchronously. The result therefore includes the current audience
     Curtain or content, ink, watermark, safe-area guide, and pointer, but never
-    Workspace or Control Room chrome. Copy writes the one PNG to the macOS
+    Workspace navigation, controls, or title-bar chrome. Copy writes the one PNG to the macOS
     pasteboard; Save writes it only to the location selected in `NSSavePanel`.
     The Store sandbox grants user-selected read/write access solely for that
     explicit destination.
@@ -141,13 +142,13 @@ time, not merely hide a control at runtime.
 
 The Privacy Curtain hides the public Stage but intentionally does not stop its
 streams; the UI says so. The private Workspace remains visible so a layout can
-be prepared safely. Control Room has no live editor. **Stop All** is the explicit
+be prepared safely. **Stop All** is the explicit
 complete-capture termination control. Toggling the Curtain changes the public content in place;
 it does not order the Stage window to the front.
 
 ## Permission model
 
-The persistent Control Room **Permissions** view describes two deliberately
+The persistent Workspace **Permissions** view describes two deliberately
 different access paths:
 
 - Screen sharing is not represented as an app-wide allow/deny switch. Each
@@ -157,8 +158,8 @@ different access paths:
   broad Screen Recording access or expose a Screen Recording settings step.
   Removing the source or stopping all sources ends the scoped access.
 - The unsandboxed local development build on macOS 15.2 or later can display a
-  separate Accessibility card for Control. Merely opening Permissions or
-  selecting Control does not prompt. Only the card's explicit **Continue Setup**
+  separate Accessibility card for Press Buttons. Merely opening Permissions or
+  selecting Press Buttons does not prompt. Only the card's explicit **Continue Setup**
   action calls the Accessibility request path, and it does so at most once per
   persisted app preferences. Later untrusted checks route to repair instructions
   and System Settings instead of repeatedly prompting. Returning from system UI
@@ -183,16 +184,15 @@ only the picker-scoped screen-sharing explanation. Neither build requests Input 
 - Stage is an opaque, titled, resizable normal window with a stable instance and
   title. It contains no editing toolbar or private controls. `sharingType =
   .readOnly` communicates shareability to compatible APIs.
-- Stage Workspace and Control Room have explicit “Keep Private” titles. Their
-  names and in-product warnings, not an unsupported `sharingType = .none`
-  capture-exclusion hint, are the boundary. Application sharing, full-display
-  sharing, or a meeting app may include either private window.
-- Stage Workspace enforces a 900×620-point minimum for its large canvas and
-  tools. Control Room enforces an 820×580-point minimum for its source list,
-  navigation, and settings; it intentionally has no live renderer.
+- Stage Workspace has an explicit “Keep Private” title. Its name and in-product
+  warning, not an unsupported `sharingType = .none` capture-exclusion hint, are
+  the boundary. Application sharing, full-display sharing, or a meeting app may
+  include the private window.
+- Stage Workspace enforces a 900×620-point minimum for its Canvas, Docker-style
+  navigation, source management, and settings.
 - The user-facing workflow always instructs people to select the exact Stage
   window by name, never the StagePane application or full display when the
-  Workspace or Control Room must remain private.
+  Workspace must remain private.
 - Closing Workspace cancels pending preview-control work and ends an in-progress
   ink stroke, but does not close Stage, clear completed ink, or stop capture.
   Closing the public Stage retains the stricter behavior: it covers output and
@@ -236,12 +236,12 @@ Front-to-back order alone selects the red-dot owner. Pausing that owner disables
 its overlay without reassigning the dot to another source; resuming restores its
 eligibility while preserving the same z-order.
 
-In the unsandboxed local development Control build, preview-control geometry is
-stricter than pointer presentation geometry: only the exact complete frame
-successfully enqueued in the private renderer is
-eligible. Replacement, pause, dimension change, stop, blank/suspended output,
-or a stream/filter generation mismatch invalidates it until a fresh frame is
-displayed. Resolution happens on the serial render queue and is revalidated on
+In the unsandboxed local development build with Press Buttons, preview interaction geometry is
+stricter than pointer presentation geometry: only a fresh complete frame
+successfully accepted by the private renderer is eligible. Replacement, pause,
+dimension change, stop, blank/suspended output, or a stream/filter generation
+mismatch invalidates it until a fresh frame is presented. Resolution happens
+on the serial render queue and is revalidated on
 the main actor immediately before the synchronous application-scoped
 Accessibility hit test, selected-window check, and Press action.
 
@@ -256,15 +256,15 @@ PNG is independent before source removal or Stop All can drain the live layers.
 
 - Picker cancellation keeps all existing sources, or returns to idle if there
   were none.
-- Start and runtime errors become a visible **Needs Attention** state in Control
-  Room. A failure in one source does not stop another healthy source.
+- Start and runtime errors become a visible **Needs Attention** state in
+  Workspace. A failure in one source does not stop another healthy source.
 - Removing a source hides its output immediately. If ScreenCaptureKit refuses
   to stop it, the row remains in a capture-active warning state for an explicit
   retry; StagePane does not silently claim that capture ended.
 - Picker cancellation or loss of a selected source is treated as an ordinary
   recoverable session error; the user can choose that source again without a
   separate broad Screen Recording permission request.
-- The unsandboxed local development Control build reports unsupported source
+- The unsandboxed local development build with Press Buttons reports unsupported source
   scope, missing Accessibility consent, stale display geometry, selected-window
   mismatch, unsupported Press action, or
   action failure without guessing a window or synthesizing a fallback click.
@@ -286,17 +286,17 @@ at least Zoom, Microsoft Teams, Google Meet in Safari and Chrome, Webex, Slack
 Huddles, Discord, and OBS.
 
 Mac App Store acceptance requires a sandboxed, consistently signed candidate
-that exposes no Control mode, contains no cross-application Accessibility
+that exposes no Press Buttons mode, contains no cross-application Accessibility
 implementation, and requests no Accessibility permission on any supported OS.
 Its persistent Permissions view must explain picker-scoped screen-sharing
 access without requesting separate broad Screen Recording access, and it must
 hide the Accessibility card entirely. Arrange and Draw must remain available.
 The private Workspace must host those modes while the public Stage stays
-chrome-free and Control Room has no live editor. Screenshot acceptance covers
+chrome-free. Screenshot acceptance covers
 every preset's exact dimensions, clean-Stage-only content, Curtain/content,
 ink, watermark and pointer parity, Copy, Save, and cancel, without another
 screen permission or any automatic/network path.
-Separately, Control
+Separately, Press Buttons
 acceptance for the unsandboxed local development build requires macOS 15.2+:
 confirm that only Permissions **Continue Setup** triggers the system
 Accessibility request; allow/deny/revoke that access; exact window versus
@@ -304,7 +304,7 @@ app/display filters; pressable controls versus generic canvas/text regions; sele
 mismatch; black padding and overlap; pause/resume/replace/stop; negative display
 origins; unchanged physical pointer and source-app focus; and supported Press
 controls in PowerPoint Presenter View. On macOS 14 through 15.1, that build must
-keep Control unavailable without requesting Accessibility access. Draw-mode
+keep Press Buttons unavailable without requesting Accessibility access. Draw-mode
 acceptance in both variants must cover Stage/Workspace alignment, Curtain
 non-disclosure, Undo/Clear, bounds, intermediate-source removal preservation,
 and final-source/Stop All clearing.

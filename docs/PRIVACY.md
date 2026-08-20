@@ -19,8 +19,8 @@ StagePane accesses screen content only after the user opens Apple's system
 content-sharing picker and explicitly adds one window, application, or display.
 This may be repeated for up to four independently pausable and removable
 sources. The chosen video frames are rendered into the local StagePane Stage
-window and the private Stage Workspace editor. Control Room contains source
-management and settings but no live editor.
+window and the private Stage Workspace Canvas. Sources and settings remain in
+that Workspace's sidebar.
 
 Each `SCContentSharingPicker` choice grants access only to the selected content
 for that capture session. StagePane does not request separate, broad Screen
@@ -48,11 +48,11 @@ continuously and cleared when capture stops or the source changes.
 ## Preview modes and build variants
 
 The sandboxed Mac App Store build provides **Arrange** and **Draw**. It omits
-Control mode and its cross-application Accessibility path entirely, and it never
+**Press Buttons** and its cross-application Accessibility path entirely, and it never
 requests Accessibility or Input Monitoring permission.
 
-The unsandboxed local development build can additionally provide **Control** on
-macOS 15.2 or later. Choosing Control without access opens the persistent
+The unsandboxed local development build can additionally provide **Press
+Buttons** on macOS 15.2 or later. Choosing Press Buttons without access opens the persistent
 Permissions view; it does not itself trigger a system prompt. Only an explicit
 **Continue Setup** action on that view's Accessibility card asks macOS for
 permission.
@@ -84,12 +84,11 @@ Privacy Curtain visually covers the public Stage but does not stop or pause
 capture. The private Workspace remains visible so the user can prepare the
 composition; this is disclosed in the interface.
 
-The “Keep Private” labels on Stage Workspace and Control Room are workflow
-guidance, not a privacy or security boundary. Application or full-display
-sharing can expose them, and a meeting app may still list or capture either
-window. StagePane tells the user to select the exact Stage window, rather than
-the StagePane application or an entire display, when those private windows must
-remain hidden.
+The “Keep Private” label on Stage Workspace is workflow guidance, not a privacy
+or security boundary. Application or full-display sharing can expose it, and a
+meeting app may still list or capture the window. StagePane tells the user to
+select the exact Stage window, rather than the StagePane application or an
+entire display, when the private Workspace must remain hidden.
 
 ## User-initiated screenshots
 
@@ -99,7 +98,7 @@ or in response to capture changes. Only the user's **Copy Audience Image** or
 the clean Audience Stage.
 The PNG uses the selected Stage pixel dimensions and includes what the audience
 Stage currently shows: shared content or Curtain, ink, watermark, safe-area
-guide, and pointer. It excludes Workspace and Control Room controls, title-bar
+guide, and pointer. It excludes Workspace navigation and controls, title-bar
 chrome, and unrelated application windows.
 
 The screenshot is composed locally from the latest pixels already approved by
@@ -119,8 +118,8 @@ style and appearance, drawing tool/color/width, watermark/safe-area visibility,
 curtain message, and window behavior in local `UserDefaults`. It does not persist the
 chosen source, window title, application name, screenshot history, chosen
 screenshot file path, or meeting information. The standard window-frame
-preferences can include the positions and sizes of Stage, Workspace, and
-Control Room windows, but not their pixels. A PNG saved through the explicit screenshot action is the user's chosen
+preferences can include the positions and sizes of the Stage and Workspace
+windows, but not their pixels. A PNG saved through the explicit screenshot action is the user's chosen
 local file, not an app preference or hidden retained copy.
 Source titles may be displayed transiently in the in-memory source list while
 capture is active. Dragged positions and sizes are session-only in this version.
@@ -140,7 +139,7 @@ selected.
 
 The Mac App Store build requests no Accessibility or Input Monitoring
 permission; Arrange and Draw do not need either, and the Permissions view hides
-the Accessibility card. In the unsandboxed local development Control build,
+the Accessibility card. In the unsandboxed local development build with Press Buttons,
 Accessibility permission is separate from picker-scoped screen sharing, is
 requested only from the card's explicit **Continue Setup** action, and is used
 only for the application-scoped hit test and supported Press action described

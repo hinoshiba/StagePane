@@ -9,9 +9,10 @@ Always write it in CamelCase so the `P` remains visible. Japanese reading:
 Tagline: **見せたいものだけ、ひとつのステージへ。**<br>
 English: **A clean stage for everything you share.**
 
-The mental model is **Audience Stage + private Stage Workspace + Control Room**,
-never a replacement desktop. The Stage is a chrome-free output. The Workspace
-is the large WYSIWYG editor, and Control Room owns sources and settings.
+The mental model is **Audience Stage + private Stage Workspace**, never a
+replacement desktop. The Stage is a chrome-free output. The Workspace combines
+the large WYSIWYG Canvas, Sources, Stage Settings, Appearance, Permissions,
+Privacy, and About behind a Docker-style sidebar.
 Ink `#0C1018`, Stage Indigo `#5B5CF0`, and Beam Aqua `#48D8E8` form the core
 palette. Status uses macOS semantic colors plus icons/text; the brand gradient
 is reserved for the mark and empty states.
@@ -28,16 +29,17 @@ and end capture with no retained frame or orphaned state.
 
 ## P0 shipping scope
 
-- Stable, chrome-free Share Stage plus separate private Stage Workspace and
-  Control Room; private labels are guidance, not protection from full-display
+- Stable, chrome-free Share Stage plus one private Stage Workspace; its private
+  label is guidance, not protection from full-display
   or application sharing
 - Apple system picker for one window/app/display source consent at a time;
   access is scoped to that selection and capture session, with no separate
   broad Screen Recording permission
 - up to four independently pausable/resumable, replaceable, and removable
   in-memory video sources; pause stops the stream and retains its last frame
-- large private Workspace hosting Arrange, Control where available, and Draw,
-  with move, free resize, z-order, and auto arrange; no live editor in Control Room
+- large private Workspace hosting Arrange, Press Buttons where available, and
+  Draw, with move, free resize, z-order, and auto arrange; source management and
+  settings live in its sidebar
 - explicit per-source removal confirmation and stop-all capture teardown
 - instant Privacy Curtain with customizable message
 - 16:9, 4:3, 9:16, 1:1 shapes
@@ -53,18 +55,18 @@ and end capture with no retained frame or orphaned state.
 - all-Spaces, always-on-top compatibility, Presentation Lock
 - menu-bar recovery and keyboard shortcuts
 - persistent Permissions view explaining picker-scoped screen sharing; the
-  local development build also exposes its separate Control Accessibility card
+  local development build also exposes its separate Press Buttons Accessibility card
 - Japanese/English UI selected from system language
 - App Sandbox, privacy manifest, zero network/analytics/account dependencies;
-  the Mac App Store build omits Control and all cross-application Accessibility
+  the Mac App Store build omits Press Buttons and all cross-application Accessibility
   permission/action paths
 
-The unsandboxed local development build can additionally offer Control on macOS
-15.2 or later. Selecting Control may route to Permissions, but only the
+The unsandboxed local development build can additionally offer Press Buttons on macOS
+15.2 or later. Selecting Press Buttons may route to Permissions, but only the
 Accessibility card's explicit **Continue Setup** action requests consent. It
 may perform only a supported Press action on a pressable control inside an exact
 single-window source. This variant is outside the Mac App Store shipping scope
-and must preserve every Control-specific exclusion and validation below. A
+and must preserve every Press-Buttons-specific exclusion and validation below. A
 future direct-distribution build would be a separate product and release
 decision; none currently ships. The Mac App Store build hides the Accessibility
 card entirely.

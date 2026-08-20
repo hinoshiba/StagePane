@@ -75,8 +75,8 @@ struct StageView: View {
         .accessibilityValue(controller.privacyMessage)
         .accessibilityHint(capture.isCaptureActive
             ? L10n.text(
-                "画面取得は動作中です。完全に止めるにはコントロールルームを使います。",
-                "Capture remains active. Use Control Room to stop it completely."
+                "画面取得は動作中です。完全に止めるにはWorkspaceのソース画面を使います。",
+                "Capture remains active. Use Sources in Workspace to stop it completely."
             )
             : "")
     }
@@ -111,8 +111,8 @@ struct StageView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(L10n.text("共有ステージの準備ができました", "Your share stage is ready"))
         .accessibilityHint(L10n.text(
-            "コントロールルームでソースを選ぶか、このまま待機画面として共有できます。",
-            "Choose a source in Control Room, or share this as a clean holding screen."
+            "Workspaceのソース画面で共有内容を選ぶか、このまま待機画面として共有できます。",
+            "Choose shared content in Sources in Workspace, or share this as a clean holding screen."
         ))
     }
 

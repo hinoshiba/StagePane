@@ -108,8 +108,8 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         )
         appMenu.addItem(.separator())
         appMenu.addItem(menuItem(
-            L10n.text("コントロールルーム…", "Control Room…"),
-            action: #selector(AppController.showControlRoom),
+            L10n.text("設定…", "Settings…"),
+            action: #selector(AppController.showSettings),
             key: ",",
             modifiers: [.command],
             target: controller
@@ -262,13 +262,6 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: []
         ))
         windowMenu.addItem(.separator())
-        windowMenu.addItem(menuItem(
-            L10n.text("コントロールルーム", "Control Room"),
-            action: #selector(AppController.showControlRoom),
-            key: "0",
-            modifiers: [.command],
-            target: controller
-        ))
         windowMenu.addItem(menuItem(
             L10n.text("ステージワークスペース", "Stage Workspace"),
             action: #selector(AppController.showStageWorkspace),

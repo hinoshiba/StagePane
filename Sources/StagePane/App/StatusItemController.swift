@@ -33,11 +33,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard let controller, let capture else { return }
         menu.removeAllItems()
         menu.addItem(item(
-            L10n.text("コントロールルームを表示", "Show Control Room"),
-            #selector(AppController.showControlRoom),
-            target: controller
-        ))
-        menu.addItem(item(
             L10n.text("ステージワークスペースを表示", "Show Stage Workspace"),
             #selector(AppController.showStageWorkspace),
             target: controller

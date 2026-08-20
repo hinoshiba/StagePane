@@ -10,6 +10,18 @@ enum PermissionPanelFocus: String, Sendable {
     case accessibility
 }
 
+enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
+    case canvas
+    case sources
+    case stage
+    case appearance
+    case permissions
+    case privacy
+    case about
+
+    var id: String { rawValue }
+}
+
 @MainActor
 final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     #if STAGEPANE_APP_STORE
@@ -34,8 +46,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
     @Published private(set) var previewInputAccessGranted = false
     @Published private(set) var previewInputRequestWasAttempted = false
-    @Published private(set) var permissionPanelRequestRevision = 0
     @Published private(set) var permissionPanelFocus: PermissionPanelFocus?
+    @Published private(set) var workspaceSection: WorkspaceSection = .canvas
     @Published var isAlwaysOnTop: Bool {
         didSet {
             defaults.set(isAlwaysOnTop, forKey: Keys.alwaysOnTop)
@@ -116,7 +128,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     private let defaults: UserDefaults
     private let previewInputForwarder = PreviewInputForwarder()
-    private var controlWindowController: ControlRoomWindowController?
     private var workspaceWindowController: StageWorkspaceWindowController?
     private var stageWindowController: StageWindowController?
     private var pendingStageSnapshot: StageSnapshot?
@@ -256,18 +267,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         guard !previewInputAccessGranted else { return }
         if previewInputRequestWasAttempted, isAdHocDevelopmentBuild {
             transientNotice = L10n.text(
-                "操作モードを使うには、「アクセス権限」の再登録手順を確認してください。",
-                "To use Control mode, review the re-registration steps in Permissions."
+                "ボタン操作を使うには、「アクセス権限」の再登録手順を確認してください。",
+                "To use Press Buttons, review the re-registration steps in Permissions."
             )
         } else if previewInputRequestWasAttempted {
             transientNotice = L10n.text(
-                "操作モードを使うには、「アクセス権限」からアクセシビリティ設定を確認してください。",
-                "To use Control mode, review Accessibility settings from Permissions."
+                "ボタン操作を使うには、「アクセス権限」からアクセシビリティ設定を確認してください。",
+                "To use Press Buttons, review Accessibility settings from Permissions."
             )
         } else {
             transientNotice = L10n.text(
-                "操作モードの設定を続けるには、「アクセス権限」でmacOSの確認画面を開いてください。",
-                "To finish setting up Control mode, open the macOS confirmation from Permissions."
+                "ボタン操作の設定を続けるには、「アクセス権限」でmacOSの確認画面を開いてください。",
+                "To finish setting up Press Buttons, open the macOS confirmation from Permissions."
             )
         }
     }
@@ -315,8 +326,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         refreshPreviewInputAccess()
         guard !previewInputAccessGranted else {
             transientNotice = L10n.text(
-                "操作モードのアクセシビリティ許可を確認しました。",
-                "Accessibility access for Control mode is allowed."
+                "ボタン操作のアクセシビリティ許可を確認しました。",
+                "Accessibility access for Press Buttons is allowed."
             )
             return
         }
@@ -381,6 +392,10 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             case let .failure(failure):
                 presentPreviewInputFailure(failure)
             case let .success(click):
+                transientNotice = L10n.text(
+                    "対応ボタンを確認しています…",
+                    "Checking the supported button…"
+                )
                 previewInputForwarder.performSupportedPress(
                     atGlobalPoint: click.globalPoint,
                     to: click.destination,
@@ -391,6 +406,10 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     switch result {
                     case .posted:
                         lastPreviewInputFailure = nil
+                        transientNotice = L10n.text(
+                            "対応ボタンを押しました。",
+                            "Pressed the supported button."
+                        )
                     case let .rejected(failure):
                         refreshPreviewInputAccess()
                         presentPreviewInputFailure(failure)
@@ -466,8 +485,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func presentPermissionCheck(focus: PermissionPanelFocus? = nil) {
         refreshPermissionStatus()
         permissionPanelFocus = focus
-        permissionPanelRequestRevision &+= 1
-        showControlRoom()
+        workspaceSection = .permissions
+        presentWorkspace()
     }
 
     func clearPermissionPanelFocus() {
@@ -491,18 +510,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         switch failure {
         case .unavailableInThisBuild:
             L10n.text(
-                "操作モードは、このMac App Store版では利用できません。",
-                "Control mode is unavailable in this Mac App Store build."
+                "ボタン操作は、このMac App Store版では利用できません。",
+                "Press Buttons is unavailable in this Mac App Store build."
             )
         case .requiresMacOS15_2:
             L10n.text(
-                "操作モードはmacOS 15.2以降で利用できます。",
-                "Control mode requires macOS 15.2 or later."
+                "ボタン操作はmacOS 15.2以降で利用できます。",
+                "Press Buttons requires macOS 15.2 or later."
             )
         case .unsupportedSourceKind:
             L10n.text(
-                "操作モードは、ウインドウとして追加したソースだけにクリックを送れます。",
-                "Control mode can send clicks only to a source added as a window."
+                "ボタン操作は、1つのウインドウとして追加したソース内の対応ボタンだけを押せます。",
+                "Press Buttons can press supported buttons only in a source added as one window."
             )
         case .sourceIsNotExactlyOneWindow, .invalidWindowMetadata:
             L10n.text(
@@ -516,8 +535,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             )
         case .accessibilityAccessRequired:
             L10n.text(
-                "操作モードにはmacOSのアクセシビリティ許可が必要です。「アクセス権限」で設定を続けてください。",
-                "Control mode requires macOS Accessibility access. Continue setup in Permissions."
+                "ボタン操作にはmacOSのアクセシビリティ許可が必要です。「アクセス権限」で設定を続けてください。",
+                "Press Buttons requires macOS Accessibility access. Continue setup in Permissions."
             )
         case .targetApplicationUnavailable:
             L10n.text(
@@ -569,10 +588,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func start(showWindows: Bool = true) {
         let stage = StageWindowController(controller: self, capture: capture)
-        let control = ControlRoomWindowController(controller: self, capture: capture)
         let workspace = StageWorkspaceWindowController(controller: self, capture: capture)
         stageWindowController = stage
-        controlWindowController = control
         workspaceWindowController = workspace
         statusItemController = StatusItemController(controller: self, capture: capture)
 
@@ -595,6 +612,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalShowsWatermark = showsWatermark
         let originalPrivacyMessage = privacyMessage
         let originalCurtain = privacyCurtain
+        let originalWorkspaceSection = workspaceSection
         defer {
             preset = originalPreset
             theme = originalTheme
@@ -607,6 +625,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             showsWatermark = originalShowsWatermark
             privacyMessage = originalPrivacyMessage
             privacyCurtain = originalCurtain
+            workspaceSection = originalWorkspaceSection
         }
 
         // Public assets must never depend on the developer's local defaults.
@@ -624,31 +643,35 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         privacyCurtain = true
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try writePNG(
-            of: ControlRoomView(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
-            to: directory.appendingPathComponent("control-room.png")
-        )
+        workspaceSection = .canvas
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
                 .frame(width: 1_440, height: 900),
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("workspace.png")
         )
+        workspaceSection = .sources
         try writePNG(
-            of: PrivacyPanel(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900)
-                .background(StagePanePalette.cloud),
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("sources.png")
+        )
+        workspaceSection = .privacy
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("privacy.png")
         )
         pointerStyle = .redDot
         pointerAppearance = .presentationDefault
+        workspaceSection = .appearance
         try writePNG(
-            of: AppearancePanel(
+            of: StageWorkspaceView(
                 controller: self,
-                focusesAudienceForSnapshot: true
+                capture: capture,
+                focusesAppearanceForSnapshot: true
             )
                 .frame(width: 1_440, height: 900)
                 .background(StagePanePalette.cloud),
@@ -747,12 +770,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         try data.write(to: url, options: .atomic)
     }
 
-    @objc func showControlRoom() {
-        controlWindowController?.showWindow(nil)
-        controlWindowController?.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
     @objc func closeFrontWindow() {
         if let frontWindow = NSApp.keyWindow ?? NSApp.mainWindow {
             if frontWindow === stageWindowController?.window {
@@ -765,14 +782,30 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         if let workspace = workspaceWindowController?.window, workspace.isVisible {
             workspace.performClose(nil)
-        } else if let controlRoom = controlWindowController?.window, controlRoom.isVisible {
-            controlRoom.performClose(nil)
         } else if stageWindowController?.window?.isVisible == true {
             stageWindowController?.requestClose()
         }
     }
 
     @objc func showStageWorkspace() {
+        workspaceSection = .canvas
+        presentWorkspace()
+    }
+
+    @objc func showSettings() {
+        workspaceSection = .stage
+        presentWorkspace()
+    }
+
+    func selectWorkspaceSection(_ section: WorkspaceSection) {
+        if section == .permissions {
+            clearPermissionPanelFocus()
+            refreshPermissionStatus()
+        }
+        workspaceSection = section
+    }
+
+    private func presentWorkspace() {
         if workspaceWindowController?.window?.isMiniaturized == true {
             workspaceWindowController?.window?.deminiaturize(nil)
         }
@@ -806,7 +839,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @objc func chooseSource() {
         presentStage(makeKey: false)
-        showStageWorkspace()
+        presentWorkspace()
         capture.addSource()
     }
 
@@ -1031,12 +1064,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func requestConferenceShare() {
-        let requester = [
-            workspaceWindowController?.window,
-            controlWindowController?.window
-        ]
-        .compactMap { $0 }
-        .first { $0.isVisible }
+        let requester = workspaceWindowController?.window.flatMap { window in
+            window.isVisible ? window : nil
+        }
 
         presentStage(makeKey: false)
         guard #available(macOS 15.0, *),
