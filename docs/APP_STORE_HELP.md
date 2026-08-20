@@ -45,14 +45,16 @@ An app selection can include all windows owned by that app. Choose one window wh
 ## Audience tools / 観客向けツール
 
 - **Curtain / カーテン** instantly covers the audience Stage with your chosen message.
-- **Draw / 手書き** places in-memory ink over the Stage. Undo or clear it from Workspace.
+- **Draw / 手書き** provides Pen, translucent Highlighter, and a size-adjustable
+  partial Eraser. Ink and erase actions stay in memory; Undo restores erased areas.
 - **Laser pointer / レーザーポインター** can be customized in Appearance.
 - The optional StagePane watermark is enabled by default and can be turned off.
 - **Copy Audience Image** places one Stage PNG on the pasteboard.
 - **Save Audience Image…** writes one Stage PNG only to the location you choose.
 
 - **カーテン** は指定した文言で観客向けStageをすぐに覆います。
-- **手書き** はメモリ内のインクをStageに重ねます。Workspaceから取り消し・全消去できます。
+- **手書き** ではペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムを使えます。
+  インクと消去操作はメモリ内だけに保持され、取り消すと消した部分も元に戻ります。
 - **レーザーポインター** は外観設定で色、大きさ、発光を調整できます。
 - StagePaneロゴはデフォルトで有効で、外観設定から無効にできます。
 - **Audience画像をコピー** はStageのPNGをペーストボードへ置きます。

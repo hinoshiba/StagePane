@@ -120,6 +120,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     let capture: CaptureCoordinator
     let annotations = StageAnnotationStore()
 
+    var annotationTool: StageInkTool { annotations.preferences.tool }
+
     var availableStageInteractionModes: [StageInteractionMode] {
         Self.supportsControlMode
             ? StageInteractionMode.allCases
@@ -241,6 +243,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             .receive(on: RunLoop.main)
             .sink { [weak self] hasAnnotations in
                 self?.hasAnnotations = hasAnnotations
+            }
+            .store(in: &cancellables)
+        annotations.$preferences
+            .map(\.tool)
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                // Only a tool change affects parent-level mode descriptions.
+                // Ink points remain local to the annotation overlay so a long
+                // stroke never invalidates the full Workspace hierarchy.
+                self?.objectWillChange.send()
             }
             .store(in: &cancellables)
         refreshPermissionStatus()

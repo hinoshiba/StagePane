@@ -145,8 +145,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   implementation and symbols, Accessibility cards, settings links, and prompts
   are absent from that candidate; confirm its persistent Permissions view describes only
   picker-scoped screen-sharing session access;
-- Draw-mode Stage/Workspace alignment, single-point and long strokes, memory
-  bounds, Undo/Clear confirmation, Curtain hiding ink, intermediate-source
+- Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and
+  Highlighter opacity, partial Eraser sizing and cursor, erase-over-crossing-lines,
+  draw-after-erase ordering, exact Undo restoration, memory bounds, Clear
+  confirmation, Curtain hiding ink, intermediate-source
   removal preserving ink, and Stop All/final-source removal clearing it;
 - destructive confirmation from both source-list and Workspace-context Remove,
   including destructive/cancel semantics, VoiceOver and keyboard paths,

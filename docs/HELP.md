@@ -141,7 +141,9 @@ macOSのアクセシビリティ許可や入力監視許可も求めません。
   activate/focus the source app. Application/display sources, black padding,
   paused/stale/ambiguous frames, generic canvas or content regions, keyboard
   input, and drag forwarding are not supported.
-- **Draw / 手書き** draws bounded vector ink over the whole Stage. The same ink
+- **Draw / 手書き** draws bounded vector ink over the whole Stage. Choose Pen,
+  translucent Highlighter, or the size-adjustable partial Eraser. Each eraser
+  drag is one vector action, so **Undo / 取り消す** restores exactly what it removed. The same ink
   appears in the private Workspace and public Stage, stays only in memory, is
   hidden from the audience by the Curtain, and is cleared by **Stop All** or
   removal of the final source. Use **Undo / 取り消す** or **Clear / すべて消す**
@@ -157,7 +159,9 @@ macOSのアクセシビリティ許可や入力監視許可も求めません。
   任意のマウスクリックは合成せず、物理カーソルを動かしたり取得元アプリを前面化・
   フォーカスしたりしません。アプリ／ディスプレイソース、黒帯、一時停止中・古い・曖昧な
   フレーム、一般的なキャンバスや内容領域、キー入力、ドラッグ転送には対応しません。
-- **手書き** はStage全体に上限付きのベクター線を描きます。線は手元のWorkspaceと共有Stageに
+- **手書き** はStage全体に上限付きのベクター線を描きます。ペン、半透明の蛍光ペン、
+  大きさを変えられる部分消去の消しゴムを選べます。消しゴムの1ドラッグは1操作として
+  **取り消す** で正確に戻せます。線は手元のWorkspaceと共有Stageに
   表示され、メモリ内だけに保持されます。カーテン中は相手側から隠れ、**すべて停止** または
   最後のソース解除で消去されます。**取り消す** と **すべて消す** で編集できます。
 

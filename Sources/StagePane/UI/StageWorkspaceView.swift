@@ -424,7 +424,8 @@ struct StageWorkspaceView: View {
                     controller.stageInteractionMode
                 ))
                 .accessibilityHint(L10n.stageInteractionModeDetail(
-                    controller.stageInteractionMode
+                    controller.stageInteractionMode,
+                    annotationTool: controller.annotationTool
                 ))
 
                 Spacer(minLength: 8)
@@ -609,7 +610,10 @@ struct StageWorkspaceView: View {
                     .font(.caption2.weight(.bold))
                     .tracking(1.0)
                     .foregroundStyle(StagePanePalette.aqua)
-                Text(L10n.stageInteractionModeDetail(controller.stageInteractionMode))
+                Text(L10n.stageInteractionModeDetail(
+                    controller.stageInteractionMode,
+                    annotationTool: controller.annotationTool
+                ))
                     .font(.caption)
                     .foregroundStyle(Color.white.opacity(0.62))
                     .lineLimit(1)
@@ -999,56 +1003,98 @@ private struct StageInkToolShelf: View {
                 Image(systemName: "highlighter")
                     .tag(StageInkTool.highlighter)
                     .accessibilityLabel(L10n.text("蛍光ペン", "Highlighter"))
+                Image(systemName: "eraser.fill")
+                    .tag(StageInkTool.eraser)
+                    .accessibilityLabel(L10n.text("消しゴム", "Eraser"))
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .frame(width: 86)
+            .frame(width: 129)
             .accessibilityLabel(L10n.text("描画ツール", "Drawing tool"))
             .accessibilityValue(toolName(store.preferences.tool))
             .help(L10n.text(
-                "ペン、または半透明の蛍光ペンを選びます",
-                "Choose a pen or translucent highlighter"
+                "ペン、半透明の蛍光ペン、部分消去の消しゴムを選びます",
+                "Choose a pen, translucent highlighter, or partial eraser"
             ))
 
-            Divider()
-                .frame(height: 24)
+            if store.preferences.tool == .eraser {
+                Divider()
+                    .frame(height: 24)
 
-            HStack(spacing: 4) {
-                ForEach(StageInkColorPreset.allCases, id: \.rawValue) { preset in
-                    colorButton(preset)
+                HStack(spacing: 5) {
+                    Circle()
+                        .stroke(Color.white.opacity(0.62), lineWidth: 1)
+                        .frame(width: 7, height: 7)
+                        .accessibilityHidden(true)
+
+                    Slider(
+                        value: eraserWidthBinding,
+                        in: StageInkPreferences.minimumEraserNormalizedWidth ...
+                            StageInkPreferences.maximumEraserNormalizedWidth,
+                        step: 0.002
+                    )
+                    .frame(width: 86)
+                    .accessibilityLabel(L10n.text(
+                        "消しゴムの大きさ",
+                        "Eraser size"
+                    ))
+                    .accessibilityValue(eraserWidthAccessibilityValue)
+
+                    Circle()
+                        .stroke(Color.white.opacity(0.82), lineWidth: 1.5)
+                        .frame(width: 15, height: 15)
+                        .accessibilityHidden(true)
                 }
+                .help(L10n.text(
+                    "消す範囲の大きさを変更します",
+                    "Adjust the eraser size"
+                ))
+
+                Text(L10n.text("なぞった部分を消去", "Erase where you drag"))
+                    .font(.caption2)
+                    .foregroundStyle(Color.white.opacity(0.62))
+                    .fixedSize()
+            } else {
+                Divider()
+                    .frame(height: 24)
+
+                HStack(spacing: 4) {
+                    ForEach(StageInkColorPreset.allCases, id: \.rawValue) { preset in
+                        colorButton(preset)
+                    }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(L10n.text("インクの色", "Ink color"))
+
+                Divider()
+                    .frame(height: 24)
+
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.white.opacity(0.62))
+                        .frame(width: 4, height: 4)
+                        .accessibilityHidden(true)
+
+                    Slider(
+                        value: widthBinding,
+                        in: StageInkPreferences.minimumNormalizedWidth ...
+                            StageInkPreferences.maximumNormalizedWidth,
+                        step: 0.001
+                    )
+                    .frame(width: 72)
+                    .accessibilityLabel(L10n.text("線の太さ", "Stroke width"))
+                    .accessibilityValue(widthAccessibilityValue)
+
+                    Circle()
+                        .fill(Color.white.opacity(0.82))
+                        .frame(width: 11, height: 11)
+                        .accessibilityHidden(true)
+                }
+                .help(L10n.text(
+                    "描く線の太さを変更します",
+                    "Adjust the width of new strokes"
+                ))
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(L10n.text("インクの色", "Ink color"))
-
-            Divider()
-                .frame(height: 24)
-
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(Color.white.opacity(0.62))
-                    .frame(width: 4, height: 4)
-                    .accessibilityHidden(true)
-
-                Slider(
-                    value: widthBinding,
-                    in: StageInkPreferences.minimumNormalizedWidth ...
-                        StageInkPreferences.maximumNormalizedWidth,
-                    step: 0.001
-                )
-                .frame(width: 72)
-                .accessibilityLabel(L10n.text("線の太さ", "Stroke width"))
-                .accessibilityValue(widthAccessibilityValue)
-
-                Circle()
-                    .fill(Color.white.opacity(0.82))
-                    .frame(width: 11, height: 11)
-                    .accessibilityHidden(true)
-            }
-            .help(L10n.text(
-                "描く線の太さを変更します",
-                "Adjust the width of new strokes"
-            ))
         }
     }
 
@@ -1066,8 +1112,25 @@ private struct StageInkToolShelf: View {
         )
     }
 
+    private var eraserWidthBinding: Binding<Double> {
+        Binding(
+            get: { store.preferences.eraserNormalizedWidth },
+            set: { store.setEraserNormalizedWidth($0) }
+        )
+    }
+
     private var widthAccessibilityValue: String {
         let referencePixels = Int((store.preferences.normalizedWidth * 1_080).rounded())
+        return L10n.text(
+            "1080ピクセル高のStageで約\(referencePixels)ピクセル",
+            "About \(referencePixels) pixels on a 1080-pixel-high Stage"
+        )
+    }
+
+    private var eraserWidthAccessibilityValue: String {
+        let referencePixels = Int(
+            (store.preferences.eraserNormalizedWidth * 1_080).rounded()
+        )
         return L10n.text(
             "1080ピクセル高のStageで約\(referencePixels)ピクセル",
             "About \(referencePixels) pixels on a 1080-pixel-high Stage"
@@ -1128,6 +1191,8 @@ private struct StageInkToolShelf: View {
             L10n.text("ペン", "Pen")
         case .highlighter:
             L10n.text("蛍光ペン", "Highlighter")
+        case .eraser:
+            L10n.text("消しゴム", "Eraser")
         }
     }
 

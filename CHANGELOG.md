@@ -21,7 +21,8 @@ Versioning once 1.0.0 is released.
   front-to-back ordering, and deterministic automatic arrangement.
 - Mutually exclusive Arrange and Draw modes in the sandboxed Mac App Store
   build. Draw renders bounded, session-only vector ink in both the private
-  Workspace and public Stage. The unsandboxed local development build can
+  Workspace and public Stage, with Pen, translucent Highlighter, and an
+  undoable size-adjustable partial Eraser. The unsandboxed local development build can
   additionally expose Press Buttons on macOS 15.2 or later; only the explicit
   **Continue Setup** action in Permissions requests Accessibility access.
   Press Buttons performs only a supported Press action inside an exact single-window

@@ -137,7 +137,8 @@ Toggling the Privacy Curtain updates the Stage without bringing its window to
 the front, so the Workspace or source app you are using keeps its place.
 
 Dragging in **Arrange** changes only the Stage composition. **Draw** adds bounded
-vector ink to the Stage in memory; it is hidden by the Curtain and cleared by
+vector ink with a pen or translucent highlighter, plus a size-adjustable partial
+eraser whose gestures can be undone exactly. The document stays in memory, is hidden by the Curtain, and is cleared by
 Stop All or removal of the final source. Both modes remain available in the Mac
 App Store build, which omits Press Buttons and does not request Accessibility
 permission.

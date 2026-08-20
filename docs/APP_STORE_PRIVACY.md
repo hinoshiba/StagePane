@@ -37,9 +37,9 @@ Laser pointer mode reads only the current pointer position needed to draw one do
 
 ## Settings stored on this Mac / このMacに保存する設定
 
-StagePane stores interface preferences such as Stage preset, theme, pointer appearance, drawing tool/color/width, watermark and safe-area visibility, Curtain message, and window behavior in the app's sandboxed preferences. It does not persist selected source content, source titles, application names, screenshot history, screenshot destinations, or meeting information.
+StagePane stores interface preferences such as Stage preset, theme, pointer appearance, drawing tool/color/ink width/eraser size, watermark and safe-area visibility, Curtain message, and window behavior in the app's sandboxed preferences. It does not persist selected source content, source titles, application names, screenshot history, screenshot destinations, or meeting information.
 
-StagePaneは、Stageプリセット、テーマ、ポインター表示、手書きツール・色・太さ、ウォーターマークとセーフエリアの表示、カーテン文言、ウインドウ動作などのUI設定をサンドボックス内に保存します。選択したソース内容、ソース名、アプリ名、スクリーンショット履歴、保存先、会議情報は保存しません。
+StagePaneは、Stageプリセット、テーマ、ポインター表示、手書きツール・色・インクの太さ・消しゴムの大きさ、ウォーターマークとセーフエリアの表示、カーテン文言、ウインドウ動作などのUI設定をサンドボックス内に保存します。選択したソース内容、ソース名、アプリ名、スクリーンショット履歴、保存先、会議情報は保存しません。
 
 ## Permissions / アクセス許可
 

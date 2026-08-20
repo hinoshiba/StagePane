@@ -150,16 +150,23 @@ public struct StageInkStyle: Codable, Equatable, Sendable {
 public enum StageInkTool: String, CaseIterable, Codable, Hashable, Sendable {
     case pen
     case highlighter
+    case eraser
 
     public static let defaultTool = StageInkTool.pen
 
     /// Highlighter strokes remain translucent when copied or saved as an
-    /// audience image; pen strokes are fully opaque.
+    /// audience image; pen strokes are fully opaque. Eraser color is ignored
+    /// by the renderer, but stays transparent for forward-safe serialization.
     public var opacity: Double {
         switch self {
         case .pen: 1
         case .highlighter: 0.36
+        case .eraser: 0
         }
+    }
+
+    public var strokeKind: StageAnnotationStrokeKind {
+        self == .eraser ? .eraser : .ink
     }
 }
 
@@ -195,32 +202,48 @@ public enum StageInkColorPreset: String, CaseIterable, Codable, Hashable, Sendab
 public struct StageInkPreferences: Codable, Equatable, Sendable {
     public static let minimumNormalizedWidth = 0.002
     public static let maximumNormalizedWidth = 0.03
+    public static let minimumEraserNormalizedWidth = 0.008
+    public static let maximumEraserNormalizedWidth = 0.08
+    public static let defaultEraserNormalizedWidth = 0.03
     public static let defaultPreferences = StageInkPreferences(
         tool: .defaultTool,
         colorPreset: .defaultPreset,
-        normalizedWidth: StageInkStyle.defaultStyle.normalizedWidth
+        normalizedWidth: StageInkStyle.defaultStyle.normalizedWidth,
+        eraserNormalizedWidth: defaultEraserNormalizedWidth
     )
 
     public let tool: StageInkTool
     public let colorPreset: StageInkColorPreset
     /// A fraction of the shorter Stage canvas dimension.
     public let normalizedWidth: Double
+    /// The diameter of the vector eraser as a fraction of the shorter Stage
+    /// canvas dimension. It is remembered independently from ink width.
+    public let eraserNormalizedWidth: Double
 
     public init(
         tool: StageInkTool,
         colorPreset: StageInkColorPreset,
-        normalizedWidth: Double
+        normalizedWidth: Double,
+        eraserNormalizedWidth: Double = Self.defaultEraserNormalizedWidth
     ) {
         self.tool = tool
         self.colorPreset = colorPreset
-        guard normalizedWidth.isFinite else {
+        if normalizedWidth.isFinite {
+            self.normalizedWidth = min(
+                max(normalizedWidth, Self.minimumNormalizedWidth),
+                Self.maximumNormalizedWidth
+            )
+        } else {
             self.normalizedWidth = StageInkStyle.defaultStyle.normalizedWidth
-            return
         }
-        self.normalizedWidth = min(
-            max(normalizedWidth, Self.minimumNormalizedWidth),
-            Self.maximumNormalizedWidth
-        )
+        if eraserNormalizedWidth.isFinite {
+            self.eraserNormalizedWidth = min(
+                max(eraserNormalizedWidth, Self.minimumEraserNormalizedWidth),
+                Self.maximumEraserNormalizedWidth
+            )
+        } else {
+            self.eraserNormalizedWidth = Self.defaultEraserNormalizedWidth
+        }
     }
 
     public var style: StageInkStyle {
@@ -232,7 +255,7 @@ public struct StageInkPreferences: Codable, Equatable, Sendable {
                 blue: baseColor.blue,
                 alpha: tool.opacity
             ),
-            normalizedWidth: normalizedWidth
+            normalizedWidth: tool == .eraser ? eraserNormalizedWidth : normalizedWidth
         )
     }
 
@@ -240,6 +263,7 @@ public struct StageInkPreferences: Codable, Equatable, Sendable {
         case tool
         case colorPreset
         case normalizedWidth
+        case eraserNormalizedWidth
     }
 
     public init(from decoder: Decoder) throws {
@@ -247,22 +271,38 @@ public struct StageInkPreferences: Codable, Equatable, Sendable {
         self.init(
             tool: try container.decode(StageInkTool.self, forKey: .tool),
             colorPreset: try container.decode(StageInkColorPreset.self, forKey: .colorPreset),
-            normalizedWidth: try container.decode(Double.self, forKey: .normalizedWidth)
+            normalizedWidth: try container.decode(Double.self, forKey: .normalizedWidth),
+            eraserNormalizedWidth: try container.decodeIfPresent(
+                Double.self,
+                forKey: .eraserNormalizedWidth
+            ) ?? Self.defaultEraserNormalizedWidth
         )
     }
 }
 
+/// Whether a vector gesture adds visible ink or subtracts from earlier ink.
+///
+/// Eraser gestures are kept in document order instead of destructively
+/// rewriting older strokes, so Undo can reveal exactly what the gesture erased.
+public enum StageAnnotationStrokeKind: String, Codable, Equatable, Sendable {
+    case ink
+    case eraser
+}
+
 public struct StageAnnotationStroke: Identifiable, Codable, Equatable, Sendable {
     public let id: UUID
+    public let kind: StageAnnotationStrokeKind
     public let style: StageInkStyle
     public private(set) var points: [StageAnnotationPoint]
 
     public init(
         id: UUID = UUID(),
+        kind: StageAnnotationStrokeKind = .ink,
         style: StageInkStyle = .defaultStyle,
         points: [StageAnnotationPoint] = []
     ) {
         self.id = id
+        self.kind = kind
         self.style = style
         self.points = points
     }
@@ -274,11 +314,35 @@ public struct StageAnnotationStroke: Identifiable, Codable, Equatable, Sendable 
         points.append(point)
         return true
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case style
+        case points
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try container.decode(UUID.self, forKey: .id),
+            kind: try container.decodeIfPresent(
+                StageAnnotationStrokeKind.self,
+                forKey: .kind
+            ) ?? .ink,
+            style: try container.decode(StageInkStyle.self, forKey: .style),
+            points: try container.decode([StageAnnotationPoint].self, forKey: .points)
+        )
+    }
 }
 
 /// An in-memory annotation document. Stroke order is rendering order.
 public struct StageAnnotationDocument: Codable, Equatable, Sendable {
     public private(set) var strokes: [StageAnnotationStroke]
+
+    public var containsInkStroke: Bool {
+        strokes.contains(where: { $0.kind == .ink })
+    }
 
     public init(strokes: [StageAnnotationStroke] = []) {
         var seen = Set<UUID>()
@@ -289,10 +353,17 @@ public struct StageAnnotationDocument: Codable, Equatable, Sendable {
     public mutating func beginStroke(
         id: UUID = UUID(),
         at point: StageAnnotationPoint,
+        kind: StageAnnotationStrokeKind = .ink,
         style: StageInkStyle = .defaultStyle
     ) -> Bool {
-        guard !strokes.contains(where: { $0.id == id }) else { return false }
-        strokes.append(StageAnnotationStroke(id: id, style: style, points: [point]))
+        guard !strokes.contains(where: { $0.id == id }),
+              kind == .ink || containsInkStroke else { return false }
+        strokes.append(StageAnnotationStroke(
+            id: id,
+            kind: kind,
+            style: style,
+            points: [point]
+        ))
         return true
     }
 

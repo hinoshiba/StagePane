@@ -61,6 +61,70 @@ final class StageAnnotationsTests: XCTestCase {
         XCTAssertEqual(document.strokes.last?.style, highlighter.style)
     }
 
+    func testEraserPreferencesUseASeparateSanitizedWidth() throws {
+        let eraser = StageInkPreferences(
+            tool: .eraser,
+            colorPreset: .blue,
+            normalizedWidth: 0.006,
+            eraserNormalizedWidth: 0.03
+        )
+
+        XCTAssertEqual(eraser.tool.strokeKind, .eraser)
+        XCTAssertEqual(eraser.style.normalizedWidth, 0.03)
+        XCTAssertEqual(eraser.style.color.alpha, 0)
+        XCTAssertEqual(
+            eraser.style.lineWidth(in: CGSize(width: 1920, height: 1080)),
+            32.4
+        )
+
+        let tooSmall = StageInkPreferences(
+            tool: .eraser,
+            colorPreset: .red,
+            normalizedWidth: 0.006,
+            eraserNormalizedWidth: -1
+        )
+        let tooLarge = StageInkPreferences(
+            tool: .eraser,
+            colorPreset: .red,
+            normalizedWidth: 0.006,
+            eraserNormalizedWidth: 1
+        )
+        let nonFinite = StageInkPreferences(
+            tool: .eraser,
+            colorPreset: .red,
+            normalizedWidth: 0.006,
+            eraserNormalizedWidth: .infinity
+        )
+        XCTAssertEqual(
+            tooSmall.eraserNormalizedWidth,
+            StageInkPreferences.minimumEraserNormalizedWidth
+        )
+        XCTAssertEqual(
+            tooLarge.eraserNormalizedWidth,
+            StageInkPreferences.maximumEraserNormalizedWidth
+        )
+        XCTAssertEqual(
+            nonFinite.eraserNormalizedWidth,
+            StageInkPreferences.defaultEraserNormalizedWidth
+        )
+
+        let legacyData = Data(
+            #"{"tool":"pen","colorPreset":"blue","normalizedWidth":0.01}"#.utf8
+        )
+        let legacy = try JSONDecoder().decode(StageInkPreferences.self, from: legacyData)
+        XCTAssertEqual(
+            legacy.eraserNormalizedWidth,
+            StageInkPreferences.defaultEraserNormalizedWidth
+        )
+        XCTAssertEqual(
+            try JSONDecoder().decode(
+                StageInkPreferences.self,
+                from: JSONEncoder().encode(eraser)
+            ),
+            eraser
+        )
+    }
+
     func testInkPreferencesClampWidthAndRoundTrip() throws {
         XCTAssertEqual(StageInkPreferences.defaultPreferences.tool, .pen)
         XCTAssertEqual(StageInkPreferences.defaultPreferences.colorPreset, .red)
@@ -148,6 +212,51 @@ final class StageAnnotationsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(StageAnnotationDocument.self, from: data)
         XCTAssertEqual(decoded, document)
         assertSendable(decoded)
+    }
+
+    func testEraserStrokePreservesActionOrderAndLegacyStrokeDefaultsToInk() throws {
+        let inkID = UUID(uuidString: "A39B4679-BAB4-4B49-A0C9-6BA4FD533300")!
+        let eraserID = UUID(uuidString: "C7C45863-BF09-45D8-969D-8187E5CF7C9C")!
+        var document = StageAnnotationDocument()
+        XCTAssertFalse(document.containsInkStroke)
+        XCTAssertFalse(document.beginStroke(
+            id: eraserID,
+            at: StageAnnotationPoint(x: 0.2, y: 0.2),
+            kind: .eraser
+        ))
+        XCTAssertTrue(document.beginStroke(
+            id: inkID,
+            at: StageAnnotationPoint(x: 0.1, y: 0.1),
+            kind: .ink
+        ))
+        XCTAssertTrue(document.beginStroke(
+            id: eraserID,
+            at: StageAnnotationPoint(x: 0.2, y: 0.2),
+            kind: .eraser,
+            style: StageInkStyle(
+                color: StageInkColor(red: 1, green: 1, blue: 1, alpha: 0),
+                normalizedWidth: 0.03
+            )
+        ))
+        XCTAssertEqual(document.strokes.map(\.kind), [.ink, .eraser])
+        XCTAssertTrue(document.containsInkStroke)
+
+        let encoded = try JSONEncoder().encode(document)
+        XCTAssertEqual(
+            try JSONDecoder().decode(StageAnnotationDocument.self, from: encoded),
+            document
+        )
+        XCTAssertTrue(document.removeStroke(eraserID))
+        XCTAssertEqual(document.strokes.map(\.id), [inkID])
+
+        let legacyStrokeData = Data(
+            #"{"id":"A39B4679-BAB4-4B49-A0C9-6BA4FD533300","style":{"color":{"red":1,"green":0,"blue":0,"alpha":1},"normalizedWidth":0.006},"points":[{"x":0.1,"y":0.2,"pressure":1}]}"#.utf8
+        )
+        let legacyStroke = try JSONDecoder().decode(
+            StageAnnotationStroke.self,
+            from: legacyStrokeData
+        )
+        XCTAssertEqual(legacyStroke.kind, .ink)
     }
 
     func testDecodedValuesAreSanitized() throws {

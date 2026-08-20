@@ -180,10 +180,17 @@ struct StageLayoutEditor: View {
                 "Only buttons that expose a supported Accessibility Press action inside a window source can be used."
             )
         case .annotate:
-            L10n.text(
-                "ドラッグして、相手に見えるステージへ線を描きます。",
-                "Drag to draw a line on the audience Stage."
-            )
+            if controller.annotationTool == .eraser {
+                L10n.text(
+                    "ドラッグして、相手に見える手書きの触れた部分を消します。",
+                    "Drag to erase the parts of the audience drawing you touch."
+                )
+            } else {
+                L10n.text(
+                    "ドラッグして、相手に見えるステージへ線を描きます。",
+                    "Drag to draw a line on the audience Stage."
+                )
+            }
         }
     }
 }
@@ -354,37 +361,75 @@ private struct StageSourceControlOverlay: View {
 private struct StageAnnotationInputOverlay: View {
     @ObservedObject var store: StageAnnotationStore
     @State private var isDrawing = false
+    @State private var pointerLocation: CGPoint?
 
     var body: some View {
         GeometryReader { proxy in
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if !isDrawing {
-                                isDrawing = true
-                                store.beginStroke(
-                                    at: value.location,
-                                    canvasSize: proxy.size
-                                )
-                            } else {
+            ZStack(alignment: .topLeading) {
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                pointerLocation = value.location
+                                if !isDrawing {
+                                    isDrawing = store.beginStroke(
+                                        at: value.location,
+                                        canvasSize: proxy.size
+                                    )
+                                } else {
+                                    store.appendPoint(
+                                        at: value.location,
+                                        canvasSize: proxy.size
+                                    )
+                                }
+                            }
+                            .onEnded { value in
+                                pointerLocation = value.location
                                 store.appendPoint(
                                     at: value.location,
                                     canvasSize: proxy.size
                                 )
+                                store.endStroke()
+                                isDrawing = false
                             }
-                        }
-                        .onEnded { value in
-                            store.appendPoint(
-                                at: value.location,
-                                canvasSize: proxy.size
-                            )
-                            store.endStroke()
-                            isDrawing = false
-                        }
-                )
+                    )
+
+                if store.preferences.tool == .eraser,
+                   let pointerLocation {
+                    eraserCursor(in: proxy.size)
+                        .position(pointerLocation)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+
+                if store.isEraserAtCapacity {
+                    Label(
+                        L10n.text(
+                            "操作上限です。取り消すか、すべて消してください。",
+                            "Action limit reached. Undo or clear the drawing."
+                        ),
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 28)
+                    .background(Color.black.opacity(0.76), in: Capsule())
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .allowsHitTesting(false)
+                }
+            }
+            .onContinuousHover { phase in
+                switch phase {
+                case let .active(location):
+                    pointerLocation = location
+                case .ended:
+                    pointerLocation = nil
+                }
+            }
         }
         .onDisappear {
             store.endStroke()
@@ -392,10 +437,49 @@ private struct StageAnnotationInputOverlay: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L10n.text("手書きキャンバス", "Drawing canvas"))
-        .accessibilityHint(L10n.text(
+        .accessibilityHint(canvasAccessibilityHint)
+    }
+
+    private func eraserCursor(in canvasSize: CGSize) -> some View {
+        let diameter = max(
+            2,
+            min(canvasSize.width, canvasSize.height) *
+                CGFloat(store.preferences.eraserNormalizedWidth)
+        )
+        return Circle()
+            .fill(Color.black.opacity(0.20))
+            .overlay {
+                Circle()
+                    .strokeBorder(
+                        Color.white.opacity(0.92),
+                        lineWidth: min(1.5, diameter / 3)
+                    )
+            }
+            .overlay {
+                if diameter >= 15 {
+                    Image(systemName: "eraser.fill")
+                        .font(.system(
+                            size: min(11, diameter * 0.46),
+                            weight: .semibold
+                        ))
+                        .foregroundStyle(Color.white.opacity(0.92))
+                }
+            }
+            .frame(width: diameter, height: diameter)
+            .shadow(color: .black.opacity(0.45), radius: 3, y: 1)
+    }
+
+    private var canvasAccessibilityHint: String {
+        if store.preferences.tool == .eraser {
+            return L10n.text(
+                "ポインタでドラッグして、触れた部分を消します。コマンドZで元に戻せます。",
+                "Drag to erase the parts you touch. Press Command-Z to undo."
+            )
+        }
+        return L10n.text(
             "ポインタでドラッグして線を描きます。取り消しと全消去は上のボタンを使います。",
             "Drag with the pointer to draw. Use the buttons above to undo or clear."
-        ))
+        )
     }
 }
 

@@ -125,7 +125,10 @@ enum L10n {
         }
     }
 
-    static func stageInteractionModeDetail(_ mode: StageInteractionMode) -> String {
+    static func stageInteractionModeDetail(
+        _ mode: StageInteractionMode,
+        annotationTool: StageInkTool = .pen
+    ) -> String {
         switch mode {
         case .arrange:
             text(
@@ -138,10 +141,17 @@ enum L10n {
                 "Press supported buttons only in a single-window source."
             )
         case .annotate:
-            text(
-                "共有Stageへ線を描きます。",
-                "Draw lines on the shared Stage."
-            )
+            if annotationTool == .eraser {
+                text(
+                    "共有Stageの手書きを部分消去します。",
+                    "Partially erase drawing on the shared Stage."
+                )
+            } else {
+                text(
+                    "共有Stageへ線を描きます。",
+                    "Draw lines on the shared Stage."
+                )
+            }
         }
     }
 }

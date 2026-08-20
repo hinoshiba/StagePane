@@ -114,7 +114,7 @@ screenshot history or screenshot file of its own.
 ## Settings stored on the device
 
 StagePane stores interface preferences such as aspect preset, theme, pointer
-style and appearance, drawing tool/color/width, watermark/safe-area visibility,
+style and appearance, drawing tool/color/ink width/eraser size, watermark/safe-area visibility,
 curtain message, and window behavior in local `UserDefaults`. It does not persist the
 chosen source, window title, application name, screenshot history, chosen
 screenshot file path, or meeting information. The standard window-frame
