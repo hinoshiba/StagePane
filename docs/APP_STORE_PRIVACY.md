@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / StagePane プライバシーポリシー
 
-Effective date / 発効日: 2026-08-20
+Effective date / 発効日: 2026-08-21
 Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 
 ## Summary / 概要
@@ -8,6 +8,10 @@ Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 StagePane does not collect personal data, create accounts, show advertising, run analytics, or send telemetry. It has no third-party SDKs and makes no network requests.
 
 StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKを含まず、ネットワーク通信も行いません。
+
+Every StagePane build provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and does not forward input to other applications.
+
+StagePaneのすべてのビルドは配置と手書きを提供し、アクセシビリティや入力監視の許可を求めず、他のアプリへ入力を転送しません。
 
 ## Screen content / 画面内容
 
@@ -43,9 +47,9 @@ StagePaneは、Stageプリセット、テーマ、ポインター表示、手書
 
 ## Permissions / アクセス許可
 
-Screen access is granted per selection and per capture session through Apple's picker. The Mac App Store edition provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and includes no cross-application Press Buttons feature.
+Screen access is granted per selection and per capture session through Apple's picker. Removing a source or choosing Stop All ends that session-scoped access.
 
-画面アクセスはAppleのピッカーで選択ごと・取得セッションごとに許可されます。Mac App Store版は配置と手書きを提供し、アクセシビリティや入力監視の許可を求めず、他アプリを操作する機能も含みません。
+画面アクセスはAppleのピッカーで選択ごと・取得セッションごとに許可されます。ソースの解除または「すべて停止」で、そのセッションのアクセスを終了します。
 
 ## Network, retention, sale, and tracking / 通信・保持・販売・トラッキング
 

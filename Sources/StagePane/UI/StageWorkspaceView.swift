@@ -248,11 +248,6 @@ struct StageWorkspaceView: View {
                             .frame(width: 14, height: 14)
                             .background(StagePanePalette.indigo, in: Circle())
                             .offset(x: 5, y: -4)
-                    } else if compact, section == .permissions, permissionsNeedAttention {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 4, y: -2)
                     }
                 }
 
@@ -267,11 +262,6 @@ struct StageWorkspaceView: View {
                         Text("\(capture.sources.count) / \(CaptureCoordinator.maximumSources)")
                             .font(.caption2.monospacedDigit().weight(.semibold))
                             .foregroundStyle(Color.white.opacity(0.48))
-                    } else if section == .permissions, permissionsNeedAttention {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 7, height: 7)
-                            .accessibilityHidden(true)
                     }
                 }
             }
@@ -303,17 +293,8 @@ struct StageWorkspaceView: View {
             .padding(.vertical, compact ? 10 : 13)
     }
 
-    private var permissionsNeedAttention: Bool {
-        AppController.supportsControlMode &&
-            controller.stageInteractionMode == .control &&
-            !controller.previewInputAccessGranted
-    }
-
     private func navigationSymbol(for section: WorkspaceSection) -> String {
-        if section == .permissions, permissionsNeedAttention {
-            return "exclamationmark.shield.fill"
-        }
-        return section.symbol
+        section.symbol
     }
 
     private func navigationAccessibilityValue(for section: WorkspaceSection) -> String {
@@ -326,9 +307,6 @@ struct StageWorkspaceView: View {
                 "\(capture.sources.count)件",
                 "\(capture.sources.count) of \(CaptureCoordinator.maximumSources)"
             ))
-        }
-        if section == .permissions, permissionsNeedAttention {
-            values.append(L10n.text("確認が必要", "Needs attention"))
         }
         return values.joined(separator: ", ")
     }
@@ -722,40 +700,6 @@ struct StageWorkspaceView: View {
                     "Arrange sources as a grid, side by side, stacked, or picture in picture"
                 ))
 
-            case .control:
-                if controller.previewInputAccessGranted {
-                    Label(
-                        L10n.text("ボタン操作を許可済み", "Button Press Allowed"),
-                        systemImage: "checkmark.shield.fill"
-                    )
-                    .foregroundStyle(StagePanePalette.mintReadable)
-                    .accessibilityHint(L10n.text(
-                        "単一ウインドウ内の対応ボタンにAXPressだけを実行します。",
-                        "Only AXPress on supported buttons in one window is performed."
-                    ))
-                } else {
-                    Button {
-                        controller.presentPermissionCheck(focus: .accessibility)
-                    } label: {
-                        Label(
-                            L10n.text("ボタン操作権限を確認", "Review Button Access"),
-                            systemImage: "exclamationmark.shield.fill"
-                        )
-                    }
-                    .foregroundStyle(StagePanePalette.coralReadable)
-                    .help(L10n.text(
-                        "ボタン操作に必要なアクセシビリティ設定を確認します",
-                        "Review the Accessibility setting required by Press Buttons"
-                    ))
-                }
-
-                Text(L10n.text(
-                    "単一ウインドウの対応ボタンのみ",
-                    "Supported buttons in one window only"
-                ))
-                .font(.caption2)
-                .foregroundStyle(Color.white.opacity(0.56))
-
             case .annotate:
                 StageInkToolShelf(store: controller.annotations)
 
@@ -936,7 +880,6 @@ struct StageWorkspaceView: View {
     private func modeSymbol(_ mode: StageInteractionMode) -> String {
         switch mode {
         case .arrange: "rectangle.3.group"
-        case .control: "hand.tap.fill"
         case .annotate: "pencil.tip"
         }
     }

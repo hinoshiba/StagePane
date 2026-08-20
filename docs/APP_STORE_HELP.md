@@ -1,8 +1,9 @@
 # StagePane Help / StagePane の使い方
 
-This help describes the sandboxed Mac App Store edition of StagePane.
+This help describes StagePane's sandboxed Arrange/Draw workflow.
 
-このヘルプは、サンドボックス化されたMac App Store版StagePaneについて説明します。
+このヘルプでは、サンドボックス内で動くStagePaneの配置・手書きワークフローを
+説明します。
 
 ## Create and share a Stage / Stageを作って共有する
 
@@ -66,9 +67,13 @@ Screenshots contain the clean audience composition, not Workspace navigation or 
 
 ## Access and privacy / アクセスとプライバシー
 
-Each source is approved in Apple's content-sharing picker for that capture session. Canceling the picker grants nothing. The Mac App Store edition does not request Accessibility or Input Monitoring access and does not include Press Buttons.
+Each source is approved in Apple's content-sharing picker for that capture session. Canceling the picker grants nothing.
 
-各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は取得を始めません。Mac App Store版はアクセシビリティや入力監視の許可を求めず、ボタン操作も含みません。
+各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は取得を始めません。
+
+Arrange and Draw stay inside StagePane. StagePane does not forward clicks, keys, or drags to source applications, and it never requests Accessibility or Input Monitoring permission.
+
+配置と手書きはStagePane内だけで動作します。StagePaneは共有元アプリへクリック、キー入力、ドラッグを転送せず、アクセシビリティや入力監視の許可も要求しません。
 
 StagePane has no account, advertising, analytics, microphone/audio capture, or network upload. See the bundled Privacy Policy for the complete data-flow description.
 

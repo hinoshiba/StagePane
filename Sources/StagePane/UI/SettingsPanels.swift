@@ -170,35 +170,10 @@ struct PermissionsPanel: View {
                     ),
                     statusTitle: screenSharingStatusTitle,
                     statusSymbol: screenSharingStatusSymbol,
-                    statusColor: screenSharingStatusColor,
-                    isFocused: controller.permissionPanelFocus == .screenSharing
+                    statusColor: screenSharingStatusColor
                 ) {
                     addSourceButton
                 }
-
-                #if !STAGEPANE_APP_STORE
-                PermissionAccessCard(
-                    symbol: "hand.tap.fill",
-                    title: L10n.text("ボタン操作", "Press Buttons"),
-                    role: L10n.text("ボタン操作のみ", "Press Buttons only"),
-                    detail: accessibilityDetail,
-                    statusTitle: accessibilityStatusTitle,
-                    statusSymbol: accessibilityStatusSymbol,
-                    statusColor: accessibilityStatusColor,
-                    isFocused: controller.permissionPanelFocus == .accessibility
-                ) {
-                    if controlModeIsAvailable {
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 10) {
-                                accessibilityActions
-                            }
-                            VStack(alignment: .leading, spacing: 10) {
-                                accessibilityActions
-                            }
-                        }
-                    }
-                }
-                #endif
 
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "info.circle.fill")
@@ -215,23 +190,13 @@ struct PermissionsPanel: View {
             .padding(.horizontal, 32)
             .padding(.bottom, 34)
         }
-        .onAppear {
-            controller.refreshPermissionStatus()
-        }
     }
 
     private var permissionFooterText: String {
-        #if STAGEPANE_APP_STORE
         L10n.text(
-            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除するか、すべて停止すると、そのソース用の共有アクセスも終了します。",
-            "Opening this page never shows a macOS consent dialog by itself. Removing a source or stopping all sources ends the sharing access for that source."
+            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除するか、すべて停止すると、そのソース用の共有アクセスも終了します。配置と手書きはStagePane内だけで動作し、アクセシビリティや入力監視の許可は要求しません。",
+            "Opening this page never shows a macOS consent dialog by itself. Removing a source or stopping all sources ends the sharing access for that source. Arrange and Draw stay inside StagePane; Accessibility and Input Monitoring permission are never requested."
         )
-        #else
-        L10n.text(
-            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除すると共有アクセスが終了し、ボタン操作用のアクセシビリティ許可はシステム設定からいつでも取り消せます。",
-            "Opening this page never shows a macOS consent dialog by itself. Removing a source ends its sharing access, and you can revoke Press Buttons Accessibility access in System Settings at any time."
-        )
-        #endif
     }
 
     private var screenSharingStatusTitle: String {
@@ -239,7 +204,7 @@ struct PermissionsPanel: View {
             return L10n.text("macOSで選択中", "Choosing in macOS")
         }
         if capture.isCaptureActive {
-            return L10n.text("選択済み", "Source selected")
+            return L10n.text("このセッションで選択済み", "Selected for this session")
         }
         return L10n.text("追加時に確認", "Confirmed when added")
     }
@@ -247,11 +212,13 @@ struct PermissionsPanel: View {
     private var screenSharingStatusSymbol: String {
         if capture.isPickerPresented { return "ellipsis.circle.fill" }
         if capture.isCaptureActive { return "checkmark.circle.fill" }
-        return "checkmark.shield.fill"
+        return "shield"
     }
 
     private var screenSharingStatusColor: Color {
-        StagePanePalette.mintReadable
+        if capture.isPickerPresented { return StagePanePalette.aquaReadable }
+        if capture.isCaptureActive { return StagePanePalette.mintReadable }
+        return .secondary
     }
 
     private var addSourceButton: some View {
@@ -266,100 +233,6 @@ struct PermissionsPanel: View {
         ))
     }
 
-    #if !STAGEPANE_APP_STORE
-    private var controlModeIsAvailable: Bool {
-        if #available(macOS 15.2, *) { return true }
-        return false
-    }
-
-    private var accessibilityStatusTitle: String {
-        guard controlModeIsAvailable else {
-            return L10n.text("macOS 15.2以降", "Requires macOS 15.2")
-        }
-        if controller.previewInputAccessGranted {
-            return L10n.text("許可済み", "Allowed")
-        }
-        if controller.previewInputRequestWasAttempted {
-            return L10n.text("現在のビルドは未許可", "Current build not allowed")
-        }
-        return L10n.text("未許可", "Not allowed")
-    }
-
-    private var accessibilityDetail: String {
-        let base = L10n.text(
-            "1つのウインドウとして追加したソース内で、対応ボタンにAXPressを実行するためだけに使います。配置と手書きには不要です。",
-            "Used only to perform AXPress on supported buttons in a source added as one window. Arrange and Draw don’t need it."
-        )
-        guard !controller.previewInputAccessGranted,
-              controller.previewInputRequestWasAttempted else { return base }
-        if controller.isAdHocDevelopmentBuild {
-            return base + "\n\n" + L10n.text(
-                "このアドホック開発版は、更新のたびにmacOS上で別のアプリとして扱われます。システム設定でStagePaneがONでも、次の手順で現在のアプリを登録し直してください。\n1. 古いStagePane行があれば選び「−」で削除\n2. 「＋」から \(controller.runningApplicationPath) を追加\n3. StagePaneをONにして、この画面で「再確認」",
-                "This ad-hoc development build is treated as a different app by macOS after each update. Even if StagePane is On in System Settings, register the current app again:\n1. If an old StagePane row exists, select it and remove it with “−”\n2. Use “+” to add \(controller.runningApplicationPath)\n3. Turn StagePane on, then choose Recheck here"
-            )
-        }
-        return base + "\n\n" + L10n.text(
-            "システム設定の「プライバシーとセキュリティ」→「アクセシビリティ」で、現在のStagePaneをONにしてください。行がない場合は「＋」から \(controller.runningApplicationPath) を追加し、この画面で「再確認」を選んでください。",
-            "Turn on the current StagePane in System Settings under Privacy & Security → Accessibility. If no row exists, use “+” to add \(controller.runningApplicationPath), then choose Recheck here."
-        )
-    }
-
-    private var accessibilityStatusSymbol: String {
-        guard controlModeIsAvailable else { return "minus.circle.fill" }
-        return controller.previewInputAccessGranted
-            ? "checkmark.circle.fill"
-            : "exclamationmark.circle.fill"
-    }
-
-    private var accessibilityStatusColor: Color {
-        guard controlModeIsAvailable else { return .secondary }
-        return controller.previewInputAccessGranted
-            ? StagePanePalette.mintReadable
-            : .orange
-    }
-
-    @ViewBuilder
-    private var accessibilityActions: some View {
-        if controller.previewInputAccessGranted {
-            Button(action: controller.refreshPermissionStatus) {
-                Label(L10n.text("再確認", "Recheck"), systemImage: "arrow.clockwise")
-            }
-            .buttonStyle(SecondaryActionButtonStyle())
-        } else if controller.previewInputRequestWasAttempted {
-            Button(action: controller.reviewPreviewInputAccess) {
-                Label(L10n.text("アクセシビリティ設定を開く", "Open Accessibility Settings"), systemImage: "gear")
-            }
-            .buttonStyle(PrimaryActionButtonStyle())
-            .accessibilityHint(L10n.text(
-                "macOSのアクセシビリティ設定を開きます。再登録手順はこのカードに表示されています。",
-                "Opens macOS Accessibility settings. Re-registration steps are shown in this card."
-            ))
-
-            Button(action: controller.refreshPermissionStatus) {
-                Label(L10n.text("再確認", "Recheck"), systemImage: "arrow.clockwise")
-            }
-            .buttonStyle(SecondaryActionButtonStyle())
-        } else {
-            Button(action: controller.requestPreviewInputAccess) {
-                Label(L10n.text("設定を続ける", "Continue Setup"), systemImage: "arrow.right.circle.fill")
-            }
-            .buttonStyle(PrimaryActionButtonStyle())
-            .accessibilityHint(L10n.text(
-                "macOSのアクセシビリティ確認画面を開きます。",
-                "Opens the macOS Accessibility confirmation."
-            ))
-
-            Button(action: controller.openAccessibilitySettings) {
-                Label(L10n.text("システム設定を開く", "Open System Settings"), systemImage: "gear")
-            }
-            .buttonStyle(SecondaryActionButtonStyle())
-            .accessibilityHint(L10n.text(
-                "プライバシーとセキュリティのアクセシビリティ設定を開きます。",
-                "Opens Accessibility in Privacy & Security."
-            ))
-        }
-    }
-    #endif
 }
 
 struct PrivacyPanel: View {
@@ -913,7 +786,6 @@ private struct PermissionAccessCard<Actions: View>: View {
     let statusTitle: String
     let statusSymbol: String
     let statusColor: Color
-    let isFocused: Bool
     let actions: Actions
 
     init(
@@ -924,7 +796,6 @@ private struct PermissionAccessCard<Actions: View>: View {
         statusTitle: String,
         statusSymbol: String,
         statusColor: Color,
-        isFocused: Bool,
         @ViewBuilder actions: () -> Actions
     ) {
         self.symbol = symbol
@@ -934,7 +805,6 @@ private struct PermissionAccessCard<Actions: View>: View {
         self.statusTitle = statusTitle
         self.statusSymbol = statusSymbol
         self.statusColor = statusColor
-        self.isFocused = isFocused
         self.actions = actions()
     }
 
@@ -987,13 +857,6 @@ private struct PermissionAccessCard<Actions: View>: View {
             actions
         }
         .cardSurface()
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(
-                    isFocused ? StagePanePalette.aquaReadable.opacity(0.72) : .clear,
-                    lineWidth: 2
-                )
-        )
         .accessibilityElement(children: .contain)
     }
 }

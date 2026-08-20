@@ -38,12 +38,8 @@ manual leak/retention check.
 - Public Apple APIs only; never add undocumented `CGVirtualDisplay` calls.
 - No raw mouse/keyboard event synthesis, keyboard/drag forwarding, event taps,
   unattended remote control, generic canvas/content control, or input to
-  ambiguous/app/display sources. The sandboxed Mac App Store build must omit
-  Press Buttons and its cross-application Accessibility permission/action path. In an
-  unsandboxed local development build on macOS 15.2 or later, a Press-Buttons
-  accessibility Press must retain explicit Accessibility consent, exact
-  single-window scope, supported-action checks, and fresh displayed-frame
-  validation.
+  source applications. Do not add a cross-application Accessibility permission
+  or action path.
 - No network, analytics, advertising, recording, audio, account, or updater
   dependency without an approved product/privacy proposal.
 - Use `SCContentSharingPicker` for consent. Do not build a covert window-title

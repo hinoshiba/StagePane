@@ -5,11 +5,6 @@ import StagePaneCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum PermissionPanelFocus: String, Sendable {
-    case screenSharing
-    case accessibility
-}
-
 enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
     case canvas
     case sources
@@ -24,12 +19,6 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
 
 @MainActor
 final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
-    #if STAGEPANE_APP_STORE
-    static let supportsControlMode = false
-    #else
-    static let supportsControlMode = true
-    #endif
-
     @Published var preset: StagePreset {
         didSet {
             defaults.set(preset.rawValue, forKey: Keys.preset)
@@ -44,9 +33,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var privacyCurtain = true
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
-    @Published private(set) var previewInputAccessGranted = false
-    @Published private(set) var previewInputRequestWasAttempted = false
-    @Published private(set) var permissionPanelFocus: PermissionPanelFocus?
     @Published private(set) var workspaceSection: WorkspaceSection = .canvas
     @Published var isAlwaysOnTop: Bool {
         didSet {
@@ -122,14 +108,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     var annotationTool: StageInkTool { annotations.preferences.tool }
 
-    var availableStageInteractionModes: [StageInteractionMode] {
-        Self.supportsControlMode
-            ? StageInteractionMode.allCases
-            : StageInteractionMode.allCases.filter { $0 != .control }
-    }
+    var availableStageInteractionModes: [StageInteractionMode] { StageInteractionMode.allCases }
 
     private let defaults: UserDefaults
-    private let previewInputForwarder = PreviewInputForwarder()
     private var workspaceWindowController: StageWorkspaceWindowController?
     private var stageWindowController: StageWindowController?
     private var pendingStageSnapshot: StageSnapshot?
@@ -138,14 +119,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var previousCapturePhase: CapturePhase = .idle
     private var previousCaptureWasActive = false
     private var awaitsInvalidatedPickerDismissal = false
-    private var lastPreviewInputFailure: PreviewInputForwardingFailure?
-    private var hasRefreshedPermissionStatus = false
 
     override init() {
         let defaults = UserDefaults.standard
-        let hadExistingInstallationPreferences = Bundle.main.bundleIdentifier
-            .flatMap { defaults.persistentDomain(forName: $0) }
-            .map { !$0.isEmpty } ?? false
         self.defaults = defaults
         self.preset = StagePreset(
             rawValue: defaults.string(forKey: Keys.preset) ?? ""
@@ -173,21 +149,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         )
         self.capture = CaptureCoordinator()
         super.init()
-        let storedRequestAttempt = defaults.object(
-            forKey: Keys.previewInputRequestWasAttempted
-        ) as? Bool
-        previewInputRequestWasAttempted = PreviewInputPermissionPolicy
-            .initialRequestWasAttempted(
-                storedValue: storedRequestAttempt,
-                isAdHocDevelopmentBuild: isAdHocDevelopmentBuild,
-                hadExistingInstallationPreferences: hadExistingInstallationPreferences
-            )
-        if storedRequestAttempt == nil {
-            defaults.set(
-                previewInputRequestWasAttempted,
-                forKey: Keys.previewInputRequestWasAttempted
-            )
-        }
         // Persist a canonical value after resolving the legacy Boolean setting.
         defaults.set(pointerStyle.rawValue, forKey: Keys.pointerStyle)
         defaults.set(pointerAppearance.diameter, forKey: Keys.pointerDiameter)
@@ -206,11 +167,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 self?.captureStateDidChange(phase: phase, isActive: isActive)
             }
             .store(in: &cancellables)
-        capture.objectWillChange
-            .sink { [weak self] _ in
-                self?.previewInputForwarder.cancelPendingActions()
-            }
-            .store(in: &cancellables)
         capture.$isPickerPresented
             .removeDuplicates()
             .dropFirst()
@@ -226,15 +182,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             .receive(on: RunLoop.main)
             .sink { [weak self] isEmpty in
                 guard let self, isEmpty else { return }
-                previewInputForwarder.cancelPendingActions()
                 annotations.removeAll()
                 stageInteractionMode = .arrange
-            }
-            .store(in: &cancellables)
-        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                _ = self?.previewInputPermissionAction(for: .applicationActivation)
             }
             .store(in: &cancellables)
         annotations.$document
@@ -257,187 +206,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
-        refreshPermissionStatus()
     }
 
     func setStageInteractionMode(_ mode: StageInteractionMode) {
         guard stageInteractionMode != mode else { return }
-        if mode == .control {
-            guard Self.supportsControlMode else {
-                presentPreviewInputFailure(.unavailableInThisBuild)
-                return
-            }
-            guard #available(macOS 15.2, *) else {
-                presentPreviewInputFailure(.requiresMacOS15_2)
-                return
-            }
-        }
-        previewInputForwarder.cancelPendingActions()
         annotations.endStroke()
         stageInteractionMode = mode
-        lastPreviewInputFailure = nil
-        guard mode == .control else { return }
-        refreshPermissionStatus()
-        guard !previewInputAccessGranted else { return }
-        if previewInputRequestWasAttempted, isAdHocDevelopmentBuild {
-            transientNotice = L10n.text(
-                "ボタン操作を使うには、「アクセス権限」の再登録手順を確認してください。",
-                "To use Press Buttons, review the re-registration steps in Permissions."
-            )
-        } else if previewInputRequestWasAttempted {
-            transientNotice = L10n.text(
-                "ボタン操作を使うには、「アクセス権限」からアクセシビリティ設定を確認してください。",
-                "To use Press Buttons, review Accessibility settings from Permissions."
-            )
-        } else {
-            transientNotice = L10n.text(
-                "ボタン操作の設定を続けるには、「アクセス権限」でmacOSの確認画面を開いてください。",
-                "To finish setting up Press Buttons, open the macOS confirmation from Permissions."
-            )
-        }
-    }
-
-    func requestPreviewInputAccess() {
-        guard Self.supportsControlMode else {
-            presentPreviewInputFailure(.unavailableInThisBuild)
-            return
-        }
-        guard #available(macOS 15.2, *) else {
-            presentPreviewInputFailure(.requiresMacOS15_2)
-            return
-        }
-        switch previewInputPermissionAction(for: .explicitContinue) {
-        case .refreshOnly:
-            return
-        case .reviewRepair:
-            reviewPreviewInputAccess()
-            return
-        case .requestSystemPrompt:
-            break
-        }
-        _ = previewInputForwarder.requestPostEventAccess()
-        refreshPreviewInputAccess()
-        if !previewInputAccessGranted {
-            transientNotice = L10n.text(
-                "macOSの確認は別画面で完了します。許可後にStagePaneへ戻ると状態を再確認します。",
-                "Complete the macOS confirmation in the system UI. StagePane rechecks when you return."
-            )
-        }
-    }
-
-    func reviewPreviewInputAccess() {
-        #if STAGEPANE_APP_STORE
-        presentPreviewInputFailure(.unavailableInThisBuild)
-        #else
-        guard Self.supportsControlMode else {
-            presentPreviewInputFailure(.unavailableInThisBuild)
-            return
-        }
-        guard #available(macOS 15.2, *) else {
-            presentPreviewInputFailure(.requiresMacOS15_2)
-            return
-        }
-        refreshPreviewInputAccess()
-        guard !previewInputAccessGranted else {
-            transientNotice = L10n.text(
-                "ボタン操作のアクセシビリティ許可を確認しました。",
-                "Accessibility access for Press Buttons is allowed."
-            )
-            return
-        }
-        transientNotice = isAdHocDevelopmentBuild
-            ? L10n.text(
-                "StagePaneがONでも未許可の場合は、システム設定に古いStagePane行があれば「−」で削除し、「＋」から \(runningApplicationPath) を追加してONにしてください。アドホック開発ビルドの更新後は再追加が必要です。",
-                "If StagePane is already On but still not allowed, remove the old StagePane row with “−” if it exists, add \(runningApplicationPath) with “+”, and turn it on. Ad-hoc development builds must be re-added after an update."
-            )
-            : L10n.text(
-                "システム設定の「プライバシーとセキュリティ」→「アクセシビリティ」でStagePaneをONにしてください。行がない場合は「＋」から \(runningApplicationPath) を追加してください。",
-                "Turn on StagePane in System Settings under Privacy & Security → Accessibility. If no row exists, use “+” to add \(runningApplicationPath)."
-            )
-        openAccessibilitySettings()
-        #endif
-    }
-
-    var isAdHocDevelopmentBuild: Bool {
-        Bundle.main.url(
-            forResource: "DEVELOPMENT_BUILD_AD_HOC_SIGNING",
-            withExtension: "txt"
-        ) != nil
-    }
-
-    var runningApplicationPath: String {
-        Bundle.main.bundleURL.path
-    }
-
-    func forwardPreviewClick(
-        at stagePoint: CGPoint,
-        stageSize: CGSize,
-        expectedSourceID: StageSourceID? = nil
-    ) {
-        guard stageInteractionMode == .control else { return }
-        refreshPreviewInputAccess()
-        guard previewInputAccessGranted else {
-            presentPermissionCheck(focus: .accessibility)
-            presentPreviewInputFailure(.accessibilityAccessRequired)
-            return
-        }
-        guard let hit = capture.previewInteractionHit(
-            at: stagePoint,
-            stageSize: stageSize
-        ) else {
-            presentPreviewInputFailure(.invalidPoint)
-            return
-        }
-        if let expectedSourceID, hit.sourceID != expectedSourceID {
-            presentPreviewInputFailure(.sourceIsNotFrontmost)
-            return
-        }
-
-        capture.resolvePreviewInputClick(hit) { [weak self] result in
-            guard let self, stageInteractionMode == .control else { return }
-            guard capture.previewInteractionHit(
-                at: stagePoint,
-                stageSize: stageSize
-            ) == hit else {
-                presentPreviewInputFailure(.sourceTemporarilyUnavailable)
-                return
-            }
-            switch result {
-            case let .failure(failure):
-                presentPreviewInputFailure(failure)
-            case let .success(click):
-                transientNotice = L10n.text(
-                    "対応ボタンを確認しています…",
-                    "Checking the supported button…"
-                )
-                previewInputForwarder.performSupportedPress(
-                    atGlobalPoint: click.globalPoint,
-                    to: click.destination,
-                    displayedWindowFrame: click.displayedWindowFrame,
-                    captureActionTicket: click.captureActionTicket
-                ) { [weak self] result in
-                    guard let self, stageInteractionMode == .control else { return }
-                    switch result {
-                    case .posted:
-                        lastPreviewInputFailure = nil
-                        transientNotice = L10n.text(
-                            "対応ボタンを押しました。",
-                            "Pressed the supported button."
-                        )
-                    case let .rejected(failure):
-                        refreshPreviewInputAccess()
-                        presentPreviewInputFailure(failure)
-                    }
-                }
-            }
-        }
     }
 
     func removeSource(
         _ sourceID: StageSourceID,
         completion: ((String?) -> Void)? = nil
     ) {
-        previewInputForwarder.cancelPendingActions()
         if capture.removalLeavesNoVisibleSources(sourceID) {
             annotations.endStroke()
             annotations.removeAll()
@@ -445,159 +225,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         capture.removeSource(sourceID, completion: completion)
     }
 
-    private func refreshPreviewInputAccess() {
-        let granted = previewInputForwarder.hasPostEventAccess
-        let changed = granted != previewInputAccessGranted
-        if changed, !granted {
-            previewInputForwarder.cancelPendingActions()
-        }
-        previewInputAccessGranted = granted
-        if granted, permissionPanelFocus == .accessibility {
-            permissionPanelFocus = nil
-        }
-        if hasRefreshedPermissionStatus, changed {
-            AccessibilityNotification.Announcement(
-                granted
-                    ? L10n.text(
-                        "アクセシビリティが許可されました。",
-                        "Accessibility access is now allowed."
-                    )
-                    : L10n.text(
-                        "アクセシビリティの許可が取り消されました。",
-                        "Accessibility access was revoked."
-                    )
-            ).post()
-        }
-        hasRefreshedPermissionStatus = true
-    }
-
-    func refreshPermissionStatus() {
-        _ = previewInputPermissionAction(for: .manualRecheck)
-    }
-
-    private func previewInputPermissionAction(
-        for event: PreviewInputPermissionEvent
-    ) -> PreviewInputPermissionAction {
-        refreshPreviewInputAccess()
-        let transition = PreviewInputPermissionPolicy.transition(
-            from: PreviewInputPermissionState(
-                isTrusted: previewInputAccessGranted,
-                requestWasAttempted: previewInputRequestWasAttempted
-            ),
-            for: event
-        )
-        if transition.state.requestWasAttempted != previewInputRequestWasAttempted {
-            previewInputRequestWasAttempted = transition.state.requestWasAttempted
-            defaults.set(
-                transition.state.requestWasAttempted,
-                forKey: Keys.previewInputRequestWasAttempted
-            )
-        }
-        return transition.action
-    }
-
-    func presentPermissionCheck(focus: PermissionPanelFocus? = nil) {
-        refreshPermissionStatus()
-        permissionPanelFocus = focus
+    func presentPermissionCheck() {
         workspaceSection = .permissions
         presentWorkspace()
     }
 
-    func clearPermissionPanelFocus() {
-        permissionPanelFocus = nil
-    }
-
-    private func presentPreviewInputFailure(_ failure: PreviewInputForwardingFailure) {
-        guard lastPreviewInputFailure != failure || transientNotice == nil else { return }
-        lastPreviewInputFailure = failure
-        transientNotice = previewInputFailureMessage(failure)
-    }
-
     func dismissTransientNotice() {
         transientNotice = nil
-        lastPreviewInputFailure = nil
-    }
-
-    private func previewInputFailureMessage(
-        _ failure: PreviewInputForwardingFailure
-    ) -> String {
-        switch failure {
-        case .unavailableInThisBuild:
-            L10n.text(
-                "ボタン操作は、このMac App Store版では利用できません。",
-                "Press Buttons is unavailable in this Mac App Store build."
-            )
-        case .requiresMacOS15_2:
-            L10n.text(
-                "ボタン操作はmacOS 15.2以降で利用できます。",
-                "Press Buttons requires macOS 15.2 or later."
-            )
-        case .unsupportedSourceKind:
-            L10n.text(
-                "ボタン操作は、1つのウインドウとして追加したソース内の対応ボタンだけを押せます。",
-                "Press Buttons can press supported buttons only in a source added as one window."
-            )
-        case .sourceIsNotExactlyOneWindow, .invalidWindowMetadata:
-            L10n.text(
-                "クリック先を安全に特定できません。1つのウインドウを選び直してください。",
-                "The click target is ambiguous. Replace this source with one window."
-            )
-        case .sourceWindowIsNotOnScreen:
-            L10n.text(
-                "共有元ウインドウが画面上にありません。表示してからもう一度クリックしてください。",
-                "The source window is not on screen. Show it, then click again."
-            )
-        case .accessibilityAccessRequired:
-            L10n.text(
-                "ボタン操作にはmacOSのアクセシビリティ許可が必要です。「アクセス権限」で設定を続けてください。",
-                "Press Buttons requires macOS Accessibility access. Continue setup in Permissions."
-            )
-        case .targetApplicationUnavailable:
-            L10n.text(
-                "共有元アプリを確認できません。ソースを選び直してください。",
-                "The source app is no longer available. Replace the source."
-            )
-        case .accessibilityHitTestFailed:
-            L10n.text(
-                "この位置の操作対象を確認できませんでした。共有元アプリが応答しているか確認してください。",
-                "The control at this position could not be inspected. Check that the source app is responsive."
-            )
-        case .accessibilityActionUnsupported:
-            L10n.text(
-                "この位置は操作可能なボタンやコントロールではありません。共有元アプリで直接操作してください。",
-                "This position is not a supported pressable button or control. Use the source app directly."
-            )
-        case .accessibilityActionFailed:
-            L10n.text(
-                "共有元アプリのコントロールを押せませんでした。もう一度試すか、共有元アプリで直接操作してください。",
-                "The source control could not be pressed. Try again or use the source app directly."
-            )
-        case .accessibilityActionOutcomeUnknown:
-            L10n.text(
-                "共有元アプリから応答がありませんでした。操作済みの可能性があるため、共有元で結果を確認するまで再度押さないでください。",
-                "The source app did not respond. The control may already have been pressed; check the source before pressing it again."
-            )
-        case .selectedWindowMismatch:
-            L10n.text(
-                "選択したウインドウの位置または重なりが変わりました。画面を安定させてからもう一度試してください。",
-                "The selected window moved or is covered by another window from the same app. Let it settle, then try again."
-            )
-        case .invalidPoint:
-            L10n.text(
-                "映像の外側にはクリックを送信しません。",
-                "Clicks outside the visible source are not forwarded."
-            )
-        case .sourceTemporarilyUnavailable, .staleDisplayedFrame:
-            L10n.text(
-                "新しい映像フレームを待っています。ソースが再開・更新された後にもう一度クリックしてください。",
-                "Waiting for a fresh video frame. Click again after the source resumes or updates."
-            )
-        case .sourceIsNotFrontmost:
-            L10n.text(
-                "このソースは別のソースに覆われています。最前面へ移動してから操作してください。",
-                "This source is covered by another source. Bring it to the front before controlling it."
-            )
-        }
     }
 
     func start(showWindows: Bool = true) {
@@ -812,10 +446,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func selectWorkspaceSection(_ section: WorkspaceSection) {
-        if section == .permissions {
-            clearPermissionPanelFocus()
-            refreshPermissionStatus()
-        }
         workspaceSection = section
     }
 
@@ -1061,7 +691,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func workspaceDidBecomeHidden() {
         workspaceIsVisible = false
-        previewInputForwarder.cancelPendingActions()
         annotations.endStroke()
     }
 
@@ -1108,40 +737,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 }
             }
         }
-    }
-
-    #if !STAGEPANE_APP_STORE
-    func openAccessibilitySettings() {
-        let candidates = [
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility",
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ]
-        if openFirstSystemSettingsCandidate(candidates) { return }
-        openSystemSettingsFallback(
-            instruction: L10n.text(
-                "「プライバシーとセキュリティ」→「アクセシビリティ」を開いてください。",
-                "Open Privacy & Security, then Accessibility."
-            )
-        )
-    }
-    #endif
-
-    private func openFirstSystemSettingsCandidate(_ candidates: [String]) -> Bool {
-        for candidate in candidates {
-            if let url = URL(string: candidate), NSWorkspace.shared.open(url) {
-                return true
-            }
-        }
-        return false
-    }
-
-    private func openSystemSettingsFallback(instruction: String) {
-        if let url = NSWorkspace.shared.urlForApplication(
-            withBundleIdentifier: "com.apple.systempreferences"
-        ) {
-            NSWorkspace.shared.open(url)
-        }
-        transientNotice = instruction
     }
 
     func openBundledDocument(resource: String, extension fileExtension: String) {
@@ -1270,7 +865,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         static let showsSafeArea = "stage.showsSafeArea"
         static let showsWatermark = "stage.showsWatermark"
         static let privacyMessage = "stage.privacyMessage"
-        static let previewInputRequestWasAttempted = "permissions.previewInputRequestWasAttempted"
     }
 
     private enum SnapshotError: Error {

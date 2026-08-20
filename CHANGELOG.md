@@ -19,18 +19,11 @@ Versioning once 1.0.0 is released.
   that source's stream while retaining its last frame until resume or removal.
 - A private Stage Workspace with a large live editor, drag, free resize,
   front-to-back ordering, and deterministic automatic arrangement.
-- Mutually exclusive Arrange and Draw modes in the sandboxed Mac App Store
-  build. Draw renders bounded, session-only vector ink in both the private
-  Workspace and public Stage, with Pen, translucent Highlighter, and an
-  undoable size-adjustable partial Eraser. The unsandboxed local development build can
-  additionally expose Press Buttons on macOS 15.2 or later; only the explicit
-  **Continue Setup** action in Permissions requests Accessibility access.
-  Press Buttons performs only a supported Press action inside an exact single-window
-  source and never synthesizes arbitrary mouse/keyboard input, activates the
-  source app, or controls generic canvas/content regions.
-- A persistent Permissions view that explains picker-scoped screen sharing and,
-  in the local development build only, shows Press Buttons' separate Accessibility
-  status and request action. The Mac App Store build omits that card.
+- Mutually exclusive Arrange and Draw modes. Draw renders bounded, session-only
+  vector ink in both the private Workspace and public Stage, with Pen,
+  translucent Highlighter, and an
+  undoable size-adjustable partial Eraser.
+- A persistent Permissions view that explains picker-scoped screen sharing.
 - Privacy Curtain with a customizable message, aspect presets, menu bar
   controls, Presentation Lock, all-Spaces and always-on-top options,
   system/laser/hidden pointer styles, adjustable laser color/size/glow,
@@ -54,14 +47,8 @@ Versioning once 1.0.0 is released.
 - Separate checked-in Mac App Store Xcode target and tagged Xcode Cloud path
   with App Sandbox, strict concurrency, universal slices, localized metadata,
   icon, privacy manifest, help, and legal-resource verification.
-- Explicit development-only bundle marking.
-- Accessibility consent is requested at most once from the Permissions view.
-  If an updated ad-hoc development build no longer matches macOS's saved code
-  identity, StagePane now shows exact remove-and-re-add repair steps instead of
-  repeatedly presenting the same consent request.
 - Restored the private Canvas preview by keeping its renderer on the live
-  presentation timeline, and kept supported button presses tied to fresh,
-  lifecycle-fenced source frames.
+  presentation timeline across source and layout reconfiguration.
 
 ### Changed
 
@@ -79,8 +66,6 @@ Versioning once 1.0.0 is released.
   one Docker-style sidebar; the only other window is the chrome-free Share
   Stage. The private-window label remains workflow guidance, not a security
   boundary, because application or full-display sharing can expose Workspace.
-- Renamed the development-only Control mode to Press Buttons / ボタン操作 so
-  its label matches its intentionally narrow Accessibility Press behavior.
 - Standardized the app, Store target, and release gates on the canonical bundle
   identifier `com.hinoshiba.stagepane`.
 - Replaced local signing, notarization, DMG, archive, and upload steps with an

@@ -46,7 +46,7 @@
           <p class="eyebrow"><span></span> Privacy Policy</p>
           <h1>Clarity behind every<br>screen you share.</h1>
           <p class="policy-lead">This policy explains how StagePane handles chosen screen content, screenshots, settings, and permissions.</p>
-          <p class="policy-meta"><strong>Effective</strong> August 20, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
+          <p class="policy-meta"><strong>Effective</strong> August 21, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
         </div>
       </section>
 
@@ -56,7 +56,7 @@
           <ol>
             <li><a href="#summary">Summary</a></li>
             <li><a href="#screen-content">Screen content</a></li>
-            <li><a href="#builds">Modes and build variants</a></li>
+            <li><a href="#builds">Workspace modes</a></li>
             <li><a href="#screenshots">Screenshots</a></li>
             <li><a href="#settings">Settings on your device</a></li>
             <li><a href="#permissions">Permissions</a></li>
@@ -75,7 +75,7 @@
           <section class="policy-summary" id="summary">
             <p class="eyebrow"><span></span> At a glance</p>
             <h2>StagePane does not collect personal data.</h2>
-            <p>StagePane has no account, advertising, analytics, telemetry, or third-party runtime SDK, and it makes no network requests. The sandboxed Mac App Store build also has no network client entitlement.</p>
+            <p>StagePane has no account, advertising, analytics, telemetry, or third-party runtime SDK, and it makes no network requests. Every build uses App Sandbox and has no network client entitlement.</p>
             <ul class="policy-key-points">
               <li><strong>No recording</strong><span>Chosen screen frames are processed in memory only for display.</span></li>
               <li><strong>No automatic saving</strong><span>One Stage PNG is exported only when you explicitly choose Copy or Save Audience Image.</span></li>
@@ -101,21 +101,20 @@
           </section>
 
           <section id="builds">
-            <h2>Preview modes and build variants</h2>
+            <h2>Workspace modes</h2>
             <div class="policy-variant-grid">
               <div>
-                <span>Mac App Store</span>
-                <h3>Arrange and Draw</h3>
-                <p>This sandboxed build omits Press Buttons and every cross-application Accessibility path. It does not request Accessibility or Input Monitoring permission.</p>
+                <span>Arrange</span>
+                <h3>Compose the Stage freely</h3>
+                <p>Drag, resize, and reorder up to four sources on the Canvas. The same composition appears in Workspace and on the public Stage.</p>
               </div>
               <div>
-                <span>Local development</span>
-                <h3>Arrange, Draw, and limited Press Buttons</h3>
-                <p>An unsandboxed build compiled locally from source may additionally provide Press Buttons on macOS 15.2 or later. No official direct-distribution build is currently offered.</p>
+                <span>Draw</span>
+                <h3>Annotate the public Stage</h3>
+                <p>Use a pen, highlighter, and partial eraser to draw audience-visible annotations from Workspace. Ink stays in memory.</p>
               </div>
             </div>
-            <p>In a local development build, selecting Press Buttons without access does not itself trigger a system prompt. StagePane asks macOS for Accessibility permission only after you explicitly choose Continue Setup on the Accessibility card in the persistent Permissions view.</p>
-            <p>Press Buttons accepts a point only when the selected source is exactly one on-screen window, the point comes from a fresh lifecycle-fenced frame shown in Workspace, and an application-scoped Accessibility hit test finds a pressable control belonging to that same window. StagePane then asks the control to perform its supported Press action. It does not synthesize arbitrary mouse events, move the physical pointer, activate or focus the source app, read keyboard input, forward keys or drags, enumerate unrelated windows, log actions, or retain coordinates.</p>
+            <p>StagePane does not forward clicks, keys, or drags to source apps, and it requests no Accessibility or Input Monitoring permission.</p>
             <h3>Draw, Pause, and Curtain behavior</h3>
             <p>Draw keeps a bounded set of normalized vector strokes in memory and renders the same ink in the private Workspace and public Stage. It does not automatically write, upload, or analyze ink. An explicit Audience Stage screenshot includes visible ink as rasterized pixels. Stop All or removal of the final source clears the in-memory drawing.</p>
             <p>During normal playback, frames are discarded as display advances. Pausing one source stops its stream but intentionally retains its last displayed frame in local memory. Resume restarts that source, while Remove flushes its retained frame. Stop All does this for every source.</p>
@@ -141,7 +140,6 @@
           <section id="permissions">
             <h2>Permissions</h2>
             <p>The persistent Permissions view explains that Apple's system picker grants screen-sharing access per selection and per capture session. The normal Add Source flow does not present a global Screen Recording status, request separate broad Screen Recording access, or require a System Settings step. Removing a source or choosing Stop All ends its session-scoped access. StagePane remains usable as a holding share window before you select a source.</p>
-            <p>The Mac App Store build requests no Accessibility or Input Monitoring permission, and its Permissions view hides the Accessibility card. In a local development build, Accessibility permission for Press Buttons is separate from picker-scoped screen sharing and is requested only from the card's explicit Continue Setup action. No build variant requests Input Monitoring.</p>
           </section>
 
           <section id="network">

@@ -7,12 +7,11 @@ is no local release signing, notarization, DMG, archive, or upload procedure.
 `./build.sh` remains available only for local development. By default its
 `dist/StagePane.app` is ad-hoc signed. A developer may set
 `STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed Keychain
-identity when stable local code identity is needed for repeated Accessibility
-testing. The value stays outside the repository and the script neither
-discovers nor prints it. Both signing modes remain unsandboxed development
-builds, retain Hardened Runtime, are marked as development-only, and must never
-be published. This opt-in has no effect on the separate Xcode Cloud Mac App
-Store archive path.
+identity for development signing. The value stays outside the repository and
+the script neither discovers nor prints it. Both signing modes use the same App
+Sandbox entitlements and Arrange/Draw feature set as the Store target, retain
+Hardened Runtime, and must never be published. This opt-in has no effect on the
+separate Xcode Cloud Mac App Store archive path.
 
 ## Xcode Cloud workflow
 
@@ -71,13 +70,24 @@ Update and review these values in one pull request:
   behavior or claims changed
 - localized website screenshots and Open Graph images regenerated from the exact
   Mac App Store UI whenever an audience-visible default or Workspace layout
-  changes; Store screenshots must show Arrange and Draw only, never Press
-  Buttons or an Accessibility permission prompt, and any Permissions screenshot
-  must hide the Accessibility card. Run the candidate executable with
-  `STAGEPANE_LANGUAGE=ja` and `STAGEPANE_LANGUAGE=en` plus `--snapshot <dir>`;
-  `workspace.png`, `sources.png`, `privacy.png`, and `appearance.png` must
-  be opaque 2880×1800 images. The 1920×1080 Stage-only snapshots are website and
-  QA assets, not valid Mac App Store upload dimensions
+  changes; Store screenshots must show the Arrange and Draw workflow, and any
+  Permissions screenshot must show only picker-scoped sharing access. Because
+  the candidate is sandboxed, write snapshots inside its app container, then
+  copy the completed PNGs to the review workspace. Run once for each language,
+  using a different generated directory:
+
+  ```bash
+  SNAPSHOT_PARENT="$HOME/Library/Containers/com.hinoshiba.stagepane/Data/tmp"
+  mkdir -p "$SNAPSHOT_PARENT"
+  SNAPSHOT_DIR="$(mktemp -d "$SNAPSHOT_PARENT/stagepane-release-shots.XXXXXX")"
+  STAGEPANE_LANGUAGE=en \
+    dist/StagePane.app/Contents/MacOS/StagePane --snapshot "$SNAPSHOT_DIR"
+  ```
+
+  `workspace.png`, `sources.png`, `privacy.png`, and `appearance.png` must be
+  opaque 2880×1800 images. The 1920×1080 Stage-only snapshots are website and
+  QA assets, not valid Mac App Store upload dimensions. Do not use an arbitrary
+  `/tmp` or repository directory as the sandboxed app's snapshot destination
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
   version changes
 
@@ -113,16 +123,16 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   layouts, and the Workspace's 900×620-point minimum content size;
 - strict two-window separation: the private Workspace contains the Canvas and
   Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
-  Privacy, and About; its Canvas hosts Arrange, Draw, and Press Buttons only in
-  eligible non-Store builds; the public Stage has no private toolbar, mode control,
-  selection outline, resize handle, notice, or other editing chrome;
+  Privacy, and About; its Canvas hosts Arrange and Draw; the public Stage has no
+  private toolbar, mode control, selection outline, resize handle, notice, or
+  other editing chrome;
 - exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
   sharing can expose private windows and the UI directs users to choose the
   exact `StagePane Stage` window;
-- Workspace close/reopen while live, drawing, resizing, choosing, paused, and in
-  Press Buttons mode: closing ends an active stroke and cancels pending input without
-  stopping capture, clearing completed ink, closing Stage, or corrupting layout;
+- Workspace close/reopen while live, drawing, resizing, choosing, and paused:
+  closing ends an active stroke without stopping capture, clearing completed ink,
+  closing Stage, or corrupting layout;
   closing the public Stage continues to cover output and stop active capture;
 - live source-window aspect changes, including a static slide after a layout or
   source resize, with no double letterbox and no transient black tile;
@@ -139,12 +149,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   with no native/laser double pointer (advance the slide if macOS defers the first
   cursorless complete frame), and removal on Curtain/stop;
 - Arrange-mode drag/resize affecting only composition, with Arrange and Draw
-  available in Workspace in the exact sandboxed Mac App Store candidate on
-  every supported OS;
-  confirm that Press Buttons/Allow Button Press UI, cross-application Accessibility
-  implementation and symbols, Accessibility cards, settings links, and prompts
-  are absent from that candidate; confirm its persistent Permissions view describes only
-  picker-scoped screen-sharing session access;
+  available in Workspace in both the local sandboxed build and exact Mac App
+  Store candidate on every supported OS; confirm the persistent Permissions view
+  describes only picker-scoped screen-sharing session access and neither build
+  contains a cross-application input-forwarding or Accessibility permission path;
 - Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and
   Highlighter opacity, partial Eraser sizing and cursor, erase-over-crossing-lines,
   draw-after-erase ordering, exact Undo restoration, memory bounds, Clear
@@ -168,42 +176,14 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   background, no recording or network request, no new Screen Recording or other
   permission, no unrelated-window enumeration, and no retained screenshot
   history after the explicit copy/save completes;
-- no Accessibility or Input Monitoring request in the Mac App Store candidate,
-  and no raw mouse/keyboard event synthesis, keyboard capture/forwarding, or event
-  tap; keyboard/VoiceOver Arrange and Draw actions; Spaces/full-screen/display
+- no Accessibility or Input Monitoring request, raw mouse/keyboard event
+  synthesis, keyboard capture/forwarding, or event tap; keyboard/VoiceOver
+  Arrange and Draw actions; Spaces/full-screen/display
   changes; four-source CPU/memory; and the currently claimed meeting-app
   workflows.
 
 Record the exact commit, hardware, OS/app versions, results, and approved
 exceptions in the release record.
-
-### Separate unsandboxed Press Buttons acceptance
-
-Press Buttons is not part of the Mac App Store release candidate. If the unsandboxed
-local development build is tested, record it in a separate matrix and do not
-reuse its screenshots or reviewer media for App Store submission. On macOS 14
-through 15.1, Press Buttons must remain unavailable without requesting Accessibility
-access.
-On macOS 15.2 or later, verify that selecting Press Buttons only routes to the
-persistent Permissions view and that its explicit **Continue Setup** action is
-the sole trigger for the system request and is offered only until that request
-has been attempted. Reopen and revisit Press Buttons while untrusted to confirm it
-shows repair steps without another system prompt. For an existing installation
-updated to a default ad-hoc build, confirm it migrates directly to repair without
-one additional prompt, that the repair copy shows the exact running app path,
-and that it explains removing the stale StagePane row before re-adding that app.
-For repeated testing,
-prefer the same caller-managed `STAGEPANE_LOCAL_SIGNING_IDENTITY` across
-rebuilds so macOS can evaluate a consistent code identity. Then test
-allow/deny/revoke; status refresh after returning from system UI; exact
-single-window supported Press
-actions; unsupported generic canvas/text regions; app/display rejection;
-selected-window mismatch; black padding/overlap; negative display origins;
-pause/resume/replace/remove/Stop All; an unchanged physical pointer and
-source-app focus; and supported PowerPoint Presenter View controls. Use a
-consistently identified unsandboxed test build so TCC results are meaningful.
-Passing this separate matrix does not authorize direct distribution; the current
-`./build.sh` artifact remains development-only.
 
 ## Start the cloud build
 
@@ -232,10 +212,9 @@ In the completed Xcode Cloud build and App Store Connect, verify:
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
-- Arrange and Draw present, with no exposed Press Buttons UI and with every
-  cross-application Accessibility implementation, permission, and action path
-  absent from the archived Mac App Store candidate; the Permissions view must
-  show the picker-scoped sharing explanation but no Accessibility card;
+- Arrange and Draw present, with no cross-application input-forwarding or
+  Accessibility permission path in the archived Mac App Store candidate; the
+  Permissions view must show only the picker-scoped sharing explanation;
 - no unexpected entitlement, embedded executable/framework, absolute
   `LC_RPATH`, updater, analytics, automatic screenshot, recording, or network
   path; confirm the only image export is the documented explicit local PNG

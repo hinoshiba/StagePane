@@ -31,17 +31,16 @@ four sources one at a time, then arrange them in the Stage.
   only that source for its capture session, without a separate broad Screen
   Recording permission.
 - **A persistent permission guide** — Workspace's Permissions view explains
-  the picker-scoped sharing model and keeps permission actions available without
-  prompting at launch. In the local development build it also reports Press Buttons'
-  separate Accessibility status; the Mac App Store build hides that card.
+  how Add Source opens Apple's picker for session-scoped sharing, without
+  prompting at launch.
 - **A source list and free layout** — add, pause or resume, replace, or remove
   each source independently in Workspace → Sources; drag and resize tiles on
   the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
   Picture from Quick Layout.
-- **Private Workspace modes matched to the build** — the Mac App Store build
-  includes Arrange and Draw. It omits Press Buttons and never requests
-  Accessibility permission. The unsandboxed local development build can
-  additionally expose narrowly scoped Press Buttons on macOS 15.2 or later.
+- **Focused private Workspace tools** — Arrange composes the audience Stage and
+  Draw adds session-only pen, highlighter, and erasable ink. StagePane never
+  forwards input to a source app and does not request Accessibility or Input
+  Monitoring permission.
 - **One-shot audience screenshots** — explicitly copy a clean Stage image or
   save a PNG at the selected Stage dimensions. It includes the current Curtain,
   ink, watermark, and pointer, but never the private Workspace controls.
@@ -51,10 +50,9 @@ four sources one at a time, then arrange them in the Stage.
   compatibility, Presentation Lock, system/laser/hidden pointer styles,
   adjustable pointer color, size, and glow, safe-area guides, and neutral
   holding screens.
-- **Public APIs and sandboxing** — SwiftUI, AppKit, AVFoundation, and
-  ScreenCaptureKit in the sandboxed Mac App Store build. The optional
-  ApplicationServices-based Press Buttons path is restricted to the unsandboxed local
-  development build and is not present in the App Store binary.
+- **Public APIs and sandboxing** — every build uses App Sandbox with SwiftUI,
+  AppKit, AVFoundation, and ScreenCaptureKit, with no private display driver or
+  cross-application input path.
 
 ## Requirements
 
@@ -76,16 +74,15 @@ cd StagePane
 open dist/StagePane.app
 ```
 
-The default command creates a current-Mac development build. It is ad-hoc
-signed and marked **do not distribute** inside the bundle. Developers who need
-a stable macOS code identity across rebuilds can set
+The default command creates a current-Mac development build. It uses the same
+App Sandbox entitlements and Arrange/Draw feature set as the Store target, is
+ad-hoc signed, and is intended only for local testing. Developers may set
 `STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed signing
 identity in their Keychain before running `./build.sh`. The script does not
 discover, store, or print that value; when the variable is absent or empty, it
-keeps the ad-hoc fallback. Either result is still an unsandboxed local
-development build with Hardened Runtime enabled, not an official distribution
-artifact. Never publish `dist/StagePane.app` from this command. Automated tests
-can be run independently:
+keeps the ad-hoc fallback. Either result retains App Sandbox and Hardened Runtime
+and is not an official distribution artifact. Never publish
+`dist/StagePane.app` from this command. Automated tests can be run independently:
 
 ```bash
 swift test
@@ -109,9 +106,7 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
    or remove one item. Use **Quick Layout** for Grid, Side by Side, Stacked, or
    Picture in Picture.
 4. Switch the Workspace between **Arrange** and **Draw**. Arrange edits only the
-   Stage composition; Draw places session-only ink over the Stage. The
-   unsandboxed local development build also shows **Press Buttons** on macOS
-   15.2 or later.
+   Stage composition; Draw places session-only ink over the Stage.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
 6. Use `Shift-Command-H` whenever you need the Privacy Curtain.
 7. Select **Stop All** to end every ScreenCaptureKit stream and discard all
@@ -139,30 +134,15 @@ the front, so the Workspace or source app you are using keeps its place.
 Dragging in **Arrange** changes only the Stage composition. **Draw** adds bounded
 vector ink with a pen or translucent highlighter, plus a size-adjustable partial
 eraser whose gestures can be undone exactly. The document stays in memory, is hidden by the Curtain, and is cleared by
-Stop All or removal of the final source. Both modes remain available in the Mac
-App Store build, which omits Press Buttons and does not request Accessibility
-permission.
-
-In the unsandboxed local development build, **Press Buttons** is an explicit,
-narrow action on macOS 15.2 or later. Selecting Press Buttons without access opens the
-persistent **Permissions** view; only its explicit **Continue Setup** button
-asks macOS for Accessibility access. After consent, selecting a point in an
-exactly-one-window source asks a pressable accessibility control at that point
-to perform its supported Press action. StagePane does not synthesize an
-arbitrary mouse click, move the physical pointer, or activate/focus the source
-app. The Mac App Store build does not show the Accessibility card.
-App/display sources, black padding, stale or ambiguous frames, generic
-canvas/content regions, keyboard input, and drag forwarding are rejected.
+Stop All or removal of the final source. Both modes remain available in every
+build. Neither mode requires Accessibility or Input Monitoring permission.
 
 For PowerPoint Presenter View on one monitor, start the slide show, choose
 **Show Presenter View** from PowerPoint's lower-left presentation controls,
 then add that Presenter View window as a StagePane source. This avoids a
-virtual-display dependency. In the Mac App Store build, use PowerPoint itself
-for all presenter-view controls; StagePane provides Arrange and Draw only. An
-unsandboxed local development build on macOS 15.2 or later can invoke a supported
-accessibility Press action on a pressable control in that exact window. Slide
-canvases and controls that do not expose Press are not generic click targets;
-keep keyboard, drag, and presentation navigation in PowerPoint.
+virtual-display dependency. Use PowerPoint itself for all presenter-view
+controls. StagePane captures and composes the selected
+Presenter View window but does not forward clicks, keys, or drags to PowerPoint.
 
 The Stage Workspace contains the live Canvas plus Sources, Stage Settings,
 Appearance, Permissions, Privacy, and About in one sidebar. It is intended to

@@ -58,9 +58,6 @@ cp "$PROJECT_DIR/docs/PRIVACY.md" "$APP_PATH/Contents/Resources/PRIVACY.md"
 cp "$PROJECT_DIR/docs/HELP.md" "$APP_PATH/Contents/Resources/HELP.md"
 if [[ "$LOCAL_SIGNING_IDENTITY" == '-' ]]; then
     DEVELOPMENT_SIGNING_DESCRIPTION='ad-hoc signed'
-    print -r -- \
-        'This development build uses an ad-hoc code identity.' \
-        > "$APP_PATH/Contents/Resources/DEVELOPMENT_BUILD_AD_HOC_SIGNING.txt"
 else
     DEVELOPMENT_SIGNING_DESCRIPTION='signed with a caller-provided local identity'
 fi
@@ -87,7 +84,7 @@ if otool -l "$BUNDLED_BINARY" | awk '
     exit 70
 fi
 
-codesign --force --options runtime \
+codesign --force --options runtime --entitlements "$PROJECT_DIR/StagePane.entitlements" \
     --sign "$LOCAL_SIGNING_IDENTITY" \
     "$APP_PATH"
 codesign --verify --strict --verbose=2 "$APP_PATH"

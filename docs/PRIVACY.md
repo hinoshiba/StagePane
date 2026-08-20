@@ -1,13 +1,13 @@
 # StagePane Privacy Policy
 
-Effective date: 2026-08-20<br>
+Effective date: 2026-08-21<br>
 Product: StagePane for macOS
 
 ## Summary
 
 StagePane does not collect personal data, create accounts, show advertising,
 run analytics, send telemetry, or make network requests. It has no third-party
-SDKs. The sandboxed Mac App Store build has no network client entitlement.
+SDKs. Every build uses App Sandbox and has no network client entitlement.
 
 StagePane can create one clean Audience Stage PNG only when the user explicitly
 chooses Copy Audience Image or Save Audience Image. This local export is not
@@ -45,28 +45,12 @@ Accessibility/Input Monitoring permission. StagePane does not retain pointer
 history or write pointer coordinates to disk; each sampled position is discarded
 continuously and cleared when capture stops or the source changes.
 
-## Preview modes and build variants
+## Workspace modes
 
-The sandboxed Mac App Store build provides **Arrange** and **Draw**. It omits
-**Press Buttons** and its cross-application Accessibility path entirely, and it never
-requests Accessibility or Input Monitoring permission.
-
-The unsandboxed local development build can additionally provide **Press
-Buttons** on macOS 15.2 or later. Choosing Press Buttons without access opens the persistent
-Permissions view; it does not itself trigger a system prompt. Only an explicit
-**Continue Setup** action on that view's Accessibility card asks macOS for
-permission.
-StagePane accepts a selected preview point only when the ScreenCaptureKit filter
-identifies exactly one on-screen window, the point comes from the exact fresh
-frame displayed in the private Workspace, and an application-scoped Accessibility
-hit test finds a pressable control belonging to that same selected window. It
-then asks that control to perform its supported Press action. StagePane does not
-synthesize arbitrary mouse events, move the physical pointer, activate or focus
-the source app, read keyboard input, install an event tap, forward keys or drags,
-enumerate unrelated windows, log actions, or retain coordinates.
-Application/display sources, generic canvas/content regions, and stale,
-ambiguous, or mismatched windows are rejected. The permission can be revoked in
-System Settings → Privacy & Security → Accessibility.
+StagePane provides **Arrange** and **Draw**. Arrange changes only the local Stage
+composition. Draw creates the session-only ink described below. StagePane does
+not forward clicks, keys, or drags to source applications, install an event tap,
+or request Accessibility or Input Monitoring permission.
 
 In **Draw** mode, StagePane keeps a bounded set of normalized vector strokes in
 memory and renders the same ink in the private Workspace and public Stage. Ink is
@@ -136,14 +120,6 @@ Screen Recording access, or require a System Settings step in the normal source
 flow. Removing a source or stopping all sources ends its session-scoped access.
 StagePane remains usable as an empty/holding share window before a source is
 selected.
-
-The Mac App Store build requests no Accessibility or Input Monitoring
-permission; Arrange and Draw do not need either, and the Permissions view hides
-the Accessibility card. In the unsandboxed local development build with Press Buttons,
-Accessibility permission is separate from picker-scoped screen sharing, is
-requested only from the card's explicit **Continue Setup** action, and is used
-only for the application-scoped hit test and supported Press action described
-above. No variant requests Input Monitoring.
 
 ## Network and third parties
 

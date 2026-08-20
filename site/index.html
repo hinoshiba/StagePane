@@ -132,8 +132,8 @@
           <div class="feature-grid">
             <article class="feature-card feature-card-wide">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2"/><path d="M7 20h14V9h-4M10 15v5"/></svg></div>
-              <div><h3>共有用と操作用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きはWorkspaceのキャンバス、ソースと設定はDocker風のサイドバーで扱います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
-              <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>CONTROL</span><i></i><i></i><i></i></div></div>
+              <div><h3>共有用と編集用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きはWorkspaceのキャンバス、ソースと設定はDocker風のサイドバーで扱います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
+              <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>WORKSPACE</span><i></i><i></i><i></i></div></div>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 16 0M12 4v8l4 2"/></svg></div>
@@ -143,7 +143,7 @@
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
               <h3>最大4ソースを配置・手書き</h3>
-              <p>Appleのシステムピッカーで1件ずつ追加し、Workspaceの「ソース」で一時停止・再開・選び直し・確認付き解除を行い、大きなキャンバスで配置・手書きできます。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。Mac App Store版は「配置」と「手書き」を備え、「ボタン操作」やアクセシビリティ項目は含みません。macOS 15.2以降の非サンドボックスのローカル開発ビルドだけが、常設の「アクセス権限」で「設定を続ける」を明示的に選んだ後、選択した単一ウインドウ内の押下対応コントロールを実行できる限定的な「ボタン操作」を追加できます。直接配布版は現在提供していません。</p>
+              <p>Appleのシステムピッカーで1件ずつ追加し、Workspaceの「ソース」で一時停止・再開・選び直し・確認付き解除を行い、大きなキャンバスで自由に配置・手書きできます。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。StagePaneは共有元アプリへクリック、キー入力、ドラッグを転送せず、アクセシビリティや入力監視の権限も要求しません。</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
@@ -239,7 +239,7 @@
           <div class="privacy-grid">
             <article class="info-card"><h3>取得・保存</h3><ul class="check-list"><li>画面フレームを録画・自動保存しません</li><li>「画像をコピー」はきれいなPNGを1枚だけクリップボードへ置き、「PNGを保存」は選んだ場所だけへ書き込みます。キャンセル時は何も保存しません</li><li>音声やマイクを取得しません</li><li>OCRやAI解析はありません</li></ul></article>
             <article class="info-card"><h3>通信・追跡</h3><ul class="check-list"><li>画面や利用状況をStagePaneから外部送信しません</li><li>アカウント、広告、解析、テレメトリーはありません</li><li>第三者ランタイムSDKを同梱しません</li></ul></article>
-            <article class="info-card"><h3>設定・権限</h3><ul class="check-list"><li>テーマ、ポインター、ロゴ表示などの設定だけをMac上のローカル設定に保存します</li><li>ソース名、ウインドウ名、ファイル名、会議情報は保存しません</li><li>常設の「アクセス権限」では、Appleの選択画面が共有対象ごとにセッション許可することを説明し、別途広範な画面収録許可は求めません</li><li>Mac App Store版はアクセシビリティ項目を表示しません。ローカル開発版だけが「設定を続ける」を明示的に選んだときにボタン操作用の許可を求めます</li></ul></article>
+            <article class="info-card"><h3>設定・権限</h3><ul class="check-list"><li>テーマ、ポインター、ロゴ表示などの設定だけをMac上のローカル設定に保存します</li><li>ソース名、ウインドウ名、ファイル名、会議情報は保存しません</li><li>常設の「アクセス権限」では、Appleの選択画面が共有対象ごとにセッション許可することを説明し、別途広範な画面収録許可は求めません</li></ul></article>
           </div>
           <aside class="warning-card"><strong>Privacy Curtainは「取得停止」ではありません。</strong><p>カーテンが隠すのは公開Stageだけです。個別の「一時停止」はそのストリームを止めて最後のフレームをメモリに保持します。保持フレームも破棄して完全に終了するには「解除」または「すべて停止」を選んでください。</p></aside>
           <p class="privacy-policy-link"><a class="text-link" href="privacy/">プライバシーポリシー全文を読む <span>→</span></a></p>
@@ -273,7 +273,7 @@
             <p class="eyebrow"><span></span> Build from source</p>
             <h2>自分のMacで、<br>ソースから試す。</h2>
             <p>macOS 14以降とXcode 16以降を用意し、リポジトリをcloneしてください。Apple SiliconとIntelの両方を対象にしています。</p>
-            <p class="release-note"><strong>現在公開しているのはソースコードのみです。</strong> <code>./build.sh</code> の成果物は開発用のad-hoc署名・未公証ビルドで、公式バイナリや配布用成果物ではありません。</p>
+            <p class="release-note"><strong>現在公開しているのはソースコードのみです。</strong> <code>./build.sh</code> の成果物はStore版と同じApp Sandboxと配置・手書き機能を使いますが、開発用のad-hoc署名・未公証ビルドであり、公式バイナリや配布用成果物ではありません。</p>
             <div class="build-links"><a class="button button-primary" href="https://github.com/hinoshiba/StagePane">リポジトリを開く</a><a class="text-link" href="#how-it-works">使い方へ戻る <span>↑</span></a></div>
           </div>
           <div class="terminal" aria-label="StagePaneのビルドコマンド">

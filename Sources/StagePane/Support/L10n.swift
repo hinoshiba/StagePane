@@ -120,7 +120,6 @@ enum L10n {
     static func stageInteractionModeName(_ mode: StageInteractionMode) -> String {
         switch mode {
         case .arrange: text("配置", "Arrange")
-        case .control: text("ボタン操作", "Press Buttons")
         case .annotate: text("手書き", "Draw")
         }
     }
@@ -134,11 +133,6 @@ enum L10n {
             text(
                 "ソースの位置・大きさ・重なり順を編集します。",
                 "Edit source position, size, and stacking order."
-            )
-        case .control:
-            text(
-                "単一ウインドウ内の対応ボタンだけを押します。",
-                "Press supported buttons only in a single-window source."
             )
         case .annotate:
             if annotationTool == .eraser {

@@ -1,6 +1,6 @@
 # License and distribution audit
 
-Audit date: 2026-08-17<br>
+Audit date: 2026-08-21<br>
 Scope: StagePane 0.1.1 source tree and macOS application bundle
 
 This is an engineering compliance record, not a formal legal opinion.
@@ -42,8 +42,7 @@ identified rights owner are required before public launch.
 | Item | Status | Distribution consequence |
 |---|---|---|
 | Swift standard/runtime libraries | Apple toolchain/system | Governed by Apple toolchain terms; embedded components, if any, are produced by Apple's linker |
-| AppKit, AVFoundation, Combine, CoreGraphics, CoreMedia, CoreVideo, Foundation, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked by the Mac App Store build; not copied into the app bundle |
-| ApplicationServices Accessibility | Apple system framework | Used only by the unsandboxed local development build with Press Buttons; excluded from the Mac App Store permission/action path |
+| Accessibility, AppKit, AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreImage, CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked by the Mac App Store build; not copied into the app bundle. Accessibility supports StagePane's own VoiceOver announcements and is not a cross-application permission path |
 | SF Symbols | Requested from macOS at runtime | No symbol artwork files are bundled |
 | StagePane icon/mark | Original project artwork | Apache-2.0 covers copyright permission; `TRADEMARKS.md` separately reserves official brand identity |
 | Local Swift package product | `StagePaneCore` from this repository | Project-authored code; linked into the Xcode App Store target, not an external dependency |
@@ -84,27 +83,17 @@ not a StagePane redistribution requirement. The acknowledgement in README and
 StagePane uses only documented APIs. It does not use private
 `CGVirtualDisplay`, install a driver, request root, install an event tap,
 synthesize raw mouse/keyboard events, forward keyboard/drag input, or imitate an
-alternate macOS desktop. Apple requires App Sandbox for Mac App Store apps and
-identifies assistive Accessibility API use as incompatible with that sandbox in
-its [App Sandbox compatibility guidance](https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox).
-The Mac App Store build therefore omits Press Buttons and its Accessibility
-permission/action path entirely; Arrange, Draw, and the rest of the presentation
-canvas remain.
-
-On macOS 15.2 or later, the unsandboxed local development build with Press Buttons can use
-documented `AXIsProcessTrustedWithOptions`, application-scoped
-`AXUIElementCopyElementAtPosition`, selected-window validation, and
-`AXUIElementPerformAction(kAXPressAction)` for a pressable control inside an
-exact single-window source. Generic canvas/content regions are not controlled.
-This variant is not the Mac App Store binary. Any future direct distribution
-requires its own signed/notarized release policy and review; the current
-development `dist/StagePane.app` remains non-distributable.
+alternate macOS desktop. It does not forward input to source applications or
+request Accessibility or Input Monitoring permission. Apple requires App
+Sandbox for Mac App Store apps; StagePane's Arrange, Draw, source composition,
+and screenshot workflow remain within that boundary.
 
 - **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which
   archives the checked-in `StagePaneAppStore` target with automatic signing and
   App Sandbox for TestFlight and App Store use. CI and release review check the
-  absence of Press Buttons/Accessibility permission paths as well as entitlements,
-  universal slices, resources, placeholders, and absolute `LC_RPATH` entries.
+  absence of cross-application input and Accessibility permission paths as well
+  as entitlements, universal slices, resources, placeholders, and absolute
+  `LC_RPATH` entries.
   Do not add Sparkle, an external license-key system, or an independent updater.
   Apple approval is never guaranteed.
 - **Marketing:** describe the product as a “screen share stage” or

@@ -89,6 +89,16 @@ if grep -R -n -E 'CGVirtualDisplay|com\.apple\.security\.screen-capture' Sources
     exit 70
 fi
 
+if grep -R -n -E 'import ApplicationServices|PreviewInput|AXIsProcessTrusted|AXUIElement|AXValue|kAX|AXPress|Press Buttons|Button Press|ボタン操作|supportsControlMode|case[[:space:]]+\.control' Sources Tests; then
+    print -u2 "Removed cross-application button-control code or copy detected"
+    exit 70
+fi
+
+if grep -R -n -E 'CGEventPost|CGEventCreateMouseEvent|CGEventCreateKeyboardEvent|CGEventTapCreate|CGWarpMouseCursorPosition|CGAssociateMouseAndMouseCursorPosition|NSEvent\.add(Global|Local)MonitorForEvents' Sources Tests; then
+    print -u2 "Raw input injection or event-monitoring code detected"
+    exit 70
+fi
+
 if grep -R -n -E 'URLSession|NWConnection|Network\.framework|AVAssetWriter|SCRecordingOutput' Sources; then
     print -u2 "Network or recording path detected; privacy/license review required"
     exit 70

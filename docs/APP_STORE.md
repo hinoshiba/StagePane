@@ -35,10 +35,8 @@ brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
 and the canonical `com.hinoshiba.stagepane` bundle identifier. See
 `RELEASE.md` for workflow settings, tag/version gates, and handoff steps.
 
-The submitted Mac App Store binary includes Arrange and Draw, but omits Press
-Buttons and every cross-application Accessibility permission/action path. Press Buttons
-is available only in the unsandboxed local development build and must not appear
-in App Store metadata, screenshots, review media, or reviewer instructions. No
+The submitted Mac App Store binary includes Arrange and Draw and contains no
+cross-application input or Accessibility permission/action path. No
 direct-distribution build currently ships.
 
 ## Screenshot story
@@ -78,10 +76,9 @@ Japanese and English.
 > “Resume” starts it again, “Replace” reopens the picker for only that item, and
 > “Remove” asks for confirmation, ends only its stream, and discards its frame.
 > In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
-> Arrange.” These gestures change only StagePane's composition. The Mac App
-> Store build provides Arrange and Draw modes only. It does not include Press
-> Buttons, perform actions in another application, or request macOS Accessibility
-> or Input Monitoring permission. Draw mode adds bounded in-memory vector ink to
+> Arrange.” These gestures change only StagePane's composition. StagePane
+> provides Arrange and Draw. Arrange changes only the Stage
+> composition, while Draw adds bounded in-memory vector ink to
 > both the private Workspace and public Stage; the Curtain hides it and Stop
 > All/final-source removal clears it. The StagePane process does not record,
 > encode, automatically save, or transmit frames. Only an explicit “Copy
@@ -105,15 +102,15 @@ Japanese and English.
 >
 > StagePane uses SwiftUI, AppKit, AVFoundation display layers, and
 > ScreenCaptureKit public APIs. It is sandboxed and has no network entitlement,
-> analytics, ads, account, external updater, license-key mechanism,
-> cross-application control feature, or Accessibility permission request.
+> analytics, ads, account, external updater, license-key mechanism, or
+> Accessibility/Input Monitoring permission request.
 
 Attach a short reviewer video showing both window titles and roles, adding
 two sources, per-source pause/resume, replace, removal confirmation, drag,
 resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
-and must not show Press Buttons or an Accessibility permission prompt. Provide
+and must not show an Accessibility permission prompt. Provide
 current Zoom, Teams, and Meet test results only as compatibility evidence, not
 as affiliations.
 
@@ -121,7 +118,7 @@ as affiliations.
 
 - Guideline 2.3.1: metadata matches the normal-window implementation.
 - 2.5.1: documented public APIs only. The submitted sandboxed binary contains no
-  Press Buttons, cross-application Accessibility action path, raw mouse/keyboard
+  cross-application Accessibility action path, raw mouse/keyboard
   event synthesis, keyboard/drag forwarding, or event tap.
 - 2.5.8: no alternate desktop/home-screen environment.
 - 2.5.14: explicit user consent and visible preview status/stop control.

@@ -36,18 +36,6 @@ struct StageLayoutEditor: View {
                                 )
                             }
                         }
-                    case .control:
-                        ForEach(capture.layout.sources) { item in
-                            if let source = capture.source(for: item.id),
-                               isPresented(source) {
-                                StageSourceControlOverlay(
-                                    source: source,
-                                    frame: item.frame,
-                                    canvasSize: proxy.size,
-                                    controller: controller
-                                )
-                            }
-                        }
                     case .annotate:
                         StageAnnotationInputOverlay(
                             store: controller.annotations
@@ -162,7 +150,6 @@ struct StageLayoutEditor: View {
     private var previewAccessibilityLabel: String {
         switch controller.stageInteractionMode {
         case .arrange: L10n.text("ステージ配置エディタ", "Stage layout editor")
-        case .control: L10n.text("ステージボタン操作プレビュー", "Stage button-action preview")
         case .annotate: L10n.text("ステージ手書きキャンバス", "Stage drawing canvas")
         }
     }
@@ -173,11 +160,6 @@ struct StageLayoutEditor: View {
             L10n.text(
                 "各ソースをドラッグして移動し、右下のハンドルで大きさを変えます。",
                 "Drag a source to move it and use its lower-right handle to resize it."
-            )
-        case .control:
-            L10n.text(
-                "ウインドウソース内で、アクセシビリティのPressに対応するボタンだけを操作できます。",
-                "Only buttons that expose a supported Accessibility Press action inside a window source can be used."
             )
         case .annotate:
             if controller.annotationTool == .eraser {
@@ -228,133 +210,6 @@ private struct StageEmptyStep: View {
             "ステップ\(number)、\(title)",
             "Step \(number), \(title)"
         ))
-    }
-}
-
-private struct StageSourceControlOverlay: View {
-    @ObservedObject var source: CaptureSource
-    let frame: NormalizedStageRect
-    let canvasSize: CGSize
-    @ObservedObject var controller: AppController
-
-    @ViewBuilder
-    var body: some View {
-        if canPerformButtonAction {
-            controlSurface
-                .accessibilityAction {
-                    controller.forwardPreviewClick(
-                        at: CGPoint(x: tileMidX, y: tileMidY),
-                        stageSize: canvasSize,
-                        expectedSourceID: source.id
-                    )
-                }
-        } else {
-            controlSurface
-                .accessibilityRespondsToUserInteraction(false)
-        }
-    }
-
-    private var controlSurface: some View {
-        ZStack(alignment: .topLeading) {
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .gesture(
-                    SpatialTapGesture(
-                        coordinateSpace: .named(stageLayoutCanvasCoordinateSpace)
-                    )
-                    .onEnded { value in
-                        guard canPerformButtonAction else { return }
-                        controller.forwardPreviewClick(
-                            at: value.location,
-                            stageSize: canvasSize,
-                            expectedSourceID: source.id
-                        )
-                    }
-                )
-
-            capabilityBadge
-        }
-        .frame(width: tileWidth, height: tileHeight)
-        .position(x: tileMidX, y: tileMidY)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L10n.text(
-            "\(source.title)のボタン操作",
-            "Button actions for \(source.title)"
-        ))
-        .accessibilityValue(capabilityTitle)
-        .accessibilityHint(capabilityAccessibilityHint)
-    }
-
-    private var capabilityBadge: some View {
-        Label(capabilityTitle, systemImage: capabilitySymbol)
-            .font(.system(size: 9, weight: .bold))
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-            .foregroundStyle(capabilityColor)
-            .padding(.horizontal, 7)
-            .frame(minHeight: 21)
-            .background(Color.black.opacity(0.74), in: Capsule())
-            .overlay {
-                Capsule().stroke(capabilityColor.opacity(0.52), lineWidth: 1)
-            }
-            .padding(6)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-
-    private var canPerformButtonAction: Bool {
-        source.kind == .window && !source.isPaused
-    }
-
-    private var capabilityTitle: String {
-        if source.isPaused {
-            return L10n.text("一時停止中", "Paused")
-        }
-        guard source.kind == .window else {
-            return L10n.text("表示のみ", "View only")
-        }
-        return L10n.text("対応ボタン", "Supported buttons")
-    }
-
-    private var capabilitySymbol: String {
-        if source.isPaused { return "pause.fill" }
-        return source.kind == .window ? "hand.tap.fill" : "eye.fill"
-    }
-
-    private var capabilityColor: Color {
-        if source.isPaused { return StagePanePalette.coralReadable }
-        return source.kind == .window
-            ? StagePanePalette.mintReadable
-            : Color.white.opacity(0.72)
-    }
-
-    private var capabilityAccessibilityHint: String {
-        if source.isPaused {
-            return L10n.text(
-                "ソースを再開すると、対応ボタンだけを操作できます。",
-                "Resume the source to use supported button actions."
-            )
-        }
-        guard source.kind == .window else {
-            return L10n.text(
-                "このソースは表示専用です。ボタン操作には、1つのウインドウとして追加してください。",
-                "This source is view only. Add one specific window to use supported button actions."
-            )
-        }
-        return L10n.text(
-            "アクセシビリティのPressに対応するボタンだけを操作します。一般的な画面領域、キー入力、ドラッグには対応しません。",
-            "Only buttons that expose an Accessibility Press action are supported. General content, keyboard input, and drags are not."
-        )
-    }
-
-    private var tileWidth: CGFloat { canvasSize.width * CGFloat(frame.width) }
-    private var tileHeight: CGFloat { canvasSize.height * CGFloat(frame.height) }
-    private var tileMidX: CGFloat {
-        canvasSize.width * CGFloat(frame.x + frame.width / 2)
-    }
-    private var tileMidY: CGFloat {
-        canvasSize.height * CGFloat(frame.y + frame.height / 2)
     }
 }
 
@@ -851,15 +706,10 @@ struct CaptureSourceList: View {
             .disabled(capture.sources.isEmpty || capture.isPickerPresented)
 
             if showsWorkspaceHint {
-                Text(AppController.supportsControlMode
-                    ? L10n.text(
-                        "配置・操作・手書きは、大きなステージワークスペースで行えます。",
-                        "Arrange, control, and draw in the large Stage Workspace."
-                    )
-                    : L10n.text(
-                        "配置・手書きは、大きなステージワークスペースで行えます。",
-                        "Arrange and draw in the large Stage Workspace."
-                    ))
+                Text(L10n.text(
+                    "配置・手書きは、大きなステージワークスペースで行えます。",
+                    "Arrange and draw in the large Stage Workspace."
+                ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

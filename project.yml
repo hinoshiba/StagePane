@@ -65,7 +65,6 @@ targets:
         PRODUCT_NAME: StagePane
         SKIP_INSTALL: NO
         SUPPORTED_PLATFORMS: macosx
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) STAGEPANE_APP_STORE"
         SWIFT_STRICT_CONCURRENCY: complete
         SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
       configs:

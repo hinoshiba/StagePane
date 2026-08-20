@@ -37,8 +37,8 @@ and end capture with no retained frame or orphaned state.
   broad Screen Recording permission
 - up to four independently pausable/resumable, replaceable, and removable
   in-memory video sources; pause stops the stream and retains its last frame
-- large private Workspace hosting Arrange, Press Buttons where available, and
-  Draw, with move, free resize, z-order, and auto arrange; source management and
+- large private Workspace hosting Arrange and Draw, with move, free resize,
+  z-order, and auto arrange; source management and
   settings live in its sidebar
 - explicit per-source removal confirmation and stop-all capture teardown
 - instant Privacy Curtain with customizable message
@@ -47,29 +47,17 @@ and end capture with no retained frame or orphaned state.
   belongs only to the frontmost source and is hidden while it is paused
 - default-on translucent lower-right StagePane mark on audience-facing Stage
   states, including content and Curtain
-- mutually exclusive Arrange and Draw modes in the Mac App Store build; Arrange
-  edits only the composition and Draw is bounded session-only Stage ink
+- mutually exclusive Arrange and Draw modes in every build; Arrange edits only
+  the composition and Draw is bounded session-only Stage ink
 - explicit one-shot clean Audience Stage PNG copy/save at the selected preset
   dimensions, including Curtain, ink, watermark, and pointer but excluding
   Workspace chrome; no automatic screenshot, recording, or network path
 - all-Spaces, always-on-top compatibility, Presentation Lock
 - menu-bar recovery and keyboard shortcuts
-- persistent Permissions view explaining picker-scoped screen sharing; the
-  local development build also exposes its separate Press Buttons Accessibility card
+- persistent Permissions view explaining picker-scoped screen sharing
 - Japanese/English UI selected from system language
-- App Sandbox, privacy manifest, zero network/analytics/account dependencies;
-  the Mac App Store build omits Press Buttons and all cross-application Accessibility
-  permission/action paths
-
-The unsandboxed local development build can additionally offer Press Buttons on macOS
-15.2 or later. Selecting Press Buttons may route to Permissions, but only the
-Accessibility card's explicit **Continue Setup** action requests consent. It
-may perform only a supported Press action on a pressable control inside an exact
-single-window source. This variant is outside the Mac App Store shipping scope
-and must preserve every Press-Buttons-specific exclusion and validation below. A
-future direct-distribution build would be a separate product and release
-decision; none currently ships. The Mac App Store build hides the Accessibility
-card entirely.
+- App Sandbox, privacy manifest, zero network/analytics/account dependencies,
+  and no cross-application Accessibility or input-forwarding path
 
 ## Deliberate exclusions
 

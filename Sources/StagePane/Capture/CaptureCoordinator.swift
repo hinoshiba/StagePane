@@ -146,7 +146,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     /// Unavailable markers observed during an intentional Pause do not remove
     /// its held image, but they must invalidate that image when Resume begins.
     private var didObserveUnavailablePresentationWhilePaused = false
-    private var presentationUnavailableInteractionIsSuspended = false
 
     init(
         token: UUID,
@@ -202,18 +201,10 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         let becameReady = presentationState == .awaitingFreshFrame
         if becameReady {
             presentationState = .ready
-            presentationUnavailableInteractionIsSuspended = false
-            renderers.resumePreviewInteractionForFreshPresentationFrameOnRenderQueue(
-                token: token,
-                filterGeneration: geometryGeneration,
-                presentationTimeStamp:
-                    CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer)
-            )
         }
         renderers.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: geometryGeneration,
             presentationGeneration: presentationGeneration
         )
         if becameReady {
@@ -221,8 +212,7 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         }
     }
 
-    /// Begins a fail-closed replacement on the stream-output queue. The caller
-    /// has already installed the matching preview-interaction suspension.
+    /// Begins a fail-closed replacement on the stream-output queue.
     func beginContentReplacementOnOutputQueue(
         presentationGeneration: UUID
     ) {
@@ -230,14 +220,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         explicitPauseState = .none
         isRetainingPausedPresentationDuringResume = false
         didObserveUnavailablePresentationWhilePaused = false
-        if presentationUnavailableInteractionIsSuspended {
-            presentationUnavailableInteractionIsSuspended = false
-            renderers.resumePreviewInteractionOnRenderQueue(
-                reason: .presentationUnavailable,
-                token: token,
-                filterGeneration: geometryGeneration
-            )
-        }
         self.presentationGeneration = presentationGeneration
         presentationState = .replacingContent
         renderers.invalidatePresentationOnRenderQueue(
@@ -292,7 +274,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         if didObserveUnavailablePresentationWhilePaused {
             didObserveUnavailablePresentationWhilePaused = false
             isRetainingPausedPresentationDuringResume = false
-            suspendForUnavailablePresentationIfNeededOnOutputQueue()
             renderers.invalidatePresentationOnRenderQueue(
                 token: token,
                 presentationGeneration: presentationGeneration
@@ -312,10 +293,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         let streamBox = SendableBox(stream)
         let failure = StreamStopFailure(error)
         outputQueue.async { [self] in
-            renderers.suspendPreviewInteractionOnRenderQueue(
-                reason: .streamStopped,
-                token: token
-            )
             stopHandler(token, streamBox, failure)
         }
     }
@@ -323,22 +300,7 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     @available(macOS 15.2, *)
     func streamDidBecomeInactive(_ stream: SCStream) {
         outputQueue.async { [self] in
-            renderers.suspendPreviewInteractionOnRenderQueue(
-                reason: .streamInactive,
-                token: token
-            )
             beginUnavailablePresentationOnOutputQueue()
-        }
-    }
-
-    @available(macOS 15.2, *)
-    func streamDidBecomeActive(_ stream: SCStream) {
-        outputQueue.async { [self] in
-            renderers.resumePreviewInteractionOnRenderQueue(
-                reason: .streamInactive,
-                token: token,
-                filterGeneration: geometryGeneration
-            )
         }
     }
 
@@ -350,7 +312,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
             return
         }
 
-        suspendForUnavailablePresentationIfNeededOnOutputQueue()
         let hasPresentationToInvalidate = presentationState == .ready ||
             (explicitPauseState == .resuming &&
                 isRetainingPausedPresentationDuringResume)
@@ -369,16 +330,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         presentationHandler(
             token,
             .unavailable(previous: previousGeneration, current: nextGeneration)
-        )
-    }
-
-    private func suspendForUnavailablePresentationIfNeededOnOutputQueue() {
-        dispatchPrecondition(condition: .onQueue(outputQueue))
-        guard !presentationUnavailableInteractionIsSuspended else { return }
-        presentationUnavailableInteractionIsSuspended = true
-        renderers.suspendPreviewInteractionOnRenderQueue(
-            reason: .presentationUnavailable,
-            token: token
         )
     }
 
@@ -788,110 +739,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
     }
 
-    /// Hit-tests the actual Stage composition. `layout.sources` is ordered
-    /// back-to-front, so the visible top tile always owns the click even when
-    /// sources overlap.
-    func previewInteractionHit(
-        at stagePoint: CGPoint,
-        stageSize: CGSize
-    ) -> StageInteractionHit? {
-        let interactionSources = layout.sources.compactMap { item -> StageInteractionSource? in
-            guard let session = sessions[item.id],
-                  !session.outputSuppressed,
-                  !session.isStopping,
-                  !session.isFinalizing,
-                  session.appliedSurfaceWidth > 0,
-                  session.appliedSurfaceHeight > 0 else { return nil }
-            return StageInteractionSource(
-                id: item.id,
-                stageFrame: item.frame,
-                contentSize: CGSize(
-                    width: session.appliedSurfaceWidth,
-                    height: session.appliedSurfaceHeight
-                )
-            )
-        }
-        return StageInteractionProjection.frontmostHit(
-            at: stagePoint,
-            stageSize: stageSize,
-            sources: interactionSources
-        )
-    }
-
-    /// Resolves a click against the exact complete frame displayed by the
-    /// private preview. Filter replacement and resume invalidate this snapshot
-    /// until a fresh frame is actually enqueued.
-    func resolvePreviewInputClick(
-        _ hit: StageInteractionHit,
-        completion: @escaping @MainActor @Sendable (
-            Result<ResolvedPreviewInputClick, PreviewInputForwardingFailure>
-        ) -> Void
-    ) {
-        guard !isPickerPresented,
-              let session = sessions[hit.sourceID],
-              session.isStarted,
-              session.isStreamRunning,
-              session.isStreamContentActive,
-              !session.source.isPaused,
-              session.pauseTransition == nil,
-              !session.isStopping,
-              !session.isFinalizing,
-              !session.outputSuppressed,
-              !session.isUpdatingContent,
-              !session.isUpdatingConfiguration else {
-            completion(.failure(.sourceTemporarilyUnavailable))
-            return
-        }
-
-        let destination: PreviewWindowInputDestination
-        switch PreviewInputDestinationResolver.destination(
-            for: hit.sourceID,
-            filter: session.filter
-        ) {
-        case let .success(value):
-            destination = value
-        case let .failure(failure):
-            completion(.failure(failure))
-            return
-        }
-
-        let token = session.token
-        let filterGeneration = session.sourceGeometryGeneration
-        session.source.previewRenderer.resolveGlobalInteractionPoint(
-            normalizedSourcePoint: hit.normalizedSourcePoint,
-            token: token,
-            filterGeneration: filterGeneration
-        ) { [weak self] resolvedPoint in
-            guard let self,
-                  let current = self.sessions[hit.sourceID],
-                  current === session,
-                  current.token == token,
-                  current.sourceGeometryGeneration == filterGeneration,
-                  current.isStreamRunning,
-                  current.isStreamContentActive,
-                  !current.source.isPaused,
-                  current.pauseTransition == nil,
-                  !current.isStopping,
-                  !current.isFinalizing,
-                  !current.outputSuppressed,
-                  !current.isUpdatingContent,
-                  !current.isUpdatingConfiguration else {
-                completion(.failure(.sourceTemporarilyUnavailable))
-                return
-            }
-            guard let resolvedPoint else {
-                completion(.failure(.staleDisplayedFrame))
-                return
-            }
-            completion(.success(ResolvedPreviewInputClick(
-                destination: destination,
-                globalPoint: resolvedPoint.globalPoint,
-                displayedWindowFrame: resolvedPoint.displayedScreenRect,
-                captureActionTicket: resolvedPoint.actionTicket
-            )))
-        }
-    }
-
     func canReplaceSource(_ sourceID: StageSourceID) -> Bool {
         guard let session = sessions[sourceID],
               session.isStarted,
@@ -1067,13 +914,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         stream.startCapture { [weak self] error in
             let message = error?.localizedDescription
             outputQueue.async { [weak self] in
-                if message == nil {
-                    renderers.resumePreviewInteractionOnRenderQueue(
-                        reason: .captureLifecycle,
-                        token: token,
-                        filterGeneration: 0
-                    )
-                }
                 Task { @MainActor [weak self] in
                     self?.handleStartCompletion(
                         sourceID: sourceID,
@@ -1127,12 +967,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let streamBox = SendableBox(session.stream)
         let filterBox = SendableBox(filter)
         let proxy = session.proxy
-        let renderers = session.source.renderers
         let outputQueue = self.outputQueue
-        renderers.suspendPreviewInteraction(
-            reason: .contentReplacement,
-            token: token
-        ) {
+        outputQueue.async {
             proxy.beginContentReplacementOnOutputQueue(
                 presentationGeneration: presentationGeneration
             )
@@ -1143,11 +979,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                         proxy.finishContentReplacementOnOutputQueue(
                             presentationGeneration: presentationGeneration,
                             geometryGeneration: geometryGeneration
-                        )
-                        renderers.resumePreviewInteractionOnRenderQueue(
-                            reason: .contentReplacement,
-                            token: token,
-                            filterGeneration: geometryGeneration
                         )
                     }
                     Task { @MainActor [weak self] in
@@ -1211,26 +1042,16 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         let sourceID = session.source.id
         let token = session.token
-        let filterGeneration = session.sourceGeometryGeneration
-        let renderers = session.source.renderers
         let proxy = session.proxy
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
-        renderers.suspendPreviewInteraction(
-            reason: .captureLifecycle,
-            token: token
-        ) {
+        outputQueue.async {
             proxy.beginExplicitPauseOnOutputQueue()
             streamBox.value.stopCapture { [weak self] error in
                 let message = error?.localizedDescription
                 outputQueue.async { [weak self] in
                     if message != nil {
                         proxy.cancelExplicitPauseOnOutputQueue()
-                        renderers.resumePreviewInteractionOnRenderQueue(
-                            reason: .captureLifecycle,
-                            token: token,
-                            filterGeneration: filterGeneration
-                        )
                     }
                     Task { @MainActor [weak self] in
                         self?.handlePauseCompletion(
@@ -1310,8 +1131,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         let sourceID = session.source.id
         let token = session.token
-        let filterGeneration = session.sourceGeometryGeneration
-        let renderers = session.source.renderers
         let proxy = session.proxy
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
@@ -1322,13 +1141,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             streamBox.value.startCapture { [weak self] error in
                 let message = error?.localizedDescription
                 outputQueue.async { [weak self] in
-                    if message == nil {
-                        renderers.resumePreviewInteractionOnRenderQueue(
-                            reason: .captureLifecycle,
-                            token: token,
-                            filterGeneration: filterGeneration
-                        )
-                    } else {
+                    if message != nil {
                         proxy.cancelExplicitResumeOnOutputQueue()
                     }
                     Task { @MainActor [weak self] in
@@ -1513,7 +1326,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let targetSurfaceHeight = configuration.height
         let sourceID = session.source.id
         let token = session.token
-        let filterGeneration = session.sourceGeometryGeneration
         let renderers = session.source.renderers
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
@@ -1531,13 +1343,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let updateCompletion: @Sendable (Error?) -> Void = { [weak self] error in
             let message = error?.localizedDescription
             outputQueue.async { [weak self] in
-                if message == nil, changesSurfaceDimensions {
-                    renderers.resumePreviewInteractionOnRenderQueue(
-                        reason: .surfaceConfiguration,
-                        token: token,
-                        filterGeneration: filterGeneration
-                    )
-                }
                 Task { @MainActor [weak self] in
                     guard let self,
                           let current = self.sessions[sourceID],
@@ -1606,11 +1411,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
         }
         if changesSurfaceDimensions {
-            renderers.suspendPreviewInteraction(
-                reason: .surfaceConfiguration,
-                token: token,
-                then: startConfigurationUpdate
-            )
+            outputQueue.async(execute: startConfigurationUpdate)
         } else {
             startConfigurationUpdate()
         }

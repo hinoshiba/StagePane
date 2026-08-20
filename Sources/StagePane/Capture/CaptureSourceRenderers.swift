@@ -5,7 +5,7 @@ import StagePaneCore
 /// Two zero-copy presentation surfaces fed by the same capture stream.
 ///
 /// One surface belongs to the public Stage window. The other belongs to the
-/// private, interactive layout preview in Workspace. Keeping them separate
+/// private layout preview in Workspace. Keeping them separate
 /// avoids moving one CALayer between two windows while still reusing the same
 /// ScreenCaptureKit IOSurface-backed sample buffer.
 final class CaptureSourceRenderers: @unchecked Sendable {
@@ -17,22 +17,9 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     private var presentationFlushCounts: [UUID: Int] = [:]
 
     init(renderQueue: DispatchQueue) {
-        let usesSteppedPresentation: Bool
-        #if STAGEPANE_APP_STORE
-        usesSteppedPresentation = false
-        #else
-        if #available(macOS 15.2, *) {
-            usesSteppedPresentation = true
-        } else {
-            usesSteppedPresentation = false
-        }
-        #endif
         self.renderQueue = renderQueue
         self.stage = SampleBufferRenderer(renderQueue: renderQueue)
-        self.preview = SampleBufferRenderer(
-            renderQueue: renderQueue,
-            usesSteppedPresentation: usesSteppedPresentation
-        )
+        self.preview = SampleBufferRenderer(renderQueue: renderQueue)
     }
 
     func setPointerStyle(_ value: StagePaneCore.PointerStyle) {
@@ -149,19 +136,16 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     func enqueue(
         _ sampleBuffer: CMSampleBuffer,
         token: UUID,
-        filterGeneration: Int,
         presentationGeneration: UUID
     ) {
         stage.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: filterGeneration,
             presentationGeneration: presentationGeneration
         )
         preview.enqueue(
             sampleBuffer,
             token: token,
-            filterGeneration: filterGeneration,
             presentationGeneration: presentationGeneration
         )
     }
@@ -213,7 +197,7 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     }
 
     /// Advances both renderers together while retaining the deliberate Pause
-    /// still image. Pointer and interaction proof are revoked by each renderer.
+    /// still image. Pointer and snapshot proof are revoked by each renderer.
     func advancePresentationGenerationPreservingFrameOnRenderQueue(
         token: UUID,
         presentationGeneration: UUID
@@ -229,70 +213,4 @@ final class CaptureSourceRenderers: @unchecked Sendable {
         )
     }
 
-    /// Serializes invalidation with frame delivery. The optional operation is
-    /// started only after the old preview geometry can no longer be resolved.
-    func suspendPreviewInteraction(
-        reason: PreviewInteractionSuspensionReason,
-        token: UUID,
-        then operation: (@Sendable () -> Void)? = nil
-    ) {
-        renderQueue.async { [self] in
-            preview.suspendInteractionOnRenderQueue(reason: reason, token: token)
-            operation?()
-        }
-    }
-
-    /// Used by SCStream callbacks and operation completions that have already
-    /// been marshalled onto the shared stream-output/render queue.
-    func suspendPreviewInteractionOnRenderQueue(
-        reason: PreviewInteractionSuspensionReason,
-        token: UUID
-    ) {
-        dispatchPrecondition(condition: .onQueue(renderQueue))
-        preview.suspendInteractionOnRenderQueue(reason: reason, token: token)
-    }
-
-    /// Removes a lifecycle blocker and, when this is the final blocker, records
-    /// the host-time PTS boundary that later complete frames must cross.
-    func resumePreviewInteractionOnRenderQueue(
-        reason: PreviewInteractionSuspensionReason,
-        token: UUID,
-        filterGeneration: Int
-    ) {
-        dispatchPrecondition(condition: .onQueue(renderQueue))
-        preview.resumeInteractionOnRenderQueue(
-            reason: reason,
-            token: token,
-            filterGeneration: filterGeneration
-        )
-    }
-
-    /// A first complete frame proves both current presentation content and a
-    /// running stream. Resolve compatible lifecycle blockers with that same PTS
-    /// so a sole static frame cannot be lost between independent callbacks.
-    func resumePreviewInteractionForFreshPresentationFrameOnRenderQueue(
-        token: UUID,
-        filterGeneration: Int,
-        presentationTimeStamp: CMTime
-    ) {
-        dispatchPrecondition(condition: .onQueue(renderQueue))
-        preview.resumeInteractionOnRenderQueue(
-            reason: .streamInactive,
-            token: token,
-            filterGeneration: filterGeneration,
-            minimumOutputPresentationTimeStamp: presentationTimeStamp
-        )
-        preview.resumeInteractionOnRenderQueue(
-            reason: .captureLifecycle,
-            token: token,
-            filterGeneration: filterGeneration,
-            minimumOutputPresentationTimeStamp: presentationTimeStamp
-        )
-        preview.resumeInteractionOnRenderQueue(
-            reason: .presentationUnavailable,
-            token: token,
-            filterGeneration: filterGeneration,
-            minimumOutputPresentationTimeStamp: presentationTimeStamp
-        )
-    }
 }
