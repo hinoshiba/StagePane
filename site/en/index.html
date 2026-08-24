@@ -10,21 +10,41 @@
     >
     <meta name="theme-color" content="#0c1018">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="StagePane">
     <meta property="og:locale" content="en_US">
     <meta property="og:locale:alternate" content="ja_JP">
     <meta property="og:title" content="StagePane — A clean stage for everything you share.">
     <meta property="og:description" content="Arrange and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
     <meta property="og:url" content="https://stagepane.hinoshiba.com/en/">
-    <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/stage-ready.webp">
-    <meta property="og:image:width" content="1920">
-    <meta property="og:image:height" content="1080">
-    <meta property="og:image:alt" content="The StagePane Stage showing that the share stage is ready">
+    <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
+    <meta property="og:image:type" content="image/webp">
+    <meta property="og:image:width" content="2880">
+    <meta property="og:image:height" content="1800">
+    <meta property="og:image:alt" content="StagePane Workspace arranging three sources into one Stage">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="StagePane — A clean stage for everything you share.">
+    <meta name="twitter:description" content="Arrange and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
+    <meta name="twitter:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
+    <meta name="twitter:image:alt" content="StagePane Workspace arranging three sources into one Stage">
     <link rel="canonical" href="https://stagepane.hinoshiba.com/en/">
     <link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/">
     <link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/">
     <link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/">
     <link rel="icon" href="../assets/StagePaneMark.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260824">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "StagePane",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "macOS 14 or later",
+        "description": "StagePane is an open-source macOS app that separates a clean sharing Stage from a private Workspace for arranging, drawing, and managing sources.",
+        "url": "https://stagepane.hinoshiba.com/en/",
+        "sameAs": "https://github.com/hinoshiba/StagePane",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -35,7 +55,7 @@
           <img src="../assets/StagePaneMark.svg" width="42" height="42" alt="">
           <span>StagePane</span>
         </a>
-        <nav aria-label="Primary navigation">
+        <nav class="site-nav" aria-label="Primary navigation">
           <a href="#features">Features</a>
           <a href="#examples">Screens</a>
           <a href="#how-it-works">How it works</a>
@@ -44,6 +64,21 @@
           <a class="nav-language" href="../" hreflang="ja" lang="ja">日本語</a>
           <a class="nav-github" href="https://github.com/hinoshiba/StagePane">GitHub</a>
         </nav>
+        <details class="mobile-menu">
+          <summary aria-label="Menu">
+            <span class="mobile-menu-label">Menu</span>
+            <span class="mobile-menu-icon" aria-hidden="true"></span>
+          </summary>
+          <nav class="mobile-menu-panel" aria-label="Mobile navigation">
+            <a href="#features">Features</a>
+            <a href="#examples">Screens</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="privacy/">Privacy</a>
+            <a href="#support">Support</a>
+            <a href="../" hreflang="ja" lang="ja">日本語</a>
+            <a href="https://github.com/hinoshiba/StagePane">GitHub</a>
+          </nav>
+        </details>
       </div>
     </header>
 
@@ -62,7 +97,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.2.8-.5v-2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.6.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.6.8.5A11.5 11.5 0 0 0 12 .7Z"/></svg>
                 View on GitHub
               </a>
-              <a class="button button-secondary" href="#examples">See the interface</a>
+              <a class="button button-secondary" href="#workspace-proof">See the interface</a>
             </div>
             <ul class="hero-facts" aria-label="Requirements and project facts">
               <li><span class="fact-dot fact-dot-mint"></span>macOS 14+</li>
@@ -72,7 +107,7 @@
             </ul>
           </div>
 
-          <div class="product-visual" aria-label="Illustration of the clean StagePane Stage and private Stage Workspace">
+          <div class="product-visual" role="img" aria-label="Illustration of the clean StagePane Stage and private Stage Workspace">
             <div class="stage-window">
               <div class="stage-canvas">
                 <div class="stage-grid" aria-hidden="true"></div>
@@ -117,7 +152,39 @@
           <div class="separation-item separation-private">
             <span class="separation-icon">⌘</span>
             <div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
-            <p>A large live editor, plus a separate source list and settings.</p>
+            <p>A large live editor with Sources and settings together in one sidebar.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="product-proof" id="workspace-proof" aria-labelledby="product-proof-title">
+        <div class="shell">
+          <div class="section-heading">
+            <p class="eyebrow"><span></span> Live workspace</p>
+            <h2 id="product-proof-title">Compose. Draw.<br>Keep every tool on your side.</h2>
+            <p>The audience Stage shows only the finished composition. Arrange and Draw stay together in the large Workspace you keep private.</p>
+          </div>
+          <div class="proof-grid">
+            <article class="proof-card">
+              <div class="proof-copy">
+                <p class="eyebrow"><span></span> Arrange</p>
+                <h3>Turn three sources into one composition.</h3>
+                <p>Move, freely resize, reorder, or apply a Quick Layout directly on the Canvas. The laser pointer appears only over the frontmost source.</p>
+              </div>
+              <div class="proof-shot">
+                <img src="../assets/screenshots/en/arrange.webp" width="2880" height="1800" loading="eager" decoding="async" alt="Stage Workspace in Arrange mode with three synthetic sources, the selected source's editing outline and resize handle, and one laser pointer over the frontmost source">
+              </div>
+            </article>
+            <article class="proof-card">
+              <div class="proof-copy">
+                <p class="eyebrow"><span></span> Draw</p>
+                <h3>Draw directly where attention belongs.</h3>
+                <p>Keep Pen, translucent Highlighter, and a size-adjustable partial Eraser in one dock. Erasing can be undone exactly, and Draw hides the audience pointer.</p>
+              </div>
+              <div class="proof-shot">
+                <img src="../assets/screenshots/en/draw.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="Stage Workspace in Draw mode with three synthetic sources, pen and highlighter strokes, a partially erased area, the Eraser selected, and no audience pointer visible">
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -143,12 +210,12 @@
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
               <h3>Arrange and draw with up to four sources</h3>
-              <p>Add sources one at a time with Apple's system picker, manage them in Workspace → Sources, then arrange and draw freely on the large Canvas. Each choice authorizes only that shared content for its capture session; StagePane does not request separate broad Screen Recording access. StagePane does not forward clicks, keys, or drags to source apps, and it requests no Accessibility or Input Monitoring permission.</p>
+              <p>Add sources one at a time with Apple's system picker, then pause, resume, replace, or remove each one independently; Remove asks before discarding its frame and layout. On the large Canvas, arrange freely or draw with a pen, translucent highlighter, and size-adjustable partial eraser whose action can be undone exactly. Draw automatically hides the audience pointer; returning to Arrange restores the selected style. Each choice authorizes only that shared content for its capture session. StagePane requests no separate broad Screen Recording, Accessibility, or Input Monitoring permission and forwards no input to source apps.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
               <h3>Clean one-shot screenshots</h3>
-              <p>Explicitly copy or save a PNG of the Audience Stage at 16:9 (1920×1080), 4:3 (1440×1080), 9:16 (1080×1920), or 1:1 (1080×1080). It includes the current Curtain, ink, mark, and pointer—never private Workspace chrome.</p>
+              <p>Explicitly copy or save a PNG of the Audience Stage at 16:9 (1920×1080), 4:3 (1440×1080), 9:16 (1080×1920), or 1:1 (1080×1080). It includes current content or Curtain, ink, mark, the safe area when enabled, and the pointer when visible—never private Workspace chrome.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V6m5 12V9m5 9V4m5 14v-7"/></svg></div>
@@ -169,39 +236,39 @@
         <div class="shell">
           <div class="section-heading">
             <p class="eyebrow"><span></span> Real interface</p>
-            <h2>See the flow before,<br>during, and after sharing.</h2>
+            <h2>See the tools and safeguards<br>in the real interface.</h2>
             <p>These screens were rendered by StagePane itself using only synthetic data. Keep the Workspace on your Mac and share only the exact Stage window in your meeting app.</p>
           </div>
           <div class="screenshot-grid">
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-private">KEEP PRIVATE</span> Stage Workspace</div>
-              <img src="../assets/screenshots/en/workspace.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="Empty StagePane Stage Workspace with a three-step first-Stage guide, Arrange and Draw modes, Curtain, screenshot, and source controls">
-              <figcaption><strong>Begin with one obvious next step.</strong> The empty Workspace guides you from adding a source to arranging or drawing, then sharing the clean Stage.</figcaption>
-            </figure>
-            <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-private">KEEP PRIVATE</span> Workspace Sources</div>
-              <img src="../assets/screenshots/en/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Workspace Sources view with Add Source and per-source pause, replace, and removal controls">
-              <figcaption><strong>Set up privately before content arrives.</strong> Open the Workspace, add the first source, choose the Stage shape, and keep audience controls close at hand.</figcaption>
+              <img src="../assets/screenshots/en/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Workspace Sources view with three synthetic sources, two active and one paused, plus Pause, Resume, Replace, and Remove actions">
+              <figcaption><strong>Pause, resume, or replace each source.</strong> See the state and available actions for all three sources together in the Workspace’s Sources view.</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-local">LOCAL</span> Privacy</div>
-              <img src="../assets/screenshots/en/privacy.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Privacy screen explaining local processing, no automatic saving or upload, no audio capture, and no tracking">
-              <figcaption><strong>Make the data flow visible.</strong> Check capture status and what StagePane never does at any time.</figcaption>
+              <div class="screenshot-label"><span class="label-local">PICKER-SCOPED</span> Permissions</div>
+              <img src="../assets/screenshots/en/permissions.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Workspace Permissions view with the picker-scoped Screen sharing card, Confirmed when added status, and Add Source button">
+              <figcaption><strong>Confirm access only when you add a source.</strong> Review the picker-scoped sharing model and continue with Add Source when you are ready.</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-local">TUNE LOCALLY</span> Appearance</div>
               <img src="../assets/screenshots/en/appearance.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Appearance settings for laser pointer color, size, glow, safe area, and StagePane mark">
               <figcaption><strong>Make the pointer unmistakably yours.</strong> Tune laser color, size, and glow, then choose whether to show the safe area and StagePane mark.</figcaption>
             </figure>
+            <figure class="screenshot-card screenshot-card-tall">
+              <div class="screenshot-label"><span class="label-local">LOCAL</span> Privacy</div>
+              <img src="../assets/screenshots/en/privacy.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Privacy screen explaining local processing, no automatic saving or upload, no audio capture, and no tracking">
+              <figcaption><strong>Make the data flow visible.</strong> Check capture status and what StagePane never does at any time.</figcaption>
+            </figure>
             <figure class="screenshot-card">
               <div class="screenshot-label"><span class="label-share">SHARE THIS</span> Stage ready</div>
-              <img src="../assets/screenshots/en/stage-ready.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="StagePane Stage holding screen before a sharing source is selected">
-              <figcaption><strong>Start with a safe holding screen.</strong> Prepare the Stage as your share target before selecting a source.</figcaption>
+              <img src="../assets/screenshots/en/stage-ready.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="StagePane Stage holding screen showing Ready for your content">
+              <figcaption><strong>Reveal to a safe holding screen.</strong> With no source selected, the shared Stage stays ready while you choose what to show next.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <div class="screenshot-label"><span class="label-curtain">CURTAIN ON</span> Privacy Curtain</div>
               <img src="../assets/screenshots/en/privacy-curtain.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="StagePane Privacy Curtain hiding shared content behind the message Back in a moment">
-              <figcaption><strong>Use the Curtain while switching.</strong> Your audience sees the configured message instead of the content; capture continues until you stop it.</figcaption>
+              <figcaption><strong>Cover the content with a clear message.</strong> The audience sees “Back in a moment” instead of the shared content.</figcaption>
             </figure>
           </div>
         </div>
@@ -213,11 +280,11 @@
             <p class="eyebrow"><span></span> How it works</p>
             <h2>Prepare the Stage<br>in four steps.</h2>
             <p>StagePane does not create a virtual display or alternate desktop. Select it in your meeting app as an ordinary window.</p>
-            <aside class="note-card"><strong>Check the exact window title</strong><p>Select “StagePane Stage” in your meeting app. “Keep Private” does not technically exclude Workspace; sharing the app or full display can expose it.</p></aside>
+            <aside class="note-card"><strong>Check the exact window title</strong><p>Select “StagePane Stage” in your meeting app. “Keep Private” does not technically exclude Workspace; sharing the app or full display can expose it. On macOS 15 or later, Switch Active Share can ask a compatible, already-running sharing session to switch to Stage; it cannot start or control sharing in every meeting app.</p></aside>
           </div>
           <ol class="steps">
             <li><span>01</span><div><h3>Open StagePane</h3><p>StagePane opens two windows: the clean Share Stage and one private Workspace with Canvas, Sources, and settings in its sidebar.</p></div></li>
-            <li><span>02</span><div><h3>Add what to show</h3><p>Choose Add Source and approve exactly one window, app, or display for that capture session. No separate broad Screen Recording permission is needed; repeat for up to four independent sources.</p></div></li>
+            <li><span>02</span><div><h3>Add what to show</h3><p>Choose Add Source and approve one window, app, or display for that capture session. Choosing an app can include multiple windows owned by it; choose one window for the narrowest scope, then repeat as needed for up to four sources.</p></div></li>
             <li><span>03</span><div><h3>Arrange and share the Stage</h3><p>Move, resize, or draw on the private Workspace, then select the exact “StagePane Stage” window in your meeting app and reveal the Curtain.</p></div></li>
             <li><span>04</span><div><h3>Stop completely when finished</h3><p>Use Stop All to end every stream and discard held frames. The Curtain alone does not stop capture.</p></div></li>
           </ol>
@@ -233,8 +300,8 @@
           </div>
           <div class="data-flow" aria-label="StagePane screen-processing flow">
             <div><span>1</span><strong>Chosen content</strong><small>Approved per selection</small></div><i aria-hidden="true">→</i>
-            <div><span>2</span><strong>In-memory Workspace</strong><small>No recording or analysis</small></div><i aria-hidden="true">→</i>
-            <div><span>3</span><strong>Stage</strong><small>Displayed, then discarded</small></div>
+            <div><span>2</span><strong>In-memory composition</strong><small>No recording or analysis</small></div><i aria-hidden="true">→</i>
+            <div><span>3</span><strong>Stage + Workspace</strong><small>Same frames, parallel display</small></div>
           </div>
           <div class="privacy-grid">
             <article class="info-card"><h3>Capture and storage</h3><ul class="check-list"><li>Screen frames are never recorded or saved automatically</li><li>Explicit Copy Image places one clean PNG on the clipboard; Save PNG writes only to your chosen location, and cancel writes nothing</li><li>System audio and microphone input are not captured</li><li>There is no OCR or AI analysis</li></ul></article>

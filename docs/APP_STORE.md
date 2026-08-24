@@ -79,8 +79,9 @@ Japanese and English.
 > Arrange.” These gestures change only StagePane's composition. StagePane
 > provides Arrange and Draw. Arrange changes only the Stage
 > composition, while Draw adds bounded in-memory vector ink to
-> both the private Workspace and public Stage; the Curtain hides it and Stop
-> All/final-source removal clears it. The StagePane process does not record,
+> both the private Workspace and public Stage. Draw hides the audience pointer;
+> returning to Arrange restores the selected pointer style. The Curtain hides
+> ink and Stop All/final-source removal clears it. The StagePane process does not record,
 > encode, automatically save, or transmit frames. Only an explicit “Copy
 > Audience Image” or “Save Audience Image…” action creates one local PNG of the
 > clean Stage; Copy uses the pasteboard, and Save writes only to the location the
@@ -95,7 +96,8 @@ Japanese and English.
 > laser dot in the Stage, or be hidden. Its color, size, and glow are adjustable,
 > and the dot appears only on the frontmost
 > source; when that source is paused there is no dot and no fallback to a source
-> behind it. Laser pointer mode does not request an additional permission and
+> behind it. Draw mode temporarily hides every pointer style. Laser pointer mode
+> does not request an additional permission and
 > does not retain pointer coordinates. A translucent
 > StagePane mark is enabled by default at the lower-right of the holding screen,
 > shared content, and Curtain, and is mirrored in the private Workspace.

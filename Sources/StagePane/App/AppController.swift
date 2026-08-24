@@ -58,7 +58,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published var pointerStyle: StagePaneCore.PointerStyle {
         didSet {
             defaults.set(pointerStyle.rawValue, forKey: Keys.pointerStyle)
-            capture.setPointerStyle(pointerStyle)
+            capture.setPointerStyle(effectivePointerStyle)
         }
     }
 
@@ -107,8 +107,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     let annotations = StageAnnotationStore()
 
     var annotationTool: StageInkTool { annotations.preferences.tool }
+    var isAudiencePointerSuppressedByDrawMode: Bool {
+        stageInteractionMode.suppressesAudiencePointer
+    }
 
     var availableStageInteractionModes: [StageInteractionMode] { StageInteractionMode.allCases }
+
+    private var effectivePointerStyle: StagePaneCore.PointerStyle {
+        stageInteractionMode.audiencePointerStyle(preferred: pointerStyle)
+    }
 
     private let defaults: UserDefaults
     private var workspaceWindowController: StageWorkspaceWindowController?
@@ -154,7 +161,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         defaults.set(pointerAppearance.diameter, forKey: Keys.pointerDiameter)
         defaults.set(pointerAppearance.color.hexRGB, forKey: Keys.pointerColor)
         defaults.set(pointerAppearance.glow, forKey: Keys.pointerGlow)
-        capture.setPointerStyle(pointerStyle)
+        capture.setPointerStyle(effectivePointerStyle)
         capture.setPointerAppearance(pointerAppearance)
         capture.setOutputSize(width: preset.pixelWidth, height: preset.pixelHeight)
         previousCapturePhase = capture.phase
@@ -183,7 +190,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             .sink { [weak self] isEmpty in
                 guard let self, isEmpty else { return }
                 annotations.removeAll()
-                stageInteractionMode = .arrange
+                setStageInteractionMode(.arrange)
             }
             .store(in: &cancellables)
         annotations.$document
@@ -212,6 +219,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         guard stageInteractionMode != mode else { return }
         annotations.endStroke()
         stageInteractionMode = mode
+        capture.setPointerStyle(effectivePointerStyle)
     }
 
     func removeSource(
@@ -261,7 +269,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalPrivacyMessage = privacyMessage
         let originalCurtain = privacyCurtain
         let originalWorkspaceSection = workspaceSection
+        let originalInteractionMode = stageInteractionMode
+        let originalInkPreferences = annotations.preferences
         defer {
+            annotations.selectTool(originalInkPreferences.tool)
+            annotations.selectColor(originalInkPreferences.colorPreset)
+            annotations.setNormalizedWidth(originalInkPreferences.normalizedWidth)
+            annotations.setEraserNormalizedWidth(originalInkPreferences.eraserNormalizedWidth)
+            setStageInteractionMode(originalInteractionMode)
             preset = originalPreset
             theme = originalTheme
             isAlwaysOnTop = originalAlwaysOnTop
@@ -291,6 +306,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         privacyCurtain = true
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        setStageInteractionMode(.arrange)
         workspaceSection = .canvas
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
@@ -298,13 +314,55 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("workspace.png")
         )
+
+        privacyCurtain = false
+        pointerStyle = .redDot
+        try writePNG(
+            of: StageWorkspaceView(
+                controller: self,
+                capture: capture,
+                snapshotFixture: .arrange
+            )
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("arrange.png")
+        )
+
+        annotations.selectTool(.eraser)
+        setStageInteractionMode(.annotate)
+        try writePNG(
+            of: StageWorkspaceView(
+                controller: self,
+                capture: capture,
+                snapshotFixture: .draw
+            )
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("draw.png")
+        )
+
+        setStageInteractionMode(.arrange)
+        privacyCurtain = true
         workspaceSection = .sources
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
+            of: StageWorkspaceView(
+                controller: self,
+                capture: capture,
+                snapshotFixture: .sources
+            )
                 .frame(width: 1_440, height: 900),
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("sources.png")
         )
+
+        workspaceSection = .permissions
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("permissions.png")
+        )
+
         workspaceSection = .privacy
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
@@ -312,7 +370,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("privacy.png")
         )
-        pointerStyle = .redDot
         pointerAppearance = .presentationDefault
         workspaceSection = .appearance
         try writePNG(

@@ -137,13 +137,13 @@ enum L10n {
         case .annotate:
             if annotationTool == .eraser {
                 text(
-                    "共有Stageの手書きを部分消去します。",
-                    "Partially erase drawing on the shared Stage."
+                    "共有Stageのポインターを隠したまま、手書きを部分消去します。",
+                    "Partially erase drawing while the shared Stage pointer stays hidden."
                 )
             } else {
                 text(
-                    "共有Stageへ線を描きます。",
-                    "Draw lines on the shared Stage."
+                    "共有Stageのポインターを隠して、線を描きます。",
+                    "Hide the shared Stage pointer while drawing lines."
                 )
             }
         }

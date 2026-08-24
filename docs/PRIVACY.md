@@ -1,6 +1,6 @@
 # StagePane Privacy Policy
 
-Effective date: 2026-08-21<br>
+Effective date: 2026-08-24<br>
 Product: StagePane for macOS
 
 ## Summary
@@ -17,10 +17,11 @@ collection by StagePane or its publisher and is never automatic or transmitted.
 
 StagePane accesses screen content only after the user opens Apple's system
 content-sharing picker and explicitly adds one window, application, or display.
-This may be repeated for up to four independently pausable and removable
-sources. The chosen video frames are rendered into the local StagePane Stage
-window and the private Stage Workspace Canvas. Sources and settings remain in
-that Workspace's sidebar.
+Choosing an application can include multiple windows owned by that application;
+choosing one window provides the narrowest scope. This may be repeated for up to
+four independently pausable and removable sources. The chosen video frames are
+rendered locally in parallel in the StagePane Stage window and the private Stage
+Workspace Canvas. Sources and settings remain in that Workspace's sidebar.
 
 Each `SCContentSharingPicker` choice grants access only to the selected content
 for that capture session. StagePane does not request separate, broad Screen
@@ -40,10 +41,12 @@ StagePane does not:
 When the optional Laser pointer style is active, StagePane reads only the current
 pointer location needed to place one dot over the frontmost Stage source. If that
 source is paused, no dot is shown and StagePane does not use a source behind it
-instead. Laser pointer mode itself does not install an event tap or request
-Accessibility/Input Monitoring permission. StagePane does not retain pointer
-history or write pointer coordinates to disk; each sampled position is discarded
-continuously and cleared when capture stops or the source changes.
+instead. Entering Draw mode hides the audience pointer and stops pointer-location
+sampling until Arrange resumes. Laser pointer mode itself does not install an
+event tap or request Accessibility/Input Monitoring permission. StagePane does
+not retain pointer history or write pointer coordinates to disk; each sampled
+position is discarded continuously and cleared when capture stops, the source
+changes, or Draw begins.
 
 ## Workspace modes
 
@@ -82,8 +85,8 @@ or in response to capture changes. Only the user's **Copy Audience Image** or
 the clean Audience Stage.
 The PNG uses the selected Stage pixel dimensions and includes what the audience
 Stage currently shows: shared content or Curtain, ink, watermark, safe-area
-guide, and pointer. It excludes Workspace navigation and controls, title-bar
-chrome, and unrelated application windows.
+guide when enabled, and pointer when visible. It excludes Workspace navigation
+and controls, title-bar chrome, and unrelated application windows.
 
 The screenshot is composed locally from the latest pixels already approved by
 the user through Apple's content-sharing picker and the Stage's own local

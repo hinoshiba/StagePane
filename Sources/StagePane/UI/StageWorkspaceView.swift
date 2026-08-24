@@ -36,6 +36,7 @@ struct StageWorkspaceView: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
     private let focusesAppearanceForSnapshot: Bool
+    private let snapshotFixture: StageWorkspaceSnapshotFixture?
 
     @State private var isSourceRailVisible = true
     @State private var isClearInkConfirmationPresented = false
@@ -43,11 +44,13 @@ struct StageWorkspaceView: View {
     init(
         controller: AppController,
         capture: CaptureCoordinator,
-        focusesAppearanceForSnapshot: Bool = false
+        focusesAppearanceForSnapshot: Bool = false,
+        snapshotFixture: StageWorkspaceSnapshotFixture? = nil
     ) {
         self.controller = controller
         self.capture = capture
         self.focusesAppearanceForSnapshot = focusesAppearanceForSnapshot
+        self.snapshotFixture = snapshotFixture
     }
 
     var body: some View {
@@ -126,7 +129,11 @@ struct StageWorkspaceView: View {
                 compactWorkspace
             }
         case .sources:
-            WorkspaceSourcesPanel(controller: controller, capture: capture)
+            if snapshotFixture == .sources {
+                WorkspaceSourcesSnapshotPanel()
+            } else {
+                WorkspaceSourcesPanel(controller: controller, capture: capture)
+            }
         case .stage:
             StageSettingsPanel(controller: controller, capture: capture)
         case .appearance:
@@ -241,8 +248,8 @@ struct StageWorkspaceView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .frame(width: 23, height: 23)
 
-                    if compact, section == .sources, !capture.sources.isEmpty {
-                        Text("\(capture.sources.count)")
+                    if compact, section == .sources, displayedSourceCount > 0 {
+                        Text("\(displayedSourceCount)")
                             .font(.system(size: 8, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(width: 14, height: 14)
@@ -259,7 +266,7 @@ struct StageWorkspaceView: View {
                     Spacer(minLength: 4)
 
                     if section == .sources {
-                        Text("\(capture.sources.count) / \(CaptureCoordinator.maximumSources)")
+                        Text("\(displayedSourceCount) / \(CaptureCoordinator.maximumSources)")
                             .font(.caption2.monospacedDigit().weight(.semibold))
                             .foregroundStyle(Color.white.opacity(0.48))
                     }
@@ -304,8 +311,8 @@ struct StageWorkspaceView: View {
         }
         if section == .sources {
             values.append(L10n.text(
-                "\(capture.sources.count)件",
-                "\(capture.sources.count) of \(CaptureCoordinator.maximumSources)"
+                "\(displayedSourceCount)件",
+                "\(displayedSourceCount) of \(CaptureCoordinator.maximumSources)"
             ))
         }
         return values.joined(separator: ", ")
@@ -369,7 +376,8 @@ struct StageWorkspaceView: View {
             WorkspaceOutputStatus(
                 isStageVisible: controller.stageIsVisible,
                 capture: capture,
-                compact: compact
+                compact: compact,
+                snapshotSourceCount: snapshotFixture?.sourceCount
             )
 
             Spacer(minLength: 8)
@@ -542,7 +550,7 @@ struct StageWorkspaceView: View {
                 Text(L10n.text("ステージのソース", "Stage Sources"))
                     .font(.caption.weight(.bold))
                 Spacer()
-                Text("\(capture.sources.count) / \(CaptureCoordinator.maximumSources)")
+                Text("\(displayedSourceCount) / \(CaptureCoordinator.maximumSources)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -551,16 +559,22 @@ struct StageWorkspaceView: View {
 
             Divider().overlay(Color.white.opacity(0.09))
 
-            CaptureSourceList(
-                controller: controller,
-                capture: capture,
-                showsHeading: false,
-                showsWorkspaceHint: false,
-                expandsSourceList: true,
-                usesSecondaryAddAction: true
-            )
-                .padding(14)
-                .frame(maxHeight: .infinity, alignment: .top)
+            if snapshotFixture?.hasCanvasComposition == true {
+                SnapshotSourceRailList()
+                    .padding(14)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            } else {
+                CaptureSourceList(
+                    controller: controller,
+                    capture: capture,
+                    showsHeading: false,
+                    showsWorkspaceHint: false,
+                    expandsSourceList: true,
+                    usesSecondaryAddAction: true
+                )
+                    .padding(14)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
         }
         .background(Color.black.opacity(0.16))
         .accessibilityElement(children: .contain)
@@ -627,7 +641,17 @@ struct StageWorkspaceView: View {
         GeometryReader { proxy in
             let canvasSize = fittedCanvasSize(in: proxy.size)
 
-            StageLayoutEditor(controller: controller, capture: capture)
+            Group {
+                if let snapshotFixture, snapshotFixture.hasCanvasComposition {
+                    SnapshotStageComposition(
+                        showsDrawing: snapshotFixture == .draw,
+                        theme: controller.theme,
+                        showsWatermark: controller.showsWatermark
+                    )
+                } else {
+                    StageLayoutEditor(controller: controller, capture: capture)
+                }
+            }
                 .frame(width: canvasSize.width, height: canvasSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
@@ -694,7 +718,10 @@ struct StageWorkspaceView: View {
                         systemImage: "square.grid.2x2"
                     )
                 }
-                .disabled(capture.sources.isEmpty || capture.isPickerPresented)
+                .disabled(
+                    (capture.sources.isEmpty && snapshotFixture?.hasCanvasComposition != true) ||
+                        capture.isPickerPresented
+                )
                 .help(L10n.text(
                     "ソースをグリッド、横並び、縦並び、ピクチャーインピクチャに配置します",
                     "Arrange sources as a grid, side by side, stacked, or picture in picture"
@@ -711,7 +738,7 @@ struct StageWorkspaceView: View {
                         systemImage: "arrow.uturn.backward"
                     )
                 }
-                .disabled(!controller.hasAnnotations)
+                .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
                 .keyboardShortcut("z", modifiers: [.command])
 
                 Button(role: .destructive) {
@@ -722,7 +749,7 @@ struct StageWorkspaceView: View {
                         systemImage: "trash"
                     )
                 }
-                .disabled(!controller.hasAnnotations)
+                .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
             }
 
             Spacer(minLength: 0)
@@ -928,6 +955,10 @@ struct StageWorkspaceView: View {
                 endPoint: .bottom
             )
         }
+    }
+
+    private var displayedSourceCount: Int {
+        snapshotFixture?.sourceCount ?? capture.sources.count
     }
 }
 
@@ -1159,6 +1190,7 @@ private struct WorkspaceOutputStatus: View {
     let isStageVisible: Bool
     @ObservedObject var capture: CaptureCoordinator
     let compact: Bool
+    let snapshotSourceCount: Int?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -1182,15 +1214,16 @@ private struct WorkspaceOutputStatus: View {
         .overlay(Capsule().stroke(Color.white.opacity(0.09)))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(statusTitle)
-        .accessibilityValue(capture.statusDetail)
+        .accessibilityValue(statusDetail)
         .accessibilityHint(L10n.text(
             "会議アプリが実際に共有中かどうかを示すものではありません。",
             "This does not indicate whether a meeting app is actively sharing."
         ))
-        .help(capture.statusDetail)
+        .help(statusDetail)
     }
 
     private var statusColor: Color {
+        if snapshotSourceCount != nil { return StagePanePalette.mintReadable }
         guard isStageVisible else { return .secondary }
         if captureNeedsAttention { return .orange }
         if allSourcesPaused { return .secondary }
@@ -1200,6 +1233,12 @@ private struct WorkspaceOutputStatus: View {
     }
 
     private var statusTitle: String {
+        if let snapshotSourceCount {
+            return L10n.text(
+                "\(snapshotSourceCount)件の合成ソースをプレビュー",
+                "Previewing \(snapshotSourceCount) Synthetic Sources"
+            )
+        }
         if !isStageVisible {
             return L10n.text("共有Stageは閉じています", "Share Stage Closed")
         }
@@ -1227,6 +1266,9 @@ private struct WorkspaceOutputStatus: View {
     }
 
     private var shortStatusTitle: String {
+        if snapshotSourceCount != nil {
+            return L10n.text("合成プレビュー", "Synthetic Preview")
+        }
         if !isStageVisible { return L10n.text("Stage非表示", "Stage Closed") }
         if captureNeedsAttention { return L10n.text("確認が必要", "Needs Attention") }
         if allSourcesPaused { return L10n.text("一時停止中", "Paused") }
@@ -1241,6 +1283,16 @@ private struct WorkspaceOutputStatus: View {
     private var captureNeedsAttention: Bool {
         if case .failed = capture.phase { return true }
         return false
+    }
+
+    private var statusDetail: String {
+        if snapshotSourceCount != nil {
+            return L10n.text(
+                "公開用スクリーンショットの合成データです。画面取得は行っていません。",
+                "Privacy-safe synthetic screenshot data; no screen capture is running."
+            )
+        }
+        return capture.statusDetail
     }
 }
 

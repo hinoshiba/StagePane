@@ -38,12 +38,14 @@ four sources one at a time, then arrange them in the Stage.
   the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
   Picture from Quick Layout.
 - **Focused private Workspace tools** — Arrange composes the audience Stage and
-  Draw adds session-only pen, highlighter, and erasable ink. StagePane never
-  forwards input to a source app and does not request Accessibility or Input
-  Monitoring permission.
+  Draw adds session-only pen, highlighter, and erasable ink while automatically
+  hiding the audience pointer. Returning to Arrange restores the selected
+  pointer style. StagePane never forwards input to a source app and does not
+  request Accessibility or Input Monitoring permission.
 - **One-shot audience screenshots** — explicitly copy a clean Stage image or
   save a PNG at the selected Stage dimensions. It includes the current Curtain,
-  ink, watermark, and pointer, but never the private Workspace controls.
+  ink, watermark, safe-area guide when enabled, and pointer when visible, but
+  never the private Workspace controls.
 - **Local by construction** — no recorder, network client, account, telemetry,
   analytics SDK, advertising SDK, audio capture, or microphone capture.
 - **Host controls** — menu-bar actions, all-Spaces mode, always-on-top
@@ -133,9 +135,10 @@ the front, so the Workspace or source app you are using keeps its place.
 
 Dragging in **Arrange** changes only the Stage composition. **Draw** adds bounded
 vector ink with a pen or translucent highlighter, plus a size-adjustable partial
-eraser whose gestures can be undone exactly. The document stays in memory, is hidden by the Curtain, and is cleared by
-Stop All or removal of the final source. Both modes remain available in every
-build. Neither mode requires Accessibility or Input Monitoring permission.
+eraser whose gestures can be undone exactly. The document stays in memory, is
+hidden by the Curtain, and is cleared by Stop All or removal of the final
+source. Both modes remain available in every build. Neither mode requires
+Accessibility or Input Monitoring permission.
 
 For PowerPoint Presenter View on one monitor, start the slide show, choose
 **Show Presenter View** from PowerPoint's lower-left presentation controls,
@@ -154,10 +157,11 @@ Window** window.
 From the Stage Workspace, explicitly choose **Copy Audience Image** or **Save
 Audience Image…** to take a one-shot image of the clean audience Stage. The
 image uses the selected Stage pixel dimensions and includes exactly the current
-audience state, including the Curtain, ink, watermark, and pointer. StagePane never takes
-screenshots automatically, starts a recording, or sends the image over the
-network. A copied image remains on the macOS clipboard, and a PNG is written
-only to the location you choose. Canceling Save writes nothing.
+audience state, including the Curtain, ink, watermark, safe-area guide when
+enabled, and pointer when visible. StagePane never takes screenshots
+automatically, starts a recording, or sends the image over the network. A copied
+image remains on the macOS clipboard, and a PNG is written only to the location
+you choose. Canceling Save writes nothing.
 
 On macOS 15 and later, **Switch Active Share** can ask a compatible, already
 active ScreenCaptureKit sharing session to switch to the Stage. It cannot start

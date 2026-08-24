@@ -10,21 +10,41 @@
     >
     <meta name="theme-color" content="#0c1018">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="StagePane">
     <meta property="og:locale" content="ja_JP">
     <meta property="og:locale:alternate" content="en_US">
     <meta property="og:title" content="StagePane — 見せたいものだけ、ひとつのステージへ。">
     <meta property="og:description" content="配置・手書きは手元のWorkspaceで。きれいなStageだけを共有し、必要なときだけPNGをコピーまたは保存。">
     <meta property="og:url" content="https://stagepane.hinoshiba.com/">
-    <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/ja/stage-ready.webp">
-    <meta property="og:image:width" content="1920">
-    <meta property="og:image:height" content="1080">
-    <meta property="og:image:alt" content="共有ステージの準備ができましたと表示するStagePaneのStage画面">
+    <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/ja/arrange.webp">
+    <meta property="og:image:type" content="image/webp">
+    <meta property="og:image:width" content="2880">
+    <meta property="og:image:height" content="1800">
+    <meta property="og:image:alt" content="3つのソースをひとつのStageへ配置するStagePane Workspace">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="StagePane — 見せたいものだけ、ひとつのステージへ。">
+    <meta name="twitter:description" content="配置・手書きは手元のWorkspaceで。きれいなStageだけを共有し、必要なときだけPNGをコピーまたは保存。">
+    <meta name="twitter:image" content="https://stagepane.hinoshiba.com/assets/screenshots/ja/arrange.webp">
+    <meta name="twitter:image:alt" content="3つのソースをひとつのStageへ配置するStagePane Workspace">
     <link rel="canonical" href="https://stagepane.hinoshiba.com/">
     <link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/">
     <link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/">
     <link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/">
     <link rel="icon" href="assets/StagePaneMark.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260824">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "StagePane",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "macOS 14 or later",
+        "description": "StagePaneは、共有用のStageと、配置・手書き・ソース管理を行う手元用Workspaceを分けるオープンソースのmacOSアプリです。",
+        "url": "https://stagepane.hinoshiba.com/",
+        "sameAs": "https://github.com/hinoshiba/StagePane",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">本文へ移動</a>
@@ -35,7 +55,7 @@
           <img src="assets/StagePaneMark.svg" width="42" height="42" alt="">
           <span>StagePane</span>
         </a>
-        <nav aria-label="メインナビゲーション">
+        <nav class="site-nav" aria-label="メインナビゲーション">
           <a href="#features">機能</a>
           <a href="#examples">実画面</a>
           <a href="#how-it-works">使い方</a>
@@ -44,6 +64,21 @@
           <a class="nav-language" href="en/" hreflang="en" lang="en">EN</a>
           <a class="nav-github" href="https://github.com/hinoshiba/StagePane">GitHub</a>
         </nav>
+        <details class="mobile-menu">
+          <summary aria-label="メニュー">
+            <span class="mobile-menu-label">メニュー</span>
+            <span class="mobile-menu-icon" aria-hidden="true"></span>
+          </summary>
+          <nav class="mobile-menu-panel" aria-label="モバイルナビゲーション">
+            <a href="#features">機能</a>
+            <a href="#examples">実画面</a>
+            <a href="#how-it-works">使い方</a>
+            <a href="privacy/">プライバシー</a>
+            <a href="#support">サポート</a>
+            <a href="en/" hreflang="en" lang="en">English</a>
+            <a href="https://github.com/hinoshiba/StagePane">GitHub</a>
+          </nav>
+        </details>
       </div>
     </header>
 
@@ -62,7 +97,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.2.8-.5v-2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.6.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.6.8.5A11.5 11.5 0 0 0 12 .7Z"/></svg>
                 GitHubで見る
               </a>
-              <a class="button button-secondary" href="#examples">実画面を見る</a>
+              <a class="button button-secondary" href="#workspace-proof">実画面を見る</a>
             </div>
             <ul class="hero-facts" aria-label="動作要件と特徴">
               <li><span class="fact-dot fact-dot-mint"></span>macOS 14+</li>
@@ -72,7 +107,7 @@
             </ul>
           </div>
 
-          <div class="product-visual" aria-label="共有用のきれいなStageと手元のStage Workspaceを表したイメージ">
+          <div class="product-visual" role="img" aria-label="共有用のきれいなStageと手元のStage Workspaceを表したイメージ">
             <div class="stage-window">
               <div class="stage-canvas">
                 <div class="stage-grid" aria-hidden="true"></div>
@@ -117,7 +152,39 @@
           <div class="separation-item separation-private">
             <span class="separation-icon">⌘</span>
             <div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
-            <p>大きなライブ編集画面と、独立したソース一覧・設定画面</p>
+            <p>大きなライブ編集画面と、ソース・設定をまとめたサイドバー</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="product-proof" id="workspace-proof" aria-labelledby="product-proof-title">
+        <div class="shell">
+          <div class="section-heading">
+            <p class="eyebrow"><span></span> Live workspace</p>
+            <h2 id="product-proof-title">整える。描く。<br>すべて、手元の大きな画面で。</h2>
+            <p>共有Stageには完成した構図だけ。配置と手書きの道具は、相手に見せないWorkspaceへまとめました。</p>
+          </div>
+          <div class="proof-grid">
+            <article class="proof-card">
+              <div class="proof-copy">
+                <p class="eyebrow"><span></span> Arrange</p>
+                <h3>3つのソースを、ひとつの構図へ。</h3>
+                <p>移動、自由なサイズ変更、重なり順、クイック配置をキャンバス上で確認。レーザーポインターは最前面のソースだけに表示します。</p>
+              </div>
+              <div class="proof-shot">
+                <img src="assets/screenshots/ja/arrange.webp" width="2880" height="1800" loading="eager" decoding="async" alt="配置モードで、3つの合成ソース、選択中ソースの編集枠とリサイズハンドル、最前面ソース上のレーザーポインターを表示するStage Workspace">
+              </div>
+            </article>
+            <article class="proof-card">
+              <div class="proof-copy">
+                <p class="eyebrow"><span></span> Draw</p>
+                <h3>伝えたい場所へ、そのまま描く。</h3>
+                <p>ペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムをひとつのDockに。消去も正確に取り消せ、手書き中は観客側のポインターを隠します。</p>
+              </div>
+              <div class="proof-shot">
+                <img src="assets/screenshots/ja/draw.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="手書きモードで、3つの合成ソース、ペンと蛍光ペンの線、部分消去の跡、選択中の消しゴムを表示し、観客側ポインターを表示していないStage Workspace">
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -143,17 +210,17 @@
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
               <h3>最大4ソースを配置・手書き</h3>
-              <p>Appleのシステムピッカーで1件ずつ追加し、Workspaceの「ソース」で一時停止・再開・選び直し・確認付き解除を行い、大きなキャンバスで自由に配置・手書きできます。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。StagePaneは共有元アプリへクリック、キー入力、ドラッグを転送せず、アクセシビリティや入力監視の権限も要求しません。</p>
+              <p>Appleのシステムピッカーで1件ずつ追加し、「ソース」で一時停止・再開・選び直し・確認付き解除を行えます。大きなキャンバスでは自由配置に加え、ペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムと、正確な取り消しを利用できます。手書き中は観客側のポインターを自動で隠し、配置へ戻ると選択中の設定を復元します。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。共有元アプリへの入力転送や、アクセシビリティ・入力監視の権限要求もありません。</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
               <h3>きれいな1枚のスクリーンショット</h3>
-              <p>観客側Stageを16:9（1920×1080）、4:3（1440×1080）、9:16（1080×1920）、1:1（1080×1080）のPNGとして明示的にコピーまたは保存できます。現在のカーテン、手書き、ロゴ、ポインターを含み、Workspaceの編集UIは含みません。</p>
+              <p>観客側Stageを16:9（1920×1080）、4:3（1440×1080）、9:16（1080×1920）、1:1（1080×1080）のPNGとして明示的にコピーまたは保存できます。現在の共有内容またはカーテン、手書き、ロゴ、有効な場合はセーフエリア、表示中の場合はポインターを含み、Workspaceの編集UIは含みません。</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V6m5 12V9m5 9V4m5 14v-7"/></svg></div>
               <h3>発表に合わせた見え方</h3>
-              <p>Aurora、Midnight、Paper、Studioのテーマに加え、通常・レーザーポインター・非表示を選べます。ポインターは色・サイズ・発光を調整でき、最前面ソースだけに表示します。半透明のStagePaneロゴは待機画面、共有内容、カーテンの右下に初期表示され、設定で無効にできます。</p>
+              <p>Aurora、Midnight、Paper、Studioのテーマに加え、通常・レーザーポインター・非表示を選べます。レーザーポインターは色・サイズ・発光を調整でき、最前面ソースだけに表示します。半透明のStagePaneロゴは待機画面、共有内容、カーテンの右下に初期表示され、設定で無効にできます。</p>
             </article>
             <article class="feature-card feature-card-accent">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.8 8.3 7 10 4.2-1.7 7-5.4 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-5"/></svg></div>
@@ -169,39 +236,39 @@
         <div class="shell">
           <div class="section-heading">
             <p class="eyebrow"><span></span> Real interface</p>
-            <h2>共有の前・最中・停止まで、<br>実画面で確認。</h2>
+            <h2>機能と安心を、<br>実画面で確認。</h2>
             <p>以下はStagePane自身が合成データだけで描画した画面です。Workspaceを手元に置き、会議アプリでは正確なStageウインドウだけを共有します。</p>
           </div>
           <div class="screenshot-grid">
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-private">共有しない</span> Stage Workspace</div>
-              <img src="assets/screenshots/ja/workspace.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="最初のStageをつくる3ステップ、配置・手書き、カーテン、スクリーンショット、ソース操作を示す空のStage Workspace">
-              <figcaption><strong>迷わず、最初の一歩から。</strong> 空のWorkspaceが、ソース追加、配置・手書き、きれいなStage共有まで順番に案内します。</figcaption>
-            </figure>
-            <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-private">共有しない</span> Workspace ソース</div>
-              <img src="assets/screenshots/ja/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="ソース追加とソースごとの一時停止、選び直し、解除をまとめたStagePane Workspaceのソース画面">
-              <figcaption><strong>内容が届く前から、安全に準備。</strong> Workspaceを開き、最初のソースとStage形状を選び、観客向け操作を手元に揃えます。</figcaption>
+              <img src="assets/screenshots/ja/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="3つの合成ソースのうち2つが取得中、1つが一時停止中で、一時停止・再開・選び直し・解除の操作を表示するStagePane Workspaceのソース画面">
+              <figcaption><strong>ソースごとに、止める・戻す・選び直す。</strong> 3つのソースの状態と操作を、Workspaceの「ソース」画面で個別に管理できます。</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-local">ローカル</span> Privacy</div>
-              <img src="assets/screenshots/ja/privacy.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="ローカル処理と、自動保存・外部送信・音声取得・追跡を行わないことを説明するStagePaneのプライバシー画面">
-              <figcaption><strong>処理の流れを見える形に。</strong> 取得状態と「しないこと」をアプリ内からいつでも確認できます。</figcaption>
+              <div class="screenshot-label"><span class="label-local">選択時に確認</span> アクセス権限</div>
+              <img src="assets/screenshots/ja/permissions.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="画面共有は追加時に確認されると説明し、「ソースを追加」ボタンを表示するStagePane Workspaceのアクセス権限画面">
+              <figcaption><strong>許可は、ソースを選ぶときだけ。</strong> Appleの選択画面で共有対象ごとに確認する仕組みと、次の「ソースを追加」を確認できます。</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-local">手元で調整</span> Appearance</div>
               <img src="assets/screenshots/ja/appearance.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="レーザーポインターの色・大きさ・発光、セーフエリア、StagePaneロゴを調整する外観画面">
               <figcaption><strong>ポインターを、ひと目で伝わる見え方に。</strong> レーザーの色・大きさ・発光を調整し、セーフエリアとStagePaneロゴの表示も選べます。</figcaption>
             </figure>
+            <figure class="screenshot-card screenshot-card-tall">
+              <div class="screenshot-label"><span class="label-local">ローカル</span> Privacy</div>
+              <img src="assets/screenshots/ja/privacy.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="ローカル処理と、自動保存・外部送信・音声取得・追跡を行わないことを説明するStagePaneのプライバシー画面">
+              <figcaption><strong>処理の流れを見える形に。</strong> 取得状態と「しないこと」をアプリ内からいつでも確認できます。</figcaption>
+            </figure>
             <figure class="screenshot-card">
               <div class="screenshot-label"><span class="label-share">共有する</span> Stage ready</div>
-              <img src="assets/screenshots/ja/stage-ready.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="共有ソースを選ぶ前のStagePane Stage待機画面">
-              <figcaption><strong>まずは安全な待機画面。</strong> ソース未選択でも、Stageを共有対象として先に準備できます。</figcaption>
+              <img src="assets/screenshots/ja/stage-ready.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="共有ステージの準備ができましたと表示するStagePane Stageの待機画面">
+              <figcaption><strong>カーテンを開いても、ソース未選択なら待機画面。</strong> Stageを共有対象にしたまま、次に見せるソースを落ち着いて選べます。</figcaption>
             </figure>
             <figure class="screenshot-card">
               <div class="screenshot-label"><span class="label-curtain">遮蔽中</span> Privacy Curtain</div>
               <img src="assets/screenshots/ja/privacy-curtain.webp" width="1920" height="1080" loading="lazy" decoding="async" alt="少々お待ちくださいというメッセージで共有内容を隠すStagePaneのPrivacy Curtain">
-              <figcaption><strong>切り替え中はカーテンを。</strong> 相手には内容の代わりに、設定した案内メッセージを表示します。</figcaption>
+              <figcaption><strong>内容を案内メッセージで覆う。</strong> 相手には共有内容の代わりに、設定した「少々お待ちください」を表示します。</figcaption>
             </figure>
           </div>
         </div>
@@ -213,11 +280,11 @@
             <p class="eyebrow"><span></span> How it works</p>
             <h2>Stageの準備は、<br>4つのステップ。</h2>
             <p>仮想ディスプレイや別のデスクトップは作りません。会議アプリから普通のウインドウとして選びます。</p>
-            <aside class="note-card"><strong>正確なウインドウ名を確認</strong><p>会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。</p></aside>
+            <aside class="note-card"><strong>正確なウインドウ名を確認</strong><p>会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。macOS 15以降の「共有先をStageへ切替」は、対応する実行中の共有セッションへ切り替えを依頼する機能であり、すべての会議アプリで共有を開始・操作できるものではありません。</p></aside>
           </div>
           <ol class="steps">
             <li><span>01</span><div><h3>StagePaneを開く</h3><p>StagePaneは、きれいな共有Stageと、キャンバス・ソース・設定をサイドバーにまとめた手元用Workspaceの2画面です。</p></div></li>
-            <li><span>02</span><div><h3>見せるものを追加</h3><p>「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。別途広範な画面収録許可は不要で、必要に応じて最大4件まで繰り返せます。</p></div></li>
+            <li><span>02</span><div><h3>見せるものを追加</h3><p>「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。範囲を狭くする場合は1つのウインドウを選び、必要に応じて最大4件まで繰り返します。</p></div></li>
             <li><span>03</span><div><h3>配置してStageを共有</h3><p>手元のWorkspaceで移動・サイズ変更・手書きを行い、会議アプリでは正確な「StagePane Stage」ウインドウを選んでカーテンを開きます。</p></div></li>
             <li><span>04</span><div><h3>終わったら完全に停止</h3><p>「すべて停止」で全ストリームを終了し、保持中のフレームを破棄します。カーテンだけでは取得は止まりません。</p></div></li>
           </ol>
@@ -233,8 +300,8 @@
           </div>
           <div class="data-flow" aria-label="StagePaneの画面処理の流れ">
             <div><span>1</span><strong>選んだ内容</strong><small>選択ごとに許可</small></div><i aria-hidden="true">→</i>
-            <div><span>2</span><strong>メモリ内Workspace</strong><small>録画・解析なし</small></div><i aria-hidden="true">→</i>
-            <div><span>3</span><strong>Stage</strong><small>表示後に破棄</small></div>
+            <div><span>2</span><strong>メモリ内の構図</strong><small>録画・解析なし</small></div><i aria-hidden="true">→</i>
+            <div><span>3</span><strong>Stage + Workspace</strong><small>同じフレームを並列表示</small></div>
           </div>
           <div class="privacy-grid">
             <article class="info-card"><h3>取得・保存</h3><ul class="check-list"><li>画面フレームを録画・自動保存しません</li><li>「画像をコピー」はきれいなPNGを1枚だけクリップボードへ置き、「PNGを保存」は選んだ場所だけへ書き込みます。キャンセル時は何も保存しません</li><li>音声やマイクを取得しません</li><li>OCRやAI解析はありません</li></ul></article>

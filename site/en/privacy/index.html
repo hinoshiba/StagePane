@@ -10,17 +10,28 @@
     >
     <meta name="theme-color" content="#0c1018">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="StagePane">
     <meta property="og:locale" content="en_US">
     <meta property="og:locale:alternate" content="ja_JP">
     <meta property="og:title" content="Privacy Policy — StagePane">
     <meta property="og:description" content="Chosen screen content is processed on your Mac. No automatic saving, recording, upload, or analytics.">
     <meta property="og:url" content="https://stagepane.hinoshiba.com/en/privacy/">
+    <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
+    <meta property="og:image:type" content="image/webp">
+    <meta property="og:image:width" content="2880">
+    <meta property="og:image:height" content="1800">
+    <meta property="og:image:alt" content="StagePane Workspace composing three sources locally">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy Policy — StagePane">
+    <meta name="twitter:description" content="Chosen screen content is processed on your Mac. No automatic saving, recording, upload, or analytics.">
+    <meta name="twitter:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
+    <meta name="twitter:image:alt" content="StagePane Workspace composing three sources locally">
     <link rel="canonical" href="https://stagepane.hinoshiba.com/en/privacy/">
     <link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/en/privacy/">
     <link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/privacy/">
     <link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/privacy/">
     <link rel="icon" href="../../assets/StagePaneMark.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../styles.css?v=20260824">
   </head>
   <body class="policy-page">
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -31,12 +42,24 @@
           <img src="../../assets/StagePaneMark.svg" width="42" height="42" alt="">
           <span>StagePane</span>
         </a>
-        <nav aria-label="Primary navigation">
+        <nav class="site-nav" aria-label="Primary navigation">
           <a href="../">Product</a>
           <a href="../#support">Support</a>
           <a class="nav-language" href="../../privacy/" hreflang="ja" lang="ja">日本語</a>
           <a class="nav-github" href="https://github.com/hinoshiba/StagePane">GitHub</a>
         </nav>
+        <details class="mobile-menu">
+          <summary aria-label="Menu">
+            <span class="mobile-menu-label">Menu</span>
+            <span class="mobile-menu-icon" aria-hidden="true"></span>
+          </summary>
+          <nav class="mobile-menu-panel" aria-label="Mobile navigation">
+            <a href="../">Product</a>
+            <a href="../#support">Support</a>
+            <a href="../../privacy/" hreflang="ja" lang="ja">日本語</a>
+            <a href="https://github.com/hinoshiba/StagePane">GitHub</a>
+          </nav>
+        </details>
       </div>
     </header>
 
@@ -46,7 +69,7 @@
           <p class="eyebrow"><span></span> Privacy Policy</p>
           <h1>Clarity behind every<br>screen you share.</h1>
           <p class="policy-lead">This policy explains how StagePane handles chosen screen content, screenshots, settings, and permissions.</p>
-          <p class="policy-meta"><strong>Effective</strong> August 21, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
+          <p class="policy-meta"><strong>Effective</strong> August 24, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
         </div>
       </section>
 
@@ -85,8 +108,8 @@
 
           <section id="screen-content">
             <h2>Screen content</h2>
-            <p>StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose one window, application, or display. You can repeat this for up to four sources that can be paused and removed independently.</p>
-            <p>Chosen frames appear in “StagePane Stage,” the clean window intended for sharing, and the Canvas in “Stage Workspace.” Sources, Stage Settings, Appearance, Permissions, Privacy, and About are available from the Workspace sidebar.</p>
+            <p>StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose one window, application, or display. Choosing an application can include multiple windows owned by that application; choose one window when you want the narrowest scope. You can repeat this for up to four sources that can be paused and removed independently.</p>
+            <p>Chosen frames are displayed locally in parallel in “StagePane Stage,” the clean window intended for sharing, and on the Canvas in “Stage Workspace.” Sources, Stage Settings, Appearance, Permissions, Privacy, and About are available from the Workspace sidebar.</p>
             <p>Each choice grants access only to that selected content for that capture session. StagePane does not request separate, broad Screen Recording access. Canceling the picker adds nothing. Removing a source or choosing Stop All ends the corresponding streams and discards their displayed frames.</p>
             <p>StagePane does not:</p>
             <ul>
@@ -97,7 +120,7 @@
               <li>capture system audio or microphone audio.</li>
             </ul>
             <h3>Laser pointer</h3>
-            <p>When you choose the Laser pointer style, StagePane reads only the current pointer position needed to place one dot over the frontmost Stage source. If that source is paused, no dot appears and StagePane does not fall back to a source behind it. StagePane does not retain pointer history or write coordinates to disk; each sampled position is continuously discarded and cleared when capture stops or the source changes. Laser mode itself does not install an event tap or request Accessibility or Input Monitoring permission.</p>
+            <p>When you choose the Laser pointer style, StagePane reads only the current pointer position needed to place one dot over the frontmost Stage source. If that source is paused, no dot appears and StagePane does not fall back to a source behind it. Draw hides the audience pointer and stops pointer-location sampling until Arrange resumes. StagePane does not retain pointer history or write coordinates to disk; each sampled position is continuously discarded and cleared when capture stops, the source changes, or Draw begins. Laser mode itself does not install an event tap or request Accessibility or Input Monitoring permission.</p>
           </section>
 
           <section id="builds">
@@ -111,7 +134,7 @@
               <div>
                 <span>Draw</span>
                 <h3>Annotate the public Stage</h3>
-                <p>Use a pen, highlighter, and partial eraser to draw audience-visible annotations from Workspace. Ink stays in memory.</p>
+                <p>Use a pen, highlighter, and partial eraser to draw audience-visible annotations from Workspace. Draw hides the audience pointer, and ink stays in memory.</p>
               </div>
             </div>
             <p>StagePane does not forward clicks, keys, or drags to source apps, and it requests no Accessibility or Input Monitoring permission.</p>
@@ -125,7 +148,7 @@
           <section id="screenshots">
             <h2>User-initiated screenshots</h2>
             <p>StagePane does not take screenshots on a timer, in the background, at launch, or in response to capture changes. It creates one lossless PNG of the clean Audience Stage only when you choose Copy Audience Image or Save Audience Image… in Stage Workspace.</p>
-            <p>The PNG uses the selected Stage pixel dimensions and includes what the audience Stage currently shows: shared content or Curtain, ink, mark, safe-area guide, and pointer. It excludes Workspace navigation and controls, title-bar chrome, and unrelated application windows.</p>
+            <p>The PNG uses the selected Stage pixel dimensions and includes what the audience Stage currently shows: shared content or Curtain, ink, mark, the safe-area guide when enabled, and the pointer when visible. It excludes Workspace navigation and controls, title-bar chrome, and unrelated application windows.</p>
             <p>The image is composed locally from the latest pixels already approved through Apple's content-sharing picker and StagePane's own artwork. This path does not enumerate unrelated windows, request new screen permission, record video, or use the network.</p>
             <p>Copy places the PNG on the macOS general pasteboard. Other local applications and clipboard managers may access it according to their own behavior. Save opens the macOS save panel and writes only to the location you select; canceling writes nothing. After the copy or write finishes, StagePane keeps no separate screenshot history or screenshot file of its own.</p>
           </section>

@@ -31,7 +31,8 @@ Versioning once 1.0.0 is released.
 - A destructive confirmation before per-source removal.
 - Explicit one-shot screenshots of the clean audience Stage. The user can copy
   a lossless PNG or save it at the selected Stage dimensions; Curtain, ink,
-  watermark, and pointer are included, while private Workspace controls are not.
+  watermark, the safe-area guide when enabled, and pointer when visible are
+  included, while private Workspace controls are not.
   StagePane never captures automatically, records, or sends screenshots.
 - Japanese/English interface selection from the system language.
 - Apache-2.0 licensing, trademark separation, SBOM, privacy manifest, release
@@ -52,9 +53,14 @@ Versioning once 1.0.0 is released.
 
 ### Changed
 
+- Refreshed the bilingual website around the current two-window workflow, with
+  deterministic Arrange, Draw, Sources, and Permissions screenshots generated
+  by StagePane itself from privacy-safe synthetic content.
 - Laser pointer mode now draws one dot only for the frontmost Stage source.
   A paused frontmost source shows no dot and does not delegate pointer display
   to a source behind it.
+- Draw mode now hides both captured system pointers and the local laser overlay,
+  then restores the user's selected pointer style when returning to Arrange.
 - Toggling the Privacy Curtain no longer brings the Stage window to the front.
 - Removed repeated privacy slogans from the Stage dashboard and Workspace
   sidebar, and removed the redundant Important Limitation card from About. The

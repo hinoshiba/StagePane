@@ -44,14 +44,16 @@ and end capture with no retained frame or orphaned state.
 - instant Privacy Curtain with customizable message
 - 16:9, 4:3, 9:16, 1:1 shapes
 - system, laser, or hidden pointer style; the adjustable-color/size/glow laser
-  belongs only to the frontmost source and is hidden while it is paused
+  belongs only to the frontmost source, is hidden while it is paused, and all
+  audience pointer styles are temporarily suppressed in Draw mode
 - default-on translucent lower-right StagePane mark on audience-facing Stage
   states, including content and Curtain
 - mutually exclusive Arrange and Draw modes in every build; Arrange edits only
-  the composition and Draw is bounded session-only Stage ink
+  the composition and restores the selected pointer style, while Draw suppresses
+  the audience pointer and adds bounded session-only Stage ink
 - explicit one-shot clean Audience Stage PNG copy/save at the selected preset
-  dimensions, including Curtain, ink, watermark, and pointer but excluding
-  Workspace chrome; no automatic screenshot, recording, or network path
+  dimensions, including Curtain, ink, watermark, and pointer when visible but
+  excluding Workspace chrome; no automatic screenshot, recording, or network path
 - all-Spaces, always-on-top compatibility, Presentation Lock
 - menu-bar recovery and keyboard shortcuts
 - persistent Permissions view explaining picker-scoped screen sharing

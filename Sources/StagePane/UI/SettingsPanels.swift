@@ -117,7 +117,8 @@ struct AppearancePanel: View {
                 .padding(.bottom, 8)
             PointerStylePicker(
                 selection: $controller.pointerStyle,
-                appearance: $controller.pointerAppearance
+                appearance: $controller.pointerAppearance,
+                isSuppressedByDrawMode: controller.isAudiencePointerSuppressedByDrawMode
             )
             Divider().padding(.leading, 42)
             PreferenceToggle(
@@ -590,6 +591,7 @@ private struct PreferenceToggle: View {
 private struct PointerStylePicker: View {
     @Binding var selection: StagePaneCore.PointerStyle
     @Binding var appearance: PointerAppearance
+    let isSuppressedByDrawMode: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -619,13 +621,27 @@ private struct PointerStylePicker: View {
                 .pickerStyle(.segmented)
                 .accessibilityLabel(L10n.text("カーソルの表示方法", "Pointer appearance"))
                 .accessibilityValue(L10n.pointerStyleName(selection))
-                .accessibilityHint(L10n.pointerStyleDetail(selection))
+                .accessibilityHint(pointerAccessibilityHint)
 
                 Text(L10n.pointerStyleDetail(selection))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(true)
+
+                if isSuppressedByDrawMode {
+                    Label {
+                        Text(L10n.text(
+                            "手書き中は共有Stageのポインターを自動的に隠します。配置へ戻すと、この設定を復元します。",
+                            "Draw automatically hides the pointer on the shared Stage. Returning to Arrange restores this setting."
+                        ))
+                    } icon: {
+                        Image(systemName: "pencil.tip")
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(StagePanePalette.aquaReadable)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if selection == .redDot {
                     PointerAppearanceEditor(appearance: $appearance)
@@ -634,6 +650,15 @@ private struct PointerStylePicker: View {
             }
         }
         .padding(.vertical, 8)
+    }
+
+    private var pointerAccessibilityHint: String {
+        let detail = L10n.pointerStyleDetail(selection)
+        guard isSuppressedByDrawMode else { return detail }
+        return detail + " " + L10n.text(
+            "手書き中は自動的に非表示になり、配置へ戻すと復元されます。",
+            "It is hidden automatically while drawing and restored when you return to Arrange."
+        )
     }
 }
 

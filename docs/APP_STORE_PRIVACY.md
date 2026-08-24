@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / StagePane プライバシーポリシー
 
-Effective date / 発効日: 2026-08-21
+Effective date / 発効日: 2026-08-24
 Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 
 ## Summary / 概要
@@ -15,19 +15,19 @@ StagePaneのすべてのビルドは配置と手書きを提供し、アクセ�
 
 ## Screen content / 画面内容
 
-StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. You can add up to four independently pausable and removable sources. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
+StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. You can add up to four independently pausable and removable sources. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
 
-StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
+StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
 
-Selected frames are rendered locally into the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
+Selected frames are rendered locally in parallel in the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
 
-選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカル表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
+選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカルで並列に表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
 
 ## One-shot Audience PNG / 1枚のAudience PNG
 
-Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide, and pointer, while excluding Workspace navigation and controls and unrelated windows.
+Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide when enabled, and pointer when visible, while excluding Workspace navigation and controls and unrelated windows.
 
-明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含み、Workspaceのナビゲーションや操作UI、無関係なウインドウは含みません。
+明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、有効な場合はセーフエリア、表示中の場合はポインターを含み、Workspaceのナビゲーションや操作UI、無関係なウインドウは含みません。
 
 Copy places the PNG on the macOS general pasteboard, where other local apps or clipboard managers may access it. Save opens the macOS save panel and writes only to the location you choose. Canceling Save writes nothing. StagePane keeps no separate screenshot history or hidden copy.
 
@@ -35,9 +35,9 @@ Copy places the PNG on the macOS general pasteboard, where other local apps or c
 
 ## Pointer and drawings / ポインターと手書き
 
-Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
+Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode hides the audience pointer and stops pointer-location sampling until Arrange resumes. Draw keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
 
-レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
+レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書き中は観客側のポインターを隠し、配置へ戻るまで位置の読み取りも停止します。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
 
 ## Settings stored on this Mac / このMacに保存する設定
 

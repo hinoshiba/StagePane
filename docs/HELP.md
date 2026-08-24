@@ -118,19 +118,21 @@ StagePaneで利用できるのは **配置** と **手書き** です。どち�
   those editing gestures to a source app.
 - **Draw / 手書き** draws bounded vector ink over the whole Stage. Choose Pen,
   translucent Highlighter, or the size-adjustable partial Eraser. Each eraser
-  drag is one vector action, so **Undo / 取り消す** restores exactly what it removed. The same ink
-  appears in the private Workspace and public Stage, stays only in memory, is
-  hidden from the audience by the Curtain, and is cleared by **Stop All** or
-  removal of the final source. Use **Undo / 取り消す** or **Clear / すべて消す**
-  to edit it.
+  drag is one vector action, so **Undo / 取り消す** restores exactly what it
+  removed. Draw automatically hides the audience pointer; returning to Arrange
+  restores the selected pointer style. The same ink appears in the private
+  Workspace and public Stage, stays only in memory, is hidden from the audience
+  by the Curtain, and is cleared by **Stop All** or removal of the final source.
+  Use **Undo / 取り消す** or **Clear / すべて消す** to edit it.
 
 - **配置** はStage内のタイルを移動・サイズ変更・並べ替えします。編集ジェスチャーは
   取得元アプリへ送りません。
 - **手書き** はStage全体に上限付きのベクター線を描きます。ペン、半透明の蛍光ペン、
   大きさを変えられる部分消去の消しゴムを選べます。消しゴムの1ドラッグは1操作として
-  **取り消す** で正確に戻せます。線は手元のWorkspaceと共有Stageに
-  表示され、メモリ内だけに保持されます。カーテン中は相手側から隠れ、**すべて停止** または
-  最後のソース解除で消去されます。**取り消す** と **すべて消す** で編集できます。
+  **取り消す** で正確に戻せます。手書き中は観客側のポインターを自動で隠し、配置へ戻ると
+  選択中のポインター設定を復元します。線は手元のWorkspaceと共有Stageに表示され、
+  メモリ内だけに保持されます。カーテン中は相手側から隠れ、**すべて停止** または最後の
+  ソース解除で消去されます。**取り消す** と **すべて消す** で編集できます。
 
 ## Screenshots / スクリーンショット
 
@@ -138,16 +140,16 @@ Use **Copy Audience Image / Audience画像をコピー** or **Save Audience Imag
 Audience画像を保存…** in Stage Workspace only when you want a one-shot image
 of the clean audience Stage. The
 PNG uses the selected Stage dimensions and includes the exact audience state:
-shared content or Curtain, ink, watermark, safe-area guide, and pointer. It does
-not include Workspace navigation or controls, window title-bar chrome, or other
-app windows.
+shared content or Curtain, ink, watermark, the safe-area guide when enabled, and
+the pointer when visible. It does not include Workspace navigation or controls,
+window title-bar chrome, or other app windows.
 
 観客側のきれいなStageを1枚だけ画像にしたいときは、Stage Workspaceの
 **Audience画像をコピー** または **Audience画像を保存…** を明示的に選びます。PNGは
 選択中のStageサイズで作成され、共有内容
-またはカーテン、手書き、ウォーターマーク、セーフエリア、ポインターを含みます。
-Workspaceのナビゲーションや操作UI、ウインドウのタイトルバー、他アプリのウインドウは
-含みません。
+またはカーテン、手書き、ウォーターマーク、有効な場合はセーフエリア、表示中の場合は
+ポインターを含みます。Workspaceのナビゲーションや操作UI、ウインドウのタイトルバー、
+他アプリのウインドウは含みません。
 
 Copy places that PNG on the macOS clipboard. Save writes it only to the location
 you choose, and canceling the save panel writes nothing. StagePane uses the

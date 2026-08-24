@@ -84,10 +84,11 @@ Update and review these values in one pull request:
     dist/StagePane.app/Contents/MacOS/StagePane --snapshot "$SNAPSHOT_DIR"
   ```
 
-  `workspace.png`, `sources.png`, `privacy.png`, and `appearance.png` must be
-  opaque 2880×1800 images. The 1920×1080 Stage-only snapshots are website and
-  QA assets, not valid Mac App Store upload dimensions. Do not use an arbitrary
-  `/tmp` or repository directory as the sandboxed app's snapshot destination
+  `workspace.png`, `arrange.png`, `draw.png`, `sources.png`, `permissions.png`,
+  `privacy.png`, and `appearance.png` must be opaque 2880×1800 images. The
+  1920×1080 Stage-only snapshots are website and QA assets, not valid Mac App
+  Store upload dimensions. Do not use an arbitrary `/tmp` or repository
+  directory as the sandboxed app's snapshot destination
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
   version changes
 
@@ -156,7 +157,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and
   Highlighter opacity, partial Eraser sizing and cursor, erase-over-crossing-lines,
   draw-after-erase ordering, exact Undo restoration, memory bounds, Clear
-  confirmation, Curtain hiding ink, intermediate-source
+  confirmation, automatic audience-pointer hiding on entry, restoration of the
+  latest selected pointer style on return to Arrange, pointer-style changes made
+  while Draw remains active, Curtain hiding ink, intermediate-source
   removal preserving ink, and Stop All/final-source removal clearing it;
 - destructive confirmation from both source-list and Workspace-context Remove,
   including destructive/cancel semantics, VoiceOver and keyboard paths,
@@ -167,9 +170,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   available;
 - explicit one-shot screenshot Copy and Save for every Stage preset: exact
   preset pixel dimensions; clean Audience Stage only; correct source layout and
-  current content-or-Curtain, ink, watermark, safe-area, and pointer; no
-  Workspace navigation/controls or title-bar UI; Copy provides a readable PNG on the
-  pasteboard; Save writes one readable PNG only to the selected location; save
+  current content-or-Curtain, ink, watermark, safe-area guide when enabled, and
+  pointer when visible; no Workspace navigation/controls or title-bar UI; Copy
+  provides a readable PNG on the pasteboard; Save writes one readable PNG only to
+  the selected location; save
   cancellation writes nothing and does not alter the clipboard; missing fresh
   frames fail visibly instead of exporting a black tile;
 - screenshot permission/privacy behavior: no action at launch or in the

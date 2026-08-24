@@ -77,14 +77,17 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
 6. Draw mode stores one bounded, normalized vector-ink document in memory. Both
    the private Workspace and public Stage render that document, while the Curtain
    covers it on the public Stage. Undo/Clear mutate the document; Stop All or
-   removal of the final source clears it. No ink is serialized or logged.
+   removal of the final source clears it. No ink is serialized or logged. Draw
+   also applies an effective hidden pointer style without replacing the saved
+   preference; Arrange restores the latest user-selected style.
 7. In laser-pointer mode, the native captured pointer is disabled for every
    stream. One local `CAShapeLayer` overlay is enabled only for the frontmost
    source in `StageLayout`; it maps the current pointer through that frame's
    `screenRect`, `contentRect`, and scale metadata into its aspect-fit
    rectangle. If the frontmost source is paused, no pointer overlay is enabled
-   and ownership does not fall through to a lower source. Video frames remain
-   on the zero-copy display path.
+   and ownership does not fall through to a lower source. Draw mode removes the
+   overlay, stops pointer-location sampling, and configures streams without a
+   captured system cursor. Video frames remain on the zero-copy display path.
 8. Per-source **Pause** stops that source's `SCStream` while leaving its last
    frame in both renderers and its tile in `StageLayout`. **Resume** restarts
    the same stream. Pause is therefore a frozen-frame state, not teardown.
@@ -95,9 +98,10 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
     dimensions. It temporarily substitutes immutable images of the latest
     picker-authorized source frames while rendering, then restores the live
     layers synchronously. The result therefore includes the current audience
-    Curtain or content, ink, watermark, safe-area guide, and pointer, but never
-    Workspace navigation, controls, or title-bar chrome. Copy writes the one PNG to the macOS
-    pasteboard; Save writes it only to the location selected in `NSSavePanel`.
+    Curtain or content, ink, watermark, the safe-area guide when enabled, and
+    the pointer when visible, but never Workspace navigation, controls, or
+    title-bar chrome. Copy writes the one PNG to the macOS pasteboard; Save
+    writes it only to the location selected in `NSSavePanel`.
     The Store sandbox grants user-selected read/write access solely for that
     explicit destination.
     Cancel writes nothing. No new screen-capture permission or unrelated-window
@@ -230,8 +234,8 @@ Draw must remain available.
 The private Workspace must host those modes while the public Stage stays
 chrome-free. Screenshot acceptance covers
 every preset's exact dimensions, clean-Stage-only content, Curtain/content,
-ink, watermark and pointer parity, Copy, Save, and cancel, without another
-screen permission or any automatic/network path.
+ink, watermark and effective pointer visibility parity, Copy, Save, and cancel,
+without another screen permission or any automatic/network path.
 Draw-mode acceptance must cover Stage/Workspace alignment, Curtain
 non-disclosure, Undo/Clear, bounds, intermediate-source removal preservation,
 and final-source/Stop All clearing.
