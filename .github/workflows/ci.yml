@@ -60,11 +60,13 @@ jobs:
 
       - name: Verify bundle and entitlements
         run: |
+          BINARY="dist/StagePane.app/Contents/MacOS/StagePane"
           codesign --verify --strict --verbose=2 dist/StagePane.app
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' dist/StagePane.app/Contents/Info.plist)" = com.hinoshiba.stagepane
-          codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null
-          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/direct-entitlements.plist")" = true
-          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/direct-entitlements.plist" 2>/dev/null || true)" != true
+          codesign -d --entitlements :- dist/StagePane.app > "$RUNNER_TEMP/local-development-entitlements.plist" 2>/dev/null
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/local-development-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.files.user-selected.read-write' "$RUNNER_TEMP/local-development-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/local-development-entitlements.plist" 2>/dev/null || true)" != true
           test -s dist/StagePane.app/Contents/Resources/AppIcon.icns
           test -s dist/StagePane.app/Contents/Resources/PrivacyInfo.xcprivacy
           test -s dist/StagePane.app/Contents/Resources/en.lproj/InfoPlist.strings
@@ -79,6 +81,36 @@ jobs:
           cmp -s docs/HELP.md dist/StagePane.app/Contents/Resources/HELP.md
           ABSOLUTE_RPATHS="$(otool -l dist/StagePane.app/Contents/MacOS/StagePane | awk '$1 == "cmd" && $2 == "LC_RPATH" { getline; getline; if ($2 ~ /^\//) print $2 }')"
           test -z "$ABSOLUTE_RPATHS"
+          if nm -u "$BINARY" | grep -E '_(AXIsProcessTrusted|AXUIElement|AXValue|kAX)'; then
+            echo "Local binary unexpectedly references cross-application Accessibility APIs" >&2
+            exit 1
+          fi
+          if otool -L "$BINARY" | grep -F 'ApplicationServices.framework'; then
+            echo "Local binary unexpectedly links ApplicationServices directly" >&2
+            exit 1
+          fi
+          if strings "$BINARY" | grep -E 'Press Buttons|Button Press|ボタン操作|Continue Setup|設定を続ける|AXPress|PreviewInput'; then
+            echo "Local binary contains removed button-control UI or implementation strings" >&2
+            exit 1
+          fi
+          if nm -u "$BINARY" | grep -E '_(CGEventPost|CGEventCreateMouseEvent|CGEventCreateKeyboardEvent|CGEventTapCreate|CGWarpMouseCursorPosition|CGAssociateMouseAndMouseCursorPosition)'; then
+            echo "Local binary unexpectedly references raw input injection APIs" >&2
+            exit 1
+          fi
+          SNAPSHOT_PARENT="$HOME/Library/Containers/com.hinoshiba.stagepane/Data/tmp"
+          mkdir -p "$SNAPSHOT_PARENT"
+          SNAPSHOT_DIR="$(mktemp -d "$SNAPSHOT_PARENT/stagepane-ci-shots.XXXXXX")"
+          STAGEPANE_LANGUAGE=en "$BINARY" --snapshot "$SNAPSHOT_DIR"
+          for NAME in workspace arrange draw sources permissions privacy appearance; do
+            test -s "$SNAPSHOT_DIR/$NAME.png"
+            test "$(sips -g pixelWidth "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelWidth/ { print $2 }')" = 2880
+            test "$(sips -g pixelHeight "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelHeight/ { print $2 }')" = 1800
+          done
+          for NAME in privacy-curtain stage-ready; do
+            test -s "$SNAPSHOT_DIR/$NAME.png"
+            test "$(sips -g pixelWidth "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelWidth/ { print $2 }')" = 1920
+            test "$(sips -g pixelHeight "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelHeight/ { print $2 }')" = 1080
+          done
 
       - name: Build checked-in Mac App Store project
         run: |
@@ -105,8 +137,24 @@ jobs:
           cmp -s THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
           cmp -s TRADEMARKS.md "$APP/Contents/Resources/TRADEMARKS.md"
           cmp -s Assets/LICENSE.md "$APP/Contents/Resources/BRAND_ASSET_LICENSE.md"
-          cmp -s docs/PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
-          cmp -s docs/HELP.md "$APP/Contents/Resources/HELP.md"
+          cmp -s docs/APP_STORE_PRIVACY.md "$APP/Contents/Resources/PRIVACY.md"
+          cmp -s docs/APP_STORE_HELP.md "$APP/Contents/Resources/HELP.md"
+          if nm -u "$BINARY" | grep -E '_(AXIsProcessTrusted|AXUIElement|AXValue|kAX)'; then
+            echo "Mac App Store binary unexpectedly references cross-application Accessibility APIs" >&2
+            exit 1
+          fi
+          if otool -L "$BINARY" | grep -F 'ApplicationServices.framework'; then
+            echo "Mac App Store binary unexpectedly links ApplicationServices directly" >&2
+            exit 1
+          fi
+          if strings "$BINARY" | grep -E 'Press Buttons|Button Press|ボタン操作|Continue Setup|設定を続ける|AXPress|PreviewInput'; then
+            echo "Mac App Store binary contains removed button-control UI or implementation strings" >&2
+            exit 1
+          fi
+          if nm -u "$BINARY" | grep -E '_(CGEventPost|CGEventCreateMouseEvent|CGEventCreateKeyboardEvent|CGEventTapCreate|CGWarpMouseCursorPosition|CGAssociateMouseAndMouseCursorPosition)'; then
+            echo "Mac App Store binary unexpectedly references raw input injection APIs" >&2
+            exit 1
+          fi
           ARCHS="$(lipo -archs "$BINARY")"
           [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
           MACHO_COUNT=0
@@ -122,4 +170,5 @@ jobs:
           codesign --verify --strict --verbose=2 "$APP"
           codesign -d --entitlements :- "$APP" > "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$RUNNER_TEMP/mas-entitlements.plist")" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.files.user-selected.read-write' "$RUNNER_TEMP/mas-entitlements.plist")" = true
           test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' "$RUNNER_TEMP/mas-entitlements.plist" 2>/dev/null || true)" != true

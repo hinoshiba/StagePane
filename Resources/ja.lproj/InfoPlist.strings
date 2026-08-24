@@ -1,2 +1,2 @@
 "CFBundleDisplayName" = "StagePane";
-"NSScreenCaptureUsageDescription" = "StagePaneは、あなたが明示的に選んだウインドウ、アプリ、または画面だけを、ローカルの共有ステージ内へ表示します。StagePaneがフレームを録画・保存・送信することはありません。";
+"NSScreenCaptureUsageDescription" = "StagePaneは、Appleの選択画面で選んだウインドウ、アプリ、または画面だけを最大4件まで表示します。録画や送信はしません。「Audience画像をコピー／保存」を選んだときだけ、ローカルに1枚のPNGを作成します。";

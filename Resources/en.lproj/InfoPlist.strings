@@ -1,2 +1,2 @@
 "CFBundleDisplayName" = "StagePane";
-"NSScreenCaptureUsageDescription" = "StagePane displays only the window, app, or screen you explicitly choose inside your local share stage. Frames are not recorded, saved, or sent by StagePane.";
+"NSScreenCaptureUsageDescription" = "StagePane displays only windows, apps, or displays you choose in Apple’s picker, up to four sources. It never records or sends them. Copy or Save Audience Image creates one local PNG only when you choose that action.";

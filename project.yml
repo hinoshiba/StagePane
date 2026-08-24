@@ -50,6 +50,7 @@ targets:
       path: StagePane.entitlements
       properties:
         com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: StagePane.entitlements
@@ -86,8 +87,8 @@ targets:
           - $(SRCROOT)/THIRD_PARTY_NOTICES.md
           - $(SRCROOT)/TRADEMARKS.md
           - $(SRCROOT)/Assets/LICENSE.md
-          - $(SRCROOT)/docs/PRIVACY.md
-          - $(SRCROOT)/docs/HELP.md
+          - $(SRCROOT)/docs/APP_STORE_PRIVACY.md
+          - $(SRCROOT)/docs/APP_STORE_HELP.md
         outputFiles:
           - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/LICENSE.txt
           - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/NOTICE.txt
@@ -105,8 +106,8 @@ targets:
           install -m 0644 "$SRCROOT/THIRD_PARTY_NOTICES.md" "$RESOURCE_DIR/THIRD_PARTY_NOTICES.md"
           install -m 0644 "$SRCROOT/TRADEMARKS.md" "$RESOURCE_DIR/TRADEMARKS.md"
           install -m 0644 "$SRCROOT/Assets/LICENSE.md" "$RESOURCE_DIR/BRAND_ASSET_LICENSE.md"
-          install -m 0644 "$SRCROOT/docs/PRIVACY.md" "$RESOURCE_DIR/PRIVACY.md"
-          install -m 0644 "$SRCROOT/docs/HELP.md" "$RESOURCE_DIR/HELP.md"
+          install -m 0644 "$SRCROOT/docs/APP_STORE_PRIVACY.md" "$RESOURCE_DIR/PRIVACY.md"
+          install -m 0644 "$SRCROOT/docs/APP_STORE_HELP.md" "$RESOURCE_DIR/HELP.md"
       - name: Generate AppIcon.icns
         basedOnDependencyAnalysis: true
         inputFiles:

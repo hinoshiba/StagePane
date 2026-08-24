@@ -10,16 +10,18 @@ struct StageView: View {
             StageBackground(theme: controller.theme)
 
             if capture.isCaptureActive && !controller.privacyCurtain {
-                SampleBufferDisplayView(renderer: capture.renderer)
-                    .background(Color.black)
-                    .transition(.opacity)
-                    .accessibilityLabel(L10n.text("共有ステージのプレビュー", "Share stage preview"))
+                ZStack {
+                    StageCompositeDisplayView(entries: stageEntries)
+                    StageAnnotationOverlay(store: controller.annotations)
+                }
+                    .accessibilityLabel(L10n.text(
+                        "共有ステージ。ソースは\(capture.sources.count)件です。",
+                        "Share stage with \(capture.sources.count) sources."
+                    ))
             } else if controller.privacyCurtain {
                 curtain
-                    .transition(.opacity)
             } else {
                 idleStage
-                    .transition(.opacity)
             }
 
             if controller.showsSafeArea {
@@ -28,28 +30,14 @@ struct StageView: View {
             }
 
             if controller.showsWatermark {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 7) {
-                            BrandMark(size: 20)
-                            Text("StagePane")
-                                .font(.caption.weight(.semibold))
-                        }
-                        .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.64) : Color.white.opacity(0.72))
-                        .padding(16)
-                    }
-                }
-                .allowsHitTesting(false)
+                StageWatermark(
+                    prefersDarkForeground: controller.theme.prefersDarkForeground
+                )
             }
         }
         .frame(minWidth: 480, minHeight: 270)
+        .ignoresSafeArea()
         .clipped()
-        .animation(
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .easeOut(duration: 0.16),
-            value: controller.privacyCurtain
-        )
         .accessibilityElement(children: .contain)
     }
 
@@ -87,8 +75,8 @@ struct StageView: View {
         .accessibilityValue(controller.privacyMessage)
         .accessibilityHint(capture.isCaptureActive
             ? L10n.text(
-                "画面取得は動作中です。完全に止めるにはコントロールルームを使います。",
-                "Capture remains active. Use Control Room to stop it completely."
+                "画面取得は動作中です。完全に止めるにはWorkspaceのソース画面を使います。",
+                "Capture remains active. Use Sources in Workspace to stop it completely."
             )
             : "")
     }
@@ -106,8 +94,8 @@ struct StageView: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.70)
                     Text(L10n.text(
-                        "コントロールルームでソースを選ぶか、このまま待機画面として共有できます。",
-                        "Choose a source in Control Room, or share this as a clean holding screen."
+                        "Stage Workspaceでソースを選ぶか、このまま待機画面として共有できます。",
+                        "Choose a source in Stage Workspace, or share this as a clean holding screen."
                     ))
                     .font(compact ? .caption : .subheadline)
                     .multilineTextAlignment(.center)
@@ -123,8 +111,8 @@ struct StageView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(L10n.text("共有ステージの準備ができました", "Your share stage is ready"))
         .accessibilityHint(L10n.text(
-            "コントロールルームでソースを選ぶか、このまま待機画面として共有できます。",
-            "Choose a source in Control Room, or share this as a clean holding screen."
+            "Workspaceのソース画面で共有内容を選ぶか、このまま待機画面として共有できます。",
+            "Choose shared content in Sources in Workspace, or share this as a clean holding screen."
         ))
     }
 
@@ -151,5 +139,18 @@ struct StageView: View {
 
     private var foreground: Color {
         controller.theme.prefersDarkForeground ? Color.black.opacity(0.82) : Color.white
+    }
+
+    private var stageEntries: [StageCompositeEntry] {
+        capture.layout.sources.compactMap { item in
+            guard let source = capture.source(for: item.id),
+                  !source.isOutputSuppressed,
+                  source.phase != .stopping else { return nil }
+            return StageCompositeEntry(
+                id: item.id,
+                frame: item.frame,
+                renderer: source.stageRenderer
+            )
+        }
     }
 }

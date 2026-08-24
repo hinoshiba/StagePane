@@ -19,8 +19,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         updateIcon()
 
         capture.$isCaptureActive
+            .combineLatest(capture.$statusDetail)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.updateIcon() }
+            .sink { [weak self] _, _ in self?.updateIcon() }
             .store(in: &cancellables)
         controller.$privacyCurtain
             .receive(on: RunLoop.main)
@@ -32,8 +33,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard let controller, let capture else { return }
         menu.removeAllItems()
         menu.addItem(item(
-            L10n.text("コントロールルームを表示", "Show Control Room"),
-            #selector(AppController.showControlRoom),
+            L10n.text("ステージワークスペースを表示", "Show Stage Workspace"),
+            #selector(AppController.showStageWorkspace),
             target: controller
         ))
         menu.addItem(item(
@@ -43,8 +44,24 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         ))
         menu.addItem(.separator())
         menu.addItem(item(
-            L10n.text("ソースを選択…", "Choose Source…"),
+            L10n.text("ソースを追加…", "Add Source…"),
             #selector(AppController.chooseSource),
+            target: controller
+        ))
+        menu.addItem(item(
+            L10n.text("アクセス権限を確認…", "Review Permissions…"),
+            #selector(AppController.showPermissions),
+            target: controller
+        ))
+        menu.addItem(.separator())
+        menu.addItem(item(
+            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
+            #selector(AppController.copyStageScreenshot),
+            target: controller
+        ))
+        menu.addItem(item(
+            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
+            #selector(AppController.saveStageScreenshot),
             target: controller
         ))
 
@@ -57,11 +74,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(curtain)
 
         let stop = item(
-            L10n.text("プレビューを停止", "Stop Preview"),
+            capture.hasResettableFailure
+                ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
+                : L10n.text("すべてのソースを停止", "Stop All Sources"),
             #selector(AppController.stopPreview),
             target: controller
         )
-        stop.isEnabled = capture.isCaptureActive
+        stop.isEnabled = capture.isCaptureActive || capture.hasResettableFailure
         menu.addItem(stop)
         menu.addItem(.separator())
         menu.addItem(item(
@@ -79,10 +98,27 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func updateIcon() {
         let isPreviewing = capture?.isCaptureActive == true
+        let isPaused = capture.map {
+            !$0.sources.isEmpty && $0.sources.allSatisfy(\.isPaused)
+        } ?? false
         let isCovered = controller?.privacyCurtain == true
-        let symbol = isPreviewing ? "rectangle.inset.filled" : (isCovered ? "rectangle.fill.badge.xmark" : "rectangle.on.rectangle")
+        let symbol = isPaused
+            ? "pause.fill"
+            : (isPreviewing
+                ? "rectangle.inset.filled"
+                : (isCovered ? "rectangle.fill.badge.xmark" : "rectangle.on.rectangle"))
         let description: String
-        if isPreviewing && isCovered {
+        if isPaused && isCovered {
+            description = L10n.text(
+                "StagePane: すべて一時停止中・カーテン中",
+                "StagePane: All sources paused — Curtain on"
+            )
+        } else if isPaused {
+            description = L10n.text(
+                "StagePane: すべて一時停止中",
+                "StagePane: All sources paused"
+            )
+        } else if isPreviewing && isCovered {
             description = L10n.text(
                 "StagePane: 画面取得中・カーテン中",
                 "StagePane: Capture active — Curtain on"

@@ -8,7 +8,10 @@ Describe the user problem and why this scope is appropriate.
 
 ## Safety and compliance
 
-- [ ] Public Apple APIs only; no private display API or input injection
+- [ ] Public Apple APIs only; no private display API or raw event injection
+- [ ] Local and Mac App Store targets keep the same sandboxed Arrange/Draw
+      feature set and contain no cross-application input, Accessibility
+      implementation, or Accessibility/Input Monitoring permission path
 - [ ] Capture/privacy data flow unchanged, or a reviewed threat model is linked
 - [ ] Dependency/license/SBOM/notices unchanged, or all are updated
 - [ ] Japanese and English copy updated together

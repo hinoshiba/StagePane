@@ -24,15 +24,18 @@ exposed. Remove unrelated private data.
 
 ## Security invariants
 
-- Screen frames are memory-only and never encoded, persisted, logged, copied,
-  uploaded, or analyzed.
+- Screen frames are memory-only and never recorded, logged, uploaded, or
+  analyzed. Only an explicit **Copy Audience Image** or **Save Audience Image…**
+  action renders one clean Stage PNG to the clipboard or a user-selected file.
 - Capture starts only from the macOS system picker after user action.
 - Audio and microphone capture remain disabled.
 - No network entitlement or third-party runtime dependency ships in 0.1.1.
 - App Sandbox, Hardened Runtime, Xcode Cloud/App Store signing, and release
-  checks stay enabled.
-- Private APIs, input injection, privilege escalation, and downloaded code are
-  prohibited.
+  checks stay enabled. StagePane contains no cross-application input or
+  Accessibility permission/action path.
+- Private APIs, raw mouse/keyboard event synthesis, unconsented or ambiguous
+  input targets, keyboard/drag forwarding, event taps, privilege escalation,
+  generic canvas/content control, and downloaded code are prohibited.
 
 If an invariant changes, treat it as a security architecture change, not a
 routine feature.

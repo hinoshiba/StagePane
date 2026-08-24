@@ -17,6 +17,9 @@
       process verified for Team `94HVVWXLK3`
 - [ ] Tagged Xcode Cloud archive is signed for TestFlight and App Store
 - [ ] App Sandbox entitlement and privacy manifest match the binary
+- [ ] Mac App Store archive contains Arrange and Draw but no cross-application
+      input or Accessibility path, or Accessibility/Input Monitoring
+      permission request
 - [ ] No private APIs, forbidden entitlements, updater, license key, or driver
 - [ ] Mac App Store archive has no absolute `LC_RPATH`, placeholder, or missing
       legal/help/localization/icon resource; Xcode Cloud and App Store Connect
@@ -37,7 +40,8 @@
 ## Quality and launch
 
 - [ ] CI, signed acceptance matrix, performance soak, and accessibility pass
-- [ ] Screenshots/metadata show the real app and avoid “virtual display” claims
+- [ ] Screenshots/metadata show the exact Mac App Store app, describe only
+      picker-scoped sharing access, and avoid “virtual display” claims
 - [ ] Website URLs, SBOM, App Store listing, and support channels verified
 - [ ] Incident response, rollback message, release signing, and key rotation ready
 - [ ] Rating prompt uses StoreKit only after a successful natural stopping point

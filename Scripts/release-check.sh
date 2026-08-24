@@ -15,10 +15,11 @@ fi
     StagePane.entitlements Resources/PrivacyInfo.xcprivacy
 /bin/zsh -n build.sh Scripts/*.sh
 /bin/sh -n ci_scripts/*.sh
-EXPECTED_ENTITLEMENTS_JSON='{"com.apple.security.app-sandbox":true}'
-ACTUAL_ENTITLEMENTS_JSON=$(/usr/bin/plutil -convert json -o - StagePane.entitlements)
-if [[ "$ACTUAL_ENTITLEMENTS_JSON" != "$EXPECTED_ENTITLEMENTS_JSON" ]]; then
-    print -u2 "StagePane.entitlements must contain only com.apple.security.app-sandbox=true"
+ENTITLEMENT_KEY_COUNT=$(/usr/bin/plutil -p StagePane.entitlements | /usr/bin/grep -c ' => ')
+if [[ "$ENTITLEMENT_KEY_COUNT" -ne 2 ]] || \
+   [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' StagePane.entitlements)" != true ]] || \
+   [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.files.user-selected.read-write' StagePane.entitlements)" != true ]]; then
+    print -u2 "StagePane.entitlements must contain only the sandbox and user-selected read/write grants"
     exit 70
 fi
 
@@ -63,7 +64,8 @@ fi
 
 for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
     Assets/LICENSE.md docs/PRIVACY.md docs/LICENSE_AUDIT.md \
-    docs/HELP.md docs/sbom.spdx.json Config/XcodeGen.lock SECURITY.md \
+    docs/HELP.md docs/APP_STORE_HELP.md docs/APP_STORE_PRIVACY.md \
+    docs/sbom.spdx.json Config/XcodeGen.lock SECURITY.md \
     project.yml StagePane.xcodeproj/project.pbxproj \
     Config/StagePane-AppStore-Info.plist ci_scripts/ci_pre_xcodebuild.sh; do
     if [[ ! -s "$required" ]]; then
@@ -71,6 +73,12 @@ for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
         exit 70
     fi
 done
+
+if grep -n -E 'pre-release draft|Continue Setup|ad-hoc|local development build|re-register' \
+    docs/APP_STORE_HELP.md docs/APP_STORE_PRIVACY.md; then
+    print -u2 "Mac App Store help/privacy resources contain development-only guidance"
+    exit 70
+fi
 if [[ ! -x ci_scripts/ci_pre_xcodebuild.sh ]]; then
     print -u2 "Xcode Cloud pre-build script must be executable"
     exit 70
@@ -78,6 +86,16 @@ fi
 
 if grep -R -n -E 'CGVirtualDisplay|com\.apple\.security\.screen-capture' Sources StagePane.entitlements; then
     print -u2 "Private display API or invalid screen-capture entitlement detected"
+    exit 70
+fi
+
+if grep -R -n -E 'import ApplicationServices|PreviewInput|AXIsProcessTrusted|AXUIElement|AXValue|kAX|AXPress|Press Buttons|Button Press|ボタン操作|supportsControlMode|case[[:space:]]+\.control' Sources Tests; then
+    print -u2 "Removed cross-application button-control code or copy detected"
+    exit 70
+fi
+
+if grep -R -n -E 'CGEventPost|CGEventCreateMouseEvent|CGEventCreateKeyboardEvent|CGEventTapCreate|CGWarpMouseCursorPosition|CGAssociateMouseAndMouseCursorPosition|NSEvent\.add(Global|Local)MonitorForEvents' Sources Tests; then
+    print -u2 "Raw input injection or event-monitoring code detected"
     exit 70
 fi
 

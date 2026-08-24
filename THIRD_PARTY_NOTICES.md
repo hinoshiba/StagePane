@@ -3,11 +3,12 @@
 StagePane 0.1.1 has no third-party runtime code, SDK, font, model, media, or
 binary dependency.
 
-It uses only Apple system frameworks supplied by macOS, including AppKit,
-AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreMedia, CoreVideo,
-Foundation, QuartzCore, ScreenCaptureKit, and SwiftUI. Those frameworks are not
-redistributed in the StagePane application bundle and remain governed by
-Apple's applicable terms.
+It uses only Apple system frameworks supplied by macOS, including Accessibility,
+AppKit, AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreImage,
+CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, and SwiftUI.
+Those frameworks are not redistributed in the StagePane application bundle and
+remain governed by Apple's applicable terms. The Accessibility framework is
+used for the app's own VoiceOver announcements, not cross-application control.
 
 SF Symbols are requested from macOS at runtime and are not bundled as asset
 files. The StagePane icon and vector mark were created specifically for this

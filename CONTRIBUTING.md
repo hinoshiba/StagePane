@@ -36,13 +36,16 @@ manual leak/retention check.
 ## Architectural constraints
 
 - Public Apple APIs only; never add undocumented `CGVirtualDisplay` calls.
-- No Accessibility input injection, synthetic clicks, or remote control.
+- No raw mouse/keyboard event synthesis, keyboard/drag forwarding, event taps,
+  unattended remote control, generic canvas/content control, or input to
+  source applications. Do not add a cross-application Accessibility permission
+  or action path.
 - No network, analytics, advertising, recording, audio, account, or updater
   dependency without an approved product/privacy proposal.
 - Use `SCContentSharingPicker` for consent. Do not build a covert window-title
   inventory.
 - Preserve the explicit difference between Curtain (hide) and Stop (end capture).
-- Control Room is not assumed to be technically unshareable; titles and user
+- Workspace is not assumed to be technically unshareable; its title and user
   guidance remain part of the safety design.
 
 ## Dependencies and assets
