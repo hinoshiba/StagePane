@@ -89,6 +89,16 @@ if grep -R -n -E 'CGVirtualDisplay|com\.apple\.security\.screen-capture' Sources
     exit 70
 fi
 
+if grep -R -n -E 'sharingType[[:space:]]*=[[:space:]]*\.none|NSWindowSharingNone|kCGWindowSharingNone' Sources; then
+    print -u2 "Unsupported window capture-exclusion setting detected"
+    exit 70
+fi
+
+if grep -n -E 'EmptyView[[:space:]]*\(' Sources/StagePane/App/StagePaneApp.swift; then
+    print -u2 "The application entry point must not ship an empty Settings scene"
+    exit 70
+fi
+
 if grep -R -n -E 'import ApplicationServices|PreviewInput|AXIsProcessTrusted|AXUIElement|AXValue|kAX|AXPress|Press Buttons|Button Press|ボタン操作|supportsControlMode|case[[:space:]]+\.control' Sources Tests; then
     print -u2 "Removed cross-application button-control code or copy detected"
     exit 70
