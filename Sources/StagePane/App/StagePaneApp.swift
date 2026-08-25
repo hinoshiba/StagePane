@@ -114,6 +114,13 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: [.command],
             target: controller
         ))
+        appMenu.addItem(menuItem(
+            "StagePane Pro…",
+            action: #selector(AppController.showProUpgrade),
+            key: "",
+            modifiers: [],
+            target: controller
+        ))
         appMenu.addItem(.separator())
 
         let servicesItem = NSMenuItem(title: L10n.text("サービス", "Services"), action: nil, keyEquivalent: "")

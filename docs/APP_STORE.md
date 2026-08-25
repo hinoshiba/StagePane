@@ -14,14 +14,70 @@
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
 - **Support URL (EN):** https://stagepane.hinoshiba.com/en/#support
 
-Suggested English keyword concepts: screen sharing, presentation, meeting,
-workspace, privacy, 1080p, demo, presenter, window. Suggested Japanese concepts:
-画面共有、プレゼン、会議、共有、ウインドウ、配信、発表. Re-check current
-App Store character and duplication rules in App Store Connect before use.
+- **Keywords (EN draft):** `presentation,meeting,window,privacy,demo,teaching,webinar,laser,canvas,annotate,training,remote`
+- **キーワード（JA案）:** `プレゼン,会議,ウインドウ,発表,デモ,講義,プライバシー,ポインター,注釈`
+
+These avoid repeating the product name and current subtitle. Re-check the live
+character/byte counter and duplication rules in App Store Connect before use.
 
 Do not use competitor trademarks in metadata and do not use `virtual display`,
 `second monitor`, `independent desktop`, `real display`, or equivalents. The app
 creates a normal shareable window, not an `NSScreen`.
+
+### Description draft — Japanese
+
+> 見せたいものだけを、ひとつの共有専用Stageへ。
+>
+> StagePaneは、相手に共有する「Stage」と、手元で操作する「Workspace」を
+> 分けるmacOSアプリです。Appleの選択画面で許可したウインドウ、アプリ、
+> または画面だけを追加し、会議アプリでは通常の「StagePane Stage」
+> ウインドウを選んで共有します。
+>
+> 無料版で使える機能：
+> ・同時に2つのソースを配置
+> ・自由配置とクイック配置
+> ・ペン、蛍光ペン、部分消しゴム
+> ・Privacy Curtain、一時停止、選び直し、すべて停止
+> ・レーザーポインターと4種類のStage形状
+> ・Audience Stage画像のコピー／PNG保存（StagePaneロゴ入り）
+>
+> StagePane Pro（1回限りのアプリ内課金）：
+> ・同時ソースを最大4つへ拡張
+> ・Stage、Curtain、Audience画像のStagePaneロゴを非表示
+>
+> Proは買い切りで、サブスクリプションではありません。価格はApp Storeが
+> 購入前に表示します。復元が必要な場合はPro画面の「購入を復元」を利用できます。
+>
+> StagePaneは録画、音声取得、StagePaneアカウント、広告、利用解析を行いません。
+> 画面はMac上で処理し、自動保存や発行者サーバーへの送信はしません。
+
+### Description draft — English (U.S.)
+
+> Put only what you mean to show on one dedicated sharing Stage.
+>
+> StagePane separates the audience-facing Stage from the Workspace you control
+> privately. Add only a window, app, or display you approve in Apple’s picker,
+> then share the normal “StagePane Stage” window in your meeting app.
+>
+> Included free:
+> • Compose two simultaneous sources
+> • Freeform and quick layouts
+> • Pen, highlighter, and partial eraser
+> • Privacy Curtain, pause, replace, and Stop All
+> • Laser pointer and four Stage shapes
+> • Copy or save an Audience Stage PNG with the StagePane mark
+>
+> StagePane Pro — one-time In-App Purchase:
+> • Expand to four simultaneous sources
+> • Hide the StagePane mark from the Stage, Curtain, and Audience images
+>
+> Pro is a one-time purchase, not a subscription. The App Store shows the price
+> before purchase. When restoration is needed, use Restore Purchases on the
+> Pro screen.
+>
+> StagePane has no recording, audio capture, StagePane account, ads, or usage analytics.
+> It processes screen content on your Mac, never saves it automatically, and
+> never sends it to a publisher-operated server.
 
 ## Shipping build route
 
@@ -43,13 +99,13 @@ direct-distribution build currently ships.
 
 1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
    private Stage Workspace, making the share/private boundary unmistakable.
-2. **最大4つを、追加・一時停止・確認して解除。** — Workspace → Sources and its
-   removal caution.
-3. **配置・手書き・撮影を、大きな画面で。** — the private Workspace with the
+2. **Proなら最大4つ。無料でも安全機能はすべて。** — Workspace → Sources,
+   the clear Pro label, and its removal caution.
+3. **配置・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
    Mac App Store build's Arrange and Draw modes, bounded in-memory ink, and
    explicit Copy/Save Audience Image actions.
 4. **レーザーとロゴを、発表に合わせる。** — laser color/size/glow and the
-   default-on StagePane mark.
+   Free-always-on / Pro-optional StagePane mark.
 5. **ひと押しで隠し、終わったら完全停止。** — Curtain with the mark and Stop All.
 
 Use real shipping UI, no unsupported claims, no meeting-service logos suggesting
@@ -71,7 +127,8 @@ Japanese and English.
 > The app can be tested without permission by sharing its neutral Stage window.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
-> repeat for up to four sources. Each source appears in the private source list,
+> repeat for two sources in Free or up to four after the StagePane Pro
+> non-consumable purchase. Each source appears in the private source list,
 > where “Pause” stops only that stream while its last frame stays visible,
 > “Resume” starts it again, “Replace” reopens the picker for only that item, and
 > “Remove” asks for confirmation, ends only its stream, and discards its frame.
@@ -92,6 +149,16 @@ Japanese and English.
 > continue and the private Stage Workspace remains available for preparation.
 > Stage Workspace must remain private.
 >
+> StagePane Pro is reachable from the private Workspace sidebar, the app menu,
+> a third Add Source attempt in Free, or an attempt to turn off the StagePane
+> mark. It is a one-time non-consumable purchase. The screen shows StoreKit's
+> localized price, clearly says it is not a subscription, offers Continue Free
+> and Restore Purchases, and never appears in the audience Stage. Only a
+> StoreKit-verified transaction for `com.hinoshiba.stagepane.pro` unlocks it.
+> On successful purchase from the source limit, the app resumes Apple's picker;
+> from the mark toggle, it completes the requested mark removal. Canceling never
+> changes or stops the current Stage.
+>
 > Under “Appearance,” the pointer can remain standard, appear as a local red
 > laser dot in the Stage, or be hidden. Its color, size, and glow are adjustable,
 > and the dot appears only on the frontmost
@@ -99,16 +166,20 @@ Japanese and English.
 > behind it. Draw mode temporarily hides every pointer style. Laser pointer mode
 > does not request an additional permission and
 > does not retain pointer coordinates. A translucent
-> StagePane mark is enabled by default at the lower-right of the holding screen,
-> shared content, and Curtain, and is mirrored in the private Workspace.
+> StagePane mark is shown at the lower-right of the holding screen, shared
+> content, and Curtain, and is mirrored in the private Workspace. Free always
+> shows it; StagePane Pro makes it optional, including in Audience PNG output.
 >
 > StagePane uses SwiftUI, AppKit, AVFoundation display layers, and
 > ScreenCaptureKit public APIs. It is sandboxed and has no network entitlement,
-> analytics, ads, account, external updater, license-key mechanism, or
+> analytics, ads, StagePane account, publisher server, external updater, or
+> license-key mechanism. Optional Pro commerce uses Apple StoreKit for localized
+> product information and verified transactions; no screen content enters that flow. It has no
 > Accessibility/Input Monitoring permission request.
 
 Attach a short reviewer video showing both window titles and roles, adding
-two sources, per-source pause/resume, replace, removal confirmation, drag,
+two Free sources, the third-source Pro entry point, the normal Pro screen and
+Restore Purchases, per-source pause/resume, replace, removal confirmation, drag,
 resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
@@ -119,6 +190,12 @@ as affiliations.
 ## Review-risk checklist
 
 - Guideline 2.3.1: metadata matches the normal-window implementation.
+- 2.1(b): the IAP is complete and reviewable, with a review-only screenshot and
+  exact navigation steps in Review Notes.
+- 2.3.2: every customer-facing screenshot and description clearly labels
+  features that require the StagePane Pro In-App Purchase.
+- 3.1.1: digital feature unlock uses only Apple's non-consumable In-App
+  Purchase, with no external purchase or license-key path.
 - 2.5.1: documented public APIs only. The submitted sandboxed binary contains no
   cross-application Accessibility action path, raw mouse/keyboard
   event synthesis, keyboard/drag forwarding, or event tap.
@@ -147,6 +224,7 @@ frames.
 
 Rank cannot be guaranteed. Optimize for first-stage success, retention, honest
 metadata relevance, crash-free sessions, accessibility, privacy trust, and
-support quality. Request a rating only after at least three successful sessions
-and a clean Stop All/close boundary using Apple's standard API. Do not offer
+support quality. Request a rating only after at least three clean sessions that
+reached a real preview, lasted one minute or longer, and ended at a clean Stop
+All/close boundary using Apple's standard API. Do not offer
 rewards, gate features, route low ratings away, or manipulate discovery.

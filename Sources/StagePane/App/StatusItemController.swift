@@ -53,6 +53,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             #selector(AppController.showPermissions),
             target: controller
         ))
+        menu.addItem(item(
+            "StagePane Pro…",
+            #selector(AppController.showProUpgrade),
+            target: controller
+        ))
         menu.addItem(.separator())
         menu.addItem(item(
             L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),

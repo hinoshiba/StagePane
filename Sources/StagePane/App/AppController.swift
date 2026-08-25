@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CoreGraphics
 import StagePaneCore
+import StoreKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,11 +11,18 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
     case sources
     case stage
     case appearance
+    case pro
     case permissions
     case privacy
     case about
 
     var id: String { rawValue }
+}
+
+enum ProUpgradeTrigger: Equatable, Sendable {
+    case direct
+    case sourceLimit
+    case watermark
 }
 
 @MainActor
@@ -75,8 +83,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         didSet { defaults.set(showsSafeArea, forKey: Keys.showsSafeArea) }
     }
 
-    @Published var showsWatermark: Bool {
-        didSet { defaults.set(showsWatermark, forKey: Keys.showsWatermark) }
+    @Published private var prefersWatermark: Bool {
+        didSet { defaults.set(prefersWatermark, forKey: Keys.showsWatermark) }
     }
 
     @Published var privacyMessage: String {
@@ -96,6 +104,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var workspaceIsVisible = false
     @Published private(set) var isStageScreenshotInProgress = false
     @Published private(set) var hasAnnotations = false
+    @Published private(set) var proUpgradeTrigger: ProUpgradeTrigger = .direct
     @Published var transientNotice: String? {
         didSet {
             guard let transientNotice, transientNotice != oldValue else { return }
@@ -104,6 +113,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     let capture: CaptureCoordinator
+    let purchases: ProPurchaseStore
     let annotations = StageAnnotationStore()
 
     var annotationTool: StageInkTool { annotations.preferences.tool }
@@ -112,6 +122,30 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     var availableStageInteractionModes: [StageInteractionMode] { StageInteractionMode.allCases }
+
+    var hasProAccess: Bool { purchases.hasProAccess }
+
+    var activeSourceLimit: Int {
+        StagePaneAccess.sourceLimit(hasProAccess: hasProAccess)
+    }
+
+    var canRequestSourceAddition: Bool {
+        capture.canRequestSourceAddition
+    }
+
+    var showsWatermark: Bool {
+        get {
+            StagePaneAccess.showsWatermark(
+                preference: prefersWatermark,
+                hasProAccess: hasProAccess
+            )
+        }
+        set {
+            if newValue || hasProAccess {
+                prefersWatermark = newValue
+            }
+        }
+    }
 
     private var effectivePointerStyle: StagePaneCore.PointerStyle {
         stageInteractionMode.audiencePointerStyle(preferred: pointerStyle)
@@ -125,6 +159,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var cancellables = Set<AnyCancellable>()
     private var previousCapturePhase: CapturePhase = .idle
     private var previousCaptureWasActive = false
+    private var activeSessionStartedAt: Date?
+    private var activeSessionReachedPreview = false
+    private var previousHasProAccess = false
+    private var pendingProContinuation = false
+    private var reviewRequestIsScheduled = false
     private var awaitsInvalidatedPickerDismissal = false
 
     override init() {
@@ -149,11 +188,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             storedGlow: (defaults.object(forKey: Keys.pointerGlow) as? NSNumber)?.doubleValue
         )
         self.showsSafeArea = defaults.object(forKey: Keys.showsSafeArea) as? Bool ?? false
-        self.showsWatermark = defaults.object(forKey: Keys.showsWatermark) as? Bool ?? true
+        self.prefersWatermark = defaults.object(forKey: Keys.showsWatermark) as? Bool ?? true
         self.privacyMessage = StageMessage.normalized(
             defaults.string(forKey: Keys.privacyMessage) ?? "",
             fallback: L10n.text("少々お待ちください", "Back in a moment")
         )
+        self.purchases = ProPurchaseStore()
         self.capture = CaptureCoordinator()
         super.init()
         // Persist a canonical value after resolving the legacy Boolean setting.
@@ -164,6 +204,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         capture.setPointerStyle(effectivePointerStyle)
         capture.setPointerAppearance(pointerAppearance)
         capture.setOutputSize(width: preset.pixelWidth, height: preset.pixelHeight)
+        capture.setAllowedSourceLimit(activeSourceLimit)
+        capture.sourceLimitReachedHandler = { [weak self] in
+            self?.presentProUpgrade(trigger: .sourceLimit)
+        }
+        previousHasProAccess = hasProAccess
         previousCapturePhase = capture.phase
         previousCaptureWasActive = capture.isCaptureActive
         capture.$phase
@@ -191,6 +236,59 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 guard let self, isEmpty else { return }
                 annotations.removeAll()
                 setStageInteractionMode(.arrange)
+            }
+            .store(in: &cancellables)
+        purchases.$entitlementState
+            .combineLatest(purchases.$operationState)
+            .removeDuplicates { previous, current in
+                previous.0 == current.0 && previous.1 == current.1
+            }
+            .sink { [weak self] entitlementState, operationState in
+                guard let self else { return }
+                // @Published sends from willSet. Apply the emitted entitlement
+                // in this same main-actor turn so a refund cannot leave a
+                // one-run-loop window in the system video menu.
+                let nowHasProAccess = entitlementState == .pro ||
+                    entitlementState == .sourceBuild
+                let gainedProAccess = !previousHasProAccess && nowHasProAccess
+                previousHasProAccess = nowHasProAccess
+                capture.setAllowedSourceLimit(
+                    StagePaneAccess.sourceLimit(hasProAccess: nowHasProAccess)
+                )
+                objectWillChange.send()
+                if !nowHasProAccess {
+                    pendingProContinuation = false
+                    return
+                }
+                if gainedProAccess,
+                   workspaceSection == .pro,
+                   proUpgradeTrigger != .direct {
+                    pendingProContinuation = true
+                }
+                guard pendingProContinuation,
+                      operationState == .idle else { return }
+                guard workspaceSection == .pro else {
+                    pendingProContinuation = false
+                    return
+                }
+                pendingProContinuation = false
+                switch proUpgradeTrigger {
+                case .sourceLimit:
+                    // Resume the action that demonstrated Pro's value. Wait
+                    // one turn so StoreKit's purchase sheet can dismiss first.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.chooseSource()
+                    }
+                case .watermark:
+                    prefersWatermark = false
+                    workspaceSection = .appearance
+                    transientNotice = L10n.text(
+                        "StagePaneロゴを非表示にしました。",
+                        "The StagePane mark is now hidden."
+                    )
+                case .direct:
+                    break
+                }
             }
             .store(in: &cancellables)
         annotations.$document
@@ -384,6 +482,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             to: directory.appendingPathComponent("appearance.png")
         )
 
+        workspaceSection = .pro
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("pro.png")
+        )
+
         privacyCurtain = true
         try writePNG(
             of: StageView(controller: self, capture: capture)
@@ -502,8 +608,29 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         presentWorkspace()
     }
 
+    @objc func showProUpgrade() {
+        presentProUpgrade(trigger: .direct)
+    }
+
     func selectWorkspaceSection(_ section: WorkspaceSection) {
+        if section == .pro, workspaceSection != .pro {
+            proUpgradeTrigger = .direct
+        }
         workspaceSection = section
+    }
+
+    func presentProUpgrade(trigger: ProUpgradeTrigger) {
+        proUpgradeTrigger = trigger
+        workspaceSection = .pro
+        presentWorkspace()
+    }
+
+    func requestWatermarkVisibility(_ isVisible: Bool) {
+        if isVisible || hasProAccess {
+            prefersWatermark = isVisible
+        } else {
+            presentProUpgrade(trigger: .watermark)
+        }
     }
 
     private func presentWorkspace() {
@@ -539,6 +666,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func chooseSource() {
+        guard canRequestSourceAddition else { return }
+        if StagePaneAccess.requiresProForNextSource(
+            currentCount: capture.occupiedSourceSlots,
+            hasProAccess: hasProAccess
+        ) {
+            presentProUpgrade(trigger: .sourceLimit)
+            return
+        }
         presentStage(makeKey: false)
         presentWorkspace()
         capture.addSource()
@@ -606,7 +741,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         case #selector(copyStageScreenshot), #selector(saveStageScreenshot):
             return !isStageScreenshotInProgress
         case #selector(chooseSource):
-            return capture.canAddSource
+            return canRequestSourceAddition
         case #selector(stopPreview):
             menuItem.title = capture.hasResettableFailure
                 ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
@@ -849,9 +984,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         previousCapturePhase = phase
         previousCaptureWasActive = isActive
+        if isActive, phase == .previewing {
+            activeSessionReachedPreview = true
+        }
 
         if wasActive && !isActive {
-            transientNotice = capturePhaseNeedsAttention(phase)
+            let needsAttention = capturePhaseNeedsAttention(phase)
+            let sessionDuration = activeSessionStartedAt.map {
+                Date().timeIntervalSince($0)
+            } ?? 0
+            let reachedPreview = activeSessionReachedPreview
+            activeSessionStartedAt = nil
+            activeSessionReachedPreview = false
+            transientNotice = needsAttention
                 ? L10n.text(
                     "画面取得は完全に停止しました。後処理の確認が必要です。",
                     "Capture stopped completely, but cleanup needs attention."
@@ -860,6 +1005,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     "すべてのソースを完全に停止しました。",
                     "All sources stopped completely."
                 )
+            if ReviewPromptPolicy.qualifiesAsSuccessfulSession(
+                duration: sessionDuration,
+                needsAttention: needsAttention,
+                reachedPreview: reachedPreview
+            ) {
+                recordSuccessfulSessionForReview()
+            }
             return
         }
 
@@ -877,6 +1029,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
 
         if isActive, !wasActive {
+            activeSessionStartedAt = Date()
+            activeSessionReachedPreview = phase == .previewing
             transientNotice = privacyCurtain
                 ? L10n.text(
                     "ソースを追加し、画面取得を準備しています。会議アプリでは「StagePane Stage」を共有し、確認してからカーテンを開いてください。",
@@ -903,6 +1057,53 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         )
     }
 
+    private func recordSuccessfulSessionForReview() {
+#if STAGEPANE_APP_STORE
+        guard !reviewRequestIsScheduled else { return }
+        let now = Date()
+        let count = defaults.integer(forKey: Keys.successfulSessionCount) + 1
+        defaults.set(count, forKey: Keys.successfulSessionCount)
+
+        let firstDate: Date
+        if let storedDate = defaults.object(forKey: Keys.firstSuccessfulSessionDate) as? Date {
+            firstDate = storedDate
+        } else {
+            firstDate = now
+            defaults.set(firstDate, forKey: Keys.firstSuccessfulSessionDate)
+        }
+
+        let currentVersion = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String ?? ""
+        guard ReviewPromptPolicy.shouldRequestReview(
+            successfulSessionCount: count,
+            firstSuccessfulSessionDate: firstDate,
+            lastRequestedVersion: defaults.string(forKey: Keys.lastReviewRequestVersion),
+            currentVersion: currentVersion,
+            now: now
+        ) else { return }
+
+        reviewRequestIsScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self else { return }
+            defer { reviewRequestIsScheduled = false }
+            guard NSApp.isActive,
+                  !capture.isCaptureActive,
+                  !capture.isPickerPresented,
+                  !purchases.isBusy,
+                  purchases.operationState != .pending,
+                  workspaceSection != .pro,
+                  let workspaceWindow = workspaceWindowController?.window,
+                  workspaceWindow.isVisible,
+                  let viewController = workspaceWindow.contentViewController else {
+                return
+            }
+            defaults.set(currentVersion, forKey: Keys.lastReviewRequestVersion)
+            AppStore.requestReview(in: viewController)
+        }
+#endif
+    }
+
     @objc func terminate() {
         capture.stop()
         NSApp.terminate(nil)
@@ -922,6 +1123,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         static let showsSafeArea = "stage.showsSafeArea"
         static let showsWatermark = "stage.showsWatermark"
         static let privacyMessage = "stage.privacyMessage"
+        static let successfulSessionCount = "review.successfulSessionCount"
+        static let firstSuccessfulSessionDate = "review.firstSuccessfulSessionDate"
+        static let lastReviewRequestVersion = "review.lastRequestedVersion"
     }
 
     private enum SnapshotError: Error {

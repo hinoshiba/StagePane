@@ -503,7 +503,7 @@ private final class CaptureStopBatch {
 /// persists, or transmits captured frames.
 @MainActor
 final class CaptureCoordinator: NSObject, ObservableObject {
-    static let maximumSources = 4
+    static let maximumSources = StagePaneAccess.proSourceLimit
 
     @Published private(set) var phase: CapturePhase = .idle
     @Published private(set) var statusDetail = ""
@@ -513,8 +513,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     @Published private(set) var layout = StageLayout()
 
     var canAddSource: Bool {
+        sessions.count < allowedSourceLimit && !isPickerPresented
+    }
+
+    /// Keeps the add action available at the Free limit so it can explain Pro,
+    /// while still disabling it during a picker or at the physical maximum.
+    var canRequestSourceAddition: Bool {
         sessions.count < Self.maximumSources && !isPickerPresented
     }
+
+    var occupiedSourceSlots: Int {
+        sessions.count
+    }
+
+    var sourceLimitReachedHandler: (() -> Void)?
 
     // SCStreamConfiguration does not retain its backgroundColor. Keep this
     // object alive while any stream configuration can refer to it.
@@ -538,6 +550,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private var outputHeight = 1080
     private var configurationRevision = 0
     private var sourceOrdinal = 0
+    private var allowedSourceLimit = StagePaneAccess.freeSourceLimit
 
     var hasResettableFailure: Bool {
         guard !isCaptureActive else { return false }
@@ -568,6 +581,10 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         addSource()
     }
 
+    func setAllowedSourceLimit(_ limit: Int) {
+        allowedSourceLimit = min(max(0, limit), Self.maximumSources)
+    }
+
     func addSource() {
         guard !isPickerPresented else {
             if !publishStopFailureIfPresent() {
@@ -585,6 +602,16 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     "You can add up to \(Self.maximumSources) sources at once."
                 )
             }
+            return
+        }
+        guard sessions.count < allowedSourceLimit else {
+            if !publishStopFailureIfPresent() {
+                statusDetail = L10n.text(
+                    "現在のプランで追加できるソース数の上限に達しました。",
+                    "You have reached the source limit for the current plan."
+                )
+            }
+            sourceLimitReachedHandler?()
             return
         }
 
@@ -810,10 +837,22 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
     private func beginCapture(with filter: SCContentFilter) {
         guard sessions.count < Self.maximumSources else {
-            publishFailure(L10n.text(
-                "ソース数の上限に達したため追加できませんでした。",
-                "The source limit was reached, so the item was not added."
-            ))
+            if !publishStopFailureIfPresent() {
+                statusDetail = L10n.text(
+                    "同時に追加できるソースは最大\(Self.maximumSources)件です。",
+                    "You can add up to \(Self.maximumSources) sources at once."
+                )
+            }
+            return
+        }
+        guard sessions.count < allowedSourceLimit else {
+            if !publishStopFailureIfPresent() {
+                statusDetail = L10n.text(
+                    "現在のプランで追加できるソース数の上限に達しました。",
+                    "You have reached the source limit for the current plan."
+                )
+            }
+            sourceLimitReachedHandler?()
             return
         }
 

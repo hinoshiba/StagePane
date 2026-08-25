@@ -35,8 +35,9 @@ and end capture with no retained frame or orphaned state.
 - Apple system picker for one window/app/display source consent at a time;
   access is scoped to that selection and capture session, with no separate
   broad Screen Recording permission
-- up to four independently pausable/resumable, replaceable, and removable
-  in-memory video sources; pause stops the stream and retains its last frame
+- two independently pausable/resumable, replaceable, and removable in-memory
+  video sources in Free, or up to four with the one-time StagePane Pro purchase;
+  pause stops the stream and retains its last frame
 - large private Workspace hosting Arrange and Draw, with move, free resize,
   z-order, and auto arrange; source management and
   settings live in its sidebar
@@ -46,8 +47,8 @@ and end capture with no retained frame or orphaned state.
 - system, laser, or hidden pointer style; the adjustable-color/size/glow laser
   belongs only to the frontmost source, is hidden while it is paused, and all
   audience pointer styles are temporarily suppressed in Draw mode
-- default-on translucent lower-right StagePane mark on audience-facing Stage
-  states, including content and Curtain
+- translucent lower-right StagePane mark on audience-facing Stage states,
+  including content and Curtain; always shown in Free and optional in Pro
 - mutually exclusive Arrange and Draw modes in every build; Arrange edits only
   the composition and restores the selected pointer style, while Draw suppresses
   the audience pointer and adds bounded session-only Stage ink
@@ -58,8 +59,9 @@ and end capture with no retained frame or orphaned state.
 - menu-bar recovery and keyboard shortcuts
 - persistent Permissions view explaining picker-scoped screen sharing
 - Japanese/English UI selected from system language
-- App Sandbox, privacy manifest, zero network/analytics/account dependencies,
-  and no cross-application Accessibility or input-forwarding path
+- App Sandbox, privacy manifest, no publisher-operated network service,
+  analytics, StagePane account, or cross-application Accessibility/input-forwarding
+  path; optional Pro commerce uses Apple's StoreKit only
 
 ## Deliberate exclusions
 
@@ -70,7 +72,7 @@ and end capture with no retained frame or orphaned state.
   input sent to app/display/ambiguous sources
 - audio, microphone, recording, streaming, cloud, AI, OCR, or automatic screenshots
 - separate broad Screen Recording permission or a custom source-permission flow
-- account, subscription, ads, analytics, crash upload, custom updater
+- StagePane account, subscription, ads, analytics, crash upload, custom updater
 - Finder/Dock clone, app launcher, or alternate desktop
 
 These exclusions are product trust and App Review boundaries, not missing
@@ -82,8 +84,7 @@ marketing claims.
 2. Scene presets that store layout but never source window identity/content.
 3. Presenter timer and local notes kept out of the Stage.
 4. A local, user-initiated redacted diagnostics export.
-5. StoreKit one-time Supporter/Pro purchase only after the free core proves
-   useful; no account or subscription by default.
+5. User-selected local branding/background assets with sandbox-safe file access.
 
 Every addition must repeat privacy, license, accessibility, performance, and
 App Review threat modeling before implementation.
@@ -95,8 +96,10 @@ App Review threat modeling before implementation.
 - Stage preparation P95 ≤2 seconds
 - Curtain UI transition ≤100 ms
 - crash-free sessions ≥99.9%
-- zero automatic frame persistence and zero network requests by invariant;
-  only an explicit one-shot screenshot can copy or save a clean Audience Stage PNG
+- zero automatic frame persistence and zero screen/usage transmission by
+  invariant; only an explicit one-shot screenshot can copy or save a clean
+  Audience Stage PNG. StoreKit may contact Apple's App Store for the optional
+  Pro product, purchase, entitlement, and restore flows.
 - 100% common-task VoiceOver/keyboard completion before claims
 - no unbounded memory growth in a two-hour 1080p session
 - signed manual compatibility evidence for each listed meeting app/release

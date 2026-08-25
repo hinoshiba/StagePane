@@ -54,6 +54,8 @@ if [[ -n "$XCODEGEN_BIN" && -x "$XCODEGEN_BIN" ]]; then
         cp "$PROJECT_DIR/project.yml" "$CHECK_ROOT/project.yml"
         cp -R "$PROJECT_DIR/Sources" "$CHECK_ROOT/Sources"
         cp -R "$PROJECT_DIR/Resources" "$CHECK_ROOT/Resources"
+        mkdir -p "$CHECK_ROOT/Config"
+        cp "$PROJECT_DIR/Config/StagePane.storekit" "$CHECK_ROOT/Config/StagePane.storekit"
         (
             cd "$CHECK_ROOT"
             "$XCODEGEN_BIN" -q

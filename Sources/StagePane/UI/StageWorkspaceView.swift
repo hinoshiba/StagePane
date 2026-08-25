@@ -8,6 +8,7 @@ private extension WorkspaceSection {
         case .sources: L10n.text("ソース", "Sources")
         case .stage: L10n.text("Stage設定", "Stage Settings")
         case .appearance: L10n.text("見た目と動作", "Appearance")
+        case .pro: "StagePane Pro"
         case .permissions: L10n.text("アクセス権限", "Permissions")
         case .privacy: L10n.text("プライバシー", "Privacy")
         case .about: L10n.text("このアプリについて", "About")
@@ -20,6 +21,7 @@ private extension WorkspaceSection {
         case .sources: "square.stack.3d.up.fill"
         case .stage: "slider.horizontal.3"
         case .appearance: "paintpalette.fill"
+        case .pro: "sparkles"
         case .permissions: "checkmark.shield.fill"
         case .privacy: "hand.raised.fill"
         case .about: "info.circle.fill"
@@ -141,6 +143,8 @@ struct StageWorkspaceView: View {
                 controller: controller,
                 focusesAudienceForSnapshot: focusesAppearanceForSnapshot
             )
+        case .pro:
+            ProUpgradePanel(controller: controller, purchases: controller.purchases)
         case .permissions:
             PermissionsPanel(controller: controller, capture: capture)
         case .privacy:
@@ -175,7 +179,7 @@ struct StageWorkspaceView: View {
 
             navigationGroup(
                 title: L10n.text("ステージ", "STAGE"),
-                sections: [.stage, .appearance],
+                sections: [.stage, .appearance, .pro],
                 compact: compact
             )
 
@@ -266,9 +270,16 @@ struct StageWorkspaceView: View {
                     Spacer(minLength: 4)
 
                     if section == .sources {
-                        Text("\(displayedSourceCount) / \(CaptureCoordinator.maximumSources)")
+                        Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
                             .font(.caption2.monospacedDigit().weight(.semibold))
                             .foregroundStyle(Color.white.opacity(0.48))
+                    } else if section == .pro {
+                        Text(controller.hasProAccess ? L10n.text("有効", "ACTIVE") : "PRO")
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .tracking(0.4)
+                            .foregroundStyle(controller.hasProAccess
+                                ? StagePanePalette.mint
+                                : StagePanePalette.aqua)
                     }
                 }
             }
@@ -312,8 +323,11 @@ struct StageWorkspaceView: View {
         if section == .sources {
             values.append(L10n.text(
                 "\(displayedSourceCount)件",
-                "\(displayedSourceCount) of \(CaptureCoordinator.maximumSources)"
+                "\(displayedSourceCount) of \(controller.activeSourceLimit)"
             ))
+        }
+        if section == .pro, controller.hasProAccess {
+            values.append(L10n.text("有効", "Active"))
         }
         return values.joined(separator: ", ")
     }
@@ -550,7 +564,16 @@ struct StageWorkspaceView: View {
                 Text(L10n.text("ステージのソース", "Stage Sources"))
                     .font(.caption.weight(.bold))
                 Spacer()
-                Text("\(displayedSourceCount) / \(CaptureCoordinator.maximumSources)")
+                if controller.hasProAccess {
+                    Text("PRO")
+                        .font(.system(size: 8, weight: .black, design: .rounded))
+                        .tracking(0.4)
+                        .foregroundStyle(StagePanePalette.aqua)
+                        .padding(.horizontal, 6)
+                        .frame(minHeight: 17)
+                        .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
+                }
+                Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }

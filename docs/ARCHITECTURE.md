@@ -57,7 +57,8 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    permission.
 3. The returned `SCContentFilter` represents one window, application, or
    display. StagePane creates one independent `SCStream` for it at up to 30 fps.
-   Repeating this flow adds up to four sources; multiple-selection picker modes
+   Repeating this flow adds two sources in Free or up to four with StagePane
+   Pro; multiple-selection picker modes
    are deliberately disabled so every source can be configured and removed
    independently. Audio and microphone capture are disabled.
 4. Each valid `CMSampleBuffer` is enqueued into two macOS 14

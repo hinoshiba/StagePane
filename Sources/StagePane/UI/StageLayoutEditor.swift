@@ -117,7 +117,7 @@ struct StageLayoutEditor: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(StagePanePalette.indigo)
-            .disabled(!capture.canAddSource)
+            .disabled(!controller.canRequestSourceAddition)
             .accessibilityHint(L10n.text(
                 "macOSの共有ピッカーを開きます。",
                 "Opens the macOS sharing picker."
@@ -650,9 +650,15 @@ struct CaptureSourceList: View {
                     Text(L10n.text("ソース", "Sources"))
                         .font(.headline)
                     Spacer()
-                    Text("\(capture.sources.count) / \(CaptureCoordinator.maximumSources)")
+                    Text("\(capture.sources.count) / \(controller.activeSourceLimit)")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
+                    if controller.hasProAccess {
+                        Text("PRO")
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .tracking(0.4)
+                            .foregroundStyle(StagePanePalette.aquaReadable)
+                    }
                 }
             }
 
@@ -682,20 +688,20 @@ struct CaptureSourceList: View {
 
             if usesSecondaryAddAction {
                 Button(action: controller.chooseSource) {
-                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+                    Label(addSourceTitle, systemImage: addSourceSymbol)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(SecondaryActionButtonStyle())
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-                .disabled(!capture.canAddSource)
+                .disabled(!controller.canRequestSourceAddition)
             } else {
                 Button(action: controller.chooseSource) {
-                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+                    Label(addSourceTitle, systemImage: addSourceSymbol)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-                .disabled(!capture.canAddSource)
+                .disabled(!controller.canRequestSourceAddition)
             }
 
             Button(action: capture.arrangeSourcesAutomatically) {
@@ -715,6 +721,23 @@ struct CaptureSourceList: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private var addSourceTitle: String {
+        if StagePaneAccess.requiresProForNextSource(
+            currentCount: capture.occupiedSourceSlots,
+            hasProAccess: controller.hasProAccess
+        ) {
+            return L10n.text("Proで3つ目を追加", "Add a Third Source with Pro")
+        }
+        return L10n.text("ソースを追加", "Add Source")
+    }
+
+    private var addSourceSymbol: String {
+        StagePaneAccess.requiresProForNextSource(
+            currentCount: capture.occupiedSourceSlots,
+            hasProAccess: controller.hasProAccess
+        ) ? "lock.open.fill" : "plus"
     }
 }
 

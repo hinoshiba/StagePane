@@ -139,7 +139,7 @@ struct WorkspaceSourcesSnapshotPanel: View {
                     Circle()
                         .fill(StagePanePalette.mintReadable)
                         .frame(width: 7, height: 7)
-                    Text(L10n.text("3ソース・1件一時停止", "3 sources · 1 paused"))
+                    Text(L10n.text("PRO・3ソース・1件一時停止", "PRO · 3 sources · 1 paused"))
                         .lineLimit(1)
                 }
                 .font(.caption2.weight(.bold))

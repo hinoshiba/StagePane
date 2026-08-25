@@ -13,6 +13,13 @@
 ## Apple and binary
 
 - [ ] Apple Developer agreements/tax/banking current
+- [ ] Non-consumable `com.hinoshiba.stagepane.pro` metadata, ¥1,500 base price,
+      availability, localizations, review screenshot, and review notes complete
+- [ ] First IAP is attached to the app-version submission; StoreKit
+      Configuration, Sandbox, TestFlight, restore, pending, refund/revocation,
+      and localized-price tests pass
+- [ ] Family Sharing remains off unless its irreversible enablement and support
+      policy have separate approval
 - [ ] Xcode Cloud repository access, automatic signing, roles, and recovery
       process verified for Team `94HVVWXLK3`
 - [ ] Tagged Xcode Cloud archive is signed for TestFlight and App Store
@@ -32,6 +39,8 @@
 - [ ] App Privacy answers are evidence-backed; `Data Not Collected` remains true
 - [ ] Terms, EULA strategy, support policy, warranty disclaimers, and refunds reviewed
 - [ ] Pricing, tax, payment, cancellation, and delivery disclosures complete
+- [ ] Privacy/help/website distinguish publisher data flows from Apple's
+      StoreKit product, purchase, entitlement, and restore service
 - [ ] Japan Specified Commercial Transactions Act page includes seller name,
       address, telephone, representative, price/additional fees, payment method
       and timing, delivery timing, returns/cancellation, and system requirements
@@ -43,8 +52,14 @@
 - [ ] Screenshots/metadata show the exact Mac App Store app, describe only
       picker-scoped sharing access, and avoid “virtual display” claims
 - [ ] Website URLs, SBOM, App Store listing, and support channels verified
+- [ ] After the listing is publicly available, the website hero and closing
+      primary CTA use the official Mac App Store campaign link and badge;
+      GitHub remains the secondary source-code action, and structured data plus
+      “source only” copy are updated. Never publish a guessed or pre-live URL
 - [ ] Incident response, rollback message, release signing, and key rotation ready
 - [ ] Rating prompt uses StoreKit only after a successful natural stopping point
+- [ ] Free/Pro screenshots and copy accurately label Free 2 sources, Pro 4
+      sources, and the Free-always-on / Pro-optional StagePane mark
 
 No unchecked item should be silently waived. Record approver, evidence, date,
 scope, and expiry for every exception.

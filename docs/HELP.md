@@ -5,7 +5,8 @@
 1. Keep **StagePane Workspace — Keep Private** on your Mac.<br>
    **StagePane Workspace — 共有しない編集画面** は手元に置きます。
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
-   display in the macOS system picker. Repeat to add up to four sources.
+   display in the macOS system picker. Free supports two simultaneous sources;
+   the one-time StagePane Pro purchase supports up to four.
 3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange
    sources or draw. Drag and resize sources there. Use **Pause / 一時停止**,
    **Resume / 再開**, **Replace / 選び直す**,
@@ -48,12 +49,12 @@ not fall back to a source behind it.
 にだけ表示され、手元で見ているmacOSのカーソルは置き換えません。最前面ソースが
 一時停止中なら点は表示せず、背面のソースへは切り替えません。
 
-The translucent **StagePane mark / StagePaneロゴ** is enabled by default in the
-lower-right of the holding screen, shared content, and Curtain, and is mirrored
-in the private Workspace. It can be disabled in Appearance.
+The translucent **StagePane mark / StagePaneロゴ** appears in the lower-right of
+the holding screen, shared content, and Curtain, and is mirrored in the private
+Workspace. It is always shown in Free and can be disabled with StagePane Pro.
 
-半透明の **StagePaneロゴ** は初期状態で有効になり、待機画面、共有内容、カーテンの右下に
-表示され、手元のWorkspaceにも反映されます。見た目と動作から無効にできます。
+半透明の **StagePaneロゴ** は待機画面、共有内容、カーテンの右下に表示され、手元の
+Workspaceにも反映されます。無料版では常に表示され、StagePane Proでは無効にできます。
 
 **Pause / 一時停止** stops only that source's ScreenCaptureKit stream and
 keeps its last frame visible in both the Stage and private Workspace. **Resume /
@@ -192,10 +193,23 @@ only the audience composition.
   separate broad Screen Recording permission or settings step is required.
 StagePane processes frames locally and does not upload them. When you share the
 Stage, transmission is performed by your meeting app under its own privacy
-policy.
+policy. In the Mac App Store build, Apple StoreKit handles the optional Pro
+product, purchase, entitlement, and restore flow without receiving screen content.
 
 StagePane自身はフレームをローカル処理し、外部送信しません。ステージ共有時の送信は、
-会議アプリ側の機能とプライバシーポリシーに従います。
+会議アプリ側の機能とプライバシーポリシーに従います。Mac App Store版の任意のPro購入と
+購入状態の確認はAppleのStoreKitが処理し、画面内容は購入処理へ渡しません。
+
+## StagePane Pro / 購入と復元
+
+In the Mac App Store build, open **StagePane Pro** in Workspace to see the
+localized one-time price. Pro unlocks source three and four and makes the
+StagePane mark optional. **Restore Purchases / 購入を復元** is available on the
+same screen. A canceled purchase never changes or stops the current Stage.
+
+Mac App Store版ではWorkspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を
+確認できます。Proは3・4件目のソースとロゴ非表示を開放します。同じ画面から
+**購入を復元** できます。購入をキャンセルしても、現在のStageを変更・停止しません。
 
 ## Support / サポート
 
