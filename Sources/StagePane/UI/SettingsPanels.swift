@@ -131,15 +131,7 @@ struct AppearancePanel: View {
                 value: $controller.showsSafeArea
             )
             Divider().padding(.leading, 42)
-            PreferenceToggle(
-                title: L10n.text("StagePaneロゴを表示", "Show StagePane mark"),
-                detail: L10n.text(
-                    "相手に見える画面の右下に、小さなブランド表示を追加します。",
-                    "Add a small brand mark to the lower-right of the Stage."
-                ),
-                symbol: "sparkles.rectangle.stack.fill",
-                value: $controller.showsWatermark
-            )
+            WatermarkPreference(controller: controller)
         }
         .cardSurface()
     }
@@ -224,16 +216,86 @@ struct PermissionsPanel: View {
 
     private var addSourceButton: some View {
         Button(action: controller.chooseSource) {
-            Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+            Label(
+                StagePaneAccess.requiresProForNextSource(
+                    currentCount: capture.occupiedSourceSlots,
+                    hasProAccess: controller.hasProAccess
+                )
+                    ? L10n.text("Proで3つ目を追加", "Add a Third Source with Pro")
+                    : L10n.text("ソースを追加", "Add Source"),
+                systemImage: StagePaneAccess.requiresProForNextSource(
+                    currentCount: capture.occupiedSourceSlots,
+                    hasProAccess: controller.hasProAccess
+                ) ? "lock.open.fill" : "plus"
+            )
         }
         .buttonStyle(PrimaryActionButtonStyle())
-        .disabled(!capture.canAddSource)
+        .disabled(!controller.canRequestSourceAddition)
         .accessibilityHint(L10n.text(
             "Appleの共有内容選択画面を開きます。",
             "Opens Apple’s content-sharing picker."
         ))
     }
 
+}
+
+private struct WatermarkPreference: View {
+    @ObservedObject var controller: AppController
+
+    var body: some View {
+        Toggle(isOn: watermarkBinding) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles.rectangle.stack.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(StagePanePalette.aquaReadable)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        StagePanePalette.aquaReadable.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 7) {
+                        Text(L10n.text("StagePaneロゴを表示", "Show StagePane mark"))
+                            .font(.subheadline.weight(.semibold))
+                        if !controller.hasProAccess {
+                            Text("PRO")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .tracking(0.5)
+                                .foregroundStyle(StagePanePalette.aquaReadable)
+                                .padding(.horizontal, 6)
+                                .frame(minHeight: 18)
+                                .background(StagePanePalette.aquaReadable.opacity(0.10), in: Capsule())
+                        }
+                    }
+                    Text(controller.hasProAccess
+                        ? L10n.text(
+                            "相手に見える画面の右下に、小さなブランド表示を追加します。",
+                            "Add a small brand mark to the lower-right of the Stage."
+                        )
+                        : L10n.text(
+                            "無料版では表示されます。オフにするとStagePane Proをご案内します。",
+                            "The mark is shown in Free. Turning this off opens StagePane Pro."
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .toggleStyle(.switch)
+        .padding(.vertical, 8)
+        .accessibilityLabel(L10n.text("StagePaneロゴを表示", "Show StagePane mark"))
+        .accessibilityHint(controller.hasProAccess
+            ? L10n.text("Stageのロゴ表示を切り替えます。", "Toggles the StagePane mark on the Stage.")
+            : L10n.text("ロゴを非表示にするStagePane Proの画面を開きます。", "Opens StagePane Pro to hide the mark."))
+    }
+
+    private var watermarkBinding: Binding<Bool> {
+        Binding(
+            get: { controller.showsWatermark },
+            set: { controller.requestWatermarkVisibility($0) }
+        )
+    }
 }
 
 struct PrivacyPanel: View {
@@ -321,6 +383,25 @@ struct PrivacyPanel: View {
                     PrivacyPromise(symbol: "waveform.badge.exclamationmark", title: L10n.text("音声・マイクを取得しません", "Never captures audio or microphone input"))
                     Divider().padding(.leading, 42)
                     PrivacyPromise(symbol: "person.crop.circle.badge.xmark", title: L10n.text("アカウントや追跡IDを作りません", "Never creates an account or tracking ID"))
+                }
+                .cardSurface()
+
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "apple.logo")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(StagePanePalette.aquaReadable)
+                        .frame(width: 30)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.text("StagePane Proの購入", "StagePane Pro purchases"))
+                            .font(.subheadline.weight(.semibold))
+                        Text(L10n.text(
+                            "Mac App Store版では、商品情報・購入・復元・購入状態の確認だけをAppleのStoreKitが処理します。画面内容や利用状況は購入処理へ渡しません。",
+                            "In the Mac App Store build, Apple StoreKit handles only product information, purchase, restore, and purchase status. Screen content and usage are never provided to the purchase flow."
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .cardSurface()
 

@@ -68,13 +68,14 @@ Update and review these values in one pull request:
 - the checked-in Xcode project regenerated with XcodeGen 2.45.4
 - `CHANGELOG.md`, App Store metadata, privacy answers, and review notes when
   behavior or claims changed
-- localized website screenshots and Open Graph images regenerated from the exact
-  Mac App Store UI whenever an audience-visible default or Workspace layout
-  changes; Store screenshots must show the Arrange and Draw workflow, and any
-  Permissions screenshot must show only picker-scoped sharing access. Because
-  the candidate is sandboxed, write snapshots inside its app container, then
-  copy the completed PNGs to the review workspace. Run once for each language,
-  using a different generated directory:
+- localized website fixture screenshots and Open Graph images regenerated
+  whenever an audience-visible default or Workspace layout changes. The
+  source-built `dist` app intentionally has full Pro access, so these generated
+  fixtures are not evidence of the Free commerce state and must label every
+  three/four-source or optional-mark image as StagePane Pro. Because the app is
+  sandboxed, write snapshots inside its app container, then copy the completed
+  PNGs to the review workspace. Run once for each language, using a different
+  generated directory:
 
   ```bash
   SNAPSHOT_PARENT="$HOME/Library/Containers/com.hinoshiba.stagepane/Data/tmp"
@@ -85,10 +86,19 @@ Update and review these values in one pull request:
   ```
 
   `workspace.png`, `arrange.png`, `draw.png`, `sources.png`, `permissions.png`,
-  `privacy.png`, and `appearance.png` must be opaque 2880×1800 images. The
+  `privacy.png`, `appearance.png`, and source-build `pro.png` must be opaque
+  2880×1800 images. The
   1920×1080 Stage-only snapshots are website and QA assets, not valid Mac App
   Store upload dimensions. Do not use an arbitrary `/tmp` or repository
-  directory as the sandboxed app's snapshot destination
+  directory as the sandboxed app's snapshot destination. Separately capture
+  customer-facing Product Page screenshots from the exact `StagePane-AppStore`
+  candidate. Label every gated feature “StagePane Pro” or “In-App Purchase” in
+  its image/caption, but do not bake a price into these storefront-wide assets.
+  Capture the review-only IAP App Review Screenshot from the real Pro screen
+  under StoreKit Configuration, Sandbox, or TestFlight; it must show the
+  localized `displayPrice`, one-time wording, Restore Purchases, and Continue
+  Free. Never use the source-build active-entitlement fixture as IAP review
+  evidence
 - `THIRD_PARTY_NOTICES.md` and `docs/sbom.spdx.json` when their inventory or
   version changes
 
@@ -113,8 +123,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   confirmation that the app requests no separate broad Screen Recording access
   and exposes no Screen Recording settings step in the source flow; end access
   by removing the source or stopping all sources;
-- one-item window/application/display selection, mixed-source addition up to
-  four, and a disabled Add Source action at 4/4;
+- one-item window/application/display selection; Free mixed-source addition
+  through 2/2 with the still-enabled third-source action opening StagePane Pro;
+  Pro mixed-source addition through 4/4; and a disabled Add Source action only
+  at the physical 4/4 maximum;
 - per-source pause and resume (stop the stream, retain the last frame in both
   renderers, then restart it), replace (with cancel preserving the old item),
   per-source removal while other streams remain live, and Stop All draining
@@ -140,8 +152,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - Curtain hiding only the public Stage while the private Workspace remains
   live, without bringing Stage to the front, plus a fresh-container default-on
   translucent lower-right StagePane mark on the holding screen, shared content,
-  and Curtain and its WYSIWYG Workspace mirror; toggle it off, relaunch, and
-  confirm the disabled preference persists;
+  and Curtain and its WYSIWYG Workspace mirror; confirm Free cannot hide it even
+  when an older local preference is false; then purchase Pro, toggle it off,
+  relaunch, and confirm the preference and verified entitlement restore;
 - all Stage shapes and all three pointer styles, including one laser dot aligned
   only to the frontmost source, no dot and no fallback when that source is
   paused, exact fresh-container and Reset defaults of 22 pt, `#FF3B30`, and 55%
@@ -177,7 +190,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   cancellation writes nothing and does not alter the clipboard; missing fresh
   frames fail visibly instead of exporting a black tile;
 - screenshot permission/privacy behavior: no action at launch or in the
-  background, no recording or network request, no new Screen Recording or other
+  background, no recording or screen upload, no new Screen Recording or other
   permission, no unrelated-window enumeration, and no retained screenshot
   history after the explicit copy/save completes;
 - no Accessibility or Input Monitoring request, raw mouse/keyboard event
@@ -185,6 +198,11 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   Arrange and Draw actions; Spaces/full-screen/display
   changes; four-source CPU/memory; and the currently claimed meeting-app
   workflows.
+- StoreKit Configuration, Sandbox, and TestFlight purchase paths: localized
+  `Product.displayPrice`, verified success, cancel, pending/Ask to Buy, product
+  load failure and retry, restore, reinstall/second Mac, refund/revocation, and
+  rejection of unverified transactions; purchase success must resume the exact
+  third-source or mark-removal action that opened Pro.
 
 Record the exact commit, hardware, OS/app versions, results, and approved
 exceptions in the release record.
@@ -220,8 +238,9 @@ In the completed Xcode Cloud build and App Store Connect, verify:
   Accessibility permission path in the archived Mac App Store candidate; the
   Permissions view must show only the picker-scoped sharing explanation;
 - no unexpected entitlement, embedded executable/framework, absolute
-  `LC_RPATH`, updater, analytics, automatic screenshot, recording, or network
-  path; confirm the only image export is the documented explicit local PNG
+  `LC_RPATH`, updater, analytics, automatic screenshot, recording, publisher
+  server, or screen-upload path; confirm Apple StoreKit is the only commerce
+  service and the only image export is the documented explicit local PNG
   copy/save path; and
 - metadata, screenshots, privacy answers, export compliance, review notes,
   pricing, territories, and release mode against the exact build.

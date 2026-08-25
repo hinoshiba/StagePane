@@ -36,6 +36,8 @@ targets:
         buildPhase: resources
       - path: Resources/ja.lproj
         buildPhase: resources
+      - path: Config/StagePane.storekit
+        buildPhase: none
     dependencies:
       - package: StagePanePackage
         product: StagePaneCore
@@ -45,6 +47,7 @@ targets:
       - sdk: CoreMedia.framework
       - sdk: CoreVideo.framework
       - sdk: ScreenCaptureKit.framework
+      - sdk: StoreKit.framework
       - sdk: SwiftUI.framework
     entitlements:
       path: StagePane.entitlements
@@ -65,6 +68,7 @@ targets:
         PRODUCT_NAME: StagePane
         SKIP_INSTALL: NO
         SUPPORTED_PLATFORMS: macosx
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) STAGEPANE_APP_STORE"
         SWIFT_STRICT_CONCURRENCY: complete
         SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
       configs:
@@ -150,6 +154,7 @@ schemes:
         StagePaneAppStore: all
     run:
       config: Debug
+      storeKitConfiguration: Config/StagePane.storekit
     profile:
       config: Release
     analyze:

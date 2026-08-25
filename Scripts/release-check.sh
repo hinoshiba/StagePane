@@ -65,7 +65,8 @@ fi
 for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
     Assets/LICENSE.md docs/PRIVACY.md docs/LICENSE_AUDIT.md \
     docs/HELP.md docs/APP_STORE_HELP.md docs/APP_STORE_PRIVACY.md \
-    docs/sbom.spdx.json Config/XcodeGen.lock SECURITY.md \
+    docs/MONETIZATION.md docs/sbom.spdx.json Config/XcodeGen.lock \
+    Config/StagePane.storekit SECURITY.md \
     project.yml StagePane.xcodeproj/project.pbxproj \
     Config/StagePane-AppStore-Info.plist ci_scripts/ci_pre_xcodebuild.sh; do
     if [[ ! -s "$required" ]]; then
@@ -73,6 +74,20 @@ for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
         exit 70
     fi
 done
+
+IAP_PRODUCT_ID='com.hinoshiba.stagepane.pro'
+IAP_EN_DESCRIPTION='Hide the mark and compose up to four sources.'
+IAP_JA_DESCRIPTION='ロゴ非表示と最大4ソースを買い切りで開放'
+if [[ ${#IAP_EN_DESCRIPTION} -gt 45 || ${#IAP_JA_DESCRIPTION} -gt 45 ]] || \
+   ! grep -F -q '"type" : "NonConsumable"' Config/StagePane.storekit || \
+   ! grep -F -q "\"productID\" : \"$IAP_PRODUCT_ID\"" Config/StagePane.storekit || \
+   ! grep -F -q "\"description\" : \"$IAP_EN_DESCRIPTION\"" Config/StagePane.storekit || \
+   ! grep -F -q "\"description\" : \"$IAP_JA_DESCRIPTION\"" Config/StagePane.storekit || \
+   ! grep -F -q "$IAP_EN_DESCRIPTION" docs/MONETIZATION.md || \
+   ! grep -F -q "$IAP_JA_DESCRIPTION" docs/MONETIZATION.md; then
+    print -u2 'StagePane Pro StoreKit metadata is missing, mismatched, or exceeds the 45-character IAP description limit'
+    exit 70
+fi
 
 if grep -n -E 'pre-release draft|Continue Setup|ad-hoc|local development build|re-register' \
     docs/APP_STORE_HELP.md docs/APP_STORE_PRIVACY.md; then

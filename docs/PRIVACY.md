@@ -1,13 +1,15 @@
 # StagePane Privacy Policy
 
-Effective date: 2026-08-24<br>
+Effective date: 2026-08-25<br>
 Product: StagePane for macOS
 
 ## Summary
 
 StagePane does not collect personal data, create accounts, show advertising,
-run analytics, send telemetry, or make network requests. It has no third-party
-SDKs. Every build uses App Sandbox and has no network client entitlement.
+run analytics, or send telemetry. It has no third-party SDKs or
+publisher-operated server. Every build uses App Sandbox and has no network
+client entitlement. In the Mac App Store build, Apple StoreKit handles the
+optional StagePane Pro product, purchase, entitlement, and restore flow.
 
 StagePane can create one clean Audience Stage PNG only when the user explicitly
 chooses Copy Audience Image or Save Audience Image. This local export is not
@@ -18,8 +20,9 @@ collection by StagePane or its publisher and is never automatic or transmitted.
 StagePane accesses screen content only after the user opens Apple's system
 content-sharing picker and explicitly adds one window, application, or display.
 Choosing an application can include multiple windows owned by that application;
-choosing one window provides the narrowest scope. This may be repeated for up to
-four independently pausable and removable sources. The chosen video frames are
+choosing one window provides the narrowest scope. Free supports two
+independently pausable and removable sources; StagePane Pro supports up to four.
+The chosen video frames are
 rendered locally in parallel in the StagePane Stage window and the private Stage
 Workspace Canvas. Sources and settings remain in that Workspace's sidebar.
 
@@ -126,7 +129,15 @@ selected.
 
 ## Network and third parties
 
-StagePane makes no network requests, including for copied or saved screenshots.
+StagePane has no publisher-operated server and never uploads screen content,
+copied or saved screenshots, source names, pointer data, drawings, or usage
+analytics. For optional StagePane Pro commerce, StoreKit may contact Apple's
+App Store to load localized product information, complete a purchase, verify
+current entitlement, listen for transaction changes, or restore a purchase.
+Apple handles Apple Account credentials. StagePane receives only the product
+and verified transaction status needed to unlock Pro and operates no commerce
+server of its own.
+
 The meeting application that shares the
 StagePane Stage is separate software. Its transmission, recording, accounts,
 and data practices are governed by that provider, not by StagePane.

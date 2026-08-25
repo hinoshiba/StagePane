@@ -13,10 +13,12 @@
 		108AE50A313BD77F4A8E4B9F /* StageLayoutEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8558A9B483CFAA7020CFDE1B /* StageLayoutEditor.swift */; };
 		11088905A22ABF665F31E0CD /* StageWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5D4DD5D4DF0BA9BF6D371E /* StageWorkspaceView.swift */; };
 		230962093574C81A6DC842E5 /* StageBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A39A84342B480FDE7C1A37 /* StageBackground.swift */; };
+		2AC792D386D766A586D6FEAE /* ProUpgradePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */; };
 		340F40C3FD28100274C31017 /* StageWorkspaceSnapshotFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1376D7B62EA8CC1F675B5447 /* StageWorkspaceSnapshotFixtures.swift */; };
 		3A6D2434DD8EEF2D5E58029C /* ScreenCaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */; };
 		4EB96CB8AB4FEF81BBE3FA2D /* en.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 4BBC81793D25A66F6F08D0FF /* en.lproj */; };
 		51F42D8EFBD0316EE28A7BDD /* WindowControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46D02C82127295AA9EC6B670 /* WindowControllers.swift */; };
+		51FF4B83092435E07ADABE88 /* ProPurchaseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE540DD29563237E280E2F7 /* ProPurchaseStore.swift */; };
 		5304C588F87BE9C20116E65D /* StagePaneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0708782832B5447426F6D917 /* StagePaneApp.swift */; };
 		56BBD6E97EEC3EBC73DD4369 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 936172AD016BFF1DFC652660 /* L10n.swift */; };
 		5846FBCB7C905D59A39F1FF5 /* CaptureSourceRenderers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A9AE96EE20D975670C1255 /* CaptureSourceRenderers.swift */; };
@@ -30,6 +32,7 @@
 		948158E8D20587F6D1557CC2 /* ja.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 0CF679695D7BD47516703834 /* ja.lproj */; };
 		9B2A7447EFC3367F52185B08 /* StageWatermark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */; };
 		9DE213A78FC9D9868862769F /* StageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81367F4215FA9164C376C053 /* StageView.swift */; };
+		A1B38161D37DE0C0BC8B6A13 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 337CAF823BD4F36283B8FA60 /* StoreKit.framework */; };
 		A55525D15EB806273F8038DB /* StageCompositeDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 213F0F8A0487711E00EA24DC /* StageCompositeDisplayView.swift */; };
 		A564414A335FFA018B1CCBCB /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5817048408BEEE4EAC86CEEB /* StatusItemController.swift */; };
 		AA9953A964DB915B729A642D /* CaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4193F05A5DCA7EBFA49832 /* CaptureCoordinator.swift */; };
@@ -51,6 +54,8 @@
 		213F0F8A0487711E00EA24DC /* StageCompositeDisplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageCompositeDisplayView.swift; sourceTree = "<group>"; };
 		2586D980871883CDDCE3FD6E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2A433192C35871112C477F8C /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		337CAF823BD4F36283B8FA60 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		35256B19A9AEFAF3DE6F2D5C /* StagePane.storekit */ = {isa = PBXFileReference; path = StagePane.storekit; sourceTree = "<group>"; };
 		35A39A84342B480FDE7C1A37 /* StageBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageBackground.swift; sourceTree = "<group>"; };
 		466FCB694DCDF7941BBDDC4A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		46D02C82127295AA9EC6B670 /* WindowControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowControllers.swift; sourceTree = "<group>"; };
@@ -60,6 +65,7 @@
 		6A5D4DD5D4DF0BA9BF6D371E /* StageWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageWorkspaceView.swift; sourceTree = "<group>"; };
 		6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenCaptureKit.framework; path = System/Library/Frameworks/ScreenCaptureKit.framework; sourceTree = SDKROOT; };
 		6CAEF01305EAAAD5CB89FFC8 /* SampleBufferDisplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferDisplayView.swift; sourceTree = "<group>"; };
+		6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProUpgradePanel.swift; sourceTree = "<group>"; };
 		7A4193F05A5DCA7EBFA49832 /* CaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoordinator.swift; sourceTree = "<group>"; };
 		80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageWatermark.swift; sourceTree = "<group>"; };
 		81367F4215FA9164C376C053 /* StageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageView.swift; sourceTree = "<group>"; };
@@ -68,6 +74,7 @@
 		93D4E0545042D6A53D741A26 /* StageAnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageAnnotationStore.swift; sourceTree = "<group>"; };
 		A187DF3AD8950DC0D89FF161 /* AppController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppController.swift; sourceTree = "<group>"; };
 		AAC6363CF27BD9718878C770 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		BEE540DD29563237E280E2F7 /* ProPurchaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPurchaseStore.swift; sourceTree = "<group>"; };
 		C6DBE494CA8AAD4C2C890B65 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		CA58B845F4FFAC5282522A0E /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
 		CA6B1D02FD90DC2B8F083072 /* ControlRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlRoomView.swift; sourceTree = "<group>"; };
@@ -89,6 +96,7 @@
 				B7C437AD3E54DCB7B80362FF /* CoreMedia.framework in Frameworks */,
 				7D73A437CC21B24606971797 /* CoreVideo.framework in Frameworks */,
 				3A6D2434DD8EEF2D5E58029C /* ScreenCaptureKit.framework in Frameworks */,
+				A1B38161D37DE0C0BC8B6A13 /* StoreKit.framework in Frameworks */,
 				59C65556DB5F24C7404DE647 /* SwiftUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -99,12 +107,22 @@
 		1405F19B0D706AC2A673860B = {
 			isa = PBXGroup;
 			children = (
+				B0122E112B84EA62CDA4F918 /* Config */,
 				DC46D037F9109F6FD0488339 /* Packages */,
 				2A43D3CD044F6E07ABC94984 /* Resources */,
 				9759D10ED00119726CFCEA2C /* Sources */,
 				4388EE67BE680672D88F9780 /* Frameworks */,
 				2B370DA4A5775BB131465BA3 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		256770ABEA25ED50C8AAB7D5 /* Purchase */ = {
+			isa = PBXGroup;
+			children = (
+				BEE540DD29563237E280E2F7 /* ProPurchaseStore.swift */,
+				6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */,
+			);
+			path = Purchase;
 			sourceTree = "<group>";
 		};
 		2A43D3CD044F6E07ABC94984 /* Resources */ = {
@@ -153,6 +171,7 @@
 				C6DBE494CA8AAD4C2C890B65 /* CoreMedia.framework */,
 				AAC6363CF27BD9718878C770 /* CoreVideo.framework */,
 				6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */,
+				337CAF823BD4F36283B8FA60 /* StoreKit.framework */,
 				466FCB694DCDF7941BBDDC4A /* SwiftUI.framework */,
 			);
 			name = Frameworks;
@@ -189,6 +208,7 @@
 				2C018A5FFFBBFB45752A73EB /* App */,
 				E55B3CC739E5DD9226C67FDD /* Capture */,
 				ABED4904DCEB61CB484B3056 /* Interaction */,
+				256770ABEA25ED50C8AAB7D5 /* Purchase */,
 				5135426E1C6759745256DF6D /* Stage */,
 				34EE8E8E63F7A37451CB5191 /* Support */,
 				4CC7CFEAB4D6886C2B603C92 /* UI */,
@@ -210,6 +230,14 @@
 				93D4E0545042D6A53D741A26 /* StageAnnotationStore.swift */,
 			);
 			path = Interaction;
+			sourceTree = "<group>";
+		};
+		B0122E112B84EA62CDA4F918 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				35256B19A9AEFAF3DE6F2D5C /* StagePane.storekit */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		DC46D037F9109F6FD0488339 /* Packages */ = {
@@ -392,6 +420,8 @@
 				5846FBCB7C905D59A39F1FF5 /* CaptureSourceRenderers.swift in Sources */,
 				0A06B097A76E15E951E90E16 /* ControlRoomView.swift in Sources */,
 				56BBD6E97EEC3EBC73DD4369 /* L10n.swift in Sources */,
+				51FF4B83092435E07ADABE88 /* ProPurchaseStore.swift in Sources */,
+				2AC792D386D766A586D6FEAE /* ProUpgradePanel.swift in Sources */,
 				E7198A1E8C03B0799678B7FE /* SampleBufferDisplayView.swift in Sources */,
 				63ED0B74BC94C4EA1EB5A4A0 /* SampleBufferRenderer.swift in Sources */,
 				74DE0C6A5F3D7568A216DFB3 /* SettingsPanels.swift in Sources */,
@@ -499,6 +529,7 @@
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) STAGEPANE_APP_STORE";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
@@ -526,6 +557,7 @@
 				SKIP_INSTALL = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) STAGEPANE_APP_STORE";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;

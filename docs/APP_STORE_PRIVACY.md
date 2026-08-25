@@ -1,13 +1,13 @@
 # StagePane Privacy Policy / StagePane プライバシーポリシー
 
-Effective date / 発効日: 2026-08-24
+Effective date / 発効日: 2026-08-25
 Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 
 ## Summary / 概要
 
-StagePane does not collect personal data, create accounts, show advertising, run analytics, or send telemetry. It has no third-party SDKs and makes no network requests.
+StagePane does not collect personal data, create accounts, show advertising, run analytics, or send telemetry. It has no third-party SDKs or publisher-operated server. Apple StoreKit handles the optional StagePane Pro product, purchase, entitlement, and restore flow.
 
-StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKを含まず、ネットワーク通信も行いません。
+StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKや発行者運用サーバーはなく、任意のStagePane Pro商品・購入・購入状態・復元はAppleのStoreKitが処理します。
 
 Every StagePane build provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and does not forward input to other applications.
 
@@ -15,9 +15,9 @@ StagePaneのすべてのビルドは配置と手書きを提供し、アクセ�
 
 ## Screen content / 画面内容
 
-StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. You can add up to four independently pausable and removable sources. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
+StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. Free supports two independently pausable and removable sources; StagePane Pro supports up to four. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
 
-StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
+StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。無料版は2件、StagePane Proは最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
 
 Selected frames are rendered locally in parallel in the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
 
@@ -56,6 +56,10 @@ Screen access is granted per selection and per capture session through Apple's p
 StagePane does not upload screen content or screenshots. It has no server-side retention, disclosure, sale, cross-context behavioral advertising, or tracking. The privacy manifest declares tracking false and collected data types empty. A meeting app that transmits the Stage is separate software governed by that provider's terms and privacy information.
 
 StagePaneは画面内容やスクリーンショットをアップロードしません。サーバー側の保持、開示、販売、行動ターゲティング広告、トラッキングはありません。プライバシーマニフェストではトラッキングなし、収集データなしを宣言します。Stageを送信する会議アプリは別製品であり、その提供者の規約とプライバシー情報が適用されます。
+
+For optional StagePane Pro commerce, StoreKit may contact Apple's App Store to load localized product information, complete a purchase, verify current entitlement, listen for transaction changes, or restore a purchase. Apple handles Apple Account credentials. StagePane receives product and verified transaction status needed to unlock Pro; it does not send screen content, source names, screenshots, pointer data, drawings, or usage analytics through StoreKit and has no commerce server of its own.
+
+任意のStagePane Pro購入では、StoreKitがローカライズ済み商品情報の取得、購入、現在の購入状態の検証、取引変更の反映、購入の復元のためAppleのApp Storeへ接続する場合があります。Apple Accountの認証情報はAppleが処理します。StagePaneはPro開放に必要な商品・検証済み取引状態を受け取りますが、画面内容、ソース名、スクリーンショット、ポインターデータ、手書き、利用解析をStoreKitへ送らず、独自の課金サーバーも持ちません。
 
 ## Changes and contact / 変更と連絡先
 

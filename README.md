@@ -14,9 +14,10 @@ StagePane is deliberately **not** a virtual display driver or alternate
 desktop. It doesn't modify macOS display configuration and doesn't use private
 `CGVirtualDisplay` APIs. With your explicit approval, Apple's public
 ScreenCaptureKit picker can add a window, an app, or a display as an independent
-source. Approval is scoped to that picker selection and capture session;
-StagePane does not request separate, broad Screen Recording access. Add up to
-four sources one at a time, then arrange them in the Stage.
+source. The free Mac App Store app supports two simultaneous sources and the
+one-time StagePane Pro purchase supports up to four. Approval is scoped to each
+picker selection and capture session; StagePane does not request separate,
+broad Screen Recording access.
 
 ## Why StagePane
 
@@ -102,7 +103,7 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
 1. Open StagePane. Keep **StagePane Workspace — Keep Private** on your screen.
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
-   session; repeat to add up to four independent sources.
+   session; repeat for two sources in Free or up to four with StagePane Pro.
 3. In **Workspace → Canvas**, drag a tile to move it and drag its lower-right
    handle to resize it. Use **Workspace → Sources** to pause or resume, replace,
    or remove one item. Use **Quick Layout** for Grid, Side by Side, Stacked, or
@@ -124,7 +125,8 @@ dot is drawn only in the Stage's frontmost source and does not change your Mac's
 system pointer. If that frontmost source is paused, StagePane shows no dot; it
 does not fall back to a source behind it. A translucent StagePane mark appears
 in the lower-right of the holding screen, shared content, and Curtain by default,
-is mirrored in the private Workspace, and can be disabled in Appearance.
+is mirrored in the private Workspace. StagePane Pro can disable it in
+Appearance, including for the Curtain and explicit Audience PNG output.
 
 Pausing a source stops its ScreenCaptureKit stream while retaining its last
 frame in the Stage and private Workspace. Resume restarts that source; Remove or
@@ -190,9 +192,11 @@ AppKit/SwiftUI executable. Details and constraints are in
 StagePane collects no data. Source frames are displayed from memory and are not
 automatically saved or sent by StagePane. Only an explicit screenshot action
 copies one clean Stage PNG to the macOS clipboard or saves it to a location the
-user chooses. The app has no network entitlement. Settings such as theme,
-pointer appearance, watermark visibility, and window behavior are stored in the
-app's sandboxed `UserDefaults`.
+user chooses. The app has no network entitlement or publisher-operated network
+service. In the Mac App Store build, Apple StoreKit retrieves Pro product and
+verified transaction information; screen content is never part of that flow.
+Settings such as theme, pointer appearance, watermark visibility, and window
+behavior are stored in the app's sandboxed `UserDefaults`.
 
 - Privacy details: [`docs/PRIVACY.md`](docs/PRIVACY.md)
 - Security reporting: [`SECURITY.md`](SECURITY.md)
@@ -206,7 +210,9 @@ recording, and privacy behavior.
 Source code is available under the [Apache License 2.0](LICENSE), which permits
 commercial use, modification, redistribution, and sale subject to its terms.
 Official signed binaries, support, and services may be sold even though the
-source is open.
+source is open. The official Mac App Store binary offers a useful Free tier and
+one non-consumable StagePane Pro purchase; source-built development binaries
+expose all features. See [`docs/MONETIZATION.md`](docs/MONETIZATION.md).
 
 The source license does not grant rights to present a fork as an official
 StagePane release. See [`TRADEMARKS.md`](TRADEMARKS.md). Official binary and
@@ -237,4 +243,6 @@ Stage設定、見た目と動作、アクセス権限、プライバシー、こ
 相手にはクロームのないStageだけを見せます。共有対象は
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
 求めません。明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
-自動撮影、録画、外部送信、アカウント、広告、解析はありません。
+自動撮影、録画、画面内容の外部送信、StagePaneアカウント、広告、解析はありません。
+Mac App Store版は無料で2ソース、買い切りのStagePane Proで最大4ソースと
+ロゴ非表示を利用できます。購入と購入状態の確認はAppleのStoreKitが処理します。
