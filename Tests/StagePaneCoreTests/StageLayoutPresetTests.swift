@@ -22,7 +22,7 @@ final class StageLayoutPresetTests: XCTestCase {
         }
     }
 
-    func testEveryPresetIsDeterministicAndPreservesZeroThroughFourSources() {
+    func testEveryPresetIsDeterministicForSmallFixtureCounts() {
         for preset in StageLayoutPreset.allCases {
             for count in 0 ... 4 {
                 var first = makeLayout(count: count, reversedFrames: false)

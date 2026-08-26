@@ -8,7 +8,6 @@ import UniformTypeIdentifiers
 
 enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
     case canvas
-    case sources
     case stage
     case appearance
     case pro
@@ -125,7 +124,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     var hasProAccess: Bool { purchases.hasProAccess }
 
-    var activeSourceLimit: Int {
+    var activeSourceLimit: Int? {
         StagePaneAccess.sourceLimit(hasProAccess: hasProAccess)
     }
 
@@ -439,20 +438,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             to: directory.appendingPathComponent("draw.png")
         )
 
-        setStageInteractionMode(.arrange)
-        privacyCurtain = true
-        workspaceSection = .sources
-        try writePNG(
-            of: StageWorkspaceView(
-                controller: self,
-                capture: capture,
-                snapshotFixture: .sources
-            )
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
-            to: directory.appendingPathComponent("sources.png")
-        )
-
         workspaceSection = .permissions
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
@@ -676,14 +661,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
         presentStage(makeKey: false)
         presentWorkspace()
+        transientNotice = nil
         capture.addSource()
     }
 
     @objc func toggleCurtain() {
+        transientNotice = nil
         privacyCurtain.toggle()
-        transientNotice = privacyCurtain
-            ? L10n.text("共有内容をカーテンで隠しています。", "The stage is covered by the curtain.")
-            : L10n.text("ステージの内容を表示しました。", "The stage content is visible.")
+        AccessibilityNotification.Announcement(
+            privacyCurtain
+                ? L10n.text("観客側はカーテン中です。", "Audience curtain is on.")
+                : L10n.text("観客側にStageを表示しています。", "The Stage is visible to the audience.")
+        ).post()
     }
 
     @objc func copyStageScreenshot() {
@@ -1031,15 +1020,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         if isActive, !wasActive {
             activeSessionStartedAt = Date()
             activeSessionReachedPreview = phase == .previewing
-            transientNotice = privacyCurtain
-                ? L10n.text(
-                    "ソースを追加し、画面取得を準備しています。会議アプリでは「StagePane Stage」を共有し、確認してからカーテンを開いてください。",
-                    "A source was added and capture is being prepared. Share “StagePane Stage” in your meeting app, confirm it, then reveal the Curtain."
-                )
-                : L10n.text(
-                    "ソースを追加し、ステージへの表示を準備しています。",
-                    "A source was added and is being prepared for the Stage."
-                )
         }
     }
 

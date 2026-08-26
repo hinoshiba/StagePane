@@ -4,8 +4,7 @@ import SwiftUI
 private extension WorkspaceSection {
     var title: String {
         switch self {
-        case .canvas: L10n.text("キャンバス", "Canvas")
-        case .sources: L10n.text("ソース", "Sources")
+        case .canvas: L10n.text("キャンバスとソース", "Canvas & Sources")
         case .stage: L10n.text("Stage設定", "Stage Settings")
         case .appearance: L10n.text("見た目と動作", "Appearance")
         case .pro: "StagePane Pro"
@@ -17,8 +16,7 @@ private extension WorkspaceSection {
 
     var symbol: String {
         switch self {
-        case .canvas: "rectangle.inset.filled"
-        case .sources: "square.stack.3d.up.fill"
+        case .canvas: "rectangle.3.group.fill"
         case .stage: "slider.horizontal.3"
         case .appearance: "paintpalette.fill"
         case .pro: "sparkles"
@@ -35,12 +33,13 @@ private extension WorkspaceSection {
 /// The shareable `StageView` remains a separate, chrome-free window, so workspace
 /// controls can never become part of the intended audience output.
 struct StageWorkspaceView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
     private let focusesAppearanceForSnapshot: Bool
     private let snapshotFixture: StageWorkspaceSnapshotFixture?
 
-    @State private var isSourceRailVisible = true
+    @State private var sourceRailVisibilityOverride: Bool?
     @State private var isClearInkConfirmationPresented = false
 
     init(
@@ -57,27 +56,22 @@ struct StageWorkspaceView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let usesCompactNavigation = geometry.size.width < 1_100
+            let navigationWidth = workspaceNavigationWidth(for: geometry.size.width)
+            let usesCompactNavigation = navigationWidth < 208
+            let workspaceContentWidth = max(geometry.size.width - navigationWidth - 1, 0)
+            let sourceRailFitsBesideCanvas =
+                sourceRailReservedWidth(in: workspaceContentWidth) >= 240
+            let sourceRailVisible = sourceRailVisibilityOverride ?? sourceRailFitsBesideCanvas
 
             HStack(spacing: 0) {
                 workspaceNavigation(compact: usesCompactNavigation)
-                    .frame(width: usesCompactNavigation ? 66 : 218)
+                    .frame(width: navigationWidth)
 
                 Divider().overlay(Color.white.opacity(0.10))
 
-                workspaceContent
+                workspaceContent(sourceRailVisible: sourceRailVisible)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .onAppear {
-                if usesCompactNavigation {
-                    isSourceRailVisible = false
-                }
-            }
-            .onChange(of: usesCompactNavigation) { _, isCompact in
-                if isCompact {
-                    isSourceRailVisible = false
-                }
-            }
         }
         .frame(minWidth: 900, minHeight: 620)
         .background(workspaceBackground.ignoresSafeArea())
@@ -104,38 +98,29 @@ struct StageWorkspaceView: View {
         ))
     }
 
-    private var workspaceContent: some View {
+    private func workspaceContent(sourceRailVisible: Bool) -> some View {
         VStack(spacing: 0) {
-            workspaceToolbar
+            workspaceToolbar(sourceRailVisible: sourceRailVisible)
             privateWorkspaceWarning
-
-            if let notice = controller.transientNotice {
-                WorkspaceNoticeBanner(message: notice) {
-                    controller.dismissTransientNotice()
+            workspaceDetail(sourceRailVisible: sourceRailVisible)
+                .overlay(alignment: .top) {
+                    if let notice = controller.transientNotice {
+                        WorkspaceNoticeBanner(message: notice) {
+                            controller.dismissTransientNotice()
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.top, 8)
+                        .transition(.opacity)
+                    }
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 7)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            workspaceDetail
         }
     }
 
     @ViewBuilder
-    private var workspaceDetail: some View {
+    private func workspaceDetail(sourceRailVisible: Bool) -> some View {
         switch controller.workspaceSection {
         case .canvas:
-            ViewThatFits(in: .horizontal) {
-                wideWorkspace
-                compactWorkspace
-            }
-        case .sources:
-            if snapshotFixture == .sources {
-                WorkspaceSourcesSnapshotPanel()
-            } else {
-                WorkspaceSourcesPanel(controller: controller, capture: capture)
-            }
+            canvasWorkspace(sourceRailVisible: sourceRailVisible)
         case .stage:
             StageSettingsPanel(controller: controller, capture: capture)
         case .appearance:
@@ -171,7 +156,7 @@ struct StageWorkspaceView: View {
 
             navigationGroup(
                 title: L10n.text("ワークスペース", "WORKSPACE"),
-                sections: [.canvas, .sources],
+                sections: [.canvas],
                 compact: compact
             )
 
@@ -252,7 +237,7 @@ struct StageWorkspaceView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .frame(width: 23, height: 23)
 
-                    if compact, section == .sources, displayedSourceCount > 0 {
+                    if compact, section == .canvas, displayedSourceCount > 0 {
                         Text("\(displayedSourceCount)")
                             .font(.system(size: 8, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
@@ -263,14 +248,14 @@ struct StageWorkspaceView: View {
                 }
 
                 if !compact {
-                    Text(section.title)
+                    Text(section == .pro ? "Pro" : section.title)
                         .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                         .lineLimit(1)
 
                     Spacer(minLength: 4)
 
-                    if section == .sources {
-                        Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
+                    if section == .canvas {
+                        Text(sourceCountSummary)
                             .font(.caption2.monospacedDigit().weight(.semibold))
                             .foregroundStyle(Color.white.opacity(0.48))
                     } else if section == .pro {
@@ -320,10 +305,12 @@ struct StageWorkspaceView: View {
         if controller.workspaceSection == section {
             values.append(L10n.text("選択中", "Selected"))
         }
-        if section == .sources {
+        if section == .canvas {
             values.append(L10n.text(
                 "\(displayedSourceCount)件",
-                "\(displayedSourceCount) of \(controller.activeSourceLimit)"
+                controller.activeSourceLimit.map {
+                    "\(displayedSourceCount) of \($0)"
+                } ?? "\(displayedSourceCount) sources; no Pro plan limit"
             ))
         }
         if section == .pro, controller.hasProAccess {
@@ -332,9 +319,12 @@ struct StageWorkspaceView: View {
         return values.joined(separator: ", ")
     }
 
-    private var workspaceToolbar: some View {
+    private func workspaceToolbar(sourceRailVisible: Bool) -> some View {
         GeometryReader { proxy in
-            workspaceToolbarContent(compact: proxy.size.width < 1_040)
+            workspaceToolbarContent(
+                compact: proxy.size.width < 1_040,
+                sourceRailVisible: sourceRailVisible
+            )
                 .frame(width: proxy.size.width, height: 58)
         }
         .frame(height: 58)
@@ -349,17 +339,22 @@ struct StageWorkspaceView: View {
         ))
     }
 
-    private func workspaceToolbarContent(compact: Bool) -> some View {
+    private func workspaceToolbarContent(
+        compact: Bool,
+        sourceRailVisible: Bool
+    ) -> some View {
         HStack(spacing: 11) {
             if controller.workspaceSection == .canvas {
                 Button {
-                    isSourceRailVisible.toggle()
+                    withAnimation(sourceRailAnimation) {
+                        sourceRailVisibilityOverride = !sourceRailVisible
+                    }
                 } label: {
                     if compact {
                         Image(systemName: "sidebar.left")
                     } else {
                         Label(
-                            isSourceRailVisible
+                            sourceRailVisible
                                 ? L10n.text("ソースを隠す", "Hide Sources")
                                 : L10n.text("ソースを表示", "Show Sources"),
                             systemImage: "sidebar.left"
@@ -367,10 +362,10 @@ struct StageWorkspaceView: View {
                     }
                 }
                 .buttonStyle(WorkspaceToolbarButtonStyle())
-                .accessibilityLabel(isSourceRailVisible
+                .accessibilityLabel(sourceRailVisible
                     ? L10n.text("ソース一覧を隠す", "Hide source list")
                     : L10n.text("ソース一覧を表示", "Show source list"))
-                .help(isSourceRailVisible
+                .help(sourceRailVisible
                     ? L10n.text("ソース一覧を隠します", "Hide the source list")
                     : L10n.text("ソース一覧を表示します", "Show the source list"))
             } else {
@@ -443,7 +438,8 @@ struct StageWorkspaceView: View {
             .buttonStyle(WorkspaceToolbarButtonStyle(
                 tint: controller.privacyCurtain
                     ? StagePanePalette.coralReadable
-                    : nil
+                    : nil,
+                fixedWidth: compact ? 36 : 132
             ))
             .accessibilityLabel(curtainButtonTitle)
             .accessibilityValue(controller.privacyCurtain
@@ -495,7 +491,7 @@ struct StageWorkspaceView: View {
 
             Button(action: controller.requestConferenceShare) {
                 Label(
-                    L10n.text("共有先をStageへ", "Switch Share to Stage"),
+                    conferenceShareTitle,
                     systemImage: "arrow.up.forward.app"
                 )
             }
@@ -525,44 +521,55 @@ struct StageWorkspaceView: View {
         ))
     }
 
-    private var wideWorkspace: some View {
-        HStack(spacing: 0) {
-            if isSourceRailVisible {
-                sourceRail
-                    .frame(width: 240)
-            }
+    private func canvasWorkspace(sourceRailVisible: Bool) -> some View {
+        GeometryReader { geometry in
+            let reservedWidth = sourceRailReservedWidth(in: geometry.size.width)
+            let overlaysCanvas = reservedWidth < 240
 
-            Divider().overlay(Color.white.opacity(0.10))
-            stageWorkspace
-                .frame(minWidth: 650)
-        }
-        .frame(minWidth: isSourceRailVisible ? 910 : 680)
-    }
+            ZStack(alignment: .leading) {
+                stageWorkspace
+                    .padding(.leading, sourceRailVisible ? reservedWidth : 0)
 
-    private var compactWorkspace: some View {
-        stageWorkspace
-            .overlay(alignment: .leading) {
-                if isSourceRailVisible {
+                if sourceRailVisible {
                     sourceRail
                         .frame(width: 240)
-                        .background(.ultraThinMaterial)
+                        .background {
+                            if overlaysCanvas {
+                                Rectangle().fill(.ultraThinMaterial)
+                            } else {
+                                Color.black.opacity(0.16)
+                            }
+                        }
                         .overlay(alignment: .trailing) {
                             Divider().overlay(Color.white.opacity(0.14))
                         }
-                        .shadow(color: .black.opacity(0.42), radius: 24, x: 10)
+                        .shadow(
+                            color: overlaysCanvas ? .black.opacity(0.42) : .clear,
+                            radius: 24,
+                            x: 10
+                        )
                         .transition(.move(edge: .leading).combined(with: .opacity))
+                        .zIndex(1)
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+        }
     }
 
     private var sourceRail: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "square.stack.3d.up.fill")
                     .foregroundStyle(StagePanePalette.aqua)
                     .accessibilityHidden(true)
-                Text(L10n.text("ステージのソース", "Stage Sources"))
-                    .font(.caption.weight(.bold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.text("ステージのソース", "Stage Sources"))
+                        .font(.caption.weight(.bold))
+                    Text(L10n.text("上が最前面", "Top is frontmost"))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 if controller.hasProAccess {
                     Text("PRO")
@@ -573,12 +580,12 @@ struct StageWorkspaceView: View {
                         .frame(minHeight: 17)
                         .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
                 }
-                Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
+                Text(sourceCountSummary)
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 15)
-            .frame(minHeight: 42)
+            .frame(minHeight: 50)
 
             Divider().overlay(Color.white.opacity(0.09))
 
@@ -599,7 +606,6 @@ struct StageWorkspaceView: View {
                     .frame(maxHeight: .infinity, alignment: .top)
             }
         }
-        .background(Color.black.opacity(0.16))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text(
             "ステージのソース一覧",
@@ -927,6 +933,13 @@ struct StageWorkspaceView: View {
         controller.privacyCurtain ? "eye.fill" : "shield.lefthalf.filled"
     }
 
+    private var conferenceShareTitle: String {
+        if #available(macOS 15.0, *) {
+            return L10n.text("共有先をStageへ", "Switch Share to Stage")
+        }
+        return L10n.text("共有方法を見る", "How to Share")
+    }
+
     private func modeSymbol(_ mode: StageInteractionMode) -> String {
         switch mode {
         case .arrange: "rectangle.3.group"
@@ -982,6 +995,25 @@ struct StageWorkspaceView: View {
 
     private var displayedSourceCount: Int {
         snapshotFixture?.sourceCount ?? capture.sources.count
+    }
+
+    private var sourceCountSummary: String {
+        controller.activeSourceLimit.map {
+            "\(displayedSourceCount) / \($0)"
+        } ?? "\(displayedSourceCount)"
+    }
+
+    private var sourceRailAnimation: Animation? {
+        accessibilityReduceMotion ? nil : .easeOut(duration: 0.18)
+    }
+
+    private func workspaceNavigationWidth(for workspaceWidth: CGFloat) -> CGFloat {
+        let progress = min(max((workspaceWidth - 900) / 200, 0), 1)
+        return 66 + (152 * progress)
+    }
+
+    private func sourceRailReservedWidth(in contentWidth: CGFloat) -> CGFloat {
+        min(max(contentWidth - 820, 0), 240)
     }
 }
 
@@ -1321,9 +1353,11 @@ private struct WorkspaceOutputStatus: View {
 
 private struct WorkspaceToolbarButtonStyle: ButtonStyle {
     var tint: Color?
+    var fixedWidth: CGFloat?
 
-    init(tint: Color? = nil) {
+    init(tint: Color? = nil, fixedWidth: CGFloat? = nil) {
         self.tint = tint
+        self.fixedWidth = fixedWidth
     }
 
     func makeBody(configuration: Configuration) -> some View {
@@ -1331,6 +1365,7 @@ private struct WorkspaceToolbarButtonStyle: ButtonStyle {
             .font(.caption.weight(.semibold))
             .foregroundStyle(tint ?? Color.white.opacity(0.86))
             .padding(.horizontal, 10)
+            .frame(width: fixedWidth)
             .frame(minHeight: 31)
             .background(
                 (tint ?? Color.white).opacity(configuration.isPressed ? 0.16 : 0.08),

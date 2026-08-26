@@ -39,7 +39,7 @@
         "name": "StagePane",
         "applicationCategory": "ProductivityApplication",
         "operatingSystem": "macOS 14 or later",
-        "description": "StagePane is an open-source macOS app that separates a clean sharing Stage from a private Workspace for arranging, drawing, and managing sources.",
+        "description": "StagePane is an open-source macOS app that separates a clean sharing Stage from a private Workspace with source management integrated beside its Arrange and Draw Canvas.",
         "url": "https://stagepane.hinoshiba.com/en/",
         "sameAs": "https://github.com/hinoshiba/StagePane",
         "license": "https://www.apache.org/licenses/LICENSE-2.0"
@@ -152,7 +152,7 @@
           <div class="separation-item separation-private">
             <span class="separation-icon">⌘</span>
             <div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
-            <p>A large live editor with Sources and settings together in one sidebar.</p>
+            <p>A large live Canvas with its source list alongside and settings in the sidebar.</p>
           </div>
         </div>
       </section>
@@ -168,7 +168,7 @@
             <article class="proof-card">
               <div class="proof-copy">
                 <p class="eyebrow"><span></span> StagePane Pro · Arrange</p>
-                <h3>Compose three sources with Pro.</h3>
+                <h3>Compose the sources you need with Pro.</h3>
                 <p>Move, freely resize, reorder, or apply a Quick Layout directly on the Canvas. The laser pointer appears only over the frontmost source.</p>
               </div>
               <div class="proof-shot">
@@ -199,7 +199,7 @@
           <div class="feature-grid">
             <article class="feature-card feature-card-wide">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2"/><path d="M7 20h14V9h-4M10 15v5"/></svg></div>
-              <div><h3>Clearly separate sharing from editing</h3><p>Put only audience content in the chrome-free Stage. Arrange and draw on the Workspace Canvas; manage sources and settings from its Docker-style sidebar. “Keep Private” is guidance, not a capture boundary, so verify the title and share the exact Stage window—not the full display or app.</p></div>
+              <div><h3>Clearly separate sharing from editing</h3><p>Put only audience content in the chrome-free Stage. Arrange and draw on the Workspace Canvas, manage sources in the list alongside it, and keep settings in the Docker-style sidebar. “Keep Private” is guidance, not a capture boundary, so verify the title and share the exact Stage window—not the full display or app.</p></div>
               <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>WORKSPACE</span><i></i><i></i><i></i></div></div>
             </article>
             <article class="feature-card">
@@ -209,8 +209,8 @@
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
-              <h3>Two sources free, up to four with Pro</h3>
-              <p>Add sources one at a time with Apple's system picker, then pause, resume, replace, or remove each one independently; Remove asks before discarding its frame and layout. Free supports two simultaneous sources, while the one-time StagePane Pro purchase supports up to four. On the large Canvas, arrange freely or draw with a pen, translucent highlighter, and size-adjustable partial eraser whose action can be undone exactly. Draw automatically hides the audience pointer; returning to Arrange restores the selected style. Each choice authorizes only that shared content for its capture session. StagePane requests no separate broad Screen Recording, Accessibility, or Input Monitoring permission and forwards no input to source apps.</p>
+              <h3>Two sources free; no app-imposed plan limit with Pro</h3>
+              <p>Add sources one at a time with Apple's system picker, then pause, resume, replace, or remove each one in the list beside the Canvas; Remove asks before discarding its frame and layout. The list runs from frontmost at the top to backmost at the bottom, and selecting a source brings it to the front. Free supports two simultaneous sources. The one-time StagePane Pro purchase has no app-imposed plan limit on source count. It does not guarantee an unlimited source count in all circumstances; the practical limit depends on your Mac, ScreenCaptureKit, and the content you select. On the large Canvas, arrange freely or draw with a pen, translucent highlighter, and size-adjustable partial eraser whose action can be undone exactly. Draw automatically hides the audience pointer; returning to Arrange restores the selected style. Each choice authorizes only that shared content for its capture session. StagePane requests no separate broad Screen Recording, Accessibility, or Input Monitoring permission and forwards no input to source apps.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
@@ -241,9 +241,9 @@
           </div>
           <div class="screenshot-grid">
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-private">STAGEPANE PRO</span> Workspace Sources</div>
-              <img src="../assets/screenshots/en/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Pro Workspace Sources view with three synthetic sources, two active and one paused, plus Pause, Resume, Replace, and Remove actions">
-              <figcaption><strong>Manage a third or fourth source with Pro.</strong> Pause, resume, replace, or remove each item from the Workspace’s Sources view.</figcaption>
+              <div class="screenshot-label"><span class="label-private">STAGEPANE PRO</span> Workspace Canvas &amp; Sources</div>
+              <img src="../assets/screenshots/en/arrange.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Pro Workspace showing three synthetic sources on the Canvas and the source list alongside it">
+              <figcaption><strong>Manage sources without leaving the preview.</strong> The list beside the Canvas runs from frontmost to backmost. Select, pause, resume, replace, or remove a source while keeping the composition in view.</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-local">PICKER-SCOPED</span> Permissions</div>
@@ -283,8 +283,8 @@
             <aside class="note-card"><strong>Check the exact window title</strong><p>Select “StagePane Stage” in your meeting app. “Keep Private” does not technically exclude Workspace; sharing the app or full display can expose it. On macOS 15 or later, Switch Active Share can ask a compatible, already-running sharing session to switch to Stage; it cannot start or control sharing in every meeting app.</p></aside>
           </div>
           <ol class="steps">
-            <li><span>01</span><div><h3>Open StagePane</h3><p>StagePane opens two windows: the clean Share Stage and one private Workspace with Canvas, Sources, and settings in its sidebar.</p></div></li>
-            <li><span>02</span><div><h3>Add what to show</h3><p>Choose Add Source and approve one window, app, or display for that capture session. Choosing an app can include multiple windows owned by it; choose one window for the narrowest scope. Free supports two simultaneous sources; the one-time StagePane Pro purchase supports up to four.</p></div></li>
+            <li><span>01</span><div><h3>Open StagePane</h3><p>StagePane opens two windows: the clean Share Stage and one private Workspace with a source list beside its Canvas and settings in the sidebar.</p></div></li>
+            <li><span>02</span><div><h3>Add what to show</h3><p>Choose Add Source and approve one window, app, or display for that capture session. Choosing an app can include multiple windows owned by it; choose one window for the narrowest scope. Free supports two simultaneous sources. The one-time StagePane Pro purchase has no app-imposed plan limit on source count. It does not guarantee an unlimited source count in all circumstances; the practical limit depends on your Mac, ScreenCaptureKit, and the content you select.</p></div></li>
             <li><span>03</span><div><h3>Arrange and share the Stage</h3><p>Move, resize, or draw on the private Workspace, then select the exact “StagePane Stage” window in your meeting app and reveal the Curtain.</p></div></li>
             <li><span>04</span><div><h3>Stop completely when finished</h3><p>Use Stop All to end every stream and discard held frames. The Curtain alone does not stop capture.</p></div></li>
           </ol>

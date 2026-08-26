@@ -11,8 +11,9 @@ English: **A clean stage for everything you share.**
 
 The mental model is **Audience Stage + private Stage Workspace**, never a
 replacement desktop. The Stage is a chrome-free output. The Workspace combines
-the large WYSIWYG Canvas, Sources, Stage Settings, Appearance, Permissions,
-Privacy, and About behind a Docker-style sidebar.
+the large WYSIWYG Canvas & Sources view, Stage Settings, Appearance,
+Permissions, Privacy, and About behind a Docker-style sidebar. Source lifecycle
+controls live in the Canvas's left rail instead of a separate Sources screen.
 Ink `#0C1018`, Stage Indigo `#5B5CF0`, and Beam Aqua `#48D8E8` form the core
 palette. Status uses macOS semantic colors plus icons/text; the brand gradient
 is reserved for the mark and empty states.
@@ -36,11 +37,14 @@ and end capture with no retained frame or orphaned state.
   access is scoped to that selection and capture session, with no separate
   broad Screen Recording permission
 - two independently pausable/resumable, replaceable, and removable in-memory
-  video sources in Free, or up to four with the one-time StagePane Pro purchase;
-  pause stops the stream and retains its last frame
+  video sources in Free; the one-time StagePane Pro purchase removes
+  StagePane's plan-level source-count limit, while Mac performance,
+  ScreenCaptureKit, and the selected content still determine the practical
+  finite count; pause stops the stream and retains its last frame
 - large private Workspace hosting Arrange and Draw, with move, free resize,
-  z-order, and auto arrange; source management and
-  settings live in its sidebar
+  z-order, and quick layouts; its Canvas's left source rail supports add,
+  pause/resume, replace, remove, and Stop All beside the live preview, with the
+  top row representing the frontmost layer; settings remain in the sidebar
 - explicit per-source removal confirmation and stop-all capture teardown
 - instant Privacy Curtain with customizable message
 - 16:9, 4:3, 9:16, 1:1 shapes

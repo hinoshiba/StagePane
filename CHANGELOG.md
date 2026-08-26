@@ -9,14 +9,16 @@ Versioning once 1.0.0 is released.
 
 - Initial StagePane macOS application and brand system.
 - Stable, chrome-free Share Stage plus one private Stage Workspace. A
-  Docker-style sidebar brings Canvas, Sources, Stage Settings, Appearance,
+  Docker-style sidebar brings Canvas & Sources, Stage Settings, Appearance,
   Permissions, Privacy, and About into that single working window.
 - macOS ScreenCaptureKit system picker for local window/app/display preview.
   Each choice grants access only to the selected content for that capture
   session; StagePane does not request separate broad Screen Recording access.
-- Up to four independently consented window/app/display sources, added one at a
-  time with per-source pause/resume, replace, and remove controls. Pausing stops
-  that source's stream while retaining its last frame until resume or removal.
+- Independently consented window/app/display sources, added one at a time with
+  per-source pause/resume, replace, and remove controls. Free supports two;
+  StagePane Pro has no app-imposed plan limit, while the practical count depends
+  on the Mac, ScreenCaptureKit, and selected content. Pausing stops that source's
+  stream while retaining its last frame until resume or removal.
 - A private Stage Workspace with a large live editor, drag, free resize,
   front-to-back ordering, and deterministic automatic arrangement.
 - Mutually exclusive Arrange and Draw modes. Draw renders bounded, session-only
@@ -50,12 +52,19 @@ Versioning once 1.0.0 is released.
   icon, privacy manifest, help, and legal-resource verification.
 - Restored the private Canvas preview by keeping its renderer on the live
   presentation timeline across source and layout reconfiguration.
+- Kept the live Canvas renderer in one stable view while the source rail opens,
+  closes, or adapts to window width, avoiding display-layer reattachment.
+- Removed routine source-added and Curtain banners, kept actionable notices as
+  non-layout overlays, and fixed the Curtain / Reveal Stage toolbar width.
 
 ### Changed
 
 - Refreshed the bilingual website around the current two-window workflow, with
-  deterministic Arrange, Draw, Sources, and Permissions screenshots generated
+  deterministic Arrange, Draw, and Permissions screenshots generated
   by StagePane itself from privacy-safe synthetic content.
+- Integrated source lifecycle controls beside the live Canvas and removed the
+  separate Sources screen. The list now runs from frontmost at the top to
+  backmost at the bottom, with Stop All available in the same workflow.
 - Laser pointer mode now draws one dot only for the frontmost Stage source.
   A paused frontmost source shows no dot and does not delegate pointer display
   to a source behind it.
@@ -67,7 +76,7 @@ Versioning once 1.0.0 is released.
   full Privacy screen and privacy documentation remain available.
 - Set a minimum content size for the Workspace so its navigation, Canvas, and
   settings remain usable at the smallest supported window size.
-- Consolidated the former Control Room into the Stage Workspace. Canvas,
+- Consolidated the former Control Room into the Stage Workspace. Canvas &
   Sources, Stage Settings, Appearance, Permissions, Privacy, and About now use
   one Docker-style sidebar; the only other window is the chrome-free Share
   Stage. The private-window label remains workflow guidance, not a security

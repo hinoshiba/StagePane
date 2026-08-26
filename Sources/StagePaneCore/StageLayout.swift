@@ -155,14 +155,20 @@ public enum StageLayoutPreset: String, CaseIterable, Codable, Identifiable, Send
 
 /// Ordered source tiles on a normalized stage canvas.
 ///
-/// Ordering is explicit so rendering order and automatic placement are both
-/// deterministic. Duplicate identifiers are ignored, retaining the first
-/// occurrence.
+/// `sources` is back-to-front rendering order: the last value is the visible
+/// frontmost layer. `frontToBackSources` exposes the inverse order used by a
+/// layer list, where the top row represents the frontmost source. Duplicate
+/// identifiers are ignored, retaining the first occurrence.
 public struct StageLayout: Codable, Equatable, Sendable {
     public static let defaultGap = 0.02
     public static let defaultMinimumDimension = 0.10
 
     public private(set) var sources: [StageSourceLayout]
+
+    /// Source layers in the order presented by a conventional layer list.
+    public var frontToBackSources: [StageSourceLayout] {
+        Array(sources.reversed())
+    }
 
     public init(sources: [StageSourceLayout] = []) {
         self.sources = Self.uniqueSources(sources)
@@ -212,6 +218,16 @@ public struct StageLayout: Codable, Equatable, Sendable {
         return true
     }
 
+    /// Moves a source to the visible front while preserving every frame.
+    @discardableResult
+    public mutating func bringSourceToFront(_ sourceID: StageSourceID) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }),
+              index != sources.index(before: sources.endIndex) else { return false }
+        let source = sources.remove(at: index)
+        sources.append(source)
+        return true
+    }
+
     /// Replaces current positions with the deterministic automatic grid while
     /// retaining source IDs and their order.
     public mutating func arrangeAutomatically(gap: Double = StageLayout.defaultGap) {
@@ -219,8 +235,7 @@ public struct StageLayout: Codable, Equatable, Sendable {
     }
 
     /// Applies a quick layout without replacing source values or changing
-    /// their order. The presets are designed for StagePane's supported range
-    /// of zero through four sources.
+    /// their order. Every preset accepts an arbitrary positive source count.
     public mutating func apply(
         preset: StageLayoutPreset,
         gap: Double = StageLayout.defaultGap
@@ -360,8 +375,8 @@ public struct StageLayout: Codable, Equatable, Sendable {
         guard count > 0 else { return [] }
         guard count > 1 else { return [.fullCanvas] }
 
-        // StagePane exposes at most four simultaneous sources. A grid remains
-        // a safe deterministic recovery path for malformed future data.
+        // More than three overlays become difficult to distinguish. A grid is
+        // the deterministic scalable form of this preset for larger stages.
         guard count <= 4 else { return automaticFrames(count: count, gap: gap) }
 
         let actualGap = boundedGap(gap, maximum: 0.08)
@@ -401,12 +416,24 @@ public struct StageLayout: Codable, Equatable, Sendable {
 
     /// A predictable initial placement that never moves existing sources.
     /// The first source fills the Stage; later sources arrive as editable
-    /// picture-in-picture tiles at the remaining corners. Auto Arrange remains
+    /// picture-in-picture tiles at the remaining corners. Quick Layout remains
     /// an explicit user action.
     public static func suggestedFrameForNewSource(
         occupiedFrames: [NormalizedStageRect]
     ) -> NormalizedStageRect {
         guard !occupiedFrames.isEmpty else { return .fullCanvas }
+
+        // Preserve the familiar large corner tiles for the first four layers.
+        // Beyond that, derive progressively denser candidates so Pro's lack of
+        // a plan limit never stacks every additional source on the same frame.
+        if occupiedFrames.count >= 4 {
+            let scalableCandidates = automaticFrames(count: occupiedFrames.count + 1)
+            return scalableCandidates.min { left, right in
+                overlapArea(of: left, with: occupiedFrames) <
+                    overlapArea(of: right, with: occupiedFrames)
+            } ?? .fullCanvas
+        }
+
         let pictureInPictureFrames = [
             NormalizedStageRect(x: 0.52, y: 0.52, width: 0.46, height: 0.46),
             NormalizedStageRect(x: 0.02, y: 0.52, width: 0.46, height: 0.46),

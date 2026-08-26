@@ -650,7 +650,7 @@ struct CaptureSourceList: View {
                     Text(L10n.text("ソース", "Sources"))
                         .font(.headline)
                     Spacer()
-                    Text("\(capture.sources.count) / \(controller.activeSourceLimit)")
+                    Text(sourceCountSummary)
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                     if controller.hasProAccess {
@@ -677,6 +677,7 @@ struct CaptureSourceList: View {
                         ForEach(capture.sources) { source in
                             CaptureSourceRow(
                                 source: source,
+                                isFrontmost: capture.sources.first?.id == source.id,
                                 controller: controller,
                                 capture: capture
                             )
@@ -704,12 +705,22 @@ struct CaptureSourceList: View {
                 .disabled(!controller.canRequestSourceAddition)
             }
 
-            Button(action: capture.arrangeSourcesAutomatically) {
-                Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
+            Button(action: controller.stopPreview) {
+                Label(
+                    capture.hasResettableFailure
+                        ? L10n.text("画面取得をリセット", "Reset Capture")
+                        : L10n.text("すべて停止", "Stop All"),
+                    systemImage: capture.hasResettableFailure
+                        ? "arrow.counterclockwise"
+                        : "stop.fill"
+                )
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(SecondaryActionButtonStyle())
-            .disabled(capture.sources.isEmpty || capture.isPickerPresented)
+            .disabled(
+                (!capture.isCaptureActive && !capture.hasResettableFailure) ||
+                    capture.isPickerPresented
+            )
 
             if showsWorkspaceHint {
                 Text(L10n.text(
@@ -739,34 +750,67 @@ struct CaptureSourceList: View {
             hasProAccess: controller.hasProAccess
         ) ? "lock.open.fill" : "plus"
     }
+
+    private var sourceCountSummary: String {
+        controller.activeSourceLimit.map {
+            "\(capture.sources.count) / \($0)"
+        } ?? "\(capture.sources.count)"
+    }
 }
 
 private struct CaptureSourceRow: View {
     @ObservedObject var source: CaptureSource
+    let isFrontmost: Bool
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
     @State private var isRemoveConfirmationPresented = false
 
     var body: some View {
         HStack(spacing: 9) {
-            Image(systemName: source.kind.symbolName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(iconColor)
-                .frame(width: 29, height: 29)
-                .background(iconColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityHidden(true)
+            Button {
+                capture.bringSourceToFront(source.id)
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: source.kind.symbolName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(iconColor)
+                        .frame(width: 29, height: 29)
+                        .background(iconColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(source.title)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                Text(phaseTitle)
-                    .font(.caption2)
-                    .foregroundStyle(phaseColor)
-                    .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(source.title)
+                                .font(.caption.weight(.semibold))
+                                .lineLimit(1)
+                            if isFrontmost {
+                                Image(systemName: "square.3.layers.3d.top.filled")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(StagePanePalette.aquaReadable)
+                                    .accessibilityLabel(L10n.text("最前面", "Frontmost"))
+                            }
+                        }
+                        Text(phaseTitle)
+                            .font(.caption2)
+                            .foregroundStyle(phaseColor)
+                            .lineLimit(1)
+                    }
+                }
+                .contentShape(Rectangle())
             }
-
-            Spacer(minLength: 4)
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(L10n.text(
+                "\(source.title)を最前面へ",
+                "Bring \(source.title) to front"
+            ))
+            .accessibilityValue(isFrontmost
+                ? L10n.text("現在最前面", "Currently frontmost")
+                : "")
+            .help(L10n.text(
+                "このソースを最前面へ移動",
+                "Move this source to the front"
+            ))
 
             VStack(alignment: .trailing, spacing: 3) {
                 Button(pauseActionTitle) {
@@ -799,10 +843,6 @@ private struct CaptureSourceRow: View {
         }
         .padding(8)
         .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            capture.bringSourceToFront(source.id)
-        }
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
             capture.bringSourceToFront(source.id)

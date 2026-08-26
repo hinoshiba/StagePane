@@ -9,11 +9,11 @@ final class StagePaneAccessTests: XCTestCase {
         XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 2, hasProAccess: false))
     }
 
-    func testProPlanAllowsFourSources() {
-        XCTAssertEqual(StagePaneAccess.sourceLimit(hasProAccess: true), 4)
+    func testProPlanDoesNotImposeASourceLimit() {
+        XCTAssertNil(StagePaneAccess.sourceLimit(hasProAccess: true))
         XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 2, hasProAccess: true))
-        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 3, hasProAccess: true))
-        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 4, hasProAccess: true))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 4, hasProAccess: true))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 10_000, hasProAccess: true))
     }
 
     func testThirdSourceIsTheUpgradeBoundary() {
@@ -37,7 +37,13 @@ final class StagePaneAccessTests: XCTestCase {
         )
         XCTAssertFalse(
             StagePaneAccess.requiresProForNextSource(
-                currentCount: 4,
+                currentCount: 2,
+                hasProAccess: true
+            )
+        )
+        XCTAssertTrue(
+            StagePaneAccess.requiresProForNextSource(
+                currentCount: 10_000,
                 hasProAccess: false
             )
         )

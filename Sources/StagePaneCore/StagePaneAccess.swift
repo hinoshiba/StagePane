@@ -5,17 +5,24 @@
 /// remains useful before a person is asked to purchase anything.
 public enum StagePaneAccess {
     public static let freeSourceLimit = 2
-    public static let proSourceLimit = 4
 
-    public static func sourceLimit(hasProAccess: Bool) -> Int {
-        hasProAccess ? proSourceLimit : freeSourceLimit
+    /// The plan-level source limit, or `nil` when the plan does not impose one.
+    ///
+    /// Pro removes StagePane's artificial source-count gate. Available memory,
+    /// ScreenCaptureKit, and the selected content can still determine the
+    /// practical number of simultaneous sources on a particular Mac.
+    public static func sourceLimit(hasProAccess: Bool) -> Int? {
+        hasProAccess ? nil : freeSourceLimit
     }
 
     public static func canAddSource(
         currentCount: Int,
         hasProAccess: Bool
     ) -> Bool {
-        currentCount < sourceLimit(hasProAccess: hasProAccess)
+        guard let limit = sourceLimit(hasProAccess: hasProAccess) else {
+            return true
+        }
+        return currentCount < limit
     }
 
     public static func requiresProForNextSource(
@@ -23,8 +30,7 @@ public enum StagePaneAccess {
         hasProAccess: Bool
     ) -> Bool {
         !hasProAccess &&
-            currentCount >= freeSourceLimit &&
-            currentCount < proSourceLimit
+            currentCount >= freeSourceLimit
     }
 
     /// Resolves the visible mark independently from the stored preference.

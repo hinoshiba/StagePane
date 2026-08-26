@@ -101,7 +101,7 @@ jobs:
           mkdir -p "$SNAPSHOT_PARENT"
           SNAPSHOT_DIR="$(mktemp -d "$SNAPSHOT_PARENT/stagepane-ci-shots.XXXXXX")"
           STAGEPANE_LANGUAGE=en "$BINARY" --snapshot "$SNAPSHOT_DIR"
-          for NAME in workspace arrange draw sources permissions privacy appearance; do
+          for NAME in workspace arrange draw permissions privacy appearance; do
             test -s "$SNAPSHOT_DIR/$NAME.png"
             test "$(sips -g pixelWidth "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelWidth/ { print $2 }')" = 2880
             test "$(sips -g pixelHeight "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelHeight/ { print $2 }')" = 1800

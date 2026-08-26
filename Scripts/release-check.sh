@@ -76,8 +76,8 @@ for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
 done
 
 IAP_PRODUCT_ID='com.hinoshiba.stagepane.pro'
-IAP_EN_DESCRIPTION='Hide the mark and compose up to four sources.'
-IAP_JA_DESCRIPTION='ロゴ非表示と最大4ソースを買い切りで開放'
+IAP_EN_DESCRIPTION="Hide mark; remove StagePane's source limit."
+IAP_JA_DESCRIPTION='ロゴ非表示とStagePaneのソース上限を解除'
 if [[ ${#IAP_EN_DESCRIPTION} -gt 45 || ${#IAP_JA_DESCRIPTION} -gt 45 ]] || \
    ! grep -F -q '"type" : "NonConsumable"' Config/StagePane.storekit || \
    ! grep -F -q "\"productID\" : \"$IAP_PRODUCT_ID\"" Config/StagePane.storekit || \

@@ -503,23 +503,23 @@ private final class CaptureStopBatch {
 /// persists, or transmits captured frames.
 @MainActor
 final class CaptureCoordinator: NSObject, ObservableObject {
-    static let maximumSources = StagePaneAccess.proSourceLimit
-
     @Published private(set) var phase: CapturePhase = .idle
     @Published private(set) var statusDetail = ""
     @Published private(set) var isCaptureActive = false
     @Published private(set) var isPickerPresented = false
+    /// Sources in front-to-back layer-list order. Stage rendering uses the
+    /// inverse, back-to-front order stored by `layout`.
     @Published private(set) var sources: [CaptureSource] = []
     @Published private(set) var layout = StageLayout()
 
     var canAddSource: Bool {
-        sessions.count < allowedSourceLimit && !isPickerPresented
+        isWithinAllowedSourceLimit && !isPickerPresented
     }
 
     /// Keeps the add action available at the Free limit so it can explain Pro,
-    /// while still disabling it during a picker or at the physical maximum.
+    /// while still enforcing a single picker interaction at a time.
     var canRequestSourceAddition: Bool {
-        sessions.count < Self.maximumSources && !isPickerPresented
+        !isPickerPresented
     }
 
     var occupiedSourceSlots: Int {
@@ -550,7 +550,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private var outputHeight = 1080
     private var configurationRevision = 0
     private var sourceOrdinal = 0
-    private var allowedSourceLimit = StagePaneAccess.freeSourceLimit
+    private var allowedSourceLimit: Int? = StagePaneAccess.freeSourceLimit
+
+    private var isWithinAllowedSourceLimit: Bool {
+        guard let allowedSourceLimit else { return true }
+        return sessions.count < allowedSourceLimit
+    }
 
     var hasResettableFailure: Bool {
         guard !isCaptureActive else { return false }
@@ -568,7 +573,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         let picker = SCContentSharingPicker.shared
         picker.defaultConfiguration = makePickerConfiguration()
-        picker.maximumStreamCount = Self.maximumSources
+        picker.maximumStreamCount = allowedSourceLimit
         picker.add(self)
         picker.isActive = true
     }
@@ -581,8 +586,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         addSource()
     }
 
-    func setAllowedSourceLimit(_ limit: Int) {
-        allowedSourceLimit = min(max(0, limit), Self.maximumSources)
+    func setAllowedSourceLimit(_ limit: Int?) {
+        allowedSourceLimit = limit.map { max(0, $0) }
+        // ScreenCaptureKit documents this optional as applying a limit only
+        // when it is set. `nil` therefore mirrors Pro's unrestricted policy.
+        SCContentSharingPicker.shared.maximumStreamCount = allowedSourceLimit
     }
 
     func addSource() {
@@ -595,16 +603,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             return
         }
-        guard sessions.count < Self.maximumSources else {
-            if !publishStopFailureIfPresent() {
-                statusDetail = L10n.text(
-                    "同時に追加できるソースは最大\(Self.maximumSources)件です。",
-                    "You can add up to \(Self.maximumSources) sources at once."
-                )
-            }
-            return
-        }
-        guard sessions.count < allowedSourceLimit else {
+        guard isWithinAllowedSourceLimit else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",
@@ -814,10 +813,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         updateConfigurationIfNeeded(for: session)
     }
 
-    func arrangeSourcesAutomatically() {
-        applyLayoutPreset(.grid)
-    }
-
     func applyLayoutPreset(_ preset: StageLayoutPreset) {
         var updated = layout
         updated.apply(preset: preset)
@@ -829,23 +824,15 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     func bringSourceToFront(_ sourceID: StageSourceID) {
-        guard let selected = layout[sourceID: sourceID],
-              layout.sources.last?.id != sourceID else { return }
-        let reordered = layout.sources.filter { $0.id != sourceID } + [selected]
-        layout = StageLayout(sources: reordered)
+        var updatedLayout = layout
+        guard updatedLayout.bringSourceToFront(sourceID),
+              let selected = sources.first(where: { $0.id == sourceID }) else { return }
+        layout = updatedLayout
+        sources = [selected] + sources.filter { $0.id != sourceID }
     }
 
     private func beginCapture(with filter: SCContentFilter) {
-        guard sessions.count < Self.maximumSources else {
-            if !publishStopFailureIfPresent() {
-                statusDetail = L10n.text(
-                    "同時に追加できるソースは最大\(Self.maximumSources)件です。",
-                    "You can add up to \(Self.maximumSources) sources at once."
-                )
-            }
-            return
-        }
-        guard sessions.count < allowedSourceLimit else {
+        guard isWithinAllowedSourceLimit else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",
@@ -856,7 +843,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
 
-        sourceOrdinal += 1
+        sourceOrdinal &+= 1
         let ordinal = sourceOrdinal
         let sourceID = StageSourceID(rawValue: UUID().uuidString)
         var proposedLayout = layout
@@ -934,7 +921,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             appliedSurfaceHeight: configuration.height
         )
         sessions[sourceID] = session
-        sources.append(source)
+        // A newly added source is the frontmost render layer, so it is the
+        // first row in the front-to-back Sources list.
+        sources.insert(source, at: 0)
         layout = proposedLayout
         isCaptureActive = true
         lastFailure = nil

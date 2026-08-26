@@ -6,13 +6,10 @@ import SwiftUI
 enum StageWorkspaceSnapshotFixture: Sendable {
     case arrange
     case draw
-    case sources
 
     var sourceCount: Int { 3 }
 
-    var hasCanvasComposition: Bool {
-        self == .arrange || self == .draw
-    }
+    var hasCanvasComposition: Bool { true }
 }
 private struct SnapshotSourcePresentation: Identifiable {
     let id: Int
@@ -79,9 +76,16 @@ struct SnapshotSourceRailList: View {
                         )
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(source.title)
-                            .font(.caption2.weight(.semibold))
-                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Text(source.title)
+                                .font(.caption2.weight(.semibold))
+                                .lineLimit(1)
+                            if source.isFrontmost {
+                                Image(systemName: "square.3.layers.3d.top.filled")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(StagePanePalette.aquaReadable)
+                            }
+                        }
                         Text(source.isPaused
                             ? L10n.text("一時停止", "Paused")
                             : L10n.text("取得中", "Active"))
@@ -91,12 +95,15 @@ struct SnapshotSourceRailList: View {
 
                     Spacer(minLength: 2)
 
-                    if source.isFrontmost {
-                        Image(systemName: "square.3.layers.3d.top.filled")
-                            .font(.system(size: 9))
-                            .foregroundStyle(StagePanePalette.aquaReadable)
-                            .help(L10n.text("最前面", "Frontmost"))
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Button(source.actionTitle, action: {})
+                        Button(L10n.text("選び直す", "Replace"), action: {})
+                        Button(role: .destructive, action: {}) {
+                            Text(L10n.text("解除", "Remove"))
+                        }
                     }
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
                 }
                 .padding(8)
                 .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
@@ -111,149 +118,12 @@ struct SnapshotSourceRailList: View {
             .buttonStyle(SecondaryActionButtonStyle())
 
             Button(action: {}) {
-                Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
+                Label(L10n.text("すべて停止", "Stop All"), systemImage: "stop.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(SecondaryActionButtonStyle())
         }
         .accessibilityHidden(true)
-    }
-}
-
-struct WorkspaceSourcesSnapshotPanel: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 18) {
-                SectionHeading(
-                    eyebrow: L10n.text("SOURCES", "SOURCES"),
-                    title: L10n.text("共有する内容を管理", "Manage what you share"),
-                    detail: L10n.text(
-                        "Appleの選択画面から1件ずつ追加し、一時停止・選び直し・解除をここで行います。",
-                        "Add one item at a time with Apple’s picker, then pause, replace, or remove it here."
-                    )
-                )
-
-                Spacer(minLength: 12)
-
-                HStack(spacing: 7) {
-                    Circle()
-                        .fill(StagePanePalette.mintReadable)
-                        .frame(width: 7, height: 7)
-                    Text(L10n.text("PRO・3ソース・1件一時停止", "PRO · 3 sources · 1 paused"))
-                        .lineLimit(1)
-                }
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(StagePanePalette.mintReadable)
-                .padding(.horizontal, 10)
-                .frame(minHeight: 29)
-                .background(StagePanePalette.mintReadable.opacity(0.10), in: Capsule())
-                .overlay(Capsule().stroke(StagePanePalette.mintReadable.opacity(0.22)))
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(L10n.text("ソース", "Sources"))
-                        .font(.headline)
-                    Spacer()
-                    Text("3 / \(CaptureCoordinator.maximumSources)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-
-                ForEach(SnapshotSourcePresentation.fixtures) { source in
-                    SnapshotSourceManagementRow(source: source)
-                }
-
-                Button(action: {}) {
-                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(PrimaryActionButtonStyle())
-
-                Button(action: {}) {
-                    Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-            }
-            .cardSurface()
-
-            HStack(spacing: 10) {
-                Button(action: {}) {
-                    Label(
-                        L10n.text("共有先をStageへ切替", "Switch Active Share"),
-                        systemImage: "arrow.up.forward.app"
-                    )
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-
-                Button(action: {}) {
-                    Label(
-                        L10n.text("すべてのソースを停止", "Stop All Sources"),
-                        systemImage: "stop.fill"
-                    )
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-            }
-        }
-        .padding(.top, 30)
-        .padding(.horizontal, 30)
-        .padding(.bottom, 26)
-        .frame(maxWidth: 960, maxHeight: .infinity, alignment: .topLeading)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct SnapshotSourceManagementRow: View {
-    let source: SnapshotSourcePresentation
-
-    var body: some View {
-        HStack(spacing: 11) {
-            Image(systemName: source.symbol)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                .frame(width: 32, height: 32)
-                .background(
-                    (source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                        .opacity(0.11),
-                    in: RoundedRectangle(cornerRadius: 9)
-                )
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    Text(source.title)
-                        .font(.caption.weight(.semibold))
-                    if source.isFrontmost {
-                        Text(L10n.text("最前面", "Frontmost"))
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(StagePanePalette.aquaReadable)
-                            .padding(.horizontal, 6)
-                            .frame(minHeight: 17)
-                            .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
-                    }
-                }
-                Text(source.statusTitle)
-                    .font(.caption2)
-                    .foregroundStyle(source.statusColor)
-            }
-
-            Spacer(minLength: 12)
-
-            Button(source.actionTitle, action: {})
-            Button(L10n.text("選び直す", "Replace"), action: {})
-            Button(role: .destructive, action: {}) {
-                Label(
-                    L10n.text("解除", "Remove"),
-                    systemImage: "exclamationmark.triangle"
-                )
-            }
-        }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .padding(.horizontal, 11)
-        .frame(minHeight: 58)
-        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 11))
     }
 }
 

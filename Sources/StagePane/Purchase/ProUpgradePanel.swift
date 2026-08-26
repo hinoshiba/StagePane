@@ -66,8 +66,8 @@ struct ProUpgradePanel: View {
                 .tracking(-0.7)
                 .accessibilityHeading(.h1)
                 Text(L10n.text(
-                    "買い切りで、最大4つのソースとロゴのないStageを開放します。",
-                    "One purchase unlocks up to four sources and a Stage without the StagePane mark."
+                    "買い切りで、ソース数のプラン上限とStagePaneロゴを外せます。",
+                    "One purchase removes StagePane’s plan limit and unlocks a Stage without the StagePane mark."
                 ))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -126,10 +126,10 @@ struct ProUpgradePanel: View {
         ) {
             ProBenefitCard(
                 symbol: "rectangle.3.group.fill",
-                title: L10n.text("最大4ソース", "Up to four sources"),
+                title: L10n.text("プラン上限なし", "No plan limit"),
                 detail: L10n.text(
-                    "スライド、デモ、コード、資料をひとつのStageへ。",
-                    "Bring slides, a demo, references, and more onto one Stage."
+                    "StagePaneによる上限はありません。実用数はMacの性能、ScreenCaptureKit、選ぶ内容によって異なります。",
+                    "StagePane imposes no limit. The practical count depends on your Mac, ScreenCaptureKit, and selected content."
                 )
             )
             ProBenefitCard(
@@ -159,7 +159,7 @@ struct ProUpgradePanel: View {
             PlanComparisonRow(
                 title: L10n.text("同時に使えるソース", "Simultaneous sources"),
                 freeValue: L10n.text("2つ", "Two"),
-                proValue: L10n.text("4つ", "Four")
+                proValue: L10n.text("プラン上限なし", "No plan limit")
             )
             Divider()
             PlanComparisonRow(
@@ -268,8 +268,8 @@ struct ProUpgradePanel: View {
                         : L10n.text("StagePane Proが有効です", "StagePane Pro is active"))
                         .font(.headline)
                     Text(L10n.text(
-                        "最大4つのソースとロゴ表示の切り替えを利用できます。",
-                        "You can use up to four sources and choose whether to show the StagePane mark."
+                        "StagePaneによるソース数のプラン上限なしで、ロゴ表示も切り替えられます。",
+                        "You can add sources without a StagePane plan limit and choose whether to show the StagePane mark."
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)

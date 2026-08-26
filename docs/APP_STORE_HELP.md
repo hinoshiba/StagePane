@@ -8,14 +8,14 @@ This help describes StagePane's sandboxed Arrange/Draw workflow.
 ## Create and share a Stage / Stageを作って共有する
 
 1. In **StagePane Workspace — Keep Private**, choose **Add Source / ソースを追加**.
-2. In Apple's picker, choose one window, app, or display. Free supports two simultaneous sources; StagePane Pro supports up to four.
-3. Use **Arrange / 配置** to move and resize sources, or **Draw / 手書き** to annotate the Stage.
+2. In Apple's picker, choose one window, app, or display. Free supports two simultaneous sources. StagePane Pro removes StagePane's plan-level source-count limit; the practical finite count depends on Mac performance, ScreenCaptureKit, and the selected content.
+3. In **Canvas & Sources / キャンバスとソース**, keep the live preview visible while using the left source rail. Use **Arrange / 配置** to move and resize sources, or **Draw / 手書き** to annotate the Stage.
 4. In your meeting app, share the exact window named **StagePane Stage — Share This Window / このウインドウを共有**.
 5. Check the target, then choose **Reveal Stage / カーテンを開く**.
 
 1. **StagePane Workspace — 共有しない編集画面** で **ソースを追加** を選びます。
-2. Appleのピッカーで、ウインドウ、アプリ、または画面を1件選びます。無料版は同時に2件、StagePane Proは最大4件まで追加できます。
-3. **配置** で移動・サイズ変更し、**手書き** でStageへ注釈を加えます。
+2. Appleのピッカーで、ウインドウ、アプリ、または画面を1件選びます。無料版は同時に2件までです。StagePane ProはStagePaneによるプラン上のソース数制限をなくしますが、実用上の有限な件数はMacの性能、ScreenCaptureKit、選択内容に左右されます。
+3. **キャンバスとソース** でライブプレビューを見ながら、左側のソース一覧を操作します。**配置** で移動・サイズ変更し、**手書き** でStageへ注釈を加えます。
 4. 会議アプリでは、正確に **StagePane Stage — このウインドウを共有** を選びます。
 5. 共有対象を確認してから **カーテンを開く** を選びます。
 
@@ -24,6 +24,14 @@ Workspace is a private working window, but macOS does not guarantee that it is h
 Workspaceは手元用ですが、画面全体やアプリ全体の共有から必ず隠れるとは限りません。観客向け出力だけを見せる場合は、正確にStageウインドウを共有してください。
 
 ## Manage sources / ソースを管理する
+
+Use the left rail in **Canvas & Sources**; there is no separate Sources screen.
+The top row is the frontmost Stage layer, and choosing another source row moves
+it to the front while the live Canvas remains visible.
+
+**キャンバスとソース** の左側の一覧を使います。別のソース画面はありません。
+最上段がStageの最前面レイヤーで、別の行を選ぶとライブキャンバスを
+表示したままそのソースを最前面へ移します。
 
 - **Pause / 一時停止** holds the latest displayed frame and stops that source's stream.
 - **Resume / 再開** restarts it.
@@ -84,9 +92,9 @@ StagePaneには、アカウント、広告、解析、マイク・音声取得�
 
 ## StagePane Pro / 購入と復元
 
-Open **StagePane Pro** in Workspace to see the App Store's localized one-time price. Pro unlocks source three and four and makes the StagePane mark optional on the Stage, Curtain, and Audience PNG. Use **Restore Purchases** on the same screen for a previous purchase. Canceling never changes or stops the current Stage.
+Open **StagePane Pro** in Workspace to see the App Store's localized one-time price. Pro removes StagePane's plan-level source-count limit and makes the StagePane mark optional on the Stage, Curtain, and Audience PNG. Actual usable capacity still depends on the Mac, ScreenCaptureKit, and selected content; this is not a guarantee of an absolute unlimited count. Use **Restore Purchases** on the same screen for a previous purchase. Canceling never changes or stops the current Stage.
 
-Workspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を確認できます。Proは3・4件目のソースを開放し、Stage、カーテン、Audience PNGのロゴを任意にします。同じ画面の **購入を復元** から以前の購入を復元できます。キャンセルしても現在のStageを変更・停止しません。
+Workspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を確認できます。ProはStagePaneによるプラン上のソース数制限をなくし、Stage、カーテン、Audience PNGのロゴを任意にします。実際に使える件数はMac、ScreenCaptureKit、選択内容に左右され、絶対的な無制限を保証しません。同じ画面の **購入を復元** から以前の購入を復元できます。キャンセルしても現在のStageを変更・停止しません。
 
 ## If something is wrong / 問題がある場合
 

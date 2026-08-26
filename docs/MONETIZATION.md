@@ -11,12 +11,17 @@ non-consumable In-App Purchase:
 
 | | Free | StagePane Pro |
 |---|---:|---:|
-| Simultaneous sources | 2 | 4 |
+| Simultaneous sources | 2 | No app-imposed plan limit* |
 | StagePane mark | Always shown | Optional |
 | Curtain, Stop All, pause, replace, and remove | Included | Included |
 | Arrange, Draw, layouts, pointer, and stage shapes | Included | Included |
 | Audience image copy/save | Included, with mark | Included, mark optional |
 | Billing | None | One-time purchase |
+
+\* This removes StagePane's artificial plan gate; it is not a guarantee of an
+absolute unlimited source count. Mac performance, available resources,
+ScreenCaptureKit, and the selected content determine the practical finite
+capacity of each session.
 
 - Product ID: `com.hinoshiba.stagepane.pro`
 - Type: Non-Consumable
@@ -194,10 +199,12 @@ Security and lifecycle requirements:
 - Never persist a Boolean “isPro” as an entitlement source.
 - Fail closed for Pro-only operations while entitlement is checking or cannot
   be verified; keep every free and safety feature available.
-- Keep the physical capture maximum at four and the current plan limit at two
-  or four. Enforce the plan again immediately before creating a stream because
+- Enforce the Free limit of two immediately before creating a stream because
   ScreenCaptureKit's system video menu can bypass the app's Add Source button.
-- If access is revoked with three or four sources active, preserve that live
+  Represent Pro as the absence of an app-imposed plan limit, not a large
+  invented physical maximum. ScreenCaptureKit and Mac resources can still
+  constrain practical capacity.
+- If access is revoked with more than two sources active, preserve that live
   session and block only new additions. Do not destructively stop a presentation.
 - Official builds use StoreKit. Source builds have full feature access so the
   Apache-licensed repository remains useful to contributors.
@@ -230,8 +237,8 @@ Admin, or App Manager should perform and independently review these steps.
 
 | Locale | Display name | Description |
 |---|---|---|
-| Japanese | `StagePane Pro` | `ロゴ非表示と最大4ソースを買い切りで開放` |
-| English (U.S.) | `StagePane Pro` | `Hide the mark and compose up to four sources.` |
+| Japanese | `StagePane Pro` | `ロゴ非表示とStagePaneのソース上限を解除` |
+| English (U.S.) | `StagePane Pro` | `Hide mark; remove StagePane's source limit.` |
 
 Both descriptions fit App Store Connect's current 45-character maximum; verify
 the live limits again before submission.
@@ -260,11 +267,14 @@ References:
 > third source or turns off the StagePane mark under Appearance.
 >
 > Free supports two simultaneous sources and includes all privacy and safety
-> controls. Pro supports up to four simultaneous sources and makes the
-> StagePane mark optional on the audience Stage, Privacy Curtain, and explicit
-> Audience PNG copy/save output. Purchase UI never appears in the shareable
-> Stage window. “Restore Purchases” explicitly invokes App Store sync. Only a
-> StoreKit-verified transaction for `com.hinoshiba.stagepane.pro` unlocks Pro.
+> controls. Pro removes StagePane's app-imposed plan-level source-count limit
+> and makes the StagePane mark optional on the audience Stage, Privacy Curtain,
+> and explicit Audience PNG copy/save output. The practical finite number of
+> simultaneous sources still depends on Mac performance, ScreenCaptureKit, and
+> the selected content; this is not an absolute unlimited guarantee. Purchase UI
+> never appears in the shareable Stage window. “Restore Purchases” explicitly
+> invokes App Store sync. Only a StoreKit-verified transaction for
+> `com.hinoshiba.stagepane.pro` unlocks Pro.
 >
 > To test the source-limit entry point, add two harmless test windows with
 > Apple's ScreenCaptureKit picker, then choose Add Source again. Canceling the
@@ -295,14 +305,18 @@ References:
 - App Store product missing/not-yet-approved behavior.
 - VoiceOver and keyboard completion of purchase, restore, retry, and Continue Free.
 - No purchase or review UI appears in the audience Stage.
-- Existing three/four-source session remains stable if entitlement changes.
+- An existing session with more than two sources remains stable if entitlement
+  changes.
 - Mac App Store receipt and transaction behavior offline after a prior purchase.
 
 ### Regression
 
 - Free source 1 and 2 still open Apple's picker.
 - Free source 3 opens Pro from every entry point, including the system video menu.
-- Pro source 4 works; source 5 is rejected by the physical maximum.
+- Pro source 4 and source 5 both work on capable test hardware, with no
+  StagePane-imposed count rejection. Continue a bounded performance test with
+  harmless sources and record the Mac/ScreenCaptureKit practical limit rather
+  than treating that observed limit as a product promise.
 - Free Stage, Curtain, Workspace preview, Copy, and Save always include the mark.
 - Pro mark preference applies consistently to every audience representation.
 - Curtain, Stop All, Draw, and permission guidance remain free.
@@ -317,7 +331,8 @@ ratings. Optimize the inputs StagePane can honestly control:
 
 1. First value in under 60 seconds; no launch paywall.
 2. Screenshot 1: unmistakable private Workspace versus audience Stage.
-3. Screenshot 2: “Up to four sources with StagePane Pro,” visibly labeled Pro.
+3. Screenshot 2: “No StagePane plan limit with Pro,” visibly labeled Pro and
+   paired with a concise practical-capacity qualification.
 4. Screenshot 3: Curtain, Draw, and Stop All as included trust features.
 5. Screenshot 4: no recording, account, analytics, ads, or publisher server.
 6. Request the system review prompt only after three clean completed capture

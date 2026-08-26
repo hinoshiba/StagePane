@@ -42,11 +42,13 @@ creates a normal shareable window, not an `NSScreen`.
 > ・Audience Stage画像のコピー／PNG保存（StagePaneロゴ入り）
 >
 > StagePane Pro（1回限りのアプリ内課金）：
-> ・同時ソースを最大4つへ拡張
+> ・StagePaneによるプラン上の同時ソース数制限を解除
 > ・Stage、Curtain、Audience画像のStagePaneロゴを非表示
 >
 > Proは買い切りで、サブスクリプションではありません。価格はApp Storeが
-> 購入前に表示します。復元が必要な場合はPro画面の「購入を復元」を利用できます。
+> 購入前に表示します。実用上のソース数はMacの性能、
+> ScreenCaptureKit、選択内容に左右され、絶対的な無制限を保証しません。
+> 復元が必要な場合はPro画面の「購入を復元」を利用できます。
 >
 > StagePaneは録画、音声取得、StagePaneアカウント、広告、利用解析を行いません。
 > 画面はMac上で処理し、自動保存や発行者サーバーへの送信はしません。
@@ -68,12 +70,14 @@ creates a normal shareable window, not an `NSScreen`.
 > • Copy or save an Audience Stage PNG with the StagePane mark
 >
 > StagePane Pro — one-time In-App Purchase:
-> • Expand to four simultaneous sources
+> • Remove StagePane's plan-level simultaneous-source limit
 > • Hide the StagePane mark from the Stage, Curtain, and Audience images
 >
 > Pro is a one-time purchase, not a subscription. The App Store shows the price
-> before purchase. When restoration is needed, use Restore Purchases on the
-> Pro screen.
+> before purchase. Practical source capacity remains finite and depends on Mac
+> performance, ScreenCaptureKit, and the selected content; Pro does not promise
+> an absolute unlimited count. When restoration is needed, use Restore
+> Purchases on the Pro screen.
 >
 > StagePane has no recording, audio capture, StagePane account, ads, or usage analytics.
 > It processes screen content on your Mac, never saves it automatically, and
@@ -99,8 +103,9 @@ direct-distribution build currently ships.
 
 1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
    private Stage Workspace, making the share/private boundary unmistakable.
-2. **Proなら最大4つ。無料でも安全機能はすべて。** — Workspace → Sources,
-   the clear Pro label, and its removal caution.
+2. **ProはStagePaneによるソース数制限なし。** — Workspace → Canvas &
+   Sources, its live preview and left source rail, the clear Pro label, and the
+   practical-capacity qualification.
 3. **配置・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
    Mac App Store build's Arrange and Draw modes, bounded in-memory ink, and
    explicit Copy/Save Audience Image actions.
@@ -118,8 +123,9 @@ Japanese and English.
 > StagePane is a focused screen-sharing utility with two normal macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
 > private live Canvas for arranging, drawing, and taking an Audience Stage PNG.
-> Its Docker-style sidebar also contains Sources, Stage Settings, Appearance,
-> Permissions, Privacy, and About. It
+> The Canvas & Sources view keeps per-source controls in a left rail beside the
+> live preview. Its Docker-style sidebar also contains Stage Settings,
+> Appearance, Permissions, Privacy, and About. It
 > does not add a display, replace or imitate the macOS desktop, provide an app
 > launcher, modify Finder or the Dock, install a driver, use private APIs, or
 > continue running after the user quits.
@@ -127,13 +133,18 @@ Japanese and English.
 > The app can be tested without permission by sharing its neutral Stage window.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
-> repeat for two sources in Free or up to four after the StagePane Pro
-> non-consumable purchase. Each source appears in the private source list,
+> repeat for up to two sources in Free. The StagePane Pro non-consumable
+> purchase removes StagePane's plan-level source-count limit. The practical
+> finite count depends on Mac performance, ScreenCaptureKit, and the selected
+> content; the app does not guarantee an absolute unlimited count. Each source
+> appears in the Canvas's left rail while the live preview remains visible,
 > where “Pause” stops only that stream while its last frame stays visible,
 > “Resume” starts it again, “Replace” reopens the picker for only that item, and
 > “Remove” asks for confirmation, ends only its stream, and discards its frame.
-> In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
-> Arrange.” These gestures change only StagePane's composition. StagePane
+> The rail is ordered front to back: the top row is the frontmost Stage layer,
+> and choosing a row moves that source to the front. In Stage Workspace, drag or
+> resize tiles in Arrange mode, or use “Quick Layout.” These gestures change only
+> StagePane's composition. StagePane
 > provides Arrange and Draw. Arrange changes only the Stage
 > composition, while Draw adds bounded in-memory vector ink to
 > both the private Workspace and public Stage. Draw hides the audience pointer;
@@ -179,8 +190,10 @@ Japanese and English.
 
 Attach a short reviewer video showing both window titles and roles, adding
 two Free sources, the third-source Pro entry point, the normal Pro screen and
-Restore Purchases, per-source pause/resume, replace, removal confirmation, drag,
-resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
+Restore Purchases, adding a fifth source in Pro on the review Mac without an
+app-imposed limit, per-source pause/resume, replace, removal confirmation, the
+top-row/frontmost layer behavior, drag, resize, all four Quick Layout presets,
+the Arrange/Draw switch, unchanged physical pointer,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
 and must not show an Accessibility permission prompt. Provide

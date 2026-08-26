@@ -6,14 +6,16 @@
    **StagePane Workspace — 共有しない編集画面** は手元に置きます。
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
    display in the macOS system picker. Free supports two simultaneous sources;
-   the one-time StagePane Pro purchase supports up to four.
-3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange
-   sources or draw. Drag and resize sources there. Use **Pause / 一時停止**,
-   **Resume / 再開**, **Replace / 選び直す**,
-   or **Remove / 解除** in **Sources / ソース**, or **Auto Arrange / 自動配置**
-   for an even grid.
+   the one-time StagePane Pro purchase removes StagePane's plan-level source
+   limit. Practical capacity remains finite and depends on Mac performance,
+   ScreenCaptureKit, and the selected content.
+3. Open **Canvas & Sources / キャンバスとソース** in the private Stage
+   Workspace. Keep the live preview visible while using its left rail to add,
+   pause/resume, replace, remove, or stop all sources. The top row is the
+   frontmost layer; choosing another row moves it to the front. Drag and resize
+   sources in the Canvas.
    In Arrange mode, **Quick Layout / クイック配置** also offers Side by
-   Side, Stacked, and Picture in Picture without changing source order.
+   Side, Stacked, Picture in Picture, and Grid without changing source order.
 4. In your meeting app, share **StagePane Stage — Share This Window / このウインドウを共有**.
 5. Confirm the correct share target, then choose **Reveal Stage / カーテンを開く**.
 
@@ -83,8 +85,9 @@ sent that frame yet, changing the slide or source content applies the new style.
 The private Workspace stays visible while the audience Curtain is on, so you can
 prepare a layout before revealing it. Dragging or resizing a tile changes only
 the Stage composition while **Arrange / 配置** mode is selected. Its sidebar
-contains Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and
-About.
+contains the integrated Canvas & Sources view, Stage Settings, Appearance,
+Permissions, Privacy, and About. Source lifecycle controls are in the Canvas's
+left rail rather than a separate Sources screen.
 Toggling the Curtain does not bring the Stage window to the front.
 “Keep Private” is guidance, not a technical capture boundary. Application or
 full-display sharing can expose the Workspace, and a meeting app may still list
@@ -93,8 +96,10 @@ This Window** window.
 
 観客側のカーテン中も手元のWorkspaceは表示されるため、公開前に準備できます。
 **配置** モードでのタイルのドラッグや大きさ変更は、Stage内の配置だけを変えます。
-Workspaceのサイドバーに、キャンバス、ソース、Stage設定、見た目と動作、アクセス権限、
-プライバシー、このアプリについてをまとめています。
+Workspaceのサイドバーに、統合した「キャンバスとソース」、Stage設定、見た目と動作、
+アクセス権限、プライバシー、このアプリについてをまとめています。
+ソース操作は別画面ではなく、ライブプレビュー左側の一覧で行います。
+一覧の最上段がStageの最前面レイヤーで、別の行を選ぶとそのソースが最前面へ移ります。
 カーテンを切り替えてもStageウインドウは前面へ移動しません。
 「共有しない」は使い方の案内であり、技術的な共有防止境界ではありません。アプリ全体や
 ディスプレイ全体を共有するとWorkspaceが映る可能性があります。会議アプリでは
@@ -203,12 +208,17 @@ StagePane自身はフレームをローカル処理し、外部送信しませ�
 ## StagePane Pro / 購入と復元
 
 In the Mac App Store build, open **StagePane Pro** in Workspace to see the
-localized one-time price. Pro unlocks source three and four and makes the
-StagePane mark optional. **Restore Purchases / 購入を復元** is available on the
-same screen. A canceled purchase never changes or stops the current Stage.
+localized one-time price. Pro removes StagePane's plan-level source-count limit
+and makes the StagePane mark optional. Actual usable capacity still depends on
+Mac performance, ScreenCaptureKit, and the selected content; Pro does not
+guarantee an absolute unlimited count. **Restore Purchases / 購入を復元** is
+available on the same screen. A canceled purchase never changes or stops the
+current Stage.
 
 Mac App Store版ではWorkspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を
-確認できます。Proは3・4件目のソースとロゴ非表示を開放します。同じ画面から
+確認できます。ProはStagePaneによるプラン上のソース数制限をなくし、
+ロゴ非表示を開放します。実際に使える件数はMacの性能、ScreenCaptureKit、
+選択内容に左右され、絶対的な無制限を保証しません。同じ画面から
 **購入を復元** できます。購入をキャンセルしても、現在のStageを変更・停止しません。
 
 ## Support / サポート

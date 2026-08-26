@@ -72,7 +72,7 @@ Update and review these values in one pull request:
   whenever an audience-visible default or Workspace layout changes. The
   source-built `dist` app intentionally has full Pro access, so these generated
   fixtures are not evidence of the Free commerce state and must label every
-  three/four-source or optional-mark image as StagePane Pro. Because the app is
+  more-than-two-source or optional-mark image as StagePane Pro. Because the app is
   sandboxed, write snapshots inside its app container, then copy the completed
   PNGs to the review workspace. Run once for each language, using a different
   generated directory:
@@ -85,9 +85,10 @@ Update and review these values in one pull request:
     dist/StagePane.app/Contents/MacOS/StagePane --snapshot "$SNAPSHOT_DIR"
   ```
 
-  `workspace.png`, `arrange.png`, `draw.png`, `sources.png`, `permissions.png`,
-  `privacy.png`, `appearance.png`, and source-build `pro.png` must be opaque
-  2880×1800 images. The
+  `workspace.png`, `arrange.png`, `draw.png`, `permissions.png`, `privacy.png`,
+  `appearance.png`, and source-build `pro.png` must be opaque 2880×1800 images.
+  The former separate Sources fixture is retired: `arrange.png` and `draw.png`
+  show the integrated Canvas & Sources view and its left source rail. The
   1920×1080 Stage-only snapshots are website and QA assets, not valid Mac App
   Store upload dimensions. Do not use an arbitrary `/tmp` or repository
   directory as the sandboxed app's snapshot destination. Separately capture
@@ -125,8 +126,11 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   by removing the source or stopping all sources;
 - one-item window/application/display selection; Free mixed-source addition
   through 2/2 with the still-enabled third-source action opening StagePane Pro;
-  Pro mixed-source addition through 4/4; and a disabled Add Source action only
-  at the physical 4/4 maximum;
+  Pro mixed-source addition through at least source 5 on capable test hardware,
+  with no StagePane plan-count rejection; Add Source disabled only while a
+  picker interaction is already active; and a bounded higher-count performance
+  test recording the practical limit imposed by the Mac, ScreenCaptureKit, and
+  selected content without presenting that observed limit as a product promise;
 - per-source pause and resume (stop the stream, retain the last frame in both
   renderers, then restart it), replace (with cancel preserving the old item),
   per-source removal while other streams remain live, and Stop All draining
@@ -134,9 +138,21 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   free resize/minimum tile size, front ordering, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
-- strict two-window separation: the private Workspace contains the Canvas and
-  Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
-  Privacy, and About; its Canvas hosts Arrange and Draw; the public Stage has no
+- source-rail layer order matching Stage output: the top row is frontmost, a
+  newly added or selected source moves to the top/front, and Quick Layout does
+  not reorder the list;
+- responsive Workspace resizing across compact and wide widths, with smoothly
+  changing navigation width, a source-rail transition that does not snag or
+  repeatedly override the user's visibility choice, and Reduce Motion honored;
+- adding a source and toggling Curtain/Reveal do not show a top popup or reflow
+  the Workspace; the Curtain/Reveal toolbar button keeps a fixed width across
+  its label change, while the state change remains available to VoiceOver;
+- strict two-window separation: the private Workspace contains one integrated
+  Canvas & Sources view with a live preview and collapsible left rail for add,
+  pause/resume, replace, remove, and Stop All; its Docker-style sidebar contains
+  that single Canvas & Sources destination plus Stage Settings, Appearance,
+  Permissions, Privacy, and About; the Canvas hosts Arrange and Draw, and there
+  is no separate Sources destination; the public Stage has no
   private toolbar, mode control, selection outline, resize handle, notice, or
   other editing chrome;
 - exact-window sharing guidance that never claims Workspace can
@@ -196,8 +212,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - no Accessibility or Input Monitoring request, raw mouse/keyboard event
   synthesis, keyboard capture/forwarding, or event tap; keyboard/VoiceOver
   Arrange and Draw actions; Spaces/full-screen/display
-  changes; four-source CPU/memory; and the currently claimed meeting-app
-  workflows.
+  changes; CPU/memory at 2, 4, 5, and a bounded higher practical source count;
+  graceful resource/ScreenCaptureKit failure behavior; and the currently
+  claimed meeting-app workflows.
 - StoreKit Configuration, Sandbox, and TestFlight purchase paths: localized
   `Product.displayPrice`, verified success, cancel, pending/Ask to Buy, product
   load failure and retry, restore, reinstall/second Mac, refund/revocation, and

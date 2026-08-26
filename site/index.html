@@ -39,7 +39,7 @@
         "name": "StagePane",
         "applicationCategory": "ProductivityApplication",
         "operatingSystem": "macOS 14 or later",
-        "description": "StagePaneは、共有用のStageと、配置・手書き・ソース管理を行う手元用Workspaceを分けるオープンソースのmacOSアプリです。",
+        "description": "StagePaneは、共有用のStageと、ソース管理を統合した配置・手書きキャンバスを持つ手元用Workspaceを分けるオープンソースのmacOSアプリです。",
         "url": "https://stagepane.hinoshiba.com/",
         "sameAs": "https://github.com/hinoshiba/StagePane",
         "license": "https://www.apache.org/licenses/LICENSE-2.0"
@@ -152,7 +152,7 @@
           <div class="separation-item separation-private">
             <span class="separation-icon">⌘</span>
             <div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
-            <p>大きなライブ編集画面と、ソース・設定をまとめたサイドバー</p>
+            <p>ソース一覧を横に置いた大きなライブキャンバスと、設定用サイドバー</p>
           </div>
         </div>
       </section>
@@ -168,7 +168,7 @@
             <article class="proof-card">
               <div class="proof-copy">
                 <p class="eyebrow"><span></span> StagePane Pro · Arrange</p>
-                <h3>Proで3つのソースを、ひとつの構図へ。</h3>
+                <h3>Proで、必要なソースをひとつの構図へ。</h3>
                 <p>移動、自由なサイズ変更、重なり順、クイック配置をキャンバス上で確認。レーザーポインターは最前面のソースだけに表示します。</p>
               </div>
               <div class="proof-shot">
@@ -199,7 +199,7 @@
           <div class="feature-grid">
             <article class="feature-card feature-card-wide">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2"/><path d="M7 20h14V9h-4M10 15v5"/></svg></div>
-              <div><h3>共有用と編集用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きはWorkspaceのキャンバス、ソースと設定はDocker風のサイドバーで扱います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
+              <div><h3>共有用と編集用を、明確に分離</h3><p>共有Stageには観客向け内容だけを表示し、編集UIは載せません。配置・手書きはWorkspaceのキャンバスで行い、ソースはキャンバス横の一覧、設定はDocker風のサイドバーで扱います。「共有しない」は技術的な取得防止境界ではないため、会議アプリでは正確なStageウインドウを選び、アプリ全体やディスプレイ全体は共有しません。</p></div>
               <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>WORKSPACE</span><i></i><i></i><i></i></div></div>
             </article>
             <article class="feature-card">
@@ -209,8 +209,8 @@
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
-              <h3>無料で2ソース、Proなら最大4ソース</h3>
-              <p>Appleのシステムピッカーで1件ずつ追加し、「ソース」で一時停止・再開・選び直し・確認付き解除を行えます。無料版は同時に2件、買い切りのStagePane Proは最大4件。大きなキャンバスでは自由配置に加え、ペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムと、正確な取り消しを利用できます。手書き中は観客側のポインターを自動で隠し、配置へ戻ると選択中の設定を復元します。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。共有元アプリへの入力転送や、アクセシビリティ・入力監視の権限要求もありません。</p>
+              <h3>無料は2ソース。ProはStagePaneによるプラン上限なし</h3>
+              <p>Appleのシステムピッカーで1件ずつ追加し、キャンバス横の一覧で一時停止・再開・選び直し・確認付き解除を行えます。一覧は上から最前面の順で、選んだソースを最前面へ移動できます。無料版は同時に2件。買い切りのStagePane Proには、StagePaneによるソース数のプラン上限がありません。ただし、実用上限はMacの性能、ScreenCaptureKit、選択した共有内容で決まり、あらゆる環境で無制限に使えることを保証するものではありません。大きなキャンバスでは自由配置に加え、ペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムと、正確な取り消しを利用できます。手書き中は観客側のポインターを自動で隠し、配置へ戻ると選択中の設定を復元します。各選択はその共有対象と取得セッションだけを許可し、別途広範な画面収録許可は求めません。共有元アプリへの入力転送や、アクセシビリティ・入力監視の権限要求もありません。</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
@@ -241,9 +241,9 @@
           </div>
           <div class="screenshot-grid">
             <figure class="screenshot-card screenshot-card-tall">
-              <div class="screenshot-label"><span class="label-private">STAGEPANE PRO</span> Workspace ソース</div>
-              <img src="assets/screenshots/ja/sources.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="StagePane Proで3つの合成ソースのうち2つが取得中、1つが一時停止中で、一時停止・再開・選び直し・解除の操作を表示するWorkspaceのソース画面">
-              <figcaption><strong>Proなら3〜4件も、個別に管理。</strong> 止める・戻す・選び直す・解除を、Workspaceの「ソース」画面から操作できます。</figcaption>
+              <div class="screenshot-label"><span class="label-private">STAGEPANE PRO</span> Workspace キャンバスとソース</div>
+              <img src="assets/screenshots/ja/arrange.webp" width="2880" height="1800" loading="lazy" decoding="async" alt="3つの合成ソースを表示するStagePane Proのキャンバスと、その横のソース一覧をひとつのWorkspaceに表示した画面">
+              <figcaption><strong>プレビューしながら、ソースも管理。</strong> キャンバス横の一覧は上から最前面の順です。選択、一時停止、再開、選び直し、解除を、構図を見たまま操作できます。</figcaption>
             </figure>
             <figure class="screenshot-card screenshot-card-tall">
               <div class="screenshot-label"><span class="label-local">選択時に確認</span> アクセス権限</div>
@@ -283,8 +283,8 @@
             <aside class="note-card"><strong>正確なウインドウ名を確認</strong><p>会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。macOS 15以降の「共有先をStageへ切替」は、対応する実行中の共有セッションへ切り替えを依頼する機能であり、すべての会議アプリで共有を開始・操作できるものではありません。</p></aside>
           </div>
           <ol class="steps">
-            <li><span>01</span><div><h3>StagePaneを開く</h3><p>StagePaneは、きれいな共有Stageと、キャンバス・ソース・設定をサイドバーにまとめた手元用Workspaceの2画面です。</p></div></li>
-            <li><span>02</span><div><h3>見せるものを追加</h3><p>「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。範囲を狭くする場合は1つのウインドウを選びます。無料版は同時に2件、買い切りのStagePane Proは最大4件まで追加できます。</p></div></li>
+            <li><span>01</span><div><h3>StagePaneを開く</h3><p>StagePaneは、きれいな共有Stageと、ソース一覧を横に置いたキャンバス・設定用サイドバーを持つ手元用Workspaceの2画面です。</p></div></li>
+            <li><span>02</span><div><h3>見せるものを追加</h3><p>「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。範囲を狭くする場合は1つのウインドウを選びます。無料版は同時に2件。買い切りのStagePane ProにはStagePaneによるソース数のプラン上限がありません。ただし、実用上限はMacの性能、ScreenCaptureKit、選択した共有内容で決まり、あらゆる環境で無制限に使えることを保証するものではありません。</p></div></li>
             <li><span>03</span><div><h3>配置してStageを共有</h3><p>手元のWorkspaceで移動・サイズ変更・手書きを行い、会議アプリでは正確な「StagePane Stage」ウインドウを選んでカーテンを開きます。</p></div></li>
             <li><span>04</span><div><h3>終わったら完全に停止</h3><p>「すべて停止」で全ストリームを終了し、保持中のフレームを破棄します。カーテンだけでは取得は止まりません。</p></div></li>
           </ol>

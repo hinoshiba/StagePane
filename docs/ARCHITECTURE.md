@@ -23,8 +23,9 @@ StagePaneApplication
     └── AppController ─────────────── settings / actions / lifecycle
         ├── StageWorkspaceWindowController
         │   └── StageWorkspaceView    private unified working window
-        │       ├── StageLayoutEditor Arrange / Draw
-        │       ├── Sources           per-source lifecycle controls
+        │       ├── Canvas & Sources
+        │       │   ├── StageLayoutEditor Arrange / Draw live preview
+        │       │   └── Source rail       per-source lifecycle / layer order
         │       ├── Stage Settings / Appearance
         │       └── Permissions / Privacy / About
         ├── StageWindowController
@@ -35,7 +36,7 @@ StagePaneApplication
         └── CaptureCoordinator
             ├── SCContentSharingPicker
             ├── StageLayout           normalized frame / z-order by SourceID
-            └── CaptureSession[0...4]
+            └── CaptureSession[0...N]  one per approved source
                 ├── SCStream          one independently consented source
                 └── CaptureSourceRenderers
                     ├── Stage SampleBufferRenderer
@@ -57,24 +58,27 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    permission.
 3. The returned `SCContentFilter` represents one window, application, or
    display. StagePane creates one independent `SCStream` for it at up to 30 fps.
-   Repeating this flow adds two sources in Free or up to four with StagePane
-   Pro; multiple-selection picker modes
-   are deliberately disabled so every source can be configured and removed
-   independently. Audio and microphone capture are disabled.
+   Repeating this flow adds up to two sources in Free. StagePane Pro removes the
+   app-imposed plan limit; the practical finite count still depends on Mac
+   performance, ScreenCaptureKit, and the selected content. Multiple-selection
+   picker modes are deliberately disabled so every source can be configured
+   and removed independently. Audio and microphone capture are disabled.
 4. Each valid `CMSampleBuffer` is enqueued into two macOS 14
    `AVSampleBufferVideoRenderer` surfaces: one in the public Stage composition
    and one in the private Stage Workspace editor. Both consume the same
    ScreenCaptureKit buffer; there is no pixel copy or encoded preview path.
    Each stream uses a source-aspect IOSurface capped to its tile's pixel budget,
-   so the display layer performs the only letterbox fit and four sources do not
-   each allocate a full-Stage surface. Complete-frame `contentRect`,
+   so the display layer performs the only letterbox fit and simultaneous sources
+   do not each allocate a full-Stage surface. Complete-frame `contentRect`,
    `contentScale`, and display-scale metadata are debounced to follow live
    source-window aspect changes. A dimension-only reconfiguration keeps the
    last valid frame visible until its replacement arrives instead of flushing
    a static slide to black.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
-   rectangle and ordered z-position. Arrange-mode drag and resize update only
-   this local composition.
+   rectangle and ordered z-position. Rendering stores back-to-front order; the
+   Canvas's left source rail shows the inverse layer-list order, so its top row
+   is the frontmost source. Choosing a row moves that source to the front.
+   Arrange-mode drag and resize update only this local composition.
 6. Draw mode stores one bounded, normalized vector-ink document in memory. Both
    the private Workspace and public Stage render that document, while the Curtain
    covers it on the public Stage. Undo/Clear mutate the document; Stop All or
@@ -144,8 +148,9 @@ Accessibility nor Input Monitoring permission.
   warning, not an unsupported `sharingType = .none` capture-exclusion hint, are
   the boundary. Application sharing, full-display sharing, or a meeting app may
   include the private window.
-- Stage Workspace enforces a 900×620-point minimum for its Canvas, Docker-style
-  navigation, source management, and settings.
+- Stage Workspace enforces a 900×620-point minimum for its integrated Canvas &
+  Sources workflow, Docker-style navigation, and settings. Source management is
+  a collapsible left rail beside the live preview, not a separate screen.
 - The user-facing workflow always instructs people to select the exact Stage
   window by name, never the StagePane application or full display when the
   Workspace must remain private.

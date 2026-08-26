@@ -34,6 +34,27 @@ final class StageLayoutTests: XCTestCase {
         XCTAssertEqual(layout.sources.map(\.id), [sourceA, sourceB, sourceC])
     }
 
+    func testLayerListOrderIsFrontToBackAndBringToFrontKeepsFrames() {
+        let frameA = NormalizedStageRect(x: 0, y: 0, width: 0.7, height: 0.7)
+        let frameB = NormalizedStageRect(x: 0.1, y: 0.1, width: 0.7, height: 0.7)
+        let frameC = NormalizedStageRect(x: 0.2, y: 0.2, width: 0.7, height: 0.7)
+        var layout = StageLayout(sources: [
+            StageSourceLayout(id: sourceA, frame: frameA),
+            StageSourceLayout(id: sourceB, frame: frameB),
+            StageSourceLayout(id: sourceC, frame: frameC)
+        ])
+
+        XCTAssertEqual(layout.sources.map(\.id), [sourceA, sourceB, sourceC])
+        XCTAssertEqual(layout.frontToBackSources.map(\.id), [sourceC, sourceB, sourceA])
+
+        XCTAssertTrue(layout.bringSourceToFront(sourceA))
+        XCTAssertEqual(layout.sources.map(\.id), [sourceB, sourceC, sourceA])
+        XCTAssertEqual(layout.frontToBackSources.map(\.id), [sourceA, sourceC, sourceB])
+        XCTAssertEqual(layout[sourceID: sourceA]?.frame, frameA)
+        XCTAssertFalse(layout.bringSourceToFront(sourceA))
+        XCTAssertFalse(layout.bringSourceToFront(StageSourceID(rawValue: "missing")))
+    }
+
     func testAddRearrangesAndExplicitAddPreservesExistingFrame() {
         var layout = StageLayout(automaticallyArranging: [sourceA])
 
@@ -140,6 +161,43 @@ final class StageLayoutTests: XCTestCase {
             width: 0.46,
             height: 0.46
         )
+    }
+
+    func testSuggestedFramesScaleBeyondFourWithoutExactDuplicates() {
+        var occupied = [NormalizedStageRect.fullCanvas]
+
+        for _ in 1 ..< 12 {
+            let frame = StageLayout.suggestedFrameForNewSource(occupiedFrames: occupied)
+            XCTAssertFalse(occupied.contains(frame))
+            XCTAssertGreaterThan(frame.width, 0)
+            XCTAssertGreaterThan(frame.height, 0)
+            XCTAssertGreaterThanOrEqual(frame.x, 0)
+            XCTAssertGreaterThanOrEqual(frame.y, 0)
+            XCTAssertLessThanOrEqual(frame.x + frame.width, 1)
+            XCTAssertLessThanOrEqual(frame.y + frame.height, 1)
+            occupied.append(frame)
+        }
+    }
+
+    func testAutomaticAndPictureInPictureLayoutsScaleBeyondFourSources() {
+        let sourceIDs = (0 ..< 9).map { StageSourceID(rawValue: "source-\($0)") }
+        let automatic = StageLayout(automaticallyArranging: sourceIDs)
+
+        XCTAssertEqual(automatic.sources.count, 9)
+        XCTAssertTrue(automatic.sources.allSatisfy { source in
+            source.frame.width > 0 && source.frame.height > 0 &&
+                source.frame.x >= 0 && source.frame.y >= 0 &&
+                source.frame.x + source.frame.width <= 1 &&
+                source.frame.y + source.frame.height <= 1
+        })
+
+        var pictureInPicture = StageLayout(sources: automatic.sources)
+        pictureInPicture.apply(preset: .pictureInPicture)
+        XCTAssertEqual(
+            pictureInPicture.sources.map(\.frame),
+            StageLayout.automaticFrames(count: sourceIDs.count)
+        )
+        XCTAssertEqual(pictureInPicture.sources.map(\.id), sourceIDs)
     }
 
     func testRemovePreservesRemainingFrame() {

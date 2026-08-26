@@ -1,6 +1,6 @@
 # StagePane Privacy Policy
 
-Effective date: 2026-08-25<br>
+Effective date: 2026-08-26<br>
 Product: StagePane for macOS
 
 ## Summary
@@ -21,10 +21,13 @@ StagePane accesses screen content only after the user opens Apple's system
 content-sharing picker and explicitly adds one window, application, or display.
 Choosing an application can include multiple windows owned by that application;
 choosing one window provides the narrowest scope. Free supports two
-independently pausable and removable sources; StagePane Pro supports up to four.
-The chosen video frames are
-rendered locally in parallel in the StagePane Stage window and the private Stage
-Workspace Canvas. Sources and settings remain in that Workspace's sidebar.
+independently pausable and removable sources. StagePane Pro removes StagePane's
+plan-level source-count limit; Mac performance, ScreenCaptureKit, and the
+selected content still determine the practical finite count. The chosen video
+frames are rendered locally in parallel in the StagePane Stage window and the
+private Workspace's integrated Canvas & Sources view. Its left source rail
+provides lifecycle controls beside the live preview; settings remain in the
+Workspace sidebar.
 
 Each `SCContentSharingPicker` choice grants access only to the selected content
 for that capture session. StagePane does not request separate, broad Screen

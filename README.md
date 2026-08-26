@@ -5,7 +5,7 @@
 
 StagePane is an open-source macOS app that creates a dedicated, ordinary
 window for screen sharing. Use the private **Stage Workspace** for the live
-Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and About,
+Canvas & Sources, Stage Settings, Appearance, Permissions, Privacy, and About,
 then share only the chrome-free **StagePane Stage** in Zoom, Microsoft Teams,
 Google Meet, Webex, Slack Huddles, Discord, OBS, or another app that can share a
 window.
@@ -15,9 +15,11 @@ desktop. It doesn't modify macOS display configuration and doesn't use private
 `CGVirtualDisplay` APIs. With your explicit approval, Apple's public
 ScreenCaptureKit picker can add a window, an app, or a display as an independent
 source. The free Mac App Store app supports two simultaneous sources and the
-one-time StagePane Pro purchase supports up to four. Approval is scoped to each
-picker selection and capture session; StagePane does not request separate,
-broad Screen Recording access.
+one-time StagePane Pro purchase removes StagePane's plan-level source-count
+limit. Pro is not a promise of an absolute unlimited source count: the practical
+number still depends on the Mac's performance, ScreenCaptureKit, and the content
+selected. Approval is scoped to each picker selection and capture session;
+StagePane does not request separate, broad Screen Recording access.
 
 ## Why StagePane
 
@@ -34,10 +36,11 @@ broad Screen Recording access.
 - **A persistent permission guide** — Workspace's Permissions view explains
   how Add Source opens Apple's picker for session-scoped sharing, without
   prompting at launch.
-- **A source list and free layout** — add, pause or resume, replace, or remove
-  each source independently in Workspace → Sources; drag and resize tiles on
-  the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
-  Picture from Quick Layout.
+- **One live Canvas & Sources workflow** — use the Canvas's left source rail to
+  add, pause or resume, replace, remove, or stop sources while watching the live
+  preview. The list is the layer order, with the top item frontmost. Drag and
+  resize tiles on the Canvas or choose Grid, Side by Side, Stacked, or Picture
+  in Picture from Quick Layout.
 - **Focused private Workspace tools** — Arrange composes the audience Stage and
   Draw adds session-only pen, highlighter, and erasable ink while automatically
   hiding the audience pointer. Returning to Arrange restores the selected
@@ -103,11 +106,14 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
 1. Open StagePane. Keep **StagePane Workspace — Keep Private** on your screen.
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
-   session; repeat for two sources in Free or up to four with StagePane Pro.
-3. In **Workspace → Canvas**, drag a tile to move it and drag its lower-right
-   handle to resize it. Use **Workspace → Sources** to pause or resume, replace,
-   or remove one item. Use **Quick Layout** for Grid, Side by Side, Stacked, or
-   Picture in Picture.
+   session; repeat for two sources in Free. StagePane Pro removes the app's
+   plan-level source-count limit, subject to the practical capacity of the Mac,
+   ScreenCaptureKit, and the selected content.
+3. In **Workspace → Canvas & Sources**, keep the live preview visible while
+   using the left rail to add, pause or resume, replace, remove, or **Stop All**.
+   The top source is the frontmost layer; selecting another row brings it to the
+   front. Drag a tile or its lower-right handle to move or resize it. Use
+   **Quick Layout** for Grid, Side by Side, Stacked, or Picture in Picture.
 4. Switch the Workspace between **Arrange** and **Draw**. Arrange edits only the
    Stage composition; Draw places session-only ink over the Stage.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
@@ -149,8 +155,9 @@ virtual-display dependency. Use PowerPoint itself for all presenter-view
 controls. StagePane captures and composes the selected
 Presenter View window but does not forward clicks, keys, or drags to PowerPoint.
 
-The Stage Workspace contains the live Canvas plus Sources, Stage Settings,
-Appearance, Permissions, Privacy, and About in one sidebar. It is intended to
+The Stage Workspace contains one live **Canvas & Sources** view plus Stage
+Settings, Appearance, Permissions, Privacy, and About in its sidebar. The
+Canvas's left source rail replaces a separate Sources screen. It is intended to
 stay private. This is workflow guidance, not a technical capture boundary:
 sharing the whole display or the StagePane application can expose the
 Workspace. In your meeting app, choose the exact **StagePane Stage — Share This
@@ -172,7 +179,8 @@ or control every meeting app's sharing session.
 ## Architecture
 
 ```text
-Up to four user-approved windows / apps / displays
+User-approved windows / apps / displays
+     Free: 2; Pro: no app-imposed plan limit
               │  one ScreenCaptureKit stream per source (video only)
               ▼
       normalized position / size / front-to-back order
@@ -180,8 +188,12 @@ Up to four user-approved windows / apps / displays
               ├────► StagePane Stage ───► meeting app shares this exact window
               │                 └───────► explicit local PNG copy/save only
               └────► private Stage Workspace
-                     Canvas + Sources + settings in one sidebar
+                     Canvas & Sources + settings in one sidebar
 ```
+
+The practical Pro source count is finite and varies with Mac performance,
+ScreenCaptureKit behavior, and the selected content; StagePane does not impose
+an additional plan limit or promise an absolute unlimited count.
 
 The project is a Swift Package with a testable framework-free core and a native
 AppKit/SwiftUI executable. Details and constraints are in
@@ -238,11 +250,14 @@ Certificate of Origin, and follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 StagePaneは、画面共有で選択するための専用ウインドウを作るmacOSアプリです。
 本物の仮想ディスプレイや別デスクトップではなく、Appleの公開APIだけを使った
-プレゼンテーション・キャンバスです。手元のStage Workspaceには、キャンバス、ソース、
+プレゼンテーション・キャンバスです。手元のStage Workspaceには、ライブプレビューと
+左側のソース一覧を統合した「キャンバスとソース」、
 Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてをまとめ、
 相手にはクロームのないStageだけを見せます。共有対象は
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
 求めません。明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
 自動撮影、録画、画面内容の外部送信、StagePaneアカウント、広告、解析はありません。
-Mac App Store版は無料で2ソース、買い切りのStagePane Proで最大4ソースと
-ロゴ非表示を利用できます。購入と購入状態の確認はAppleのStoreKitが処理します。
+Mac App Store版は無料で2ソース、買い切りのStagePane ProではStagePaneによる
+プラン上のソース数制限をなくし、ロゴ非表示も利用できます。実用上のソース数はMacの
+性能、ScreenCaptureKit、選択内容に左右され、絶対的な無制限を保証するものではありません。
+購入と購入状態の確認はAppleのStoreKitが処理します。
