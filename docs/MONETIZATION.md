@@ -19,11 +19,14 @@ non-consumable In-App Purchase:
 | Billing | None | One-time purchase |
 
 - Product ID: `com.hinoshiba.stagepane.pro`
+- App Store Connect Apple ID: `6805630496`
 - Type: Non-Consumable
 - Reference name: `StagePane Pro Lifetime`
-- Recommended Japan launch price: **¥1,500**
-- Expected US equivalent: approximately **$9.99**, using Apple's storefront
-  price conversion rather than a price hardcoded in the app
+- Japan launch price: **¥500**
+- United States launch price: **$4.99** (Apple's closest price point to $5). Use the United States as the base
+  storefront, override Japan to ¥500, and review Apple's automatically
+  generated, locally rounded prices for every other storefront. The shipping
+  app always displays StoreKit's localized price instead of hardcoding one.
 - Family Sharing: off for the first release; enabling it is a separate,
   effectively irreversible product decision
 - No subscription, account, external license key, advertising, or analytics SDK
@@ -84,9 +87,9 @@ Prices and offers change; verify them again before every pricing decision.
 | [DemoPro](https://www.demoproapp.com/) | $3.99 one-time | Annotation-only utilities establish a lower price anchor |
 | [OBS Studio](https://obsproject.com/) | Free and open source | StagePane wins on safe setup in under 60 seconds, not raw feature count |
 
-At the current feature set, ¥1,500 is deliberately close to the most direct
-competitor and below mature $15–20 products. Revisit ¥2,000–2,500 only after
-shipping and validating meaningful additions such as local scene/layout
+At the current feature set, ¥500 / $4.99 is an intentionally accessible launch
+price below the closest commercial alternatives. Revisit a higher price only
+after shipping and validating meaningful additions such as local scene/layout
 presets, presenter notes/timer, or user-selected branding assets.
 
 ### Price and proceeds operating rules
@@ -95,7 +98,8 @@ presets, presenter notes/timer, or user-selected branding assets.
   software` is the likely default, but the release owner must validate it for
   the publisher and launch territories.
 - Model proceeds after applicable taxes and Apple's commission. Do not assume
-  the publisher receives ¥1,500: the standard commission is generally 30%, or
+  the publisher receives the displayed ¥500: the standard commission is
+  generally 30%, or
   15% only while the account is approved for and remains eligible under the
   App Store Small Business Program. Finance should use App Store Connect's
   actual proceeds reports, not these planning percentages.
@@ -222,8 +226,9 @@ Admin, or App Manager should perform and independently review these steps.
    - Reference Name: `StagePane Pro Lifetime`
    - Product ID: `com.hinoshiba.stagepane.pro`
 4. Set availability to the intended launch storefronts.
-5. Use Japan as the base storefront and choose the price point corresponding
-   to ¥1,500. Review Apple's automatically generated prices for every region.
+5. Use the United States as the base storefront at $4.99, override Japan to
+   ¥500, and review Apple's automatically generated, locally rounded prices
+   for every other storefront.
 6. Keep Family Sharing off until its refund, family-removal, support, and
    irreversible-enablement implications are explicitly approved.
 7. Add localizations:

@@ -78,14 +78,18 @@ done
 IAP_PRODUCT_ID='com.hinoshiba.stagepane.pro'
 IAP_EN_DESCRIPTION='Hide the mark and compose up to four sources.'
 IAP_JA_DESCRIPTION='ロゴ非表示と最大4ソースを買い切りで開放'
+IAP_US_DISPLAY_PRICE='4.99'
 if [[ ${#IAP_EN_DESCRIPTION} -gt 45 || ${#IAP_JA_DESCRIPTION} -gt 45 ]] || \
    ! grep -F -q '"type" : "NonConsumable"' Config/StagePane.storekit || \
    ! grep -F -q "\"productID\" : \"$IAP_PRODUCT_ID\"" Config/StagePane.storekit || \
+   ! grep -F -q "\"displayPrice\" : \"$IAP_US_DISPLAY_PRICE\"" Config/StagePane.storekit || \
    ! grep -F -q "\"description\" : \"$IAP_EN_DESCRIPTION\"" Config/StagePane.storekit || \
    ! grep -F -q "\"description\" : \"$IAP_JA_DESCRIPTION\"" Config/StagePane.storekit || \
+   ! grep -F -q 'United States launch price: **$4.99**' docs/MONETIZATION.md || \
+   ! grep -F -q 'Japan launch price: **¥500**' docs/MONETIZATION.md || \
    ! grep -F -q "$IAP_EN_DESCRIPTION" docs/MONETIZATION.md || \
    ! grep -F -q "$IAP_JA_DESCRIPTION" docs/MONETIZATION.md; then
-    print -u2 'StagePane Pro StoreKit metadata is missing, mismatched, or exceeds the 45-character IAP description limit'
+    print -u2 'StagePane Pro StoreKit metadata or launch pricing is missing, mismatched, or exceeds the 45-character IAP description limit'
     exit 70
 fi
 

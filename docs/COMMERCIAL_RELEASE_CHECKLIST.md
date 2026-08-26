@@ -13,8 +13,9 @@
 ## Apple and binary
 
 - [ ] Apple Developer agreements/tax/banking current
-- [ ] Non-consumable `com.hinoshiba.stagepane.pro` metadata, ¥1,500 base price,
-      availability, localizations, review screenshot, and review notes complete
+- [ ] Non-consumable `com.hinoshiba.stagepane.pro` metadata, US $4.99 base
+      price, Japan ¥500 override, availability, localizations, review
+      screenshot, and review notes complete
 - [ ] First IAP is attached to the app-version submission; StoreKit
       Configuration, Sandbox, TestFlight, restore, pending, refund/revocation,
       and localized-price tests pass

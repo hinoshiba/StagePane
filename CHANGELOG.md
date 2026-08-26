@@ -5,6 +5,21 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-27
+
+### Added
+
+- A useful Free tier with two simultaneous sources, plus the one-time,
+  non-consumable StagePane Pro In-App Purchase. Pro unlocks up to four sources
+  and makes the audience-facing StagePane mark optional; purchase, restore,
+  entitlement, refund, and revocation state is verified through Apple StoreKit.
+
+### Changed
+
+- Added the live Mac App Store listing to the Japanese and English website.
+
+## [0.1.1] - 2026-08-26
+
 ### Added
 
 - Initial StagePane macOS application and brand system.

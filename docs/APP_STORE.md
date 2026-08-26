@@ -9,6 +9,14 @@
 - **Secondary category:** Utilities
 - **Tagline (EN):** A clean stage for everything you share.
 - **Tagline (JA):** 見せたいものだけ、ひとつのステージへ。
+- **Promotional Text (EN):** A clean stage for everything you share. Free
+  includes two sources; StagePane Pro expands to four and removes the mark.
+- **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で2ソース、StagePane Proなら最大4ソースとロゴ非表示。
+- **What's New 0.2.0 (EN):** StagePane Pro is now available as a one-time
+  In-App Purchase. Free supports two simultaneous sources; Pro expands this to
+  four and lets you hide the StagePane mark. Restore Purchases is available
+  from the Pro screen.
+- **What's New 0.2.0 (JA):** StagePane Proを追加しました。無料版は同時に2ソース、買い切りのProは最大4ソースとStagePaneロゴの非表示に対応します。Pro画面から購入の復元もできます。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
@@ -113,7 +121,40 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## Review notes draft
+## 0.2.0 App Review notes
+
+Use this concise block in App Store Connect:
+
+> No sign-in is required.
+>
+> StagePane has two normal macOS windows: “StagePane Stage” is the
+> audience-facing window to share; “StagePane Workspace — Keep Private” is the
+> private editor. In Workspace, choose Add Source and approve a harmless
+> window, app, or display in Apple’s ScreenCaptureKit picker. Free supports two
+> simultaneous sources. With two sources active, choose Add Source again to
+> open StagePane Pro.
+>
+> StagePane Pro is a one-time non-consumable In-App Purchase
+> (`com.hinoshiba.stagepane.pro`). It is also available from the Workspace
+> sidebar, the app menu, and by trying to turn off the StagePane mark under
+> Appearance. The Pro screen shows StoreKit’s localized price, states that it
+> is not a subscription, and includes Restore Purchases and Continue Free. Pro
+> unlocks up to four sources and makes the StagePane mark optional on the
+> Stage, Privacy Curtain, and explicitly copied/saved Audience PNG. Canceling
+> does not change or stop the current Stage.
+>
+> Arrange changes only StagePane’s local composition. Draw adds bounded
+> in-memory ink to the Workspace and Stage. Privacy Curtain hides only the
+> public Stage; Stop All ends every stream and discards displayed frames. Copy
+> Audience Image and Save Audience Image create a PNG only after the reviewer
+> explicitly chooses the action.
+>
+> StagePane is sandboxed. It does not record, capture audio or microphone
+> input, create an account, use analytics or ads, upload frames, or operate a
+> publisher server. Screen content stays on the Mac; StoreKit receives only
+> product and verified transaction information.
+
+## Detailed reviewer walkthrough reference
 
 > StagePane is a focused screen-sharing utility with two normal macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
