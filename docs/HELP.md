@@ -7,8 +7,8 @@
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
    display in the macOS system picker. Free supports two simultaneous sources;
    the one-time StagePane Pro purchase supports up to four.
-3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange
-   sources or draw. Drag and resize sources there. Use **Pause / 一時停止**,
+3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange,
+   crop, or draw. Drag and resize sources there. Use **Pause / 一時停止**,
    **Resume / 再開**, **Replace / 選び直す**,
    or **Remove / 解除** in **Sources / ソース**, or **Auto Arrange / 自動配置**
    for an even grid.
@@ -82,9 +82,11 @@ sent that frame yet, changing the slide or source content applies the new style.
 
 The private Workspace stays visible while the audience Curtain is on, so you can
 prepare a layout before revealing it. Dragging or resizing a tile changes only
-the Stage composition while **Arrange / 配置** mode is selected. Its sidebar
-contains Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and
-About.
+the Stage composition while **Arrange / 配置** mode is selected. **Crop / 切り抜き**
+shows one selected source at full Canvas size and drafts the framed part sent to
+the Stage. The Stage does not change until Apply Crop; Cancel discards the draft.
+Its sidebar contains Canvas, Sources, Stage Settings, Appearance, Permissions,
+Privacy, and About.
 Toggling the Curtain does not bring the Stage window to the front.
 “Keep Private” is guidance, not a technical capture boundary. Application or
 full-display sharing can expose the Workspace, and a meeting app may still list
@@ -93,6 +95,8 @@ This Window** window.
 
 観客側のカーテン中も手元のWorkspaceは表示されるため、公開前に準備できます。
 **配置** モードでのタイルのドラッグや大きさ変更は、Stage内の配置だけを変えます。
+**切り抜き** は対象のソース1件を手元だけに全面表示し、Stageへ出す範囲を下書きします。
+「切り抜きを適用」を選ぶまでStageは変わらず、キャンセルすると下書きを破棄します。
 Workspaceのサイドバーに、キャンバス、ソース、Stage設定、見た目と動作、アクセス権限、
 プライバシー、このアプリについてをまとめています。
 カーテンを切り替えてもStageウインドウは前面へ移動しません。
@@ -108,32 +112,55 @@ The Curtain hides the Stage output, but it does not stop local capture. Use
 
 ## Workspace modes / Workspaceのモード
 
-StagePane provides **Arrange / 配置** and **Draw / 手書き**. Neither mode
-sends input to source applications or needs macOS Accessibility or Input
+StagePane provides **Arrange / 配置**, **Crop / 切り抜き**, and **Draw / 手書き**.
+None of these modes sends input to source applications or needs macOS Accessibility or Input
 Monitoring permission.
 
-StagePaneで利用できるのは **配置** と **手書き** です。どちらも共有元アプリへ入力を
+StagePaneで利用できるのは **配置**、**切り抜き**、**手書き** です。いずれも共有元アプリへ入力を
 送らず、macOSのアクセシビリティ許可や入力監視許可も必要としません。
 
 - **Arrange / 配置** moves, resizes, and reorders Stage tiles. It never sends
   those editing gestures to a source app.
+- **Crop / 切り抜き** displays only the selected source at full Canvas size in
+  the private Workspace. Drag inside the bright frame to move it or use its four
+  corner handles to resize it. The Stage keeps the previously applied crop while
+  you edit. Choose **Apply Crop / 切り抜きを適用** to publish the draft, or
+  **Cancel / キャンセル** to discard it. Reset to Full Source changes only the
+  draft until you apply it.
 - **Draw / 手書き** draws bounded vector ink over the whole Stage. Choose Pen,
   translucent Highlighter, or the size-adjustable partial Eraser. Each eraser
   drag is one vector action, so **Undo / 取り消す** restores exactly what it
   removed. Draw automatically hides the audience pointer; returning to Arrange
-  restores the selected pointer style. The same ink appears in the private
+  or Crop restores the selected pointer style. The same ink appears in the private
   Workspace and public Stage, stays only in memory, is hidden from the audience
   by the Curtain, and is cleared by **Stop All** or removal of the final source.
   Use **Undo / 取り消す** or **Clear / すべて消す** to edit it.
 
 - **配置** はStage内のタイルを移動・サイズ変更・並べ替えします。編集ジェスチャーは
   取得元アプリへ送りません。
+- **切り抜き** は選択したソース1件だけを手元用WorkspaceのCanvas全面に表示します。
+  明るい枠内をドラッグして移動し、四隅のハンドルで範囲を変えます。編集中もStageは
+  適用済みの範囲を保ち、**切り抜きを適用** で下書きを反映、**キャンセル** で破棄します。
+  「全体表示に戻す」も適用するまでは下書きだけを変えます。
 - **手書き** はStage全体に上限付きのベクター線を描きます。ペン、半透明の蛍光ペン、
   大きさを変えられる部分消去の消しゴムを選べます。消しゴムの1ドラッグは1操作として
-  **取り消す** で正確に戻せます。手書き中は観客側のポインターを自動で隠し、配置へ戻ると
-  選択中のポインター設定を復元します。線は手元のWorkspaceと共有Stageに表示され、
+  **取り消す** で正確に戻せます。手書き中は観客側のポインターを自動で隠し、配置または
+  切り抜きへ戻ると選択中のポインター設定を復元します。線は手元のWorkspaceと共有Stageに表示され、
   メモリ内だけに保持されます。カーテン中は相手側から隠れ、**すべて停止** または最後の
   ソース解除で消去されます。**取り消す** と **すべて消す** で編集できます。
+
+Cropping is a local composition mask, not a narrower macOS capture permission.
+Whenever the source stream runs, ScreenCaptureKit handles the complete window,
+app, or display approved in Apple's picker. Pause stops that stream; Remove or
+Stop All ends its capture session. Keep the Curtain on while
+preparing content that is not ready for the audience. Crop edits remain a
+private draft until Apply Crop.
+
+切り抜きはStage内の表示マスクであり、macOSの取得許可範囲を狭めるものではありません。
+ソースのストリーム動作中、ScreenCaptureKitはAppleのピッカーで許可したウインドウ、
+アプリ、または画面全体を扱います。一時停止はストリームを止め、解除またはすべて停止は
+取得セッションを終了します。観客へ見せる準備ができていない内容を調整するときはカーテンを
+有効にしてください。切り抜きの変更は「切り抜きを適用」まで手元の下書きです。
 
 ## Screenshots / スクリーンショット
 

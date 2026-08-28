@@ -130,13 +130,175 @@ public struct NormalizedStageRect: Codable, Equatable, Sendable {
     }
 }
 
+/// A top-left-origin crop rectangle inside one captured source.
+///
+/// Like ``NormalizedStageRect``, every value is finite and contained by
+/// `0 ... 1`. Keeping source-space crop geometry separate from destination
+/// Stage frames prevents an edit in one coordinate space from being applied to
+/// the other accidentally.
+public struct NormalizedSourceRect: Codable, Equatable, Sendable {
+    /// A model-level safety floor. The editor uses a larger ergonomic minimum,
+    /// while decoded or programmatic values can never create near-infinite
+    /// compositor transforms.
+    public static let absoluteMinimumDimension = 0.01
+
+    public static let fullSource = NormalizedSourceRect(
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1
+    )
+
+    public let x: Double
+    public let y: Double
+    public let width: Double
+    public let height: Double
+
+    public init(
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        minimumWidth: Double = 0,
+        minimumHeight: Double = 0
+    ) {
+        let boundedMinimumWidth = Self.boundedMinimum(minimumWidth)
+        let boundedMinimumHeight = Self.boundedMinimum(minimumHeight)
+        let boundedWidth = Self.boundedDimension(width, minimum: boundedMinimumWidth)
+        let boundedHeight = Self.boundedDimension(height, minimum: boundedMinimumHeight)
+
+        self.width = boundedWidth
+        self.height = boundedHeight
+        self.x = Self.boundedOrigin(x, dimension: boundedWidth)
+        self.y = Self.boundedOrigin(y, dimension: boundedHeight)
+    }
+
+    /// Applies a drag delta without changing the selected source area.
+    public func moved(byX deltaX: Double, y deltaY: Double) -> Self {
+        Self(
+            x: x + Self.finiteOrZero(deltaX),
+            y: y + Self.finiteOrZero(deltaY),
+            width: width,
+            height: height
+        )
+    }
+
+    /// Clamps a proposed crop to its source and to the supplied minimums.
+    public static func resized(
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        minimumWidth: Double,
+        minimumHeight: Double
+    ) -> Self {
+        let boundedMinimumWidth = boundedMinimum(minimumWidth)
+        let boundedMinimumHeight = boundedMinimum(minimumHeight)
+        let boundedX = min(max(finiteOrZero(x), 0), 1 - boundedMinimumWidth)
+        let boundedY = min(max(finiteOrZero(y), 0), 1 - boundedMinimumHeight)
+        let boundedWidth = min(
+            boundedDimension(width, minimum: boundedMinimumWidth),
+            1 - boundedX
+        )
+        let boundedHeight = min(
+            boundedDimension(height, minimum: boundedMinimumHeight),
+            1 - boundedY
+        )
+        return Self(
+            x: boundedX,
+            y: boundedY,
+            width: boundedWidth,
+            height: boundedHeight,
+            minimumWidth: boundedMinimumWidth,
+            minimumHeight: boundedMinimumHeight
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case x
+        case y
+        case width
+        case height
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            x: try container.decode(Double.self, forKey: .x),
+            y: try container.decode(Double.self, forKey: .y),
+            width: try container.decode(Double.self, forKey: .width),
+            height: try container.decode(Double.self, forKey: .height)
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(x, forKey: .x)
+        try container.encode(y, forKey: .y)
+        try container.encode(width, forKey: .width)
+        try container.encode(height, forKey: .height)
+    }
+
+    private static func boundedMinimum(_ value: Double) -> Double {
+        guard value.isFinite else { return absoluteMinimumDimension }
+        return min(max(value, absoluteMinimumDimension), 1)
+    }
+
+    private static func boundedDimension(_ value: Double, minimum: Double) -> Double {
+        guard value.isFinite else { return minimum }
+        return min(max(value, minimum), 1)
+    }
+
+    private static func boundedOrigin(_ value: Double, dimension: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), 1 - dimension)
+    }
+
+    private static func finiteOrZero(_ value: Double) -> Double {
+        value.isFinite ? value : 0
+    }
+}
+
 public struct StageSourceLayout: Identifiable, Codable, Equatable, Sendable {
     public let id: StageSourceID
     public var frame: NormalizedStageRect
+    public var sourceCrop: NormalizedSourceRect
 
-    public init(id: StageSourceID, frame: NormalizedStageRect) {
+    public init(
+        id: StageSourceID,
+        frame: NormalizedStageRect,
+        sourceCrop: NormalizedSourceRect = .fullSource
+    ) {
         self.id = id
         self.frame = frame
+        self.sourceCrop = sourceCrop
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case frame
+        case sourceCrop
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try container.decode(StageSourceID.self, forKey: .id),
+            frame: try container.decode(NormalizedStageRect.self, forKey: .frame),
+            sourceCrop: try container.decodeIfPresent(
+                NormalizedSourceRect.self,
+                forKey: .sourceCrop
+            ) ?? .fullSource
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(frame, forKey: .frame)
+        if sourceCrop != .fullSource {
+            try container.encode(sourceCrop, forKey: .sourceCrop)
+        }
     }
 }
 
@@ -161,6 +323,7 @@ public enum StageLayoutPreset: String, CaseIterable, Codable, Identifiable, Send
 public struct StageLayout: Codable, Equatable, Sendable {
     public static let defaultGap = 0.02
     public static let defaultMinimumDimension = 0.10
+    public static let defaultMinimumSourceCropDimension = 0.05
 
     public private(set) var sources: [StageSourceLayout]
 
@@ -174,7 +337,9 @@ public struct StageLayout: Codable, Equatable, Sendable {
     ) {
         let uniqueIDs = Self.uniqueIDs(sourceIDs)
         let frames = Self.automaticFrames(count: uniqueIDs.count, gap: gap)
-        self.sources = zip(uniqueIDs, frames).map(StageSourceLayout.init)
+        self.sources = zip(uniqueIDs, frames).map { sourceID, frame in
+            StageSourceLayout(id: sourceID, frame: frame)
+        }
     }
 
     public subscript(sourceID sourceID: StageSourceID) -> StageSourceLayout? {
@@ -188,8 +353,8 @@ public struct StageLayout: Codable, Equatable, Sendable {
         gap: Double = StageLayout.defaultGap
     ) -> Bool {
         guard self[sourceID: sourceID] == nil else { return false }
-        let sourceIDs = sources.map(\.id) + [sourceID]
-        self = Self(automaticallyArranging: sourceIDs, gap: gap)
+        sources.append(StageSourceLayout(id: sourceID, frame: .fullCanvas))
+        arrangeAutomatically(gap: gap)
         return true
     }
 
@@ -283,6 +448,46 @@ public struct StageLayout: Codable, Equatable, Sendable {
             minimumHeight: minimumHeight
         )
         return true
+    }
+
+    /// Replaces the visible source-space rectangle without moving its Stage
+    /// destination tile.
+    @discardableResult
+    public mutating func setSourceCrop(
+        _ sourceID: StageSourceID,
+        crop: NormalizedSourceRect
+    ) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }) else { return false }
+        sources[index].sourceCrop = crop
+        return true
+    }
+
+    /// Moves an existing crop selection inside its captured source.
+    @discardableResult
+    public mutating func moveSourceCrop(
+        _ sourceID: StageSourceID,
+        byX deltaX: Double,
+        y deltaY: Double
+    ) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }) else { return false }
+        sources[index].sourceCrop = sources[index].sourceCrop.moved(
+            byX: deltaX,
+            y: deltaY
+        )
+        return true
+    }
+
+    /// Restores one source to its full picker-approved image.
+    @discardableResult
+    public mutating func resetSourceCrop(_ sourceID: StageSourceID) -> Bool {
+        setSourceCrop(sourceID, crop: .fullSource)
+    }
+
+    /// Restores every source while preserving frame placement and z-order.
+    public mutating func resetAllSourceCrops() {
+        for index in sources.indices {
+            sources[index].sourceCrop = .fullSource
+        }
     }
 
     /// Returns row-major, evenly spaced frames for a unit canvas.

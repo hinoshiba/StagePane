@@ -5,6 +5,7 @@ import SwiftUI
 struct StageCompositeEntry: Identifiable {
     let id: StageSourceID
     let frame: NormalizedStageRect
+    let sourceCrop: NormalizedSourceRect
     let renderer: SampleBufferRenderer
 }
 
@@ -23,7 +24,7 @@ struct StageCompositeDisplayView: NSViewRepresentable {
 }
 
 final class StageCompositeNSView: NSView {
-    private var sourceViews: [StageSourceID: SampleBufferNSView] = [:]
+    private var sourceViews: [StageSourceID: CroppedSampleBufferNSView] = [:]
     private var sourceFrames: [StageSourceID: NormalizedStageRect] = [:]
 
     override var isFlipped: Bool { true }
@@ -61,14 +62,15 @@ final class StageCompositeNSView: NSView {
 
         var previousView: NSView?
         for entry in entries {
-            let sourceView: SampleBufferNSView
+            let sourceView: CroppedSampleBufferNSView
             if let existing = sourceViews[entry.id] {
                 sourceView = existing
             } else {
-                sourceView = SampleBufferNSView(renderer: entry.renderer)
+                sourceView = CroppedSampleBufferNSView(renderer: entry.renderer)
                 sourceViews[entry.id] = sourceView
                 addSubview(sourceView)
             }
+            sourceView.update(sourceCrop: entry.sourceCrop)
             sourceFrames[entry.id] = entry.frame
 
             if let previousView {
@@ -95,5 +97,128 @@ final class StageCompositeNSView: NSView {
                 height: bounds.height * CGFloat(normalized.height)
             )
         }
+    }
+}
+
+/// Clips a complete picker-authorized source view to one local composition
+/// region. The child view remains the owner of video, pointer, and bitmap
+/// snapshot artwork, so every audience-facing path shares the same crop.
+final class CroppedSampleBufferNSView: NSView {
+    private let renderer: SampleBufferRenderer
+    private let sourceView: SampleBufferNSView
+    private var sourceCrop = NormalizedSourceRect.fullSource
+    private var presentationGeometry: SourcePresentationGeometry?
+    private var presentationRevision: UInt64?
+    private var presentationGeometryObserverID: UUID?
+
+    override var isFlipped: Bool { true }
+
+    init(renderer: SampleBufferRenderer) {
+        self.renderer = renderer
+        self.sourceView = SampleBufferNSView(renderer: renderer)
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer = CALayer()
+        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.masksToBounds = true
+        addSubview(sourceView)
+        presentationGeometryObserverID = renderer.addPresentationGeometryObserver {
+            [weak self] update in
+            self?.presentationGeometryDidChange(update)
+        }
+    }
+
+    deinit {
+        if let presentationGeometryObserverID {
+            renderer.removePresentationGeometryObserver(presentationGeometryObserverID)
+        }
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func update(sourceCrop: NormalizedSourceRect) {
+        self.sourceCrop = sourceCrop
+        applyPresentationLayout(using: presentationGeometry)
+        needsLayout = true
+    }
+
+    func setPointerOverlayEnabled(_ enabled: Bool) {
+        sourceView.setPointerOverlayEnabled(enabled)
+    }
+
+    /// Produces and installs screenshots through the same crop wrapper used by
+    /// the live Stage. A non-full crop is not exportable until the retained
+    /// pixel buffer has matching presentation geometry; returning nil preserves
+    /// the snapshotter's existing complete-frame requirement.
+    func makeBitmapSnapshotImage() -> CGImage? {
+        guard let image = sourceView.makeBitmapSnapshotImage(),
+              !sourceView.isHidden else { return nil }
+        return image
+    }
+
+    func installBitmapSnapshotImage(
+        _ image: CGImage
+    ) -> SampleBufferBitmapSnapshotLayerState? {
+        sourceView.installBitmapSnapshotImage(image)
+    }
+
+    override func layout() {
+        super.layout()
+        applyPresentationLayout(using: presentationGeometry)
+    }
+
+    /// Called synchronously while the Audience snapshotter holds a pixel buffer
+    /// and geometry copied from the same renderer lock. Applying the frame
+    /// directly avoids a later layout query racing ahead to a newer IOSurface.
+    func synchronizeSnapshotGeometry(_ geometry: SourcePresentationGeometry?) {
+        presentationGeometry = geometry
+        applyPresentationLayout(using: geometry)
+    }
+
+    private func applyPresentationLayout(
+        using presentationGeometry: SourcePresentationGeometry?
+    ) {
+        guard let presentationGeometry else {
+            sourceView.frame = bounds
+            // A geometry transition suppresses full-source and cropped views
+            // alike. Revealing even an identity crop before its MainActor
+            // acknowledgement could expose a newly enqueued padded IOSurface
+            // through layout retained from the previous accepted frame.
+            sourceView.isHidden = true
+            sourceView.setVisibleSurfaceCrop(nil)
+            return
+        }
+
+        guard let frame = SourceCropProjection.sourceFrame(
+            presentation: presentationGeometry,
+            sourceCrop: sourceCrop,
+            destinationSize: bounds.size
+        ), let surfaceCrop = SourceCropProjection.surfaceCropRect(
+            presentation: presentationGeometry,
+            sourceCrop: sourceCrop
+        ) else {
+            sourceView.isHidden = true
+            sourceView.setVisibleSurfaceCrop(nil)
+            sourceView.frame = bounds
+            return
+        }
+
+        sourceView.frame = frame
+        sourceView.setVisibleSurfaceCrop(surfaceCrop)
+        sourceView.isHidden = false
+    }
+
+    private func presentationGeometryDidChange(
+        _ update: PresentationGeometryUpdate
+    ) {
+        if let presentationRevision,
+           update.revision < presentationRevision { return }
+        presentationRevision = update.revision
+        presentationGeometry = update.geometry
+        applyPresentationLayout(using: update.geometry)
+        needsLayout = true
     }
 }

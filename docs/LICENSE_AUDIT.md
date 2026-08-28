@@ -85,7 +85,7 @@ StagePane uses only documented APIs. It does not use private
 synthesize raw mouse/keyboard events, forward keyboard/drag input, or imitate an
 alternate macOS desktop. It does not forward input to source applications or
 request Accessibility or Input Monitoring permission. Apple requires App
-Sandbox for Mac App Store apps; StagePane's Arrange, Draw, source composition,
+Sandbox for Mac App Store apps; StagePane's Arrange, Crop, Draw, source composition,
 and screenshot workflow remain within that boundary.
 
 - **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which

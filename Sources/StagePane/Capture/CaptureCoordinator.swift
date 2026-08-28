@@ -51,9 +51,14 @@ final class CaptureSource: ObservableObject, Identifiable {
 
     @Published fileprivate(set) var title: String
     @Published fileprivate(set) var kind: CaptureSourceKind
+    @Published fileprivate(set) var contentSize: CGSize
     @Published fileprivate(set) var phase: CaptureSourcePhase = .preparing
     @Published fileprivate(set) var isPaused = false
     @Published fileprivate(set) var isOutputSuppressed = false
+    /// MainActor fence for delayed preview-renderer geometry notifications.
+    /// A suppression update must prevent an older accepted frame callback from
+    /// restoring stale crop-editor dimensions.
+    fileprivate var previewPresentationRevision: UInt64?
 
     var stageRenderer: SampleBufferRenderer { renderers.stage }
     var previewRenderer: SampleBufferRenderer { renderers.preview }
@@ -63,12 +68,14 @@ final class CaptureSource: ObservableObject, Identifiable {
         ordinal: Int,
         title: String,
         kind: CaptureSourceKind,
+        contentSize: CGSize,
         renderers: CaptureSourceRenderers
     ) {
         self.id = id
         self.ordinal = ordinal
         self.title = title
         self.kind = kind
+        self.contentSize = contentSize
         self.renderers = renderers
     }
 }
@@ -438,6 +445,12 @@ private final class CaptureSession {
     var appliedShowsCursor: Bool
     var appliedSurfaceWidth: Int
     var appliedSurfaceHeight: Int
+    /// Latest configuration target, including an in-flight or paused request.
+    /// Crop position changes can compare against this signature without losing
+    /// a later size change by comparing only with the last completed update.
+    var requestedShowsCursor: Bool
+    var requestedSurfaceWidth: Int
+    var requestedSurfaceHeight: Int
     var teardownOutcome: TeardownOutcome?
     var activeAttention: ActiveAttention?
     var stopCompletions: [(String?) -> Void] = []
@@ -475,6 +488,9 @@ private final class CaptureSession {
         self.appliedShowsCursor = appliedShowsCursor
         self.appliedSurfaceWidth = appliedSurfaceWidth
         self.appliedSurfaceHeight = appliedSurfaceHeight
+        self.requestedShowsCursor = appliedShowsCursor
+        self.requestedSurfaceWidth = appliedSurfaceWidth
+        self.requestedSurfaceHeight = appliedSurfaceHeight
     }
 }
 
@@ -805,13 +821,75 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         layout = updated
     }
 
-    /// Commits a completed resize to ScreenCaptureKit. Drag updates remain a
-    /// cheap layer-only operation; the stream surface is resized once the user
-    /// releases the handle.
+    func setSourceCrop(
+        _ sourceID: StageSourceID,
+        crop: NormalizedSourceRect
+    ) {
+        var updated = layout
+        guard updated.setSourceCrop(sourceID, crop: crop) else { return }
+        layout = updated
+    }
+
+    func moveSourceCrop(
+        _ sourceID: StageSourceID,
+        byX deltaX: Double,
+        y deltaY: Double
+    ) {
+        var updated = layout
+        guard updated.moveSourceCrop(sourceID, byX: deltaX, y: deltaY) else { return }
+        layout = updated
+    }
+
+    func resetSourceCrop(_ sourceID: StageSourceID) {
+        var updated = layout
+        guard updated[sourceID: sourceID]?.sourceCrop != .fullSource,
+              updated.resetSourceCrop(sourceID) else { return }
+        layout = updated
+        commitSourceLayout(sourceID)
+    }
+
+    func resetAllSourceCrops() {
+        let croppedSourceIDs = layout.sources.compactMap { source in
+            source.sourceCrop == .fullSource ? nil : source.id
+        }
+        guard !croppedSourceIDs.isEmpty else { return }
+        var updated = layout
+        updated.resetAllSourceCrops()
+        layout = updated
+        for sourceID in croppedSourceIDs {
+            commitSourceLayout(sourceID)
+        }
+    }
+
+    var hasCroppedSources: Bool {
+        layout.sources.contains { $0.sourceCrop != .fullSource }
+    }
+
+    /// Commits a completed layout or crop edit to ScreenCaptureKit. Drag
+    /// updates remain a cheap layer-only operation; the stream surface is
+    /// resized once the user releases the handle.
     func commitSourceLayout(_ sourceID: StageSourceID) {
         guard let session = sessions[sourceID], !session.outputSuppressed else { return }
-        session.requestedSourceConfigurationRevision &+= 1
+        let sourceLayout = layout[sourceID: sourceID]
+        let configuration = makeConfiguration(
+            for: session.filter,
+            sourceGeometry: session.sourceGeometry,
+            frame: sourceLayout?.frame ?? .fullCanvas,
+            sourceCrop: sourceLayout?.sourceCrop ?? .fullSource
+        )
+        if configuration.width != session.requestedSurfaceWidth ||
+            configuration.height != session.requestedSurfaceHeight ||
+            configuration.showsCursor != session.requestedShowsCursor {
+            session.requestedSurfaceWidth = configuration.width
+            session.requestedSurfaceHeight = configuration.height
+            session.requestedShowsCursor = configuration.showsCursor
+            session.requestedSourceConfigurationRevision &+= 1
+        }
         updateConfigurationIfNeeded(for: session)
+    }
+
+    func commitSourceCrop(_ sourceID: StageSourceID) {
+        commitSourceLayout(sourceID)
     }
 
     func arrangeSourcesAutomatically() {
@@ -871,8 +949,22 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             ordinal: ordinal,
             title: metadata.title,
             kind: metadata.kind,
+            contentSize: sourceContentSize(for: filter),
             renderers: renderers
         )
+        renderers.preview.addPresentationGeometryObserver {
+            [weak self, weak source] update in
+            guard let self, let source else { return }
+            if let revision = source.previewPresentationRevision,
+               update.revision < revision { return }
+            source.previewPresentationRevision = update.revision
+            guard let geometry = update.geometry,
+                  self.sources.contains(where: { $0 === source }) else { return }
+            let contentSize = geometry.contentRect.size
+            guard source.contentSize != contentSize else { return }
+            source.contentSize = contentSize
+            self.objectWillChange.send()
+        }
 
         let token = UUID()
         let initialPresentationGeneration = UUID()
@@ -1268,6 +1360,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let metadata = sourceMetadata(for: filter, ordinal: session.source.ordinal)
         session.source.title = metadata.title
         session.source.kind = metadata.kind
+        session.source.contentSize = sourceContentSize(for: filter)
         if session.activeAttention?.clearsAfterSuccessfulContentUpdate == true {
             session.activeAttention = nil
         }
@@ -1313,17 +1406,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
             current.pendingSourceGeometry = nil
             current.sourceGeometryDebounceTask = nil
-            let frame = self.layout[sourceID: sourceID]?.frame ?? .fullCanvas
+            let sourceLayout = self.layout[sourceID: sourceID]
+            let frame = sourceLayout?.frame ?? .fullCanvas
+            let sourceCrop = sourceLayout?.sourceCrop ?? .fullSource
             let previousSize = self.captureSurfaceSize(
                 for: current.filter,
                 sourceGeometry: current.sourceGeometry,
-                frame: frame
+                frame: frame,
+                sourceCrop: sourceCrop
             )
             current.sourceGeometry = geometry
             let observedSize = self.captureSurfaceSize(
                 for: current.filter,
                 sourceGeometry: geometry,
-                frame: frame
+                frame: frame,
+                sourceCrop: sourceCrop
             )
             guard observedSize != previousSize else { return }
 
@@ -1354,15 +1451,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         let targetRevision = configurationRevision
         let targetSourceRevision = session.requestedSourceConfigurationRevision
-        let frame = layout[sourceID: session.source.id]?.frame ?? .fullCanvas
+        let sourceLayout = layout[sourceID: session.source.id]
+        let frame = sourceLayout?.frame ?? .fullCanvas
+        let sourceCrop = sourceLayout?.sourceCrop ?? .fullSource
         let configuration = makeConfiguration(
             for: session.filter,
             sourceGeometry: session.sourceGeometry,
-            frame: frame
+            frame: frame,
+            sourceCrop: sourceCrop
         )
         let targetShowsCursor = configuration.showsCursor
         let targetSurfaceWidth = configuration.width
         let targetSurfaceHeight = configuration.height
+        session.requestedShowsCursor = targetShowsCursor
+        session.requestedSurfaceWidth = targetSurfaceWidth
+        session.requestedSurfaceHeight = targetSurfaceHeight
         let sourceID = session.source.id
         let token = session.token
         let renderers = session.source.renderers
@@ -1718,16 +1821,29 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         return configuration
     }
 
+    private func sourceContentSize(for filter: SCContentFilter) -> CGSize {
+        let size = filter.contentRect.size
+        guard size.width.isFinite,
+              size.height.isFinite,
+              size.width > 0,
+              size.height > 0 else {
+            return CGSize(width: 16, height: 9)
+        }
+        return size
+    }
+
     private func makeConfiguration(
         for filter: SCContentFilter,
         sourceGeometry: CaptureSourceGeometry? = nil,
-        frame: NormalizedStageRect
+        frame: NormalizedStageRect,
+        sourceCrop: NormalizedSourceRect = .fullSource
     ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
         let surfaceSize = captureSurfaceSize(
             for: filter,
             sourceGeometry: sourceGeometry,
-            frame: frame
+            frame: frame,
+            sourceCrop: sourceCrop
         )
         configuration.width = surfaceSize.width
         configuration.height = surfaceSize.height
@@ -1753,7 +1869,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func captureSurfaceSize(
         for filter: SCContentFilter,
         sourceGeometry: CaptureSourceGeometry?,
-        frame: NormalizedStageRect
+        frame: NormalizedStageRect,
+        sourceCrop: NormalizedSourceRect
     ) -> CaptureSurfaceSize {
         let maximumWidth = streamDimension(
             fullDimension: outputWidth,
@@ -1764,18 +1881,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             normalizedDimension: frame.height
         )
         if let sourceGeometry {
-            return CaptureSurfaceSize.fitted(
+            return CaptureSurfaceSize.fittedForVisibleRegion(
                 source: sourceGeometry,
-                maximumWidth: maximumWidth,
-                maximumHeight: maximumHeight
+                visibleRegion: sourceCrop,
+                maximumVisibleWidth: maximumWidth,
+                maximumVisibleHeight: maximumHeight
             )
         }
-        return CaptureSurfaceSize.fitted(
+        return CaptureSurfaceSize.fittedForVisibleRegion(
             sourcePointWidth: filter.contentRect.width,
             sourcePointHeight: filter.contentRect.height,
             pointPixelScale: Double(filter.pointPixelScale),
-            maximumWidth: maximumWidth,
-            maximumHeight: maximumHeight
+            visibleRegion: sourceCrop,
+            maximumVisibleWidth: maximumWidth,
+            maximumVisibleHeight: maximumHeight
         )
     }
 

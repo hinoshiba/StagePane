@@ -14,7 +14,7 @@ non-consumable In-App Purchase:
 | Simultaneous sources | 2 | 4 |
 | StagePane mark | Always shown | Optional |
 | Curtain, Stop All, pause, replace, and remove | Included | Included |
-| Arrange, Draw, layouts, pointer, and stage shapes | Included | Included |
+| Arrange, Crop, Draw, layouts, pointer, and stage shapes | Included | Included |
 | Audience image copy/save | Included, with mark | Included, mark optional |
 | Billing | None | One-time purchase |
 
@@ -41,7 +41,7 @@ Future Pro additions are not advertised before they ship.
 The free product must demonstrate StagePane's entire trust proposition before
 asking for money. One or two sources are enough for an everyday meeting and let
 people validate the exact Stage/Workspace boundary, Apple picker, Curtain,
-Stop All, layouts, Draw, and PNG export. A third source is a natural signal that
+Stop All, layouts, Crop, Draw, and PNG export. A third source is a natural signal that
 the person is using StagePane for a professional demo, class, or production.
 
 Brand removal is similarly tied to professional output rather than safety. It
@@ -53,7 +53,7 @@ The following must never become paid safety gates:
 - Privacy Curtain and Stop All
 - pause, resume, replace, remove, and removal confirmation
 - picker-scoped permission guidance
-- Arrange and Draw
+- Arrange, Crop, and Draw
 - accessibility and keyboard operation
 - output quality, supported shapes, and crash/security fixes
 

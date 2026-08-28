@@ -7,6 +7,7 @@ private let stageLayoutCanvasCoordinateSpace = "stagepane.layout.canvas"
 struct StageLayoutEditor: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    @FocusState private var focusedCropSourceID: StageSourceID?
 
     var body: some View {
         GeometryReader { proxy in
@@ -20,7 +21,9 @@ struct StageLayoutEditor: View {
                 }
 
                 if capture.isCaptureActive {
-                    StageAnnotationOverlay(store: controller.annotations)
+                    if controller.stageInteractionMode != .crop {
+                        StageAnnotationOverlay(store: controller.annotations)
+                    }
 
                     switch controller.stageInteractionMode {
                     case .arrange:
@@ -36,6 +39,18 @@ struct StageLayoutEditor: View {
                                 )
                             }
                         }
+                    case .crop:
+                        if let sourceID = controller.cropEditingSourceID,
+                           let sourceCrop = controller.cropDraft,
+                           let source = capture.source(for: sourceID),
+                           isPresented(source) {
+                            StageSourceCropOverlay(
+                                source: source,
+                                sourceCrop: sourceCrop,
+                                controller: controller
+                            )
+                            .focused($focusedCropSourceID, equals: sourceID)
+                        }
                     case .annotate:
                         StageAnnotationInputOverlay(
                             store: controller.annotations
@@ -43,7 +58,8 @@ struct StageLayoutEditor: View {
                     }
                 }
 
-                if controller.showsWatermark {
+                if controller.showsWatermark,
+                   controller.stageInteractionMode != .crop {
                     StageWatermark(
                         prefersDarkForeground: controller.theme.prefersDarkForeground,
                         compact: true
@@ -72,15 +88,37 @@ struct StageLayoutEditor: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(previewAccessibilityLabel)
         .accessibilityHint(previewAccessibilityHint)
+        .onAppear(perform: focusCropEditorIfNeeded)
+        .onChange(of: controller.cropEditingSourceID) { _, _ in
+            focusCropEditorIfNeeded()
+        }
+        .onChange(of: controller.stageInteractionMode) { _, _ in
+            focusCropEditorIfNeeded()
+        }
     }
 
     private var previewEntries: [StageCompositeEntry] {
-        capture.layout.sources.compactMap { item in
+        if controller.stageInteractionMode == .crop {
+            guard let sourceID = controller.cropEditingSourceID,
+                  let source = capture.source(for: sourceID),
+                  isPresented(source) else { return [] }
+            return [
+                StageCompositeEntry(
+                    id: sourceID,
+                    frame: .fullCanvas,
+                    sourceCrop: .fullSource,
+                    renderer: source.previewRenderer
+                )
+            ]
+        }
+
+        return capture.layout.sources.compactMap { item in
             guard let source = capture.source(for: item.id),
                   isPresented(source) else { return nil }
             return StageCompositeEntry(
                 id: item.id,
                 frame: item.frame,
+                sourceCrop: item.sourceCrop,
                 renderer: source.previewRenderer
             )
         }
@@ -88,6 +126,17 @@ struct StageLayoutEditor: View {
 
     private func isPresented(_ source: CaptureSource) -> Bool {
         !source.isOutputSuppressed && source.phase != .stopping
+    }
+
+    private func focusCropEditorIfNeeded() {
+        guard controller.stageInteractionMode == .crop else {
+            focusedCropSourceID = nil
+            return
+        }
+        let sourceID = controller.cropEditingSourceID
+        DispatchQueue.main.async {
+            focusedCropSourceID = sourceID
+        }
     }
 
     private var idleContent: some View {
@@ -137,8 +186,8 @@ struct StageLayoutEditor: View {
         )
         StageEmptyStep(
             number: 2,
-            symbol: "rectangle.3.group",
-            title: L10n.text("配置・手書き", "Arrange and draw")
+            symbol: "crop",
+            title: L10n.text("配置・切り抜き・手書き", "Arrange, crop, and draw")
         )
         StageEmptyStep(
             number: 3,
@@ -150,6 +199,7 @@ struct StageLayoutEditor: View {
     private var previewAccessibilityLabel: String {
         switch controller.stageInteractionMode {
         case .arrange: L10n.text("ステージ配置エディタ", "Stage layout editor")
+        case .crop: L10n.text("ソース切り抜きエディタ", "Source crop editor")
         case .annotate: L10n.text("ステージ手書きキャンバス", "Stage drawing canvas")
         }
     }
@@ -161,6 +211,8 @@ struct StageLayoutEditor: View {
                 "各ソースをドラッグして移動し、右下のハンドルで大きさを変えます。",
                 "Drag a source to move it and use its lower-right handle to resize it."
             )
+        case .crop:
+            L10n.cropEditorAccessibilityHint
         case .annotate:
             if controller.annotationTool == .eraser {
                 L10n.text(
@@ -174,6 +226,397 @@ struct StageLayoutEditor: View {
                 )
             }
         }
+    }
+}
+
+private enum SourceCropCorner: CaseIterable, Hashable {
+    case topLeft
+    case topRight
+    case bottomLeft
+    case bottomRight
+}
+
+private struct StageSourceCropOverlay: View {
+    @ObservedObject var source: CaptureSource
+    let sourceCrop: NormalizedSourceRect
+    @ObservedObject var controller: AppController
+
+    @State private var moveStart: NormalizedSourceRect?
+    @State private var resizeStart: NormalizedSourceRect?
+
+    var body: some View {
+        GeometryReader { proxy in
+            if let fullSourceFrame = SourceCropProjection.sourceFrame(
+                sourceSize: source.contentSize,
+                sourceCrop: .fullSource,
+                destinationSize: proxy.size
+            ), let selectionFrame = SourceCropProjection.selectionFrame(
+                sourceSize: source.contentSize,
+                sourceCrop: sourceCrop,
+                destinationSize: proxy.size
+            ) {
+                ZStack(alignment: .topLeading) {
+                    cropShade(
+                        fullSourceFrame: fullSourceFrame,
+                        selectionFrame: selectionFrame
+                    )
+                    selectionSurface(
+                        selectionFrame: selectionFrame,
+                        fullSourceFrame: fullSourceFrame
+                    )
+
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .stroke(StagePanePalette.aquaReadable, lineWidth: 2)
+                        .frame(
+                            width: selectionFrame.width,
+                            height: selectionFrame.height
+                        )
+                        .position(
+                            x: selectionFrame.midX,
+                            y: selectionFrame.midY
+                        )
+                        .allowsHitTesting(false)
+
+                    ForEach(SourceCropCorner.allCases, id: \.self) { corner in
+                        cropHandle(corner)
+                            .position(handlePosition(
+                                corner,
+                                selectionFrame: selectionFrame,
+                                tileSize: proxy.size
+                            ))
+                            .highPriorityGesture(resizeGesture(
+                                corner: corner,
+                                fullSourceFrame: fullSourceFrame
+                            ))
+                    }
+
+                    sourceBadge
+                        .frame(maxWidth: .infinity, alignment: .top)
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .focusable()
+        .onMoveCommand(perform: handleKeyboardMove)
+        .onExitCommand(perform: controller.cancelCropEditing)
+        .contextMenu {
+            Button {
+                controller.resetCropDraft()
+            } label: {
+                Label(
+                    L10n.cropResetDraftTitle,
+                    systemImage: "arrow.counterclockwise"
+                )
+            }
+            .disabled(sourceCrop == .fullSource)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.cropEditorAccessibilityLabel(source.title))
+        .accessibilityValue(cropAccessibilityValue)
+        .accessibilityHint(L10n.cropEditorAccessibilityHint)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: resizeAroundCenter(by: 0.05)
+            case .decrement: resizeAroundCenter(by: -0.05)
+            @unknown default: break
+            }
+        }
+        .accessibilityAction(named: L10n.cropMoveLeftAction) {
+            moveDraft(byX: -0.01, y: 0)
+        }
+        .accessibilityAction(named: L10n.cropMoveRightAction) {
+            moveDraft(byX: 0.01, y: 0)
+        }
+        .accessibilityAction(named: L10n.cropMoveUpAction) {
+            moveDraft(byX: 0, y: -0.01)
+        }
+        .accessibilityAction(named: L10n.cropMoveDownAction) {
+            moveDraft(byX: 0, y: 0.01)
+        }
+        .accessibilityAction(named: L10n.cropResetDraftTitle) {
+            controller.resetCropDraft()
+        }
+        .accessibilityAction(named: L10n.cropExpandAction) {
+            resizeAroundCenter(by: 0.05)
+        }
+        .accessibilityAction(named: L10n.cropTightenAction) {
+            resizeAroundCenter(by: -0.05)
+        }
+    }
+
+    private func cropShade(
+        fullSourceFrame: CGRect,
+        selectionFrame: CGRect
+    ) -> some View {
+        Path { path in
+            path.addRect(fullSourceFrame)
+            path.addRect(selectionFrame)
+        }
+        .fill(
+            Color.black.opacity(0.62),
+            style: FillStyle(eoFill: true)
+        )
+        .allowsHitTesting(false)
+    }
+
+    private func selectionSurface(
+        selectionFrame: CGRect,
+        fullSourceFrame: CGRect
+    ) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .contentShape(Rectangle())
+            .frame(
+                width: selectionFrame.width,
+                height: selectionFrame.height
+            )
+            .position(
+                x: selectionFrame.midX,
+                y: selectionFrame.midY
+            )
+            .gesture(moveGesture(fullSourceFrame: fullSourceFrame))
+    }
+
+    private func cropHandle(_ corner: SourceCropCorner) -> some View {
+        Circle()
+            .fill(StagePanePalette.indigo)
+            .overlay {
+                Circle()
+                    .stroke(Color.white.opacity(0.95), lineWidth: 1.5)
+            }
+            .frame(width: 18, height: 18)
+            .shadow(color: .black.opacity(0.48), radius: 3, y: 1)
+            .contentShape(Circle().inset(by: -6))
+            .accessibilityHidden(true)
+    }
+
+    private var sourceBadge: some View {
+        Label(source.title, systemImage: "crop")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .frame(minHeight: 22)
+            .background(Color.black.opacity(0.72), in: Capsule())
+            .padding(.top, 6)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
+    private func moveGesture(fullSourceFrame: CGRect) -> some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { value in
+                if moveStart == nil {
+                    moveStart = sourceCrop
+                }
+                guard let moveStart,
+                      fullSourceFrame.width > 0,
+                      fullSourceFrame.height > 0 else { return }
+                controller.setCropDraft(
+                    moveStart.moved(
+                        byX: Double(value.translation.width / fullSourceFrame.width),
+                        y: Double(value.translation.height / fullSourceFrame.height)
+                    ),
+                    for: source.id
+                )
+            }
+            .onEnded { _ in
+                moveStart = nil
+            }
+    }
+
+    private func resizeGesture(
+        corner: SourceCropCorner,
+        fullSourceFrame: CGRect
+    ) -> some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { value in
+                if resizeStart == nil {
+                    resizeStart = sourceCropWithEditorMinimum(sourceCrop)
+                }
+                guard let resizeStart,
+                      fullSourceFrame.width > 0,
+                      fullSourceFrame.height > 0 else { return }
+                let deltaX = Double(value.translation.width / fullSourceFrame.width)
+                let deltaY = Double(value.translation.height / fullSourceFrame.height)
+                controller.setCropDraft(
+                    resizedCrop(
+                        resizeStart,
+                        moving: corner,
+                        byX: deltaX,
+                        y: deltaY
+                    ),
+                    for: source.id
+                )
+            }
+            .onEnded { _ in
+                resizeStart = nil
+            }
+    }
+
+    private func resizedCrop(
+        _ start: NormalizedSourceRect,
+        moving corner: SourceCropCorner,
+        byX deltaX: Double,
+        y deltaY: Double
+    ) -> NormalizedSourceRect {
+        let minimum = StageLayout.defaultMinimumSourceCropDimension
+        let left = start.x
+        let top = start.y
+        let right = start.x + start.width
+        let bottom = start.y + start.height
+
+        switch corner {
+        case .topLeft:
+            let newLeft = min(max(left + deltaX, 0), right - minimum)
+            let newTop = min(max(top + deltaY, 0), bottom - minimum)
+            return cropRect(
+                left: newLeft,
+                top: newTop,
+                right: right,
+                bottom: bottom
+            )
+        case .topRight:
+            let newRight = min(max(right + deltaX, left + minimum), 1)
+            let newTop = min(max(top + deltaY, 0), bottom - minimum)
+            return cropRect(
+                left: left,
+                top: newTop,
+                right: newRight,
+                bottom: bottom
+            )
+        case .bottomLeft:
+            let newLeft = min(max(left + deltaX, 0), right - minimum)
+            let newBottom = min(max(bottom + deltaY, top + minimum), 1)
+            return cropRect(
+                left: newLeft,
+                top: top,
+                right: right,
+                bottom: newBottom
+            )
+        case .bottomRight:
+            let newRight = min(max(right + deltaX, left + minimum), 1)
+            let newBottom = min(max(bottom + deltaY, top + minimum), 1)
+            return cropRect(
+                left: left,
+                top: top,
+                right: newRight,
+                bottom: newBottom
+            )
+        }
+    }
+
+    private func cropRect(
+        left: Double,
+        top: Double,
+        right: Double,
+        bottom: Double
+    ) -> NormalizedSourceRect {
+        NormalizedSourceRect(
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top,
+            minimumWidth: StageLayout.defaultMinimumSourceCropDimension,
+            minimumHeight: StageLayout.defaultMinimumSourceCropDimension
+        )
+    }
+
+    private func sourceCropWithEditorMinimum(
+        _ crop: NormalizedSourceRect
+    ) -> NormalizedSourceRect {
+        NormalizedSourceRect(
+            x: crop.x,
+            y: crop.y,
+            width: crop.width,
+            height: crop.height,
+            minimumWidth: StageLayout.defaultMinimumSourceCropDimension,
+            minimumHeight: StageLayout.defaultMinimumSourceCropDimension
+        )
+    }
+
+    private func handleKeyboardMove(_ direction: MoveCommandDirection) {
+        if NSEvent.modifierFlags.contains(.option) {
+            switch direction {
+            case .left, .down: resizeAroundCenter(by: -0.03)
+            case .right, .up: resizeAroundCenter(by: 0.03)
+            @unknown default: break
+            }
+            return
+        }
+
+        let step = NSEvent.modifierFlags.contains(.shift) ? 0.05 : 0.01
+        switch direction {
+        case .left: moveDraft(byX: -step, y: 0)
+        case .right: moveDraft(byX: step, y: 0)
+        case .up: moveDraft(byX: 0, y: -step)
+        case .down: moveDraft(byX: 0, y: step)
+        @unknown default: return
+        }
+    }
+
+    private func moveDraft(byX deltaX: Double, y deltaY: Double) {
+        controller.setCropDraft(
+            sourceCrop.moved(byX: deltaX, y: deltaY),
+            for: source.id
+        )
+    }
+
+    private func resizeAroundCenter(by delta: Double) {
+        let minimum = StageLayout.defaultMinimumSourceCropDimension
+        let width = min(max(sourceCrop.width + delta, minimum), 1)
+        let height = min(max(sourceCrop.height + delta, minimum), 1)
+        let centerX = sourceCrop.x + sourceCrop.width / 2
+        let centerY = sourceCrop.y + sourceCrop.height / 2
+        let x = min(max(centerX - width / 2, 0), 1 - width)
+        let y = min(max(centerY - height / 2, 0), 1 - height)
+        controller.setCropDraft(
+            NormalizedSourceRect(
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                minimumWidth: minimum,
+                minimumHeight: minimum
+            ),
+            for: source.id
+        )
+    }
+
+    private func handlePosition(
+        _ corner: SourceCropCorner,
+        selectionFrame: CGRect,
+        tileSize: CGSize
+    ) -> CGPoint {
+        let x: CGFloat
+        let y: CGFloat
+        switch corner {
+        case .topLeft:
+            x = selectionFrame.minX
+            y = selectionFrame.minY
+        case .topRight:
+            x = selectionFrame.maxX
+            y = selectionFrame.minY
+        case .bottomLeft:
+            x = selectionFrame.minX
+            y = selectionFrame.maxY
+        case .bottomRight:
+            x = selectionFrame.maxX
+            y = selectionFrame.maxY
+        }
+        return CGPoint(
+            x: min(max(x, 9), max(9, tileSize.width - 9)),
+            y: min(max(y, 9), max(9, tileSize.height - 9))
+        )
+    }
+
+    private var cropAccessibilityValue: String {
+        L10n.cropAccessibilityValue(
+            left: Int((sourceCrop.x * 100).rounded()),
+            top: Int((sourceCrop.y * 100).rounded()),
+            width: Int((sourceCrop.width * 100).rounded()),
+            height: Int((sourceCrop.height * 100).rounded())
+        )
     }
 }
 
@@ -465,6 +908,16 @@ private struct StageSourceEditingOverlay: View {
                 capture.togglePause(source.id)
             }
             .disabled(!capture.canTogglePause(source.id))
+            Button(L10n.cropEditActionTitle(isCropped: isCropped)) {
+                controller.editCrop(of: source.id)
+            }
+            .disabled(!canRequestRemoval)
+            if isCropped {
+                Button(L10n.cropResetActionTitle) {
+                    controller.resetCrop(of: source.id)
+                }
+                .disabled(!canRequestRemoval)
+            }
             Button(L10n.text("設定…", "Replace…")) {
                 capture.replaceSource(source.id)
             }
@@ -485,6 +938,10 @@ private struct StageSourceEditingOverlay: View {
             "矢印キーで移動、Shiftで大きく移動、Option＋矢印でサイズ変更、Deleteで解除確認を開きます。",
             "Use arrow keys to move, Shift for a larger step, Option-arrow to resize, and Delete to review removal."
         )
+    }
+
+    private var isCropped: Bool {
+        controller.isSourceCropped(source.id)
     }
 
     private func handleKeyboardMove(_ direction: MoveCommandDirection) {
@@ -713,8 +1170,8 @@ struct CaptureSourceList: View {
 
             if showsWorkspaceHint {
                 Text(L10n.text(
-                    "配置・手書きは、大きなステージワークスペースで行えます。",
-                    "Arrange and draw in the large Stage Workspace."
+                    "配置・切り抜き・手書きは、大きなステージワークスペースで行えます。",
+                    "Arrange, crop, and draw in the large Stage Workspace."
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -764,6 +1221,16 @@ private struct CaptureSourceRow: View {
                     .font(.caption2)
                     .foregroundStyle(phaseColor)
                     .lineLimit(1)
+                if isCropped {
+                    Label(L10n.croppedStatusTitle, systemImage: "crop")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(StagePanePalette.aquaReadable)
+                        .lineLimit(1)
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                capture.bringSourceToFront(source.id)
             }
 
             Spacer(minLength: 4)
@@ -784,6 +1251,24 @@ private struct CaptureSourceRow: View {
                 ))
                 .disabled(!canConfigure)
 
+                Button(L10n.cropEditActionTitle(isCropped: isCropped)) {
+                    controller.editCrop(of: source.id)
+                }
+                .accessibilityLabel(L10n.cropEditAccessibilityLabel(
+                    source.title,
+                    isCropped: isCropped
+                ))
+                .disabled(!canEditCrop)
+
+                if isCropped {
+                    Button(L10n.cropResetActionTitle) {
+                        controller.resetCrop(of: source.id)
+                    }
+                    .accessibilityLabel(L10n.cropResetAccessibilityLabel(source.title))
+                    .accessibilityHint(L10n.cropResetAccessibilityHint)
+                    .disabled(!canEditCrop)
+                }
+
                 Button(role: .destructive) {
                     isRemoveConfirmationPresented = true
                 } label: {
@@ -800,9 +1285,6 @@ private struct CaptureSourceRow: View {
         .padding(8)
         .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
         .contentShape(Rectangle())
-        .onTapGesture {
-            capture.bringSourceToFront(source.id)
-        }
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
             capture.bringSourceToFront(source.id)
@@ -822,6 +1304,17 @@ private struct CaptureSourceRow: View {
 
     private var canConfigure: Bool {
         !isStopping && !capture.isPickerPresented && capture.canReplaceSource(source.id)
+    }
+
+    private var canEditCrop: Bool {
+        !isStopping &&
+            !source.isOutputSuppressed &&
+            !capture.isPickerPresented &&
+            capture.layout[sourceID: source.id] != nil
+    }
+
+    private var isCropped: Bool {
+        controller.isSourceCropped(source.id)
     }
 
     private var canRequestRemoval: Bool {

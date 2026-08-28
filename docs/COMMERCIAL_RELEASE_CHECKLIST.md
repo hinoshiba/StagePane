@@ -25,7 +25,7 @@
       process verified for Team `94HVVWXLK3`
 - [ ] Tagged Xcode Cloud archive is signed for TestFlight and App Store
 - [ ] App Sandbox entitlement and privacy manifest match the binary
-- [ ] Mac App Store archive contains Arrange and Draw but no cross-application
+- [ ] Mac App Store archive contains Arrange, Crop, and Draw but no cross-application
       input or Accessibility path, or Accessibility/Input Monitoring
       permission request
 - [ ] No private APIs, forbidden entitlements, updater, license key, or driver

@@ -6,7 +6,7 @@
     <title>StagePane — A clean stage for everything you share.</title>
     <meta
       name="description"
-      content="StagePane is an open-source macOS app with a clean share window, a private large Workspace for arranging and drawing, and explicit local Stage PNG screenshots."
+      content="StagePane is an open-source macOS app with a clean share window, a private large Workspace for arranging, cropping, and drawing, and explicit local Stage PNG screenshots."
     >
     <meta name="theme-color" content="#0c1018">
     <meta property="og:type" content="website">
@@ -14,7 +14,7 @@
     <meta property="og:locale" content="en_US">
     <meta property="og:locale:alternate" content="ja_JP">
     <meta property="og:title" content="StagePane — A clean stage for everything you share.">
-    <meta property="og:description" content="Arrange and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
+    <meta property="og:description" content="Arrange, crop, and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
     <meta property="og:url" content="https://stagepane.hinoshiba.com/en/">
     <meta property="og:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
     <meta property="og:image:type" content="image/webp">
@@ -23,7 +23,7 @@
     <meta property="og:image:alt" content="StagePane Pro Workspace arranging three sources into one Stage">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="StagePane — A clean stage for everything you share.">
-    <meta name="twitter:description" content="Arrange and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
+    <meta name="twitter:description" content="Arrange, crop, and draw in a private Workspace, share only the clean Stage window, and explicitly copy or save a local Stage PNG.">
     <meta name="twitter:image" content="https://stagepane.hinoshiba.com/assets/screenshots/en/arrange.webp">
     <meta name="twitter:image:alt" content="StagePane Pro Workspace arranging three sources into one Stage">
     <link rel="canonical" href="https://stagepane.hinoshiba.com/en/">
@@ -39,7 +39,7 @@
         "name": "StagePane",
         "applicationCategory": "ProductivityApplication",
         "operatingSystem": "macOS 14 or later",
-        "description": "StagePane is an open-source macOS app that separates a clean sharing Stage from a private Workspace for arranging, drawing, and managing sources.",
+        "description": "StagePane is an open-source macOS app that separates a clean sharing Stage from a private Workspace for arranging, cropping, drawing, and managing sources.",
         "url": "https://stagepane.hinoshiba.com/en/",
         "sameAs": "https://github.com/hinoshiba/StagePane",
         "license": "https://www.apache.org/licenses/LICENSE-2.0"
@@ -124,7 +124,7 @@
               </div>
               <div class="control-row">
                 <span class="control-icon control-icon-indigo">✦</span>
-                <div><b>Arrange · Draw</b><small>Large live canvas</small></div>
+                <div><b>Arrange · Crop · Draw</b><small>Large live canvas</small></div>
                 <span class="chevron">›</span>
               </div>
               <div class="control-row">
@@ -158,8 +158,8 @@
         <div class="shell">
           <div class="section-heading">
             <p class="eyebrow"><span></span> Live workspace</p>
-            <h2 id="product-proof-title">Compose. Draw.<br>Keep every tool on your side.</h2>
-            <p>The audience Stage shows only the finished composition. Arrange and Draw stay together in the large Workspace you keep private.</p>
+            <h2 id="product-proof-title">Compose. Crop. Draw.<br>Keep every tool on your side.</h2>
+            <p>The audience Stage contains the composition, never editor controls. Arrange and Draw update it live; Crop drafts one selected source privately and changes the Stage only when you apply it.</p>
           </div>
           <div class="proof-grid">
             <article class="proof-card">
@@ -196,7 +196,7 @@
           <div class="feature-grid">
             <article class="feature-card feature-card-wide">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2"/><path d="M7 20h14V9h-4M10 15v5"/></svg></div>
-              <div><h3>Clearly separate sharing from editing</h3><p>Put only audience content in the chrome-free Stage. Arrange and draw on the Workspace Canvas; manage sources and settings from its Docker-style sidebar. “Keep Private” is guidance, not a capture boundary, so verify the title and share the exact Stage window—not the full display or app.</p></div>
+              <div><h3>Clearly separate sharing from editing</h3><p>Put only audience content in the chrome-free Stage. Arrange, crop, and draw on the Workspace Canvas; manage sources and settings from its Docker-style sidebar. “Keep Private” is guidance, not a capture boundary, so verify the title and share the exact Stage window—not the full display or app.</p></div>
               <div class="mini-windows" aria-hidden="true"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>WORKSPACE</span><i></i><i></i><i></i></div></div>
             </article>
             <article class="feature-card">
@@ -207,7 +207,7 @@
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m8 12 2 2 5-5"/></svg></div>
               <h3>Two sources free, up to four with Pro</h3>
-              <p>Add sources one at a time with Apple's system picker, then pause, resume, replace, or remove each one independently; Remove asks before discarding its frame and layout. Free supports two simultaneous sources, while the one-time StagePane Pro purchase supports up to four. On the large Canvas, arrange freely or draw with a pen, translucent highlighter, and size-adjustable partial eraser whose action can be undone exactly. Draw automatically hides the audience pointer; returning to Arrange restores the selected style. Each choice authorizes only that shared content for its capture session. StagePane requests no separate broad Screen Recording, Accessibility, or Input Monitoring permission and forwards no input to source apps.</p>
+              <p>Add sources one at a time with Apple's system picker, then pause, resume, replace, or remove each one independently; Remove asks before discarding its frame and layout. Free supports two simultaneous sources, while the one-time StagePane Pro purchase supports up to four. On the large Canvas, arrange freely, crop each source, or draw with a pen, translucent highlighter, and size-adjustable partial eraser whose action can be undone exactly. Crop shows one selected source full-size in the private Workspace and keeps edits as a draft. The public Stage retains the previously applied crop until Apply Crop; Cancel discards the draft. Crop is a composition mask: whenever the source stream is running, ScreenCaptureKit still handles the complete picker-approved source. Applied crop rectangles are session-only. Draw automatically hides the audience pointer; returning to Arrange or Crop restores the selected style. Each choice authorizes only that shared content for its capture session. StagePane requests no separate broad Screen Recording, Accessibility, or Input Monitoring permission and forwards no input to source apps.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"/></svg></div>
@@ -337,7 +337,7 @@
             <p class="eyebrow"><span></span> Build from source</p>
             <h2>Try it from source<br>on your Mac.</h2>
             <p>Install macOS 14 or later and Xcode 16 or later, then clone the repository. StagePane targets both Apple Silicon and Intel Macs.</p>
-            <p class="release-note"><strong>The official release is available on the Mac App Store.</strong> The output of <code>./build.sh</code> uses the same App Sandbox and Arrange/Draw feature set as the Store build, but it is an ad-hoc-signed, unnotarized development build—not an official binary or distributable artifact.</p>
+            <p class="release-note"><strong>The official release is available on the Mac App Store.</strong> The output of <code>./build.sh</code> uses the same App Sandbox and Arrange/Crop/Draw feature set as the Store build, but it is an ad-hoc-signed, unnotarized development build—not an official binary or distributable artifact.</p>
             <div class="build-links"><a class="button button-primary" href="https://github.com/hinoshiba/StagePane">Open the repository</a><a class="text-link" href="#how-it-works">Back to the guide <span>↑</span></a></div>
           </div>
           <div class="terminal" aria-label="Commands to build StagePane">

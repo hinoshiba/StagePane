@@ -175,8 +175,100 @@ final class StageLayoutTests: XCTestCase {
         XCTAssertEqual(decoded.height, Double.ulpOfOne)
     }
 
+    func testSourceCropIsBoundedAndHasASafeAbsoluteMinimum() throws {
+        let data = Data(#"{"x":2,"y":-1,"width":0,"height":0}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(NormalizedSourceRect.self, from: data)
+
+        assertSourceRect(
+            decoded,
+            x: 0.99,
+            y: 0,
+            width: NormalizedSourceRect.absoluteMinimumDimension,
+            height: NormalizedSourceRect.absoluteMinimumDimension
+        )
+        XCTAssertTrue(decoded.x.isFinite)
+        XCTAssertTrue(decoded.y.isFinite)
+    }
+
+    func testLegacySourceLayoutDefaultsToFullCropAndOmitsIdentityCrop() throws {
+        let data = Data(
+            #"{"id":"source-a","frame":{"x":0.1,"y":0.2,"width":0.3,"height":0.4}}"#.utf8
+        )
+
+        let decoded = try JSONDecoder().decode(StageSourceLayout.self, from: data)
+
+        XCTAssertEqual(decoded.sourceCrop, .fullSource)
+        let encoded = try JSONEncoder().encode(decoded)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        XCTAssertNil(object["sourceCrop"])
+    }
+
+    func testSourceCropRoundTripsAndLayoutMutationsPreserveIt() throws {
+        let crop = NormalizedSourceRect(x: 0.2, y: 0.1, width: 0.5, height: 0.7)
+        var layout = StageLayout(sources: [
+            StageSourceLayout(id: sourceA, frame: .fullCanvas, sourceCrop: crop)
+        ])
+
+        XCTAssertTrue(layout.addSource(sourceB))
+        XCTAssertEqual(layout[sourceID: sourceA]?.sourceCrop, crop)
+        XCTAssertEqual(layout[sourceID: sourceB]?.sourceCrop, .fullSource)
+        XCTAssertTrue(layout.moveSource(sourceA, byX: 0.1, y: 0.1))
+        XCTAssertTrue(layout.resizeSource(
+            sourceA,
+            x: 0.1,
+            y: 0.1,
+            width: 0.5,
+            height: 0.5
+        ))
+        layout.apply(preset: .pictureInPicture)
+        XCTAssertEqual(layout[sourceID: sourceA]?.sourceCrop, crop)
+
+        let encoded = try JSONEncoder().encode(layout)
+        XCTAssertEqual(try JSONDecoder().decode(StageLayout.self, from: encoded), layout)
+    }
+
+    func testCropMoveSetAndResetLeaveDestinationFrameUntouched() {
+        let frame = NormalizedStageRect(x: 0.1, y: 0.2, width: 0.6, height: 0.7)
+        var layout = StageLayout(sources: [
+            StageSourceLayout(id: sourceA, frame: frame)
+        ])
+        let crop = NormalizedSourceRect(x: 0.2, y: 0.3, width: 0.4, height: 0.5)
+
+        XCTAssertTrue(layout.setSourceCrop(sourceA, crop: crop))
+        XCTAssertTrue(layout.moveSourceCrop(sourceA, byX: 1, y: -1))
+        assertSourceRect(
+            layout[sourceID: sourceA]!.sourceCrop,
+            x: 0.6,
+            y: 0,
+            width: 0.4,
+            height: 0.5
+        )
+        XCTAssertEqual(layout[sourceID: sourceA]?.frame, frame)
+        XCTAssertTrue(layout.resetSourceCrop(sourceA))
+        XCTAssertEqual(layout[sourceID: sourceA]?.sourceCrop, .fullSource)
+        XCTAssertFalse(layout.setSourceCrop(sourceB, crop: crop))
+    }
+
     private func assertRect(
         _ rect: NormalizedStageRect,
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(rect.x, x, accuracy: 0.000_000_1, file: file, line: line)
+        XCTAssertEqual(rect.y, y, accuracy: 0.000_000_1, file: file, line: line)
+        XCTAssertEqual(rect.width, width, accuracy: 0.000_000_1, file: file, line: line)
+        XCTAssertEqual(rect.height, height, accuracy: 0.000_000_1, file: file, line: line)
+    }
+
+    private func assertSourceRect(
+        _ rect: NormalizedSourceRect,
         x: Double,
         y: Double,
         width: Double,

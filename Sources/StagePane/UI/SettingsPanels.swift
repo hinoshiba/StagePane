@@ -187,8 +187,8 @@ struct PermissionsPanel: View {
 
     private var permissionFooterText: String {
         L10n.text(
-            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除するか、すべて停止すると、そのソース用の共有アクセスも終了します。配置と手書きはStagePane内だけで動作し、アクセシビリティや入力監視の許可は要求しません。",
-            "Opening this page never shows a macOS consent dialog by itself. Removing a source or stopping all sources ends the sharing access for that source. Arrange and Draw stay inside StagePane; Accessibility and Input Monitoring permission are never requested."
+            "この画面を開くだけでは、macOSの確認ダイアログは表示されません。ソースを解除するか、すべて停止すると、そのソース用の共有アクセスも終了します。配置・切り抜き・手書きはStagePane内だけで動作し、アクセシビリティや入力監視の許可は要求しません。",
+            "Opening this page never shows a macOS consent dialog by itself. Removing a source or stopping all sources ends the sharing access for that source. Arrange, Crop, and Draw stay inside StagePane; Accessibility and Input Monitoring permission are never requested."
         )
     }
 

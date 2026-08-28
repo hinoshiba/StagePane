@@ -750,6 +750,51 @@ struct StageWorkspaceView: View {
                     "Arrange sources as a grid, side by side, stacked, or picture in picture"
                 ))
 
+            case .crop:
+                HStack(spacing: 7) {
+                    Image(systemName: "viewfinder")
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(L10n.cropDraftStatusTitle)
+                        Text(L10n.cropCaptureScopeCompact)
+                            .font(.caption2.weight(.regular))
+                            .foregroundStyle(Color.white.opacity(0.60))
+                    }
+                }
+                .foregroundStyle(Color.white.opacity(0.82))
+                .accessibilityElement(children: .combine)
+                .help(L10n.cropCaptureScopeDetail)
+
+                Button {
+                    controller.resetCropDraft()
+                } label: {
+                    Label(
+                        L10n.cropResetDraftTitle,
+                        systemImage: "arrow.counterclockwise"
+                    )
+                }
+                .disabled(
+                    controller.cropDraft == nil ||
+                        controller.cropDraft == .fullSource
+                )
+                .help(L10n.cropResetDraftHint)
+
+                Button(role: .cancel) {
+                    controller.cancelCropEditing()
+                } label: {
+                    Text(L10n.cropCancelTitle)
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button {
+                    controller.applyCropEditing()
+                } label: {
+                    Label(L10n.cropApplyTitle, systemImage: "checkmark")
+                }
+                .keyboardShortcut(.defaultAction)
+                .tint(StagePanePalette.indigo)
+                .disabled(!controller.canApplyCropEditing)
+
             case .annotate:
                 StageInkToolShelf(store: controller.annotations)
 
@@ -930,6 +975,7 @@ struct StageWorkspaceView: View {
     private func modeSymbol(_ mode: StageInteractionMode) -> String {
         switch mode {
         case .arrange: "rectangle.3.group"
+        case .crop: "crop"
         case .annotate: "pencil.tip"
         }
     }

@@ -41,6 +41,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var privacyCurtain = true
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
+    @Published private(set) var cropEditingSourceID: StageSourceID?
+    @Published private(set) var cropDraft: NormalizedSourceRect?
     @Published private(set) var workspaceSection: WorkspaceSection = .canvas
     @Published var isAlwaysOnTop: Bool {
         didSet {
@@ -238,6 +240,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 setStageInteractionMode(.arrange)
             }
             .store(in: &cancellables)
+        capture.$sources
+            .map { $0.map(\.id) }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] sourceIDs in
+                guard let self,
+                      let cropEditingSourceID,
+                      !sourceIDs.contains(cropEditingSourceID) else { return }
+                discardCropEditing(announce: false)
+                setStageInteractionMode(.arrange)
+                transientNotice = L10n.cropSourceUnavailableNotice
+            }
+            .store(in: &cancellables)
         purchases.$entitlementState
             .combineLatest(purchases.$operationState)
             .removeDuplicates { previous, current in
@@ -314,16 +329,148 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func setStageInteractionMode(_ mode: StageInteractionMode) {
+        if mode == .crop, cropEditingSourceID == nil {
+            guard let sourceID = defaultCropEditingSourceID,
+                  beginCropEditing(sourceID) else { return }
+        } else if mode != .crop, cropEditingSourceID != nil {
+            discardCropEditing(announce: true)
+        }
         guard stageInteractionMode != mode else { return }
         annotations.endStroke()
         stageInteractionMode = mode
         capture.setPointerStyle(effectivePointerStyle)
     }
 
+    func editCrop(of sourceID: StageSourceID) {
+        if cropEditingSourceID == sourceID, cropDraft != nil {
+            workspaceSection = .canvas
+            setStageInteractionMode(.crop)
+            return
+        }
+        let discardedAnotherDraft = cropEditingSourceID != nil
+        guard beginCropEditing(sourceID) else { return }
+        setStageInteractionMode(.crop)
+        if discardedAnotherDraft {
+            transientNotice = L10n.cropPreviousDraftDiscardedNotice
+        }
+    }
+
+    func resetCrop(of sourceID: StageSourceID) {
+        if cropEditingSourceID == sourceID, cropDraft != nil {
+            workspaceSection = .canvas
+            cropDraft = .fullSource
+            setStageInteractionMode(.crop)
+            transientNotice = L10n.cropResetDraftNotice
+            return
+        }
+        let discardedAnotherDraft = cropEditingSourceID != nil
+        guard beginCropEditing(sourceID, draft: .fullSource) else { return }
+        setStageInteractionMode(.crop)
+        transientNotice = discardedAnotherDraft
+            ? L10n.cropPreviousDraftDiscardedAndResetNotice
+            : L10n.cropResetDraftNotice
+    }
+
+    func setCropDraft(
+        _ crop: NormalizedSourceRect,
+        for sourceID: StageSourceID
+    ) {
+        guard cropEditingSourceID == sourceID else { return }
+        cropDraft = crop
+    }
+
+    func resetCropDraft() {
+        guard cropEditingSourceID != nil else { return }
+        cropDraft = .fullSource
+        transientNotice = L10n.cropResetDraftNotice
+    }
+
+    func applyCropEditing() {
+        guard let sourceID = cropEditingSourceID,
+              let cropDraft,
+              let source = capture.source(for: sourceID),
+              !source.isOutputSuppressed,
+              source.phase != .stopping,
+              capture.layout[sourceID: sourceID] != nil else {
+            discardCropEditing(announce: false)
+            setStageInteractionMode(.arrange)
+            transientNotice = L10n.cropSourceUnavailableNotice
+            return
+        }
+
+        let sourceTitle = capture.source(for: sourceID)?.title ?? ""
+        capture.setSourceCrop(sourceID, crop: cropDraft)
+        capture.commitSourceCrop(sourceID)
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        transientNotice = L10n.cropAppliedNotice(sourceTitle)
+    }
+
+    func cancelCropEditing() {
+        let hadDraft = cropEditingSourceID != nil
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        if hadDraft {
+            transientNotice = L10n.cropDiscardedNotice
+        }
+    }
+
+    func isSourceCropped(_ sourceID: StageSourceID) -> Bool {
+        guard let sourceCrop = capture.layout[sourceID: sourceID]?.sourceCrop else {
+            return false
+        }
+        return sourceCrop != .fullSource
+    }
+
+    var canApplyCropEditing: Bool {
+        guard let cropEditingSourceID,
+              cropDraft != nil,
+              let source = capture.source(for: cropEditingSourceID) else { return false }
+        return !source.isOutputSuppressed &&
+            source.phase != .stopping &&
+            capture.layout[sourceID: cropEditingSourceID] != nil
+    }
+
+    private var defaultCropEditingSourceID: StageSourceID? {
+        capture.layout.sources.reversed().first { item in
+            guard let source = capture.source(for: item.id) else { return false }
+            return !source.isOutputSuppressed && source.phase != .stopping
+        }?.id
+    }
+
+    @discardableResult
+    private func beginCropEditing(
+        _ sourceID: StageSourceID,
+        draft: NormalizedSourceRect? = nil
+    ) -> Bool {
+        guard let source = capture.source(for: sourceID),
+              !source.isOutputSuppressed,
+              source.phase != .stopping,
+              let sourceLayout = capture.layout[sourceID: sourceID] else { return false }
+        cropEditingSourceID = sourceID
+        cropDraft = draft ?? sourceLayout.sourceCrop
+        workspaceSection = .canvas
+        return true
+    }
+
+    private func discardCropEditing(announce: Bool) {
+        guard cropEditingSourceID != nil else { return }
+        cropEditingSourceID = nil
+        cropDraft = nil
+        if announce {
+            transientNotice = L10n.cropDiscardedNotice
+        }
+    }
+
     func removeSource(
         _ sourceID: StageSourceID,
         completion: ((String?) -> Void)? = nil
     ) {
+        if cropEditingSourceID == sourceID {
+            discardCropEditing(announce: false)
+            setStageInteractionMode(.arrange)
+            transientNotice = L10n.cropSourceUnavailableNotice
+        }
         if capture.removalLeavesNoVisibleSources(sourceID) {
             annotations.endStroke()
             annotations.removeAll()
@@ -978,6 +1125,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
+        discardCropEditingIfSourceUnavailable()
         let previousPhase = previousCapturePhase
         let wasActive = previousCaptureWasActive
         guard phase != previousPhase || isActive != wasActive else { return }
@@ -1041,6 +1189,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     "A source was added and is being prepared for the Stage."
                 )
         }
+    }
+
+    private func discardCropEditingIfSourceUnavailable() {
+        guard let sourceID = cropEditingSourceID else { return }
+        if let source = capture.source(for: sourceID),
+           !source.isOutputSuppressed,
+           source.phase != .stopping,
+           capture.layout[sourceID: sourceID] != nil {
+            return
+        }
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        transientNotice = L10n.cropSourceUnavailableNotice
     }
 
     private func capturePhaseNeedsAttention(_ phase: CapturePhase) -> Bool {

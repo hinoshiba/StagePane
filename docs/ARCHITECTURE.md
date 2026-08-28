@@ -23,7 +23,7 @@ StagePaneApplication
     └── AppController ─────────────── settings / actions / lifecycle
         ├── StageWorkspaceWindowController
         │   └── StageWorkspaceView    private unified working window
-        │       ├── StageLayoutEditor Arrange / Draw
+        │       ├── StageLayoutEditor Arrange / Crop / Draw
         │       ├── Sources           per-source lifecycle controls
         │       ├── Stage Settings / Appearance
         │       └── Permissions / Privacy / About
@@ -73,14 +73,26 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    last valid frame visible until its replacement arrives instead of flushing
    a static slide to black.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
-   rectangle and ordered z-position. Arrange-mode drag and resize update only
-   this local composition.
+   destination rectangle, an applied normalized source crop, and an ordered
+   z-position. Arrange-mode drag and resize update destination placement.
+   `AppController` separately owns one Crop editing source ID and one draft.
+   Crop mode shows only that source, uncropped, in the private Workspace while
+   the public Stage, laser overlay, and Audience PNG continue using the applied
+   layout. Apply writes the draft to `StageLayout`; Cancel, a mode change, or
+   source loss discards it. Neither the draft nor applied crop is persisted.
+   Each renderer stores an accepted frame's pixel buffer and presentation
+   geometry together; the crop projection passes through that frame's actual
+   `contentRect` before expanding and offsetting the source child view inside a
+   clipped tile. The ScreenCaptureKit stream remains full-source; cropping does
+   not narrow the picker-approved capture scope. Applying a crop can raise the
+   full-source IOSurface budget so the visible region retains detail, bounded by
+   native source resolution, 3,840 pixels per dimension, and 8.3 megapixels.
 6. Draw mode stores one bounded, normalized vector-ink document in memory. Both
    the private Workspace and public Stage render that document, while the Curtain
    covers it on the public Stage. Undo/Clear mutate the document; Stop All or
    removal of the final source clears it. No ink is serialized or logged. Draw
    also applies an effective hidden pointer style without replacing the saved
-   preference; Arrange restores the latest user-selected style.
+   preference; Arrange and Crop restore the latest user-selected style.
 7. In laser-pointer mode, the native captured pointer is disabled for every
    stream. One local `CAShapeLayer` overlay is enabled only for the frontmost
    source in `StageLayout`; it maps the current pointer through that frame's

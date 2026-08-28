@@ -38,8 +38,8 @@ and end capture with no retained frame or orphaned state.
 - two independently pausable/resumable, replaceable, and removable in-memory
   video sources in Free, or up to four with the one-time StagePane Pro purchase;
   pause stops the stream and retains its last frame
-- large private Workspace hosting Arrange and Draw, with move, free resize,
-  z-order, and auto arrange; source management and
+- large private Workspace hosting Arrange, Crop, and Draw, with move, free
+  resize, per-source source-space cropping, z-order, and auto arrange; source management and
   settings live in its sidebar
 - explicit per-source removal confirmation and stop-all capture teardown
 - instant Privacy Curtain with customizable message
@@ -49,9 +49,11 @@ and end capture with no retained frame or orphaned state.
   audience pointer styles are temporarily suppressed in Draw mode
 - translucent lower-right StagePane mark on audience-facing Stage states,
   including content and Curtain; always shown in Free and optional in Pro
-- mutually exclusive Arrange and Draw modes in every build; Arrange edits only
-  the composition and restores the selected pointer style, while Draw suppresses
-  the audience pointer and adds bounded session-only Stage ink
+- mutually exclusive Arrange, Crop, and Draw modes in every build; Arrange
+  edits placement; Crop privately drafts one selected source at a time, Apply
+  commits it, Cancel discards it, and applied crop geometry is session-only
+  while every running stream remains full-source; Draw
+  suppresses the audience pointer and adds bounded session-only Stage ink
 - explicit one-shot clean Audience Stage PNG copy/save at the selected preset
   dimensions, including Curtain, ink, watermark, and pointer when visible but
   excluding Workspace chrome; no automatic screenshot, recording, or network path

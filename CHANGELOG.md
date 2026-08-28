@@ -5,6 +5,16 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Added
+
+- Per-source Crop mode edits one selected source at a time in a private
+  full-source Canvas, with a draggable frame, four corner handles, keyboard and
+  VoiceOver actions. Changes, including Reset to Full Source, remain a draft
+  until Apply Crop; Cancel discards them and the public Stage keeps its
+  previously applied crop meanwhile. Applied crops are session-only and are
+  shared consistently by the live Stage, pointer overlay, and explicit Audience
+  PNG, while every running picker-approved stream remains full-source.
+
 ## [0.2.0] - 2026-08-27
 
 ### Added
