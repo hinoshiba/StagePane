@@ -12,11 +12,13 @@
 - **Promotional Text (EN):** A clean stage for everything you share. Free
   includes two sources; StagePane Pro expands to four and removes the mark.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で2ソース、StagePane Proなら最大4ソースとロゴ非表示。
-- **What's New 0.2.0 (EN):** StagePane Pro is now available as a one-time
-  In-App Purchase. Free supports two simultaneous sources; Pro expands this to
-  four and lets you hide the StagePane mark. Restore Purchases is available
-  from the Pro screen.
-- **What's New 0.2.0 (JA):** StagePane Proを追加しました。無料版は同時に2ソース、買い切りのProは最大4ソースとStagePaneロゴの非表示に対応します。Pro画面から購入の復元もできます。
+- **What's New 0.3.0 (EN):** Crop each source in a private draft before applying
+  it to the shared Stage. Crop supports drag, corner handles, keyboard, and
+  VoiceOver. Source layers now retain placement, crop, and order if sharing
+  ends. Paused sources now stay hidden until a fresh frame arrives on resume,
+  the Stage can close without clearing your Workspace, and notices no longer
+  resize the preview.
+- **What's New 0.3.0 (JA):** ソースごとの切り抜きを追加しました。手元の下書きでドラッグ、四隅のハンドル、キーボード、VoiceOverを使って調整し、「適用」するまで共有Stageには反映されません。共有終了時もレイヤーの配置・切り抜き・重なり順を保持します。一時停止したソースは、再開後に新しいフレームが届くまで非表示になります。Stageを閉じてもWorkspaceの状態を維持し、通知によるプレビューのサイズ変化も解消しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
@@ -123,7 +125,7 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.2.0 App Review notes
+## 0.3.0 App Review notes
 
 Use this concise block in App Store Connect:
 
@@ -145,11 +147,17 @@ Use this concise block in App Store Connect:
 > Stage, Privacy Curtain, and explicitly copied/saved Audience PNG. Canceling
 > does not change or stop the current Stage.
 >
-> Arrange changes only StagePane’s local composition. Draw adds bounded
-> in-memory ink to the Workspace and Stage. Privacy Curtain hides only the
-> public Stage; Stop All ends every stream and removes every layer. Copy
-> Audience Image and Save Audience Image create a PNG only after the reviewer
-> explicitly chooses the action.
+> Arrange changes only StagePane’s local composition. Each tile and source row
+> has a Crop action that opens that exact source as a private draft. Drag or
+> resize the frame, or choose Reset to Full Source; only Apply Crop changes the
+> public Stage, while Cancel discards the draft. Crop is a local composition
+> mask and does not narrow the full source approved in Apple’s picker. If macOS
+> ends sharing, StagePane clears the old frame but retains that layer’s
+> placement, crop, and order for Select Again. Draw adds bounded in-memory ink
+> to the Workspace and Stage. Privacy Curtain hides only the public Stage; Stop
+> All ends every stream and removes every layer. Copy Audience Image and Save
+> Audience Image create a PNG only after the reviewer explicitly chooses the
+> action.
 >
 > StagePane is sandboxed. It does not record, capture audio or microphone
 > input, create an account, use analytics or ads, upload frames, or operate a

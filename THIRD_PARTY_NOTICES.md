@@ -1,6 +1,6 @@
 # Third-party notices
 
-StagePane 0.2.0 has no third-party runtime code, SDK, font, model, media, or
+StagePane 0.3.0 has no third-party runtime code, SDK, font, model, media, or
 binary dependency.
 
 It uses only Apple system frameworks supplied by macOS, including Accessibility,

@@ -5,6 +5,8 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-29
+
 ### Added
 
 - Per-layer Crop actions on every Canvas tile and source row edit that exact
@@ -16,6 +18,12 @@ Versioning once 1.0.0 is released.
   the current StagePane run, survive a source-sharing disconnect on the retained
   layer, and are shared consistently by the live Stage, pointer overlay, and
   explicit Audience PNG. Every running picker-approved stream remains full-source.
+
+### Changed
+
+- Pausing a source now clears its visible pixels from the Stage, Workspace, and
+  Audience PNG while retaining the layer's placement, crop, and stacking order.
+  Resume reveals the layer only after a new complete frame arrives.
 
 ### Fixed
 
@@ -55,9 +63,7 @@ Versioning once 1.0.0 is released.
   session; StagePane does not request separate broad Screen Recording access.
 - Up to four independently consented window/app/display sources, added one at a
   time with per-source pause/resume, replace, and remove controls. Pausing stops
-  that source's stream and makes its layer transparent in the Stage, private
-  Workspace, and Audience PNG output while retaining its placement, crop, and
-  z-order. Resume reveals it only after a new complete frame arrives.
+  that source's stream while retaining its last frame until resume or removal.
 - A private Stage Workspace with a large live editor, drag, free resize,
   front-to-back ordering, and deterministic automatic arrangement.
 - Mutually exclusive Arrange and Draw modes. Draw renders bounded, session-only
