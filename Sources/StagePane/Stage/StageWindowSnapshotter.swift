@@ -89,7 +89,7 @@ enum StageWindowSnapshotter {
             throw StageWindowSnapshotError.invalidContentBounds
         }
 
-        let sourceViews = visibleSampleBufferViews(in: contentView)
+        let sourceViews = visibleCroppedSourceViews(in: contentView)
         let sourceImages = try sourceViews.enumerated().map { index, sourceView in
             guard let image = sourceView.makeBitmapSnapshotImage() else {
                 throw StageWindowSnapshotError.sourceFrameUnavailable(index: index)
@@ -166,18 +166,24 @@ enum StageWindowSnapshotter {
         return bitmap
     }
 
-    private static func visibleSampleBufferViews(
+    /// Enumerates the visible Stage tiles rather than only their media children.
+    /// A cropped tile deliberately hides its child while exact accepted-frame
+    /// geometry is unavailable; it must still participate so export reports an
+    /// incomplete source instead of silently producing a PNG with that tile
+    /// missing.
+    private static func visibleCroppedSourceViews(
         in root: NSView
-    ) -> [SampleBufferNSView] {
-        var result: [SampleBufferNSView] = []
+    ) -> [CroppedSampleBufferNSView] {
+        var result: [CroppedSampleBufferNSView] = []
 
         func visit(_ view: NSView) {
-            if let sourceView = view as? SampleBufferNSView,
+            if let sourceView = view as? CroppedSampleBufferNSView,
                !sourceView.isHiddenOrHasHiddenAncestor,
                sourceView.alphaValue > 0,
                sourceView.bounds.width > 0,
                sourceView.bounds.height > 0 {
                 result.append(sourceView)
+                return
             }
             for child in view.subviews {
                 visit(child)

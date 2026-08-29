@@ -9,7 +9,7 @@ is no local release signing, notarization, DMG, archive, or upload procedure.
 `STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed Keychain
 identity for development signing. The value stays outside the repository and
 the script neither discovers nor prints it. Both signing modes use the same App
-Sandbox entitlements and Arrange/Draw feature set as the Store target, retain
+Sandbox entitlements and Arrange/Crop/Draw feature set as the Store target, retain
 Hardened Runtime, and must never be published. This opt-in has no effect on the
 separate Xcode Cloud Mac App Store archive path.
 
@@ -127,18 +127,19 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   through 2/2 with the still-enabled third-source action opening StagePane Pro;
   Pro mixed-source addition through 4/4; and a disabled Add Source action only
   at the physical 4/4 maximum;
-- per-source pause and resume (stop the stream, retain the last frame in both
-  renderers, then restart it), replace (with cancel preserving the old item),
-  per-source removal while other streams remain live, and Stop All draining
-  both renderers for every running or paused source;
+- per-source pause and resume (stop the stream, make the layer transparent in
+  Stage, Workspace, and Audience PNG while preserving placement/crop/z-order,
+  then reveal it only after Resume receives a new complete frame), replace
+  (with cancel preserving the old item), per-source removal while other streams
+  remain live, and Stop All deleting pixels and logical state for every source;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   free resize/minimum tile size, front ordering, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
 - strict two-window separation: the private Workspace contains the Canvas and
   Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
-  Privacy, and About; its Canvas hosts Arrange and Draw; the public Stage has no
-  private toolbar, mode control, selection outline, resize handle, notice, or
-  other editing chrome;
+  Privacy, and About; its Canvas has Arrange and Draw global modes plus a Crop
+  action on each layer; the public Stage has no private toolbar, mode control,
+  selection outline, resize handle, notice, or other editing chrome;
 - exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
   sharing can expose private windows and the UI directs users to choose the
@@ -146,7 +147,8 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - Workspace close/reopen while live, drawing, resizing, choosing, and paused:
   closing ends an active stroke without stopping capture, clearing completed ink,
   closing Stage, or corrupting layout;
-  closing the public Stage continues to cover output and stop active capture;
+  closing the public Stage covers audience output without stopping capture or
+  clearing layer placement/crop, and reopening starts covered by the Curtain;
 - live source-window aspect changes, including a static slide after a layout or
   source resize, with no double letterbox and no transient black tile;
 - Curtain hiding only the public Stage while the private Workspace remains
@@ -162,16 +164,26 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   changes, a static System-to-Laser transition
   with no native/laser double pointer (advance the slide if macOS defers the first
   cursorless complete frame), and removal on Curtain/stop;
-- Arrange-mode drag/resize affecting only composition, with Arrange and Draw
-  available in Workspace in both the local sandboxed build and exact Mac App
+- Arrange-mode drag/resize affecting only composition, with global Arrange and
+  Draw plus a crop button on every layer available in Workspace in both the local sandboxed build and exact Mac App
   Store candidate on every supported OS; confirm the persistent Permissions view
   describes only picker-scoped screen-sharing session access and neither build
   contains a cross-application input-forwarding or Accessibility permission path;
+- each tile and source row opening Crop for that exact layer at full Canvas size
+  in the private Workspace; verify the target layer name, drag, four-corner
+  resize, keyboard and VoiceOver actions;
+  Reset to Full Source changes only the draft; Apply Crop is the only commit;
+  Cancel, a mode change, or source loss discards the draft; the public Stage,
+  laser projection, and every Audience PNG preset retain the previously applied
+  crop until Apply; applied crop geometry remains in memory for the current
+  StagePane run and survives source-sharing disconnects on retained layers; Crop never
+  narrows the complete picker-approved source handled by a running
+  ScreenCaptureKit stream;
 - Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and
   Highlighter opacity, partial Eraser sizing and cursor, erase-over-crossing-lines,
   draw-after-erase ordering, exact Undo restoration, memory bounds, Clear
   confirmation, automatic audience-pointer hiding on entry, restoration of the
-  latest selected pointer style on return to Arrange, pointer-style changes made
+  latest selected pointer style on return to Arrange or Crop, pointer-style changes made
   while Draw remains active, Curtain hiding ink, intermediate-source
   removal preserving ink, and Stop All/final-source removal clearing it;
 - destructive confirmation from both source-list and Workspace-context Remove,
@@ -195,7 +207,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   history after the explicit copy/save completes;
 - no Accessibility or Input Monitoring request, raw mouse/keyboard event
   synthesis, keyboard capture/forwarding, or event tap; keyboard/VoiceOver
-  Arrange and Draw actions; Spaces/full-screen/display
+  Arrange, Crop, and Draw actions; Spaces/full-screen/display
   changes; four-source CPU/memory; and the currently claimed meeting-app
   workflows.
 - StoreKit Configuration, Sandbox, and TestFlight purchase paths: localized
@@ -234,7 +246,7 @@ In the completed Xcode Cloud build and App Store Connect, verify:
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
-- Arrange and Draw present, with no cross-application input-forwarding or
+- Arrange, Crop, and Draw present, with no cross-application input-forwarding or
   Accessibility permission path in the archived Mac App Store candidate; the
   Permissions view must show only the picker-scoped sharing explanation;
 - no unexpected entitlement, embedded executable/framework, absolute

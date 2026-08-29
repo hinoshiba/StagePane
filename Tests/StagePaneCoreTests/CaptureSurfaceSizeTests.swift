@@ -89,4 +89,129 @@ final class CaptureSurfaceSizeTests: XCTestCase {
             CaptureSurfaceSize(width: 900, height: 506)
         )
     }
+
+    func testFiniteInputsWhoseProductOverflowsDoNotTrap() {
+        XCTAssertEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: .greatestFiniteMagnitude,
+                sourcePointHeight: 100,
+                pointPixelScale: 2,
+                maximumWidth: 1_920,
+                maximumHeight: 1_080
+            ),
+            CaptureSurfaceSize(width: 2, height: 2)
+        )
+    }
+
+    func testCropReceivesVisibleTileResolutionWithoutUpscalingPastNative() {
+        let halfCrop = NormalizedSourceRect(
+            x: 0.25,
+            y: 0.25,
+            width: 0.5,
+            height: 0.5
+        )
+
+        XCTAssertEqual(
+            CaptureSurfaceSize.fittedForVisibleRegion(
+                sourcePointWidth: 1_920,
+                sourcePointHeight: 1_080,
+                pointPixelScale: 1,
+                visibleRegion: halfCrop,
+                maximumVisibleWidth: 960,
+                maximumVisibleHeight: 540
+            ),
+            CaptureSurfaceSize(width: 1_920, height: 1_080)
+        )
+        XCTAssertEqual(
+            CaptureSurfaceSize.fittedForVisibleRegion(
+                sourcePointWidth: 640,
+                sourcePointHeight: 360,
+                pointPixelScale: 1,
+                visibleRegion: halfCrop,
+                maximumVisibleWidth: 960,
+                maximumVisibleHeight: 540
+            ),
+            CaptureSurfaceSize(width: 640, height: 360)
+        )
+    }
+
+    func testCropSurfaceHonorsTotalPixelCapAndEvenDimensions() {
+        let tightCrop = NormalizedSourceRect(
+            x: 0.45,
+            y: 0.45,
+            width: 0.1,
+            height: 0.1
+        )
+
+        let size = CaptureSurfaceSize.fittedForVisibleRegion(
+            sourcePointWidth: 4_000,
+            sourcePointHeight: 4_000,
+            pointPixelScale: 1,
+            visibleRegion: tightCrop,
+            maximumVisibleWidth: 1_920,
+            maximumVisibleHeight: 1_080
+        )
+
+        XCTAssertLessThanOrEqual(
+            size.width * size.height,
+            CaptureSurfaceSize.defaultMaximumPixelCount
+        )
+        XCTAssertTrue(size.width.isMultiple(of: 2))
+        XCTAssertTrue(size.height.isMultiple(of: 2))
+        XCTAssertLessThanOrEqual(size.width, 3_840)
+        XCTAssertLessThanOrEqual(size.height, 3_840)
+    }
+
+    func testCropSurfaceNeverRoundsAnOddPixelCapReductionUpward() {
+        let size = CaptureSurfaceSize.fittedForVisibleRegion(
+            sourcePointWidth: 3_001,
+            sourcePointHeight: 3_001,
+            pointPixelScale: 1,
+            visibleRegion: NormalizedSourceRect(
+                x: 0.25,
+                y: 0.25,
+                width: 0.5,
+                height: 0.5
+            ),
+            maximumVisibleWidth: 2_001,
+            maximumVisibleHeight: 2_001,
+            hardMaximumPixelCount: 1_000_001
+        )
+
+        XCTAssertLessThanOrEqual(size.width * size.height, 1_000_001)
+        XCTAssertTrue(size.width.isMultiple(of: 2))
+        XCTAssertTrue(size.height.isMultiple(of: 2))
+    }
+
+    func testCropSurfaceHonorsTinyPixelCapForExtremeAspectRatio() {
+        let size = CaptureSurfaceSize.fittedForVisibleRegion(
+            sourcePointWidth: 3_840,
+            sourcePointHeight: 2,
+            pointPixelScale: 1,
+            visibleRegion: .fullSource,
+            maximumVisibleWidth: 3_840,
+            maximumVisibleHeight: 2,
+            hardMaximumPixelCount: 4
+        )
+
+        XCTAssertEqual(size, CaptureSurfaceSize(width: 2, height: 2))
+    }
+
+    func testPixelCapComparisonDoesNotLoseAnIntegerAtDoubleBoundary() {
+        let maximumPixelCount = Int.max
+        let size = CaptureSurfaceSize.fittedForVisibleRegion(
+            sourcePointWidth: 4_294_967_296,
+            sourcePointHeight: 2_147_483_648,
+            pointPixelScale: 1,
+            visibleRegion: .fullSource,
+            maximumVisibleWidth: 4_294_967_296,
+            maximumVisibleHeight: 2_147_483_648,
+            hardMaximumDimension: Int.max,
+            hardMaximumPixelCount: maximumPixelCount
+        )
+
+        XCTAssertLessThanOrEqual(size.width, maximumPixelCount / size.height)
+        XCTAssertTrue(size.width.isMultiple(of: 2))
+        XCTAssertTrue(size.height.isMultiple(of: 2))
+    }
 }

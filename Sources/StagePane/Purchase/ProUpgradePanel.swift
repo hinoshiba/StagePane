@@ -169,7 +169,10 @@ struct ProUpgradePanel: View {
             )
             Divider()
             PlanComparisonRow(
-                title: L10n.text("カーテン・停止・配置・手書き", "Curtain, Stop, Arrange, and Draw"),
+                title: L10n.text(
+                    "カーテン・停止・配置・切り抜き・手書き",
+                    "Curtain, Stop, Arrange, Crop, and Draw"
+                ),
                 freeValue: L10n.text("すべて利用可", "Included"),
                 proValue: L10n.text("すべて利用可", "Included")
             )

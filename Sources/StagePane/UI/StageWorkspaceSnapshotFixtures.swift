@@ -23,13 +23,9 @@ private struct SnapshotSourcePresentation: Identifiable {
 
     var statusTitle: String {
         if isPaused {
-            return L10n.text("一時停止・最後のフレームを保持", "Paused · Last frame held")
+            return L10n.text("一時停止・映像は非表示", "Paused · Video hidden")
         }
         return L10n.text("画面取得中", "Capture active")
-    }
-
-    var actionTitle: String {
-        isPaused ? L10n.text("再開", "Resume") : L10n.text("一時停止", "Pause")
     }
 
     var statusColor: Color {
@@ -83,7 +79,7 @@ struct SnapshotSourceRailList: View {
                             .font(.caption2.weight(.semibold))
                             .lineLimit(1)
                         Text(source.isPaused
-                            ? L10n.text("一時停止", "Paused")
+                            ? L10n.text("一時停止・非表示", "Paused · Hidden")
                             : L10n.text("取得中", "Active"))
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(source.statusColor)
@@ -91,12 +87,19 @@ struct SnapshotSourceRailList: View {
 
                     Spacer(minLength: 2)
 
-                    if source.isFrontmost {
-                        Image(systemName: "square.3.layers.3d.top.filled")
-                            .font(.system(size: 9))
-                            .foregroundStyle(StagePanePalette.aquaReadable)
-                            .help(L10n.text("最前面", "Frontmost"))
-                    }
+                    Image(systemName: "crop")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(source.isPaused ? Color.secondary : Color.primary)
+                        .frame(width: 24, height: 24)
+                        .background(
+                            (source.isPaused ? Color.secondary : StagePanePalette.indigo)
+                                .opacity(source.isPaused ? 0.08 : 0.18),
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
+
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 9, weight: .bold))
+                        .frame(width: 18, height: 24)
                 }
                 .padding(8)
                 .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
@@ -189,7 +192,7 @@ struct WorkspaceSourcesSnapshotPanel: View {
 
                 Button(action: {}) {
                     Label(
-                        L10n.text("すべてのソースを停止", "Stop All Sources"),
+                        L10n.stopAllAndRemoveLayersTitle,
                         systemImage: "stop.fill"
                     )
                 }
@@ -240,14 +243,18 @@ private struct SnapshotSourceManagementRow: View {
 
             Spacer(minLength: 12)
 
-            Button(source.actionTitle, action: {})
-            Button(L10n.text("選び直す", "Replace"), action: {})
-            Button(role: .destructive, action: {}) {
-                Label(
-                    L10n.text("解除", "Remove"),
-                    systemImage: "exclamationmark.triangle"
+            Image(systemName: "crop")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(source.isPaused ? Color.secondary : Color.primary)
+                .frame(width: 27, height: 27)
+                .background(
+                    (source.isPaused ? Color.secondary : StagePanePalette.indigo)
+                        .opacity(source.isPaused ? 0.08 : 0.18),
+                    in: RoundedRectangle(cornerRadius: 7)
                 )
-            }
+            Image(systemName: "ellipsis")
+                .font(.system(size: 11, weight: .bold))
+                .frame(width: 25, height: 27)
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
@@ -272,6 +279,7 @@ struct SnapshotStageComposition: View {
                     symbol: "macwindow",
                     style: .presentation,
                     showsEditingChrome: !showsDrawing,
+                    isPaused: false,
                     isFrontmost: true
                 )
                 .frame(
@@ -288,6 +296,7 @@ struct SnapshotStageComposition: View {
                     symbol: "app.fill",
                     style: .demo,
                     showsEditingChrome: !showsDrawing,
+                    isPaused: true,
                     isFrontmost: false
                 )
                 .frame(
@@ -304,6 +313,7 @@ struct SnapshotStageComposition: View {
                     symbol: "display",
                     style: .reference,
                     showsEditingChrome: !showsDrawing,
+                    isPaused: false,
                     isFrontmost: false
                 )
                 .frame(
@@ -354,29 +364,53 @@ private struct SnapshotStageTile: View {
     let symbol: String
     let style: SnapshotStageTileStyle
     let showsEditingChrome: Bool
+    let isPaused: Bool
     let isFrontmost: Bool
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(tileBackground)
-                tileContent(size: proxy.size)
+                if !isPaused {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(tileBackground)
+                    tileContent(size: proxy.size)
+                }
 
                 if showsEditingChrome {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            isFrontmost ? StagePanePalette.aquaReadable : Color.white.opacity(0.42),
-                            style: StrokeStyle(lineWidth: isFrontmost ? 2 : 1, dash: isFrontmost ? [] : [5, 4])
+                            isPaused
+                                ? Color.white.opacity(0.30)
+                                : (isFrontmost ? StagePanePalette.aquaReadable : Color.white.opacity(0.42)),
+                            style: StrokeStyle(
+                                lineWidth: isFrontmost ? 2 : 1,
+                                dash: isFrontmost ? [] : [5, 4]
+                            )
                         )
 
-                    Label(title, systemImage: symbol)
+                    Label(
+                        isPaused
+                            ? L10n.text("\(title)・一時停止", "\(title) · Paused")
+                            : title,
+                        systemImage: isPaused ? "pause.fill" : symbol
+                    )
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 7)
                         .frame(minHeight: 20)
                         .background(Color.black.opacity(0.72), in: Capsule())
                         .padding(7)
+
+                    if !isPaused {
+                        Image(systemName: "crop")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 25, height: 25)
+                            .background(StagePanePalette.indigo, in: Circle())
+                            .overlay(Circle().stroke(Color.white.opacity(0.90), lineWidth: 1))
+                            .padding(5)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    }
 
                     if isFrontmost {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -389,7 +423,7 @@ private struct SnapshotStageTile: View {
                     }
                 }
             }
-            .shadow(color: .black.opacity(0.28), radius: 8, y: 5)
+            .shadow(color: .black.opacity(isPaused ? 0 : 0.28), radius: 8, y: 5)
         }
     }
 

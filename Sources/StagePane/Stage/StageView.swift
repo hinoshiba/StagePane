@@ -149,6 +149,8 @@ struct StageView: View {
             return StageCompositeEntry(
                 id: item.id,
                 frame: item.frame,
+                sourceCrop: item.sourceCrop,
+                isVisible: source.isPresentationVisible,
                 renderer: source.stageRenderer
             )
         }

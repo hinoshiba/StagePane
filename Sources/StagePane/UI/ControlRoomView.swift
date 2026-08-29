@@ -62,7 +62,7 @@ struct WorkspaceSourcesPanel: View {
             Label(
                 capture.hasResettableFailure
                     ? L10n.text("画面取得をリセット", "Reset Capture")
-                    : L10n.text("すべてのソースを停止", "Stop All Sources"),
+                    : L10n.stopAllAndRemoveLayersTitle,
                 systemImage: capture.hasResettableFailure
                     ? "arrow.counterclockwise"
                     : "stop.fill"
@@ -70,7 +70,7 @@ struct WorkspaceSourcesPanel: View {
         }
         .buttonStyle(SecondaryActionButtonStyle())
         .disabled(
-            (!capture.isCaptureActive && !capture.hasResettableFailure) ||
+            (!capture.hasLayers && !capture.isCaptureActive && !capture.hasResettableFailure) ||
                 capture.isPickerPresented
         )
     }
@@ -147,16 +147,21 @@ struct StageSettingsPanel: View {
                     StageSettingAction(
                         title: capture.hasResettableFailure
                             ? L10n.text("画面取得をリセット", "Reset Capture")
-                            : L10n.text("すべて停止", "Stop All"),
+                            : L10n.stopAllAndRemoveLayersTitle,
                         detail: capture.hasResettableFailure
                             ? L10n.text("エラーを消して選び直す", "Clear the error and choose again")
-                            : L10n.text("全ソースの画面取得を終了", "End capture for every source"),
+                            : L10n.text(
+                                "全ソースの取得を終了し、レイヤーを削除",
+                                "End every capture and remove its layers"
+                            ),
                         symbol: capture.hasResettableFailure
                             ? "arrow.counterclockwise"
                             : "stop.fill",
                         tint: capture.hasResettableFailure ? .orange : .secondary,
                         action: controller.stopPreview,
-                        isDisabled: (!capture.isCaptureActive && !capture.hasResettableFailure) ||
+                        isDisabled: (!capture.hasLayers &&
+                            !capture.isCaptureActive &&
+                            !capture.hasResettableFailure) ||
                             capture.isPickerPresented
                     )
 

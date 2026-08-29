@@ -5,6 +5,30 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Added
+
+- Per-layer Crop actions on every Canvas tile and source row edit that exact
+  layer in a private full-source Canvas, with a draggable frame, four corner
+  handles, keyboard and VoiceOver actions. The target layer remains named and
+  highlighted throughout editing. Changes, including Reset to Full Source, remain a draft
+  until Apply Crop; Cancel discards them and the public Stage keeps its
+  previously applied crop meanwhile. Applied crops remain only in memory for
+  the current StagePane run, survive a source-sharing disconnect on the retained
+  layer, and are shared consistently by the live Stage, pointer overlay, and
+  explicit Audience PNG. Every running picker-approved stream remains full-source.
+
+### Fixed
+
+- Workspace notices now float above the current section as auto-dismissing
+  toasts instead of entering the layout and resizing the Stage preview.
+- Ending a source's macOS sharing session no longer deletes its logical layer.
+  StagePane immediately clears the renderer and old frame, keeps the layer's
+  placement, crop, and stacking order, then offers Select Again through Apple's
+  picker. Only an explicit Remove deletes the retained layer.
+- Closing the Share Stage now affects only audience output. Source layers,
+  capture bindings, placement, and crop remain in the private Workspace until
+  the user explicitly removes a layer or chooses Stop All.
+
 ## [0.2.0] - 2026-08-27
 
 ### Added
@@ -31,7 +55,9 @@ Versioning once 1.0.0 is released.
   session; StagePane does not request separate broad Screen Recording access.
 - Up to four independently consented window/app/display sources, added one at a
   time with per-source pause/resume, replace, and remove controls. Pausing stops
-  that source's stream while retaining its last frame until resume or removal.
+  that source's stream and makes its layer transparent in the Stage, private
+  Workspace, and Audience PNG output while retaining its placement, crop, and
+  z-order. Resume reveals it only after a new complete frame arrives.
 - A private Stage Workspace with a large live editor, drag, free resize,
   front-to-back ordering, and deterministic automatic arrangement.
 - Mutually exclusive Arrange and Draw modes. Draw renders bounded, session-only

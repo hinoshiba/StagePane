@@ -1,6 +1,6 @@
 # StagePane Privacy Policy
 
-Effective date: 2026-08-25<br>
+Effective date: 2026-08-28<br>
 Product: StagePane for macOS
 
 ## Summary
@@ -26,11 +26,25 @@ The chosen video frames are
 rendered locally in parallel in the StagePane Stage window and the private Stage
 Workspace Canvas. Sources and settings remain in that Workspace's sidebar.
 
+The crop editor opened from an individual layer changes only the part of that source included in the local
+Stage composition and an explicit Audience PNG. It does not narrow the access
+granted in Apple's picker or the ScreenCaptureKit stream: whenever that stream
+runs, it handles the complete selected window, application, or display. Pause
+stops the stream and makes that layer transparent in the Stage, private
+Workspace, and Audience PNG output. Resume keeps it transparent until a new
+complete frame arrives; placement, crop, and z-order remain unchanged. Removing
+the source or stopping all sources ends the corresponding capture session and
+deletes its retained layer state. The complete source is intentionally visible
+in the private Workspace while its crop is edited. Crop geometry remains only in
+app memory, including while a disconnected logical layer waits for Select Again,
+until that layer is removed, Stop All is confirmed, or StagePane quits. It is not
+persisted.
+
 Each `SCContentSharingPicker` choice grants access only to the selected content
 for that capture session. StagePane does not request separate, broad Screen
 Recording access. Canceling the picker grants no source access; removing a
-source or stopping all sources ends the corresponding streams and discards their
-displayed frames.
+source or stopping all sources ends the corresponding streams, discards any
+remaining presented pixels, and deletes the retained logical layer state.
 
 StagePane does not:
 
@@ -45,7 +59,7 @@ When the optional Laser pointer style is active, StagePane reads only the curren
 pointer location needed to place one dot over the frontmost Stage source. If that
 source is paused, no dot is shown and StagePane does not use a source behind it
 instead. Entering Draw mode hides the audience pointer and stops pointer-location
-sampling until Arrange resumes. Laser pointer mode itself does not install an
+sampling until Arrange or Crop resumes. Laser pointer mode itself does not install an
 event tap or request Accessibility/Input Monitoring permission. StagePane does
 not retain pointer history or write pointer coordinates to disk; each sampled
 position is discarded continuously and cleared when capture stops, the source
@@ -53,10 +67,11 @@ changes, or Draw begins.
 
 ## Workspace modes
 
-StagePane provides **Arrange** and **Draw**. Arrange changes only the local Stage
-composition. Draw creates the session-only ink described below. StagePane does
-not forward clicks, keys, or drags to source applications, install an event tap,
-or request Accessibility or Input Monitoring permission.
+StagePane provides **Arrange**, **Crop**, and **Draw**. Arrange changes local
+Stage placement, Crop changes the locally composed visible source region, and
+Draw creates the session-only ink described below. StagePane does not forward
+clicks, keys, or drags to source applications, install an event tap, or request
+Accessibility or Input Monitoring permission.
 
 In **Draw** mode, StagePane keeps a bounded set of normalized vector strokes in
 memory and renders the same ink in the private Workspace and public Stage. Ink is
@@ -67,9 +82,11 @@ All or removal of the final source clears the in-memory vector document.
 
 Frames exist transiently in system/application memory for display and are
 discarded as playback advances. Pausing one source stops its ScreenCaptureKit
-stream but intentionally retains its last displayed frame in memory on both
-local render surfaces; resuming restarts that source. Removing the source
-flushes the retained frame, and **Stop All** does this for every source. The
+stream, clears its presented pixels, and makes its layer transparent in both
+local render surfaces and any Audience PNG. Resuming restarts that source, but
+the layer remains transparent until a new complete frame arrives. Its placement,
+crop, and z-order remain in memory. Removing the source deletes those pixels and
+the retained layer state; **Stop All** does this for every source. The
 Privacy Curtain visually covers the public Stage but does not stop or pause
 capture. The private Workspace remains visible so the user can prepare the
 composition; this is disclosed in the interface.
@@ -112,7 +129,9 @@ preferences can include the positions and sizes of the Stage and Workspace
 windows, but not their pixels. A PNG saved through the explicit screenshot action is the user's chosen
 local file, not an app preference or hidden retained copy.
 Source titles may be displayed transiently in the in-memory source list while
-capture is active. Dragged positions and sizes are session-only in this version.
+capture is active. Dragged positions, sizes, and crop rectangles remain only in
+app memory for the current StagePane run. A disconnected layer retains them for
+Select Again; Remove, confirmed Stop All, or quitting StagePane discards them.
 
 Users can remove settings by deleting the app's local container or using
 available macOS app-data controls.

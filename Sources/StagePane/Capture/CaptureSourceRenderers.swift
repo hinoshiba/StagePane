@@ -9,12 +9,20 @@ import StagePaneCore
 /// avoids moving one CALayer between two windows while still reusing the same
 /// ScreenCaptureKit IOSurface-backed sample buffer.
 final class CaptureSourceRenderers: @unchecked Sendable {
+    private struct PendingDeactivation: Sendable {
+        let token: UUID
+        let completion: (@Sendable () -> Void)?
+    }
+
     let stage: SampleBufferRenderer
     let preview: SampleBufferRenderer
     private let renderQueue: DispatchQueue
     /// Accessed only on renderQueue. Each generation reopens only after both
     /// presentation surfaces report that their old displayed image is gone.
     private var presentationFlushCounts: [UUID: Int] = [:]
+    /// Lifecycle teardown waits behind any in-flight presentation invalidation
+    /// so a late, untracked flush can never erase a later reconnection frame.
+    private var pendingDeactivations: [PendingDeactivation] = []
 
     init(renderQueue: DispatchQueue) {
         self.renderQueue = renderQueue
@@ -96,6 +104,22 @@ final class CaptureSourceRenderers: @unchecked Sendable {
     }
 
     func deactivate(token: UUID, completion: (@Sendable () -> Void)? = nil) {
+        let request = PendingDeactivation(token: token, completion: completion)
+        renderQueue.async { [self] in
+            guard presentationFlushCounts.isEmpty else {
+                pendingDeactivations.append(request)
+                return
+            }
+            performDeactivationOnRenderQueue(request)
+        }
+    }
+
+    private func performDeactivationOnRenderQueue(
+        _ request: PendingDeactivation
+    ) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        let token = request.token
+        let completion = request.completion
         guard let completion else {
             stage.deactivate(token: token)
             preview.deactivate(token: token)
@@ -156,6 +180,17 @@ final class CaptureSourceRenderers: @unchecked Sendable {
         presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
+        if !presentationFlushCounts.isEmpty {
+            // A prior remove-image flush already guarantees an empty surface.
+            // Do not start overlapping uncancellable AVFoundation flushes;
+            // advance both renderers to the newest empty generation and let the
+            // existing paired barrier reopen it.
+            advanceEmptyPresentationGenerationOnRenderQueue(
+                token: token,
+                presentationGeneration: presentationGeneration
+            )
+            return
+        }
         presentationFlushCounts[presentationGeneration] = 2
         let didFlush: @Sendable () -> Void = { [weak self] in
             self?.completePresentationRendererFlushOnRenderQueue(
@@ -194,20 +229,33 @@ final class CaptureSourceRenderers: @unchecked Sendable {
             token: token,
             presentationGeneration: presentationGeneration
         )
+        drainPendingDeactivationsOnRenderQueue()
     }
 
-    /// Advances both renderers together while retaining the deliberate Pause
-    /// still image. Pointer and snapshot proof are revoked by each renderer.
-    func advancePresentationGenerationPreservingFrameOnRenderQueue(
+    private func drainPendingDeactivationsOnRenderQueue() {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard presentationFlushCounts.isEmpty,
+              !pendingDeactivations.isEmpty else { return }
+        let requests = pendingDeactivations
+        pendingDeactivations.removeAll()
+        for request in requests {
+            performDeactivationOnRenderQueue(request)
+        }
+    }
+
+    /// Moves both surfaces to a fresh, empty Resume generation. If Pause's
+    /// old-image flush is still running, both surfaces reopen together only
+    /// after that existing barrier completes.
+    func advanceEmptyPresentationGenerationOnRenderQueue(
         token: UUID,
         presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
-        stage.advancePresentationGenerationPreservingFrameOnRenderQueue(
+        stage.advanceEmptyPresentationGenerationOnRenderQueue(
             token: token,
             presentationGeneration: presentationGeneration
         )
-        preview.advancePresentationGenerationPreservingFrameOnRenderQueue(
+        preview.advanceEmptyPresentationGenerationOnRenderQueue(
             token: token,
             presentationGeneration: presentationGeneration
         )

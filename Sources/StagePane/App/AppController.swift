@@ -41,6 +41,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var privacyCurtain = true
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
+    @Published private(set) var cropEditingSourceID: StageSourceID?
+    @Published private(set) var cropDraft: NormalizedSourceRect?
     @Published private(set) var workspaceSection: WorkspaceSection = .canvas
     @Published var isAlwaysOnTop: Bool {
         didSet {
@@ -105,10 +107,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var isStageScreenshotInProgress = false
     @Published private(set) var hasAnnotations = false
     @Published private(set) var proUpgradeTrigger: ProUpgradeTrigger = .direct
-    @Published var transientNotice: String? {
-        didSet {
-            guard let transientNotice, transientNotice != oldValue else { return }
-            AccessibilityNotification.Announcement(transientNotice).post()
+    @Published private(set) var transientNoticeState = TransientNoticeState()
+    var transientNotice: String? {
+        get { transientNoticeState.notice?.message }
+        set {
+            guard let newValue else {
+                dismissTransientNotice()
+                return
+            }
+            presentTransientNotice(newValue)
         }
     }
 
@@ -155,6 +162,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var workspaceWindowController: StageWorkspaceWindowController?
     private var stageWindowController: StageWindowController?
     private var pendingStageSnapshot: StageSnapshot?
+    private var stopAllConfirmationAlert: NSAlert?
     private var statusItemController: StatusItemController?
     private var cancellables = Set<AnyCancellable>()
     private var previousCapturePhase: CapturePhase = .idle
@@ -164,7 +172,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var previousHasProAccess = false
     private var pendingProContinuation = false
     private var reviewRequestIsScheduled = false
-    private var awaitsInvalidatedPickerDismissal = false
+    private var transientNoticeDismissalTask: Task<Void, Never>?
 
     override init() {
         let defaults = UserDefaults.standard
@@ -219,14 +227,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 self?.captureStateDidChange(phase: phase, isActive: isActive)
             }
             .store(in: &cancellables)
-        capture.$isPickerPresented
-            .removeDuplicates()
-            .dropFirst()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] isPresented in
-                self?.pickerPresentationDidChange(isPresented: isPresented)
-            }
-            .store(in: &cancellables)
         capture.$sources
             .map(\.isEmpty)
             .removeDuplicates()
@@ -236,6 +236,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 guard let self, isEmpty else { return }
                 annotations.removeAll()
                 setStageInteractionMode(.arrange)
+            }
+            .store(in: &cancellables)
+        capture.$sources
+            .map { $0.map(\.id) }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] sourceIDs in
+                guard let self,
+                      let cropEditingSourceID,
+                      !sourceIDs.contains(cropEditingSourceID) else { return }
+                discardCropEditing(announce: false)
+                setStageInteractionMode(.arrange)
+                transientNotice = L10n.cropSourceUnavailableNotice
             }
             .store(in: &cancellables)
         purchases.$entitlementState
@@ -314,16 +327,153 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func setStageInteractionMode(_ mode: StageInteractionMode) {
+        if mode == .crop, cropEditingSourceID == nil {
+            guard let sourceID = defaultCropEditingSourceID,
+                  beginCropEditing(sourceID) else { return }
+        } else if mode != .crop, cropEditingSourceID != nil {
+            discardCropEditing(announce: true)
+        }
         guard stageInteractionMode != mode else { return }
         annotations.endStroke()
         stageInteractionMode = mode
         capture.setPointerStyle(effectivePointerStyle)
     }
 
+    func editCrop(of sourceID: StageSourceID) {
+        if cropEditingSourceID == sourceID, cropDraft != nil {
+            workspaceSection = .canvas
+            setStageInteractionMode(.crop)
+            return
+        }
+        let discardedAnotherDraft = cropEditingSourceID != nil
+        guard beginCropEditing(sourceID) else { return }
+        setStageInteractionMode(.crop)
+        if discardedAnotherDraft {
+            transientNotice = L10n.cropPreviousDraftDiscardedNotice
+        }
+    }
+
+    func resetCrop(of sourceID: StageSourceID) {
+        if cropEditingSourceID == sourceID, cropDraft != nil {
+            workspaceSection = .canvas
+            cropDraft = .fullSource
+            setStageInteractionMode(.crop)
+            transientNotice = L10n.cropResetDraftNotice
+            return
+        }
+        let discardedAnotherDraft = cropEditingSourceID != nil
+        guard beginCropEditing(sourceID, draft: .fullSource) else { return }
+        setStageInteractionMode(.crop)
+        transientNotice = discardedAnotherDraft
+            ? L10n.cropPreviousDraftDiscardedAndResetNotice
+            : L10n.cropResetDraftNotice
+    }
+
+    func setCropDraft(
+        _ crop: NormalizedSourceRect,
+        for sourceID: StageSourceID
+    ) {
+        guard cropEditingSourceID == sourceID else { return }
+        cropDraft = crop
+    }
+
+    func resetCropDraft() {
+        guard cropEditingSourceID != nil else { return }
+        cropDraft = .fullSource
+        transientNotice = L10n.cropResetDraftNotice
+    }
+
+    func applyCropEditing() {
+        guard let sourceID = cropEditingSourceID,
+              let cropDraft,
+              let source = capture.source(for: sourceID),
+              !source.isOutputSuppressed,
+              source.isPresentationVisible,
+              source.phase != .stopping,
+              capture.layout[sourceID: sourceID] != nil else {
+            discardCropEditing(announce: false)
+            setStageInteractionMode(.arrange)
+            transientNotice = L10n.cropSourceUnavailableNotice
+            return
+        }
+
+        let sourceTitle = capture.source(for: sourceID)?.title ?? ""
+        capture.setSourceCrop(sourceID, crop: cropDraft)
+        capture.commitSourceCrop(sourceID)
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        transientNotice = L10n.cropAppliedNotice(sourceTitle)
+    }
+
+    func cancelCropEditing() {
+        let hadDraft = cropEditingSourceID != nil
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        if hadDraft {
+            transientNotice = L10n.cropDiscardedNotice
+        }
+    }
+
+    func isSourceCropped(_ sourceID: StageSourceID) -> Bool {
+        guard let sourceCrop = capture.layout[sourceID: sourceID]?.sourceCrop else {
+            return false
+        }
+        return sourceCrop != .fullSource
+    }
+
+    var canApplyCropEditing: Bool {
+        guard let cropEditingSourceID,
+              cropDraft != nil,
+              let source = capture.source(for: cropEditingSourceID) else { return false }
+        return !source.isOutputSuppressed &&
+            source.isPresentationVisible &&
+            source.phase != .stopping &&
+            capture.layout[sourceID: cropEditingSourceID] != nil
+    }
+
+    private var defaultCropEditingSourceID: StageSourceID? {
+        capture.layout.sources.reversed().first { item in
+            guard let source = capture.source(for: item.id) else { return false }
+            return !source.isOutputSuppressed &&
+                source.isPresentationVisible &&
+                source.phase != .stopping
+        }?.id
+    }
+
+    @discardableResult
+    private func beginCropEditing(
+        _ sourceID: StageSourceID,
+        draft: NormalizedSourceRect? = nil
+    ) -> Bool {
+        guard let source = capture.source(for: sourceID),
+              !source.isOutputSuppressed,
+              source.isPresentationVisible,
+              source.phase != .stopping,
+              let sourceLayout = capture.layout[sourceID: sourceID] else { return false }
+        cropEditingSourceID = sourceID
+        cropDraft = draft ?? sourceLayout.sourceCrop
+        workspaceSection = .canvas
+        return true
+    }
+
+    private func discardCropEditing(announce: Bool) {
+        guard cropEditingSourceID != nil else { return }
+        cropEditingSourceID = nil
+        cropDraft = nil
+        if announce {
+            transientNotice = L10n.cropDiscardedNotice
+        }
+    }
+
     func removeSource(
         _ sourceID: StageSourceID,
         completion: ((String?) -> Void)? = nil
     ) {
+        if cropEditingSourceID == sourceID {
+            discardCropEditing(announce: false)
+            setStageInteractionMode(.arrange)
+            transientNotice = L10n.cropSourceUnavailableNotice
+        }
         if capture.removalLeavesNoVisibleSources(sourceID) {
             annotations.endStroke()
             annotations.removeAll()
@@ -336,8 +486,35 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         presentWorkspace()
     }
 
-    func dismissTransientNotice() {
-        transientNotice = nil
+    func dismissTransientNotice(id: UUID? = nil) {
+        var nextState = transientNoticeState
+        if let id {
+            guard nextState.dismiss(id: id) else { return }
+        } else {
+            nextState.dismissCurrent()
+        }
+        transientNoticeDismissalTask?.cancel()
+        transientNoticeDismissalTask = nil
+        transientNoticeState = nextState
+    }
+
+    private func presentTransientNotice(_ message: String) {
+        transientNoticeDismissalTask?.cancel()
+
+        var nextState = transientNoticeState
+        let notice = nextState.present(message)
+        transientNoticeState = nextState
+        AccessibilityNotification.Announcement(message).post()
+
+        let displaySeconds = NSWorkspace.shared.isVoiceOverEnabled ? 10 : 5
+        transientNoticeDismissalTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(displaySeconds))
+            } catch {
+                return
+            }
+            self?.dismissTransientNotice(id: notice.id)
+        }
     }
 
     func start(showWindows: Bool = true) {
@@ -745,8 +922,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         case #selector(stopPreview):
             menuItem.title = capture.hasResettableFailure
                 ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
-                : L10n.text("すべてのソースを停止", "Stop All Sources")
-            return capture.isCaptureActive || capture.hasResettableFailure
+                : L10n.stopAllAndRemoveLayersTitle
+            return capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
         case #selector(toggleCurtain):
             menuItem.state = privacyCurtain ? .on : .off
             menuItem.title = L10n.text("カーテン", "Curtain")
@@ -820,13 +997,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func stopPreview() {
-        guard capture.isCaptureActive else {
-            let neededReset: Bool
-            if case .failed = capture.phase {
-                neededReset = true
-            } else {
-                neededReset = false
+        guard capture.hasLayers else {
+            if capture.isCaptureActive {
+                performStopAllAndRemoveLayers()
+                return
             }
+            let neededReset = capture.hasResettableFailure
             capture.stop()
             transientNotice = neededReset
                 ? L10n.text(
@@ -839,10 +1015,51 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 )
             return
         }
+
+        presentStopAllAndRemoveLayersConfirmation()
+    }
+
+    private func presentStopAllAndRemoveLayersConfirmation() {
+        guard stopAllConfirmationAlert == nil else { return }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L10n.stopAllAndRemoveLayersConfirmationTitle
+        alert.informativeText = L10n.stopAllAndRemoveLayersConfirmationMessage
+
+        let cancelButton = alert.addButton(withTitle: L10n.cancelSourceRemovalTitle)
+        cancelButton.keyEquivalent = "\r"
+        let destructiveButton = alert.addButton(
+            withTitle: L10n.confirmStopAllAndRemoveLayersTitle
+        )
+        destructiveButton.hasDestructiveAction = true
+        stopAllConfirmationAlert = alert
+
+        if workspaceIsVisible,
+           let workspaceWindow = workspaceWindowController?.window,
+           workspaceWindow.isVisible,
+           !workspaceWindow.isMiniaturized {
+            alert.beginSheetModal(for: workspaceWindow) { [weak self] response in
+                guard let self else { return }
+                self.stopAllConfirmationAlert = nil
+                guard response == .alertSecondButtonReturn else { return }
+                self.performStopAllAndRemoveLayers()
+            }
+            return
+        }
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        stopAllConfirmationAlert = nil
+        guard response == .alertSecondButtonReturn else { return }
+        performStopAllAndRemoveLayers()
+    }
+
+    private func performStopAllAndRemoveLayers() {
         privacyCurtain = true
         transientNotice = L10n.text(
-            "すべてのソースを停止し、フレームを破棄しています…",
-            "Stopping every source and discarding frames…"
+            "すべてのソースを停止し、レイヤーを削除しています…",
+            "Stopping every source and removing its layers…"
         )
         // Completion announcements are derived from the atomic capture state
         // subscription below so VoiceOver receives exactly one final result.
@@ -860,21 +1077,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func stageDidClose() {
         stageIsVisible = false
-        guard capture.isCaptureActive || capture.isPickerPresented else { return }
+        guard !capture.sources.isEmpty || capture.isPickerPresented else { return }
         privacyCurtain = true
-        if capture.isPickerPresented, !capture.isCaptureActive {
-            awaitsInvalidatedPickerDismissal = true
+        if capture.isPickerPresented {
             transientNotice = L10n.text(
-                "共有ステージを閉じました。選択内容は適用されないため、システムピッカーを閉じてください。",
-                "The Share Stage closed. This selection will not be applied; close the system picker."
+                "共有Stageを閉じました。ソース選択は手元のWorkspaceで続けられ、再表示するまで観客側の出力は隠れます。",
+                "The Share Stage closed. Source selection can continue in the private Workspace, and audience output stays hidden until you reopen it."
             )
         } else {
             transientNotice = L10n.text(
-                "共有ステージを閉じたため、画面取得を停止しています…",
-                "The Share Stage closed; stopping capture…"
+                "共有Stageを閉じました。レイヤーと画面取得はWorkspaceに保持されています。完全に終了するには「すべて停止してレイヤーを削除」を使ってください。",
+                "The Share Stage closed. Layers and capture remain available in the Workspace; use Stop All and Remove Layers to end them completely."
             )
         }
-        capture.stop()
     }
 
     func workspaceDidClose() {
@@ -978,6 +1193,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
+        discardCropEditingIfSourceUnavailable()
         let previousPhase = previousCapturePhase
         let wasActive = previousCaptureWasActive
         guard phase != previousPhase || isActive != wasActive else { return }
@@ -990,21 +1206,31 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         if wasActive && !isActive {
             let needsAttention = capturePhaseNeedsAttention(phase)
+            let hasDisconnectedLayers = capture.sources.contains {
+                $0.needsReselection
+            }
             let sessionDuration = activeSessionStartedAt.map {
                 Date().timeIntervalSince($0)
             } ?? 0
             let reachedPreview = activeSessionReachedPreview
             activeSessionStartedAt = nil
             activeSessionReachedPreview = false
-            transientNotice = needsAttention
-                ? L10n.text(
+            if hasDisconnectedLayers {
+                transientNotice = L10n.text(
+                    "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
+                    "Capture stopped. The layer placement and crop were kept. Choose its source again."
+                )
+            } else if needsAttention {
+                transientNotice = L10n.text(
                     "画面取得は完全に停止しました。後処理の確認が必要です。",
                     "Capture stopped completely, but cleanup needs attention."
                 )
-                : L10n.text(
+            } else {
+                transientNotice = L10n.text(
                     "すべてのソースを完全に停止しました。",
                     "All sources stopped completely."
                 )
+            }
             if ReviewPromptPolicy.qualifiesAsSuccessfulSession(
                 duration: sessionDuration,
                 needsAttention: needsAttention,
@@ -1016,7 +1242,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
 
         if capturePhaseNeedsAttention(phase) {
-            transientNotice = isActive
+            if capture.hasDisconnectedLayers {
+                let detail = capture.statusDetail.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+                transientNotice = detail.isEmpty
+                    ? L10n.text(
+                        "ソースとの共有が終了しました。レイヤーの配置と切り抜きは保持されています。ソース一覧の「選び直す」を使ってください。",
+                        "Source sharing ended. The layer placement and crop were kept. Use Select Again in the source list."
+                    )
+                    : detail
+            } else {
+                transientNotice = isActive
                 ? L10n.text(
                     "画面取得で問題が発生しましたが、画面取得は継続中です。カーテンまたは停止操作を確認してください。",
                     "Capture needs attention and remains active. Check the Curtain or Stop Capture control."
@@ -1025,6 +1262,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     "画面取得で問題が発生しました。「画面取得をリセット」してからソースを選び直してください。",
                     "Capture needs attention. Choose Reset Capture, then add the source again."
                 )
+            }
             return
         }
 
@@ -1043,18 +1281,23 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
+    private func discardCropEditingIfSourceUnavailable() {
+        guard let sourceID = cropEditingSourceID else { return }
+        if let source = capture.source(for: sourceID),
+           !source.isOutputSuppressed,
+           source.isPresentationVisible,
+           source.phase != .stopping,
+           capture.layout[sourceID: sourceID] != nil {
+            return
+        }
+        discardCropEditing(announce: false)
+        setStageInteractionMode(.arrange)
+        transientNotice = L10n.cropSourceUnavailableNotice
+    }
+
     private func capturePhaseNeedsAttention(_ phase: CapturePhase) -> Bool {
         if case .failed = phase { return true }
         return false
-    }
-
-    private func pickerPresentationDidChange(isPresented: Bool) {
-        guard !isPresented, awaitsInvalidatedPickerDismissal else { return }
-        awaitsInvalidatedPickerDismissal = false
-        transientNotice = L10n.text(
-            "保留中のソース選択を適用せず終了しました。",
-            "The pending source selection ended without being applied."
-        )
     }
 
     private func recordSuccessfulSessionForReview() {

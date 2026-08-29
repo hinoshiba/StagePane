@@ -69,7 +69,7 @@
           <p class="eyebrow"><span></span> Privacy Policy</p>
           <h1>Clarity behind every<br>screen you share.</h1>
           <p class="policy-lead">This policy explains how StagePane handles chosen screen content, screenshots, settings, and permissions.</p>
-          <p class="policy-meta"><strong>Effective</strong> August 25, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
+          <p class="policy-meta"><strong>Effective</strong> August 28, 2026 <span aria-hidden="true">·</span> <strong>Product</strong> StagePane for macOS</p>
         </div>
       </section>
 
@@ -110,6 +110,7 @@
             <h2>Screen content</h2>
             <p>StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose one window, application, or display. Choosing an application can include multiple windows owned by that application; choose one window when you want the narrowest scope. Free supports two independently pausable and removable sources; the one-time StagePane Pro purchase supports up to four.</p>
             <p>Chosen frames are displayed locally in parallel in “StagePane Stage,” the clean window intended for sharing, and on the Canvas in “Stage Workspace.” Sources, Stage Settings, Appearance, Permissions, Privacy, and About are available from the Workspace sidebar.</p>
+            <p>Crop changes only the region included in the local Stage composition and an explicit Audience PNG. It does not narrow Apple's picker approval or the ScreenCaptureKit stream: whenever that stream runs, ScreenCaptureKit handles the complete selected window, application, or display. Pause stops the stream; Remove or Stop All ends its capture session. The complete source appears in the private Workspace while its crop is edited. Crop rectangles remain only in app memory, including while a disconnected layer waits for Select Again, until you Remove that layer, choose Stop All, or quit StagePane.</p>
             <p>Each choice grants access only to that selected content for that capture session. StagePane does not request separate, broad Screen Recording access. Canceling the picker adds nothing. Removing a source or choosing Stop All ends the corresponding streams and discards their displayed frames.</p>
             <p>StagePane does not:</p>
             <ul>
@@ -120,7 +121,7 @@
               <li>capture system audio or microphone audio.</li>
             </ul>
             <h3>Laser pointer</h3>
-            <p>When you choose the Laser pointer style, StagePane reads only the current pointer position needed to place one dot over the frontmost Stage source. If that source is paused, no dot appears and StagePane does not fall back to a source behind it. Draw hides the audience pointer and stops pointer-location sampling until Arrange resumes. StagePane does not retain pointer history or write coordinates to disk; each sampled position is continuously discarded and cleared when capture stops, the source changes, or Draw begins. Laser mode itself does not install an event tap or request Accessibility or Input Monitoring permission.</p>
+            <p>When you choose the Laser pointer style, StagePane reads only the current pointer position needed to place one dot over the frontmost Stage source. If that source is paused, no dot appears and StagePane does not fall back to a source behind it. Draw hides the audience pointer and stops pointer-location sampling until Arrange or Crop resumes. StagePane does not retain pointer history or write coordinates to disk; each sampled position is continuously discarded and cleared when capture stops, the source changes, or Draw begins. Laser mode itself does not install an event tap or request Accessibility or Input Monitoring permission.</p>
           </section>
 
           <section id="builds">
@@ -132,15 +133,20 @@
                 <p>Drag, resize, and reorder two sources in Free or up to four with StagePane Pro. The same composition appears in Workspace and on the public Stage.</p>
               </div>
               <div>
+                <span>Crop</span>
+                <h3>Choose what appears on Stage</h3>
+                <p>Inspect the complete source in the private Workspace, then show only the framed region on the public Stage and in Audience PNGs. The capture scope itself does not narrow.</p>
+              </div>
+              <div>
                 <span>Draw</span>
                 <h3>Annotate the public Stage</h3>
                 <p>Use a pen, highlighter, and partial eraser to draw audience-visible annotations from Workspace. Draw hides the audience pointer, and ink stays in memory.</p>
               </div>
             </div>
             <p>StagePane does not forward clicks, keys, or drags to source apps, and it requests no Accessibility or Input Monitoring permission.</p>
-            <h3>Draw, Pause, and Curtain behavior</h3>
+            <h3>Crop, Draw, Pause, and Curtain behavior</h3>
             <p>Draw keeps a bounded set of normalized vector strokes in memory and renders the same ink in the private Workspace and public Stage. It does not automatically write, upload, or analyze ink. An explicit Audience Stage screenshot includes visible ink as rasterized pixels. Stop All or removal of the final source clears the in-memory drawing.</p>
-            <p>During normal playback, frames are discarded as display advances. Pausing one source stops its stream but intentionally retains its last displayed frame in local memory. Resume restarts that source, while Remove flushes its retained frame. Stop All does this for every source.</p>
+            <p>During normal playback, frames are discarded as display advances. Pausing one source stops its stream and makes that layer transparent in the Stage, private Workspace, and Audience PNG output while retaining only its placement, crop, and z-order. Resume keeps it transparent until a new complete frame arrives. Remove deletes that source's pixels and retained layer state; Stop All does this for every source.</p>
             <div class="policy-note"><strong>Privacy Curtain is not Stop Capture.</strong><p>The Curtain visually covers only the public Stage. It does not pause active sources, and the private Workspace remains visible so you can prepare the composition.</p></div>
             <p>The “Keep Private” label on Stage Workspace is workflow guidance, not a technical privacy boundary. Sharing the StagePane application or a full display can expose that window. When it must stay hidden, choose the exact “StagePane Stage” window in your meeting app.</p>
           </section>
@@ -157,7 +163,7 @@
             <h2>Settings stored on your device</h2>
             <p>StagePane stores interface preferences such as aspect preset, theme, pointer style, color, size and glow, drawing tool/color/ink width/eraser size, mark and safe-area visibility, Curtain message, and window behavior in local UserDefaults on your Mac.</p>
             <p>It does not persist your chosen source, window title, application name, screenshot history, chosen screenshot path, or meeting information. Standard window-frame preferences may include the positions and sizes of the Stage and Workspace windows, but not their pixels. A PNG created through Save is your chosen local file, not an app preference or hidden retained copy.</p>
-            <p>Source titles may appear transiently in the in-memory source list while capture is active. Dragged positions and sizes are session-only in this version. You can remove preferences by deleting the app's local container or using available macOS app-data controls.</p>
+            <p>Source titles may appear transiently in the in-memory source list while capture is active. Dragged positions, sizes, and crop rectangles remain only in app memory for the current StagePane run. A disconnected layer retains them for Select Again; Remove, confirmed Stop All, or quitting StagePane discards them. You can remove preferences by deleting the app's local container or using available macOS app-data controls.</p>
           </section>
 
           <section id="permissions">

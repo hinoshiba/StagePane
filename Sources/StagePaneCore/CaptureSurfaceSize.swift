@@ -45,6 +45,8 @@ public struct CaptureSourceGeometry: Equatable, Sendable {
 /// therefore applied exactly once by the presentation layer, not baked into an
 /// intermediate Stage-shaped capture surface.
 public struct CaptureSurfaceSize: Equatable, Sendable {
+    public static let defaultMaximumPixelCount = 3_840 * 2_160
+
     public let width: Int
     public let height: Int
 
@@ -77,6 +79,12 @@ public struct CaptureSurfaceSize: Equatable, Sendable {
 
         let sourceWidth = sourcePointWidth * pointPixelScale
         let sourceHeight = sourcePointHeight * pointPixelScale
+        guard sourceWidth.isFinite,
+              sourceHeight.isFinite,
+              sourceWidth > 0,
+              sourceHeight > 0 else {
+            return Self(width: 2, height: 2)
+        }
         let scale = min(
             1,
             Double(boundedMaximumWidth) / sourceWidth,
@@ -86,14 +94,130 @@ public struct CaptureSurfaceSize: Equatable, Sendable {
         )
         return Self(
             width: evenDimension(
-                Int((sourceWidth * scale).rounded()),
+                safeRoundedDimension(sourceWidth * scale, maximum: boundedMaximumWidth),
                 maximum: boundedMaximumWidth
             ),
             height: evenDimension(
-                Int((sourceHeight * scale).rounded()),
+                safeRoundedDimension(sourceHeight * scale, maximum: boundedMaximumHeight),
                 maximum: boundedMaximumHeight
             )
         )
+    }
+
+    /// Budgets a full-source capture surface so the selected local crop has
+    /// enough pixels for its Stage tile. The stream still contains the complete
+    /// picker-approved source; crop geometry only raises the useful local
+    /// resolution, bounded by native size, dimension, and total pixel caps.
+    public static func fittedForVisibleRegion(
+        sourcePointWidth: Double,
+        sourcePointHeight: Double,
+        pointPixelScale: Double,
+        visibleRegion: NormalizedSourceRect,
+        maximumVisibleWidth: Int,
+        maximumVisibleHeight: Int,
+        hardMaximumDimension: Int = 3_840,
+        hardMaximumPixelCount: Int = CaptureSurfaceSize.defaultMaximumPixelCount
+    ) -> Self {
+        let requestedFullWidth = fullSurfaceBudget(
+            visibleDimension: maximumVisibleWidth,
+            cropFraction: visibleRegion.width,
+            hardMaximumDimension: hardMaximumDimension
+        )
+        let requestedFullHeight = fullSurfaceBudget(
+            visibleDimension: maximumVisibleHeight,
+            cropFraction: visibleRegion.height,
+            hardMaximumDimension: hardMaximumDimension
+        )
+        let fitted = fitted(
+            sourcePointWidth: sourcePointWidth,
+            sourcePointHeight: sourcePointHeight,
+            pointPixelScale: pointPixelScale,
+            maximumWidth: requestedFullWidth,
+            maximumHeight: requestedFullHeight,
+            hardMaximumDimension: hardMaximumDimension
+        )
+        return fitted.limitedToPixelCount(
+            max(4, hardMaximumPixelCount),
+            maximumWidth: requestedFullWidth,
+            maximumHeight: requestedFullHeight
+        )
+    }
+
+    public static func fittedForVisibleRegion(
+        source: CaptureSourceGeometry,
+        visibleRegion: NormalizedSourceRect,
+        maximumVisibleWidth: Int,
+        maximumVisibleHeight: Int,
+        hardMaximumDimension: Int = 3_840,
+        hardMaximumPixelCount: Int = CaptureSurfaceSize.defaultMaximumPixelCount
+    ) -> Self {
+        fittedForVisibleRegion(
+            sourcePointWidth: source.pointWidth,
+            sourcePointHeight: source.pointHeight,
+            pointPixelScale: source.pointPixelScale,
+            visibleRegion: visibleRegion,
+            maximumVisibleWidth: maximumVisibleWidth,
+            maximumVisibleHeight: maximumVisibleHeight,
+            hardMaximumDimension: hardMaximumDimension,
+            hardMaximumPixelCount: hardMaximumPixelCount
+        )
+    }
+
+    private static func fullSurfaceBudget(
+        visibleDimension: Int,
+        cropFraction: Double,
+        hardMaximumDimension: Int
+    ) -> Int {
+        let boundedVisibleDimension = max(2, min(visibleDimension, hardMaximumDimension))
+        let safeFraction = min(
+            max(cropFraction, NormalizedSourceRect.absoluteMinimumDimension),
+            1
+        )
+        let requested = (Double(boundedVisibleDimension) / safeFraction).rounded(.up)
+        guard requested.isFinite, requested > 0 else { return 2 }
+        if requested >= Double(hardMaximumDimension) {
+            return max(2, hardMaximumDimension)
+        }
+        return max(2, Int(requested))
+    }
+
+    private func limitedToPixelCount(
+        _ maximumPixelCount: Int,
+        maximumWidth: Int,
+        maximumHeight: Int
+    ) -> Self {
+        guard width > maximumPixelCount / height else {
+            return self
+        }
+        let pixelCount = Double(width) * Double(height)
+        let scale = sqrt(Double(maximumPixelCount) / pixelCount)
+        guard scale.isFinite, scale > 0 else { return Self(width: 2, height: 2) }
+        var reducedWidth = Self.evenFloorDimension(
+            Int((Double(width) * scale).rounded(.down)),
+            maximum: maximumWidth
+        )
+        var reducedHeight = Self.evenFloorDimension(
+            Int((Double(height) * scale).rounded(.down)),
+            maximum: maximumHeight
+        )
+
+        // An extremely thin source can hit the mandatory two-pixel floor on
+        // one axis after proportional scaling. Reduce the other axis again so
+        // even those pathological aspect ratios honor the hard area cap.
+        if reducedWidth > maximumPixelCount / reducedHeight {
+            if reducedWidth >= reducedHeight {
+                reducedWidth = Self.evenFloorDimension(
+                    maximumPixelCount / reducedHeight,
+                    maximum: min(maximumWidth, reducedWidth)
+                )
+            } else {
+                reducedHeight = Self.evenFloorDimension(
+                    maximumPixelCount / reducedWidth,
+                    maximum: min(maximumHeight, reducedHeight)
+                )
+            }
+        }
+        return Self(width: reducedWidth, height: reducedHeight)
     }
 
     public static func fitted(
@@ -116,6 +240,20 @@ public struct CaptureSurfaceSize: Equatable, Sendable {
         let bounded = max(2, min(value, maximum))
         if bounded.isMultiple(of: 2) { return bounded }
         if bounded < maximum { return bounded + 1 }
+        return max(2, bounded - 1)
+    }
+
+    private static func safeRoundedDimension(_ value: Double, maximum: Int) -> Int {
+        guard value.isFinite, value > 0 else { return 2 }
+        if value >= Double(maximum) { return maximum }
+        return Int(value.rounded())
+    }
+
+    /// Rounds downward so reducing an already over-budget surface can never
+    /// exceed the requested total pixel cap by rounding either side upward.
+    private static func evenFloorDimension(_ value: Int, maximum: Int) -> Int {
+        let bounded = max(2, min(value, maximum))
+        if bounded.isMultiple(of: 2) { return bounded }
         return max(2, bounded - 1)
     }
 }

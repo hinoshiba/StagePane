@@ -44,6 +44,7 @@ creates a normal shareable window, not an `NSScreen`.
 > 無料版で使える機能：
 > ・同時に2つのソースを配置
 > ・自由配置とクイック配置
+> ・選択した1ソースを手元で下書きし、「適用」で反映する切り抜き
 > ・ペン、蛍光ペン、部分消しゴム
 > ・Privacy Curtain、一時停止、選び直し、すべて停止
 > ・レーザーポインターと4種類のStage形状
@@ -70,6 +71,7 @@ creates a normal shareable window, not an `NSScreen`.
 > Included free:
 > • Compose two simultaneous sources
 > • Freeform and quick layouts
+> • Per-source Crop with a private one-source draft and explicit Apply or Cancel
 > • Pen, highlighter, and partial eraser
 > • Privacy Curtain, pause, replace, and Stop All
 > • Laser pointer and four Stage shapes
@@ -99,7 +101,7 @@ brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
 and the canonical `com.hinoshiba.stagepane` bundle identifier. See
 `RELEASE.md` for workflow settings, tag/version gates, and handoff steps.
 
-The submitted Mac App Store binary includes Arrange and Draw and contains no
+The submitted Mac App Store binary includes Arrange, Crop, and Draw and contains no
 cross-application input or Accessibility permission/action path. No
 direct-distribution build currently ships.
 
@@ -109,8 +111,8 @@ direct-distribution build currently ships.
    private Stage Workspace, making the share/private boundary unmistakable.
 2. **Proなら最大4つ。無料でも安全機能はすべて。** — Workspace → Sources,
    the clear Pro label, and its removal caution.
-3. **配置・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
-   Mac App Store build's Arrange and Draw modes, bounded in-memory ink, and
+3. **配置・切り抜き・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
+   Mac App Store build's Arrange and Draw modes, per-layer Crop actions, bounded in-memory ink, and
    explicit Copy/Save Audience Image actions.
 4. **レーザーとロゴを、発表に合わせる。** — laser color/size/glow and the
    Free-always-on / Pro-optional StagePane mark.
@@ -145,7 +147,7 @@ Use this concise block in App Store Connect:
 >
 > Arrange changes only StagePane’s local composition. Draw adds bounded
 > in-memory ink to the Workspace and Stage. Privacy Curtain hides only the
-> public Stage; Stop All ends every stream and discards displayed frames. Copy
+> public Stage; Stop All ends every stream and removes every layer. Copy
 > Audience Image and Save Audience Image create a PNG only after the reviewer
 > explicitly chooses the action.
 >
@@ -158,7 +160,7 @@ Use this concise block in App Store Connect:
 
 > StagePane is a focused screen-sharing utility with two normal macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
-> private live Canvas for arranging, drawing, and taking an Audience Stage PNG.
+> private live Canvas for arranging, cropping, drawing, and taking an Audience Stage PNG.
 > Its Docker-style sidebar also contains Sources, Stage Settings, Appearance,
 > Permissions, Privacy, and About. It
 > does not add a display, replace or imitate the macOS desktop, provide an app
@@ -170,22 +172,37 @@ Use this concise block in App Store Connect:
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
 > repeat for two sources in Free or up to four after the StagePane Pro
 > non-consumable purchase. Each source appears in the private source list,
-> where “Pause” stops only that stream while its last frame stays visible,
-> “Resume” starts it again, “Replace” reopens the picker for only that item, and
-> “Remove” asks for confirmation, ends only its stream, and discards its frame.
+> where “Pause” stops only that stream and makes its layer transparent in the
+> Stage, private Workspace, and Audience PNG output while preserving placement,
+> crop, and z-order. “Resume” starts it again and reveals it only after a new
+> complete frame arrives. “Replace” reopens the picker for only that item, and
+> “Remove” asks for confirmation, ends only its stream, and deletes its layer.
+> If macOS ends sharing outside StagePane, the old frame is immediately removed
+> while that layer's placement, crop, and stacking order remain. “Select Again”
+> reconnects a new picker choice to the same layer; Remove or Stop All explicitly
+> deletes retained layers.
 > In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
-> Arrange.” These gestures change only StagePane's composition. StagePane
-> provides Arrange and Draw. Arrange changes only the Stage
-> composition, while Draw adds bounded in-memory vector ink to
+> Arrange." These gestures change only StagePane's composition. Each tile and
+> source row has a crop button; it shows that exact layer in full in the private Workspace and lets the reviewer move
+> or resize a draft frame. The public Stage retains the previously applied crop
+> until “Apply Crop”; Cancel, a mode change, or source loss discards the draft.
+> Reset to Full Source also changes only the draft. Cropping is a local
+> composition mask: while the stream is running, the complete source selected in
+> Apple's picker remains in that stream. Applied crop rectangles remain only in
+> memory for the current StagePane run, including while a disconnected layer waits
+> for Select Again, until Remove, confirmed Stop All, or app termination.
+> StagePane provides global Arrange and Draw modes plus Crop on each layer. Arrange
+> changes Stage placement, a layer's Crop changes only its visible source region, and Draw adds
+> bounded in-memory vector ink to
 > both the private Workspace and public Stage. Draw hides the audience pointer;
-> returning to Arrange restores the selected pointer style. The Curtain hides
+> returning to Arrange or opening a layer crop restores the selected pointer style. The Curtain hides
 > ink and Stop All/final-source removal clears it. The StagePane process does not record,
 > encode, automatically save, or transmit frames. Only an explicit “Copy
 > Audience Image” or “Save Audience Image…” action creates one local PNG of the
 > clean Stage; Copy uses the pasteboard, and Save writes only to the location the
 > user chooses in the macOS save panel. Audio and microphone capture are
-> disabled. “Stop All” ends every source and flushes the final frames from both
-> local display surfaces. “Curtain” hides only the public Stage and does not
+> disabled. “Stop All” ends every source, discards its pixels from both local
+> display surfaces, and removes every layer. “Curtain” hides only the public Stage and does not
 > bring its window to the front. It does not pause any source; unpaused streams
 > continue and the private Stage Workspace remains available for preparation.
 > Stage Workspace must remain private.
@@ -221,7 +238,10 @@ Use this concise block in App Store Connect:
 Attach a short reviewer video showing both window titles and roles, adding
 two Free sources, the third-source Pro entry point, the normal Pro screen and
 Restore Purchases, per-source pause/resume, replace, removal confirmation, drag,
-resize, all four Quick Layout presets, the Arrange/Draw switch, unchanged physical pointer,
+resize, all four Quick Layout presets, the Arrange/Draw switch, each layer's
+Crop action and target label, crop draft, Reset to
+Full Source, Apply, and Cancel (including an unchanged Stage before Apply),
+unchanged physical pointer,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
 and must not show an Accessibility permission prompt. Provide
@@ -244,7 +264,7 @@ as affiliations.
 - 2.5.14: explicit user consent and visible preview status/stop control.
 - 4.1: original name, icon, copy, UI, and screenshots.
 - 4.2: material utility beyond a blank window: source composition, confirmation
-  and pause controls, Arrange and Draw modes, presets, Curtain, drawing, laser/
+  and pause controls, Arrange and Draw modes, per-layer Crop actions, presets, Curtain, drawing, laser/
   watermark appearance, safe-area, holding screen, and window behavior.
 - 5.1: accessible privacy policy and accurate Data Not Collected answers.
 - Mac Store rules: sandboxed, self-contained, no self-update or license screen.

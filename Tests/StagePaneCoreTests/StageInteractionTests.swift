@@ -2,8 +2,8 @@ import XCTest
 @testable import StagePaneCore
 
 final class StageInteractionTests: XCTestCase {
-    func testModesAreArrangeAndAnnotateOnly() throws {
-        XCTAssertEqual(StageInteractionMode.allCases, [.arrange, .annotate])
+    func testModesAreArrangeCropAndAnnotate() throws {
+        XCTAssertEqual(StageInteractionMode.allCases, [.arrange, .crop, .annotate])
 
         for mode in StageInteractionMode.allCases {
             let data = try JSONEncoder().encode(mode)
@@ -13,11 +13,18 @@ final class StageInteractionTests: XCTestCase {
 
     func testOnlyDrawModeSuppressesTheAudiencePointer() {
         XCTAssertFalse(StageInteractionMode.arrange.suppressesAudiencePointer)
+        XCTAssertFalse(StageInteractionMode.crop.suppressesAudiencePointer)
         XCTAssertTrue(StageInteractionMode.annotate.suppressesAudiencePointer)
 
         for preferredStyle in PointerStyle.allCases {
             XCTAssertEqual(
                 StageInteractionMode.arrange.audiencePointerStyle(
+                    preferred: preferredStyle
+                ),
+                preferredStyle
+            )
+            XCTAssertEqual(
+                StageInteractionMode.crop.audiencePointerStyle(
                     preferred: preferredStyle
                 ),
                 preferredStyle

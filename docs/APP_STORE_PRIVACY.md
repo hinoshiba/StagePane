@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / StagePane プライバシーポリシー
 
-Effective date / 発効日: 2026-08-25
+Effective date / 発効日: 2026-08-28
 Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 
 ## Summary / 概要
@@ -9,9 +9,9 @@ StagePane does not collect personal data, create accounts, show advertising, run
 
 StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKや発行者運用サーバーはなく、任意のStagePane Pro商品・購入・購入状態・復元はAppleのStoreKitが処理します。
 
-Every StagePane build provides Arrange and Draw, requests no Accessibility or Input Monitoring permission, and does not forward input to other applications.
+Every StagePane build provides Arrange, Crop, and Draw, requests no Accessibility or Input Monitoring permission, and does not forward input to other applications.
 
-StagePaneのすべてのビルドは配置と手書きを提供し、アクセシビリティや入力監視の許可を求めず、他のアプリへ入力を転送しません。
+StagePaneのすべてのビルドは配置、切り抜き、手書きを提供し、アクセシビリティや入力監視の許可を求めず、他のアプリへ入力を転送しません。
 
 ## Screen content / 画面内容
 
@@ -22,6 +22,10 @@ StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ
 Selected frames are rendered locally in parallel in the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
 
 選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカルで並列に表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
+
+Crop changes only the part included in the local Stage composition and Audience PNG. It does not narrow Apple's picker approval or the stream: whenever that stream runs, ScreenCaptureKit handles the complete selected source. Pause stops the stream and makes that layer transparent in the Stage, private Workspace, and Audience PNG output. Resume reveals it only after a new complete frame arrives; placement, crop, and z-order remain unchanged. Remove or Stop All ends its capture session, discards its pixels, and deletes its retained layer state. The complete source appears in the private Workspace while its crop is edited. Crop rectangles remain only in app memory, including while a disconnected layer waits for Select Again, until you Remove that layer, choose Stop All, or quit StagePane.
+
+切り抜きで変わるのはローカルのStage合成とAudience PNGに含める範囲だけです。Appleのピッカー許可やストリームの範囲は狭まらず、ストリームの動作中、ScreenCaptureKitは選択したソース全体を扱います。一時停止はストリームを止め、Stage、手元用Workspace、Audience PNGでそのレイヤーを透明にします。再開後は新しい完全なフレームが届いてから再表示し、配置・切り抜き・重なり順は保持します。解除またはすべて停止は取得セッションを終了し、映像と保持中のレイヤー状態を削除します。切り抜き編集中はソース全体を手元用Workspaceに表示します。切り抜き枠は、共有終了後に「選び直す」を待つレイヤーを含めてアプリ内メモリだけに保持し、そのレイヤーを解除するか、すべて停止するか、StagePaneを終了すると破棄します。
 
 ## One-shot Audience PNG / 1枚のAudience PNG
 
@@ -35,9 +39,9 @@ Copy places the PNG on the macOS general pasteboard, where other local apps or c
 
 ## Pointer and drawings / ポインターと手書き
 
-Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode hides the audience pointer and stops pointer-location sampling until Arrange resumes. Draw keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
+Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode hides the audience pointer and stops pointer-location sampling until Arrange or Crop resumes. Draw keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
 
-レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書き中は観客側のポインターを隠し、配置へ戻るまで位置の読み取りも停止します。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
+レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書き中は観客側のポインターを隠し、配置または切り抜きへ戻るまで位置の読み取りも停止します。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
 
 ## Settings stored on this Mac / このMacに保存する設定
 
