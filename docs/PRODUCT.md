@@ -37,11 +37,17 @@ and end capture with no retained frame or orphaned state.
   broad Screen Recording permission
 - two independently pausable/resumable, replaceable, and removable in-memory
   video sources in Free, or up to four with the one-time StagePane Pro purchase;
-  pause stops the stream and retains its last frame
-- large private Workspace hosting Arrange, Crop, and Draw, with move, free
-  resize, per-source source-space cropping, z-order, and auto arrange; source management and
-  settings live in its sidebar
+  pause stops the stream and makes its layer transparent in the Stage, private
+  Workspace, and Audience PNG while retaining placement, crop, and z-order;
+  resume reveals it only after a new complete frame arrives
+- large private Workspace hosting the global Arrange and Draw modes plus a crop
+  action on every layer, with move, free resize, per-source source-space
+  cropping, z-order, and auto arrange; source management and settings live in
+  its sidebar
 - explicit per-source removal confirmation and stop-all capture teardown
+- fail-closed capture-session detachment: an externally ended share clears its
+  renderer and old frame while retaining the logical layer's placement, crop,
+  and z-order for explicit picker-based reconnection; only Remove deletes it
 - instant Privacy Curtain with customizable message
 - 16:9, 4:3, 9:16, 1:1 shapes
 - system, laser, or hidden pointer style; the adjustable-color/size/glow laser
@@ -49,11 +55,13 @@ and end capture with no retained frame or orphaned state.
   audience pointer styles are temporarily suppressed in Draw mode
 - translucent lower-right StagePane mark on audience-facing Stage states,
   including content and Curtain; always shown in Free and optional in Pro
-- mutually exclusive Arrange, Crop, and Draw modes in every build; Arrange
-  edits placement; Crop privately drafts one selected source at a time, Apply
-  commits it, Cancel discards it, and applied crop geometry is session-only
-  while every running stream remains full-source; Draw
-  suppresses the audience pointer and adds bounded session-only Stage ink
+- global Arrange and Draw modes in every build, with a layer-owned Crop editor
+  entered from each tile or source row; Arrange edits placement; Crop privately
+  drafts one selected layer at a time, Apply commits it, Cancel discards it, and
+  applied crop geometry remains in memory for the current StagePane run and
+  survives a source-sharing disconnect on the retained layer while every running
+  stream remains full-source; Draw suppresses the audience pointer and adds bounded
+  session-only Stage ink
 - explicit one-shot clean Audience Stage PNG copy/save at the selected preset
   dimensions, including Curtain, ink, watermark, and pointer when visible but
   excluding Workspace chrome; no automatic screenshot, recording, or network path

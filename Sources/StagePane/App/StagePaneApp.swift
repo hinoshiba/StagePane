@@ -238,7 +238,7 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ))
         stageMenu.addItem(.separator())
         stageMenu.addItem(menuItem(
-            L10n.text("すべてのソースを停止", "Stop All Sources"),
+            L10n.stopAllAndRemoveLayersTitle,
             action: #selector(AppController.stopPreview),
             key: ".",
             modifiers: [.command],

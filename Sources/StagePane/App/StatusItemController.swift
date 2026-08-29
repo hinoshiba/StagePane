@@ -81,11 +81,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let stop = item(
             capture.hasResettableFailure
                 ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
-                : L10n.text("すべてのソースを停止", "Stop All Sources"),
+                : L10n.stopAllAndRemoveLayersTitle,
             #selector(AppController.stopPreview),
             target: controller
         )
-        stop.isEnabled = capture.isCaptureActive || capture.hasResettableFailure
+        stop.isEnabled = capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
         menu.addItem(stop)
         menu.addItem(.separator())
         menu.addItem(item(

@@ -14,22 +14,38 @@ struct StageLayoutEditor: View {
             ZStack(alignment: .topLeading) {
                 StageBackground(theme: controller.theme)
 
-                if capture.isCaptureActive {
+                if hasWorkspaceLayers {
                     StageCompositeDisplayView(entries: previewEntries)
                 } else {
                     idleContent
                 }
 
-                if capture.isCaptureActive {
-                    if controller.stageInteractionMode != .crop {
+                if hasWorkspaceLayers {
+                    if capture.isCaptureActive,
+                       controller.stageInteractionMode != .crop {
                         StageAnnotationOverlay(store: controller.annotations)
+                    }
+
+                    if controller.stageInteractionMode != .crop {
+                        ForEach(capture.layout.sources) { item in
+                            if let source = capture.source(for: item.id),
+                               source.needsReselection {
+                                StageMissingSourceOverlay(
+                                    source: source,
+                                    frame: item.frame,
+                                    canvasSize: proxy.size,
+                                    capture: capture
+                                )
+                            }
+                        }
                     }
 
                     switch controller.stageInteractionMode {
                     case .arrange:
                         ForEach(capture.layout.sources) { item in
                             if let source = capture.source(for: item.id),
-                               isPresented(source) {
+                               isPresented(source),
+                               !source.needsReselection {
                                 StageSourceEditingOverlay(
                                     source: source,
                                     frame: item.frame,
@@ -43,6 +59,7 @@ struct StageLayoutEditor: View {
                         if let sourceID = controller.cropEditingSourceID,
                            let sourceCrop = controller.cropDraft,
                            let source = capture.source(for: sourceID),
+                           source.isPresentationVisible,
                            isPresented(source) {
                             StageSourceCropOverlay(
                                 source: source,
@@ -52,9 +69,11 @@ struct StageLayoutEditor: View {
                             .focused($focusedCropSourceID, equals: sourceID)
                         }
                     case .annotate:
-                        StageAnnotationInputOverlay(
-                            store: controller.annotations
-                        )
+                        if capture.isCaptureActive {
+                            StageAnnotationInputOverlay(
+                                store: controller.annotations
+                            )
+                        }
                     }
                 }
 
@@ -95,18 +114,25 @@ struct StageLayoutEditor: View {
         .onChange(of: controller.stageInteractionMode) { _, _ in
             focusCropEditorIfNeeded()
         }
+        .onChange(of: cropEditingSourceIsVisible) { _, isVisible in
+            guard controller.stageInteractionMode == .crop,
+                  !isVisible else { return }
+            controller.cancelCropEditing()
+        }
     }
 
     private var previewEntries: [StageCompositeEntry] {
         if controller.stageInteractionMode == .crop {
             guard let sourceID = controller.cropEditingSourceID,
                   let source = capture.source(for: sourceID),
+                  source.isPresentationVisible,
                   isPresented(source) else { return [] }
             return [
                 StageCompositeEntry(
                     id: sourceID,
                     frame: .fullCanvas,
                     sourceCrop: .fullSource,
+                    isVisible: source.isPresentationVisible,
                     renderer: source.previewRenderer
                 )
             ]
@@ -119,6 +145,7 @@ struct StageLayoutEditor: View {
                 id: item.id,
                 frame: item.frame,
                 sourceCrop: item.sourceCrop,
+                isVisible: source.isPresentationVisible,
                 renderer: source.previewRenderer
             )
         }
@@ -126,6 +153,18 @@ struct StageLayoutEditor: View {
 
     private func isPresented(_ source: CaptureSource) -> Bool {
         !source.isOutputSuppressed && source.phase != .stopping
+    }
+
+    private var cropEditingSourceIsVisible: Bool {
+        guard let sourceID = controller.cropEditingSourceID,
+              let source = capture.source(for: sourceID) else { return false }
+        return source.isPresentationVisible
+    }
+
+    private var hasWorkspaceLayers: Bool {
+        capture.layout.sources.contains { item in
+            capture.source(for: item.id) != nil
+        }
     }
 
     private func focusCropEditorIfNeeded() {
@@ -781,6 +820,79 @@ private struct StageAnnotationInputOverlay: View {
     }
 }
 
+/// A logical layer whose picker-approved capture session has ended.
+///
+/// The public Stage receives no renderer for this layer. The private Workspace
+/// keeps this placeholder at the retained layout frame so reconnecting the
+/// source is explicit and cannot be mistaken for adding a new layer.
+private struct StageMissingSourceOverlay: View {
+    @ObservedObject var source: CaptureSource
+    let frame: NormalizedStageRect
+    let canvasSize: CGSize
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        Button {
+            capture.replaceSource(source.id)
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.black.opacity(0.42))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(
+                                Color.orange.opacity(0.76),
+                                style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])
+                            )
+                    }
+
+                ViewThatFits(in: .vertical) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "rectangle.badge.plus")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text(source.title)
+                            .font(.caption.weight(.bold))
+                            .lineLimit(1)
+                        Text(L10n.sourceNeedsReselectionTitle)
+                            .font(.caption2.weight(.semibold))
+                            .lineLimit(1)
+                    }
+
+                    Label(source.title, systemImage: "rectangle.badge.plus")
+                        .font(.caption2.weight(.bold))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(Color.orange)
+                .padding(9)
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(width: tileWidth, height: tileHeight)
+        .position(x: tileMidX, y: tileMidY)
+        .disabled(!capture.canReplaceSource(source.id))
+        .help(L10n.sourceNeedsReselectionHint(source.title))
+        .accessibilityLabel(L10n.reselectLayerTitle(source.title))
+        .accessibilityValue(L10n.sourceNeedsReselectionTitle)
+        .accessibilityHint(L10n.sourceNeedsReselectionHint(source.title))
+    }
+
+    private var tileWidth: CGFloat {
+        canvasSize.width * CGFloat(frame.width)
+    }
+
+    private var tileHeight: CGFloat {
+        canvasSize.height * CGFloat(frame.height)
+    }
+
+    private var tileMidX: CGFloat {
+        canvasSize.width * CGFloat(frame.x + frame.width / 2)
+    }
+
+    private var tileMidY: CGFloat {
+        canvasSize.height * CGFloat(frame.y + frame.height / 2)
+    }
+}
+
 private struct StageSourceEditingOverlay: View {
     @ObservedObject var source: CaptureSource
     let frame: NormalizedStageRect
@@ -834,6 +946,13 @@ private struct StageSourceEditingOverlay: View {
             .accessibilityAction(named: L10n.text("小さくする", "Make Smaller")) {
                 resizeBy(-0.05)
             }
+            .accessibilityAction(named: L10n.cropEditAccessibilityLabel(
+                source.title,
+                isCropped: isCropped
+            )) {
+                guard canEditCrop else { return }
+                controller.editCrop(of: source.id)
+            }
             .accessibilityAction(named: L10n.sourceRemovalAccessibilityLabel(source.title)) {
                 guard canRequestRemoval else { return }
                 isRemoveConfirmationPresented = true
@@ -848,9 +967,20 @@ private struct StageSourceEditingOverlay: View {
                 .stroke(StagePanePalette.aquaReadable, lineWidth: 2)
                 .allowsHitTesting(false)
 
-            sourceTitleBadge
+            layerHeader
             resizeHandle
         }
+    }
+
+    private var layerHeader: some View {
+        HStack(alignment: .top, spacing: 0) {
+            sourceTitleBadge
+            Spacer(minLength: 0)
+            if tileWidth >= 96 {
+                layerCropButton
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var movementSurface: some View {
@@ -870,6 +1000,9 @@ private struct StageSourceEditingOverlay: View {
             Image(systemName: source.kind.symbolName)
             Text(source.title)
                 .lineLimit(1)
+            if isCropped {
+                Image(systemName: "crop")
+            }
         }
         .font(.system(size: 10, weight: .bold))
         .foregroundStyle(.white)
@@ -878,6 +1011,29 @@ private struct StageSourceEditingOverlay: View {
         .background(Color.black.opacity(0.68), in: Capsule())
         .padding(6)
         .allowsHitTesting(false)
+    }
+
+    private var layerCropButton: some View {
+        Button {
+            controller.editCrop(of: source.id)
+        } label: {
+            Image(systemName: "crop")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 27, height: 27)
+                .background(StagePanePalette.indigo, in: Circle())
+                .overlay(Circle().stroke(Color.white.opacity(0.90), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .padding(5)
+        .disabled(!canEditCrop)
+        .help(L10n.cropLayerActionHint(source.title))
+        .accessibilityLabel(L10n.cropEditAccessibilityLabel(
+            source.title,
+            isCropped: isCropped
+        ))
+        .accessibilityHint(L10n.cropLayerActionHint(source.title))
     }
 
     private var resizeHandle: some View {
@@ -911,12 +1067,12 @@ private struct StageSourceEditingOverlay: View {
             Button(L10n.cropEditActionTitle(isCropped: isCropped)) {
                 controller.editCrop(of: source.id)
             }
-            .disabled(!canRequestRemoval)
+            .disabled(!canEditCrop)
             if isCropped {
                 Button(L10n.cropResetActionTitle) {
                     controller.resetCrop(of: source.id)
                 }
-                .disabled(!canRequestRemoval)
+                .disabled(!canEditCrop)
             }
             Button(L10n.text("設定…", "Replace…")) {
                 capture.replaceSource(source.id)
@@ -1067,11 +1223,11 @@ private struct StageSourceEditingOverlay: View {
     }
 
     private var sourcePhaseText: String {
-        switch source.phase {
+        return switch source.phase {
         case .preparing: L10n.text("準備中", "Preparing")
         case .active: L10n.text("画面取得中", "Capture active")
         case .pausing: L10n.text("一時停止中", "Pausing")
-        case .paused: L10n.text("一時停止", "Paused")
+        case .paused: L10n.text("一時停止・非表示", "Paused · Hidden")
         case .resuming: L10n.text("再開中", "Resuming")
         case .stopping: L10n.text("解除中", "Removing")
         case .needsAttention: L10n.text("確認が必要", "Needs attention")
@@ -1089,6 +1245,13 @@ private struct StageSourceEditingOverlay: View {
               !capture.isPickerPresented else { return false }
         if case .stopping = source.phase { return false }
         return true
+    }
+
+    private var canEditCrop: Bool {
+        canRequestRemoval &&
+            !source.isOutputSuppressed &&
+            source.isPresentationVisible &&
+            capture.layout[sourceID: source.id] != nil
     }
 }
 
@@ -1170,8 +1333,8 @@ struct CaptureSourceList: View {
 
             if showsWorkspaceHint {
                 Text(L10n.text(
-                    "配置・切り抜き・手書きは、大きなステージワークスペースで行えます。",
-                    "Arrange, crop, and draw in the large Stage Workspace."
+                    "配置と手書きはキャンバスで、切り抜きは各レイヤーの切り抜きボタンから行えます。",
+                    "Arrange and draw on the Canvas; crop from the crop button on each layer."
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -1227,6 +1390,12 @@ private struct CaptureSourceRow: View {
                         .foregroundStyle(StagePanePalette.aquaReadable)
                         .lineLimit(1)
                 }
+                if isCropTarget {
+                    Label(L10n.text("切り抜き編集中", "Editing crop"), systemImage: "viewfinder")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(StagePanePalette.aquaReadable)
+                        .lineLimit(1)
+                }
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -1235,59 +1404,137 @@ private struct CaptureSourceRow: View {
 
             Spacer(minLength: 4)
 
-            VStack(alignment: .trailing, spacing: 3) {
-                Button(pauseActionTitle) {
-                    capture.togglePause(source.id)
-                }
-                .accessibilityLabel(pauseAccessibilityLabel)
-                .disabled(!capture.canTogglePause(source.id))
-
-                Button(L10n.text("選び直す", "Replace")) {
-                    capture.replaceSource(source.id)
-                }
-                .accessibilityLabel(L10n.text(
-                    "\(source.title)を選び直す",
-                    "Replace \(source.title)"
-                ))
-                .disabled(!canConfigure)
-
-                Button(L10n.cropEditActionTitle(isCropped: isCropped)) {
-                    controller.editCrop(of: source.id)
-                }
-                .accessibilityLabel(L10n.cropEditAccessibilityLabel(
-                    source.title,
-                    isCropped: isCropped
-                ))
-                .disabled(!canEditCrop)
-
-                if isCropped {
-                    Button(L10n.cropResetActionTitle) {
-                        controller.resetCrop(of: source.id)
+            HStack(spacing: 4) {
+                if source.needsReselection {
+                    Button {
+                        capture.replaceSource(source.id)
+                    } label: {
+                        Image(systemName: "rectangle.badge.plus")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.orange)
+                            .frame(width: 27, height: 27)
+                            .background(Color.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
                     }
-                    .accessibilityLabel(L10n.cropResetAccessibilityLabel(source.title))
-                    .accessibilityHint(L10n.cropResetAccessibilityHint)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.reselectLayerTitle(source.title))
+                    .accessibilityHint(L10n.sourceNeedsReselectionHint(source.title))
+                    .help(L10n.sourceNeedsReselectionHint(source.title))
+                    .disabled(!canConfigure)
+                } else {
+                    Button {
+                        controller.editCrop(of: source.id)
+                    } label: {
+                        Image(systemName: "crop")
+                            .font(.system(size: 11, weight: .bold))
+                            .frame(width: 27, height: 27)
+                            .background(
+                                isCropTarget
+                                    ? StagePanePalette.aqua.opacity(0.22)
+                                    : StagePanePalette.indigo.opacity(0.18),
+                                in: RoundedRectangle(cornerRadius: 7)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.cropEditAccessibilityLabel(
+                        source.title,
+                        isCropped: isCropped
+                    ))
+                    .accessibilityHint(L10n.cropLayerActionHint(source.title))
+                    .help(L10n.cropLayerActionHint(source.title))
                     .disabled(!canEditCrop)
                 }
 
-                Button(role: .destructive) {
-                    isRemoveConfirmationPresented = true
+                Menu {
+                    if !source.needsReselection {
+                        Button(pauseActionTitle) {
+                            capture.togglePause(source.id)
+                        }
+                        .accessibilityLabel(pauseAccessibilityLabel)
+                        .disabled(!capture.canTogglePause(source.id))
+                    }
+
+                    if !source.needsReselection {
+                        Button(L10n.text("選び直す", "Replace")) {
+                            capture.replaceSource(source.id)
+                        }
+                        .accessibilityLabel(L10n.text(
+                            "\(source.title)を選び直す",
+                            "Replace \(source.title)"
+                        ))
+                        .disabled(!canConfigure)
+                    }
+
+                    if isCropped {
+                        Button(L10n.cropResetActionTitle) {
+                            controller.resetCrop(of: source.id)
+                        }
+                        .accessibilityLabel(L10n.cropResetAccessibilityLabel(source.title))
+                        .accessibilityHint(L10n.cropResetAccessibilityHint)
+                        .disabled(!canEditCrop)
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        isRemoveConfirmationPresented = true
+                    } label: {
+                        Label(
+                            L10n.requestSourceRemovalTitle,
+                            systemImage: "exclamationmark.triangle"
+                        )
+                    }
+                    .accessibilityLabel(L10n.sourceRemovalAccessibilityLabel(source.title))
+                    .accessibilityHint(L10n.sourceRemovalAccessibilityHint)
+                    .disabled(!canRequestRemoval)
                 } label: {
-                    Label(L10n.requestSourceRemovalTitle, systemImage: "exclamationmark.triangle")
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 11, weight: .bold))
+                        .frame(width: 25, height: 27)
+                        .contentShape(Rectangle())
                 }
-                .accessibilityLabel(L10n.sourceRemovalAccessibilityLabel(source.title))
-                .accessibilityHint(L10n.sourceRemovalAccessibilityHint)
-                .help(L10n.sourceRemovalAccessibilityHint)
-                .disabled(!canRequestRemoval)
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel(L10n.text(
+                    "\(source.title)レイヤーのその他の操作",
+                    "More actions for the \(source.title) layer"
+                ))
             }
-            .buttonStyle(.borderless)
             .controlSize(.small)
         }
         .padding(8)
-        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+        .background(
+            rowBackgroundColor,
+            in: RoundedRectangle(cornerRadius: 10)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(
+                    rowBorderColor,
+                    lineWidth: 1
+                )
+        }
         .contentShape(Rectangle())
         .accessibilityElement(children: .contain)
-        .accessibilityAction(named: L10n.text("最前面へ", "Bring to Front")) {
-            capture.bringSourceToFront(source.id)
+        .accessibilityActions {
+            Button(L10n.text("最前面へ", "Bring to Front")) {
+                capture.bringSourceToFront(source.id)
+            }
+
+            if source.needsReselection {
+                if canConfigure {
+                    Button(L10n.reselectLayerTitle(source.title)) {
+                        capture.replaceSource(source.id)
+                    }
+                }
+            } else if canEditCrop {
+                Button(L10n.cropEditAccessibilityLabel(
+                    source.title,
+                    isCropped: isCropped
+                )) {
+                    controller.editCrop(of: source.id)
+                }
+            }
         }
         .removeSourceConfirmation(
             isPresented: $isRemoveConfirmationPresented,
@@ -1309,6 +1556,7 @@ private struct CaptureSourceRow: View {
     private var canEditCrop: Bool {
         !isStopping &&
             !source.isOutputSuppressed &&
+            source.isPresentationVisible &&
             !capture.isPickerPresented &&
             capture.layout[sourceID: source.id] != nil
     }
@@ -1317,16 +1565,23 @@ private struct CaptureSourceRow: View {
         controller.isSourceCropped(source.id)
     }
 
+    private var isCropTarget: Bool {
+        controller.cropEditingSourceID == source.id
+    }
+
     private var canRequestRemoval: Bool {
         capture.source(for: source.id) != nil && !isStopping && !capture.isPickerPresented
     }
 
     private var phaseTitle: String {
-        switch source.phase {
+        if source.needsReselection {
+            return L10n.sourceNeedsReselectionTitle
+        }
+        return switch source.phase {
         case .preparing: L10n.text("準備中", "Preparing")
         case .active: L10n.text("画面取得中", "Capture active")
         case .pausing: L10n.text("一時停止中…", "Pausing…")
-        case .paused: L10n.text("一時停止", "Paused")
+        case .paused: L10n.text("一時停止・非表示", "Paused · Hidden")
         case .resuming: L10n.text("再開中…", "Resuming…")
         case .stopping: L10n.text("解除中…", "Removing…")
         case .needsAttention: L10n.text("確認が必要", "Needs attention")
@@ -1334,7 +1589,8 @@ private struct CaptureSourceRow: View {
     }
 
     private var phaseColor: Color {
-        switch source.phase {
+        if source.needsReselection { return .orange }
+        return switch source.phase {
         case .preparing: StagePanePalette.aquaReadable
         case .active: StagePanePalette.mintReadable
         case .pausing, .paused, .resuming, .stopping: Color.secondary
@@ -1343,8 +1599,21 @@ private struct CaptureSourceRow: View {
     }
 
     private var iconColor: Color {
+        if source.needsReselection { return .orange }
         if case .needsAttention = source.phase { return .orange }
         return StagePanePalette.indigo
+    }
+
+    private var rowBackgroundColor: Color {
+        if source.needsReselection { return Color.orange.opacity(0.08) }
+        if isCropTarget { return StagePanePalette.aqua.opacity(0.10) }
+        return Color.primary.opacity(0.045)
+    }
+
+    private var rowBorderColor: Color {
+        if source.needsReselection { return Color.orange.opacity(0.30) }
+        if isCropTarget { return StagePanePalette.aqua.opacity(0.34) }
+        return .clear
     }
 
     private var pauseActionTitle: String {
@@ -1379,7 +1648,9 @@ private struct RemoveSourceConfirmationModifier: ViewModifier {
 
             Button(L10n.cancelSourceRemovalTitle, role: .cancel) {}
         } message: {
-            Text(L10n.sourceRemovalConfirmationMessage)
+            Text(source.needsReselection
+                ? L10n.detachedLayerRemovalConfirmationMessage
+                : L10n.sourceRemovalConfirmationMessage)
         }
     }
 

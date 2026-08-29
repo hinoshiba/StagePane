@@ -150,6 +150,7 @@ struct StageView: View {
                 id: item.id,
                 frame: item.frame,
                 sourceCrop: item.sourceCrop,
+                isVisible: source.isPresentationVisible,
                 renderer: source.stageRenderer
             )
         }

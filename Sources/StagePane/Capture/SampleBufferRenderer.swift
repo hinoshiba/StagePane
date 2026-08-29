@@ -40,7 +40,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         let sampleBuffer: CMSampleBuffer
         let token: UUID
         let presentationGeneration: UUID
-        let presentationGeometry: SourcePresentationGeometry?
+        let presentationGeometry: SourcePresentationGeometry
         /// Captured when ScreenCaptureKit delivers the frame, before a later
         /// configuration completion can change the stream's cursor state.
         let isConfirmedCursorless: Bool
@@ -93,11 +93,15 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// New-generation frames are retained, not enqueued, until both source
     /// renderers have completed removal of their previous displayed images.
     private var presentationFlushGeneration: UUID?
-    /// A Resume may advance the presentation while an earlier remove-image
-    /// flush is still running. The original generation continues to own that
-    /// uncancellable completion; this records the newest generation that the
-    /// completion may safely reopen afterward.
+    /// Resume can advance to a fresh empty generation while Pause's
+    /// remove-image flush is still in flight. The original generation keeps
+    /// ownership of that uncancellable completion and reopens only this newer
+    /// generation afterward.
     private var deferredPresentationGenerationAfterFlush: UUID?
+    /// A decoder-health reset preserves the displayed image and presentation
+    /// geometry. Frames arriving before its asynchronous completion replace
+    /// `pendingVideoFrame`, so recovery drains only the newest complete frame.
+    private var rendererRecoveryFlushID: UUID?
     /// Accessed only on renderQueue.
     private var redDotTransition: RedDotTransition?
     /// Accessed only on renderQueue. Real-time input keeps at most one frame.
@@ -131,7 +135,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
     init(renderQueue: DispatchQueue) {
         let layer = AVSampleBufferDisplayLayer()
         layer.videoGravity = .resizeAspect
-        layer.backgroundColor = NSColor.black.cgColor
+        layer.backgroundColor = NSColor.clear.cgColor
+        layer.isOpaque = false
         layer.preventsCapture = false
 
         let renderer = layer.sampleBufferRenderer
@@ -395,8 +400,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
     ) {
         replaceSnapshotAcceptance(
             token: token,
-            presentationGeneration: presentationGeneration,
-            retainingFrame: false
+            presentationGeneration: presentationGeneration
         )
         pointerSnapshotLock.lock()
         requestedPointerToken = token
@@ -412,6 +416,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             activePresentationGeneration = presentationGeneration
             presentationFlushGeneration = nil
             deferredPresentationGenerationAfterFlush = nil
+            rendererRecoveryFlushID = nil
             redDotTransition = nil
             nativeCursorIsHidden = !showsCursor
             displayedFrameIsConfirmedCursorless = false
@@ -441,6 +446,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 activePresentationGeneration = nil
                 presentationFlushGeneration = nil
                 deferredPresentationGenerationAfterFlush = nil
+                rendererRecoveryFlushID = nil
                 displayedFrameIsConfirmedCursorless = false
                 latestPointerSnapshot = nil
             }
@@ -470,6 +476,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             activePresentationGeneration = nil
             presentationFlushGeneration = nil
             deferredPresentationGenerationAfterFlush = nil
+            rendererRecoveryFlushID = nil
             redDotTransition = nil
             nativeCursorIsHidden = false
             displayedFrameIsConfirmedCursorless = false
@@ -499,10 +506,10 @@ final class SampleBufferRenderer: @unchecked Sendable {
         activePresentationGeneration = presentationGeneration
         presentationFlushGeneration = presentationGeneration
         deferredPresentationGenerationAfterFlush = nil
+        rendererRecoveryFlushID = nil
         replaceSnapshotAcceptance(
             token: token,
-            presentationGeneration: presentationGeneration,
-            retainingFrame: false
+            presentationGeneration: presentationGeneration
         )
         clearPendingVideoFrameOnRenderQueue(token: token)
         displayedFrameIsConfirmedCursorless = false
@@ -536,10 +543,11 @@ final class SampleBufferRenderer: @unchecked Sendable {
         }
     }
 
-    /// Resume keeps the intentionally paused image and screenshot, but moves
-    /// every future publication to a new generation. Pointer proof is not
-    /// retained because it describes the pre-resume frame.
-    func advancePresentationGenerationPreservingFrameOnRenderQueue(
+    /// Advances Resume to a new, still-empty generation without starting a
+    /// second remove-image flush. Pause already removed (or is removing) the
+    /// old image; complete frames for this generation remain pending until that
+    /// original flush barrier has finished.
+    func advanceEmptyPresentationGenerationOnRenderQueue(
         token: UUID,
         presentationGeneration: UUID
     ) {
@@ -547,26 +555,17 @@ final class SampleBufferRenderer: @unchecked Sendable {
         guard activeToken == token, desiredToken == token else { return }
         cancelGeometryTransitionOnRenderQueue()
         activePresentationGeneration = presentationGeneration
+        clearPendingVideoFrameOnRenderQueue(token: token)
         if presentationFlushGeneration != nil {
-            // A regular presentation invalidation already owns an
-            // uncancellable remove-image flush. Keep its original completion
-            // identity, retain only the latest resumed frame, and reopen that
-            // newer generation when the old flush actually completes.
-            retagPendingVideoFrameOnRenderQueue(
-                token: token,
-                presentationGeneration: presentationGeneration
-            )
             deferredPresentationGenerationAfterFlush = presentationGeneration
         } else {
-            presentationFlushGeneration = nil
             deferredPresentationGenerationAfterFlush = nil
-            clearPendingVideoFrameOnRenderQueue(token: token)
         }
         replaceSnapshotAcceptance(
             token: token,
-            presentationGeneration: presentationGeneration,
-            retainingFrame: true
+            presentationGeneration: presentationGeneration
         )
+        displayedFrameIsConfirmedCursorless = false
         latestPointerSnapshot = nil
         clearPublishedPointerSnapshot(token: token)
     }
@@ -590,8 +589,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
         guard status == .complete else {
             // An idle frame means the pixels did not change, so the most recent
             // geometry remains valid while the independent pointer ticker moves.
-            // Pause lifecycle markers are also intentionally retained. Blank or
-            // suspended content, however, must remove every presentation copy.
+            // Non-pixel lifecycle markers are ignored; explicit Pause performs
+            // its own generation invalidation before stopping the stream. Blank
+            // or suspended content must remove every presentation copy.
             if status == .blank || status == .suspended {
                 invalidatePresentationOnRenderQueue(
                     token: token,
@@ -608,8 +608,13 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
         let isConfirmedCursorless = nativeCursorIsHidden
         let qualifyingRedDotTransitionID = qualifyingRedDotTransitionID(for: token)
-        let presentationGeometry = CMSampleBufferGetImageBuffer(sampleBuffer).flatMap {
+        guard let presentationGeometry = CMSampleBufferGetImageBuffer(sampleBuffer).flatMap({
             sourcePresentationGeometry(from: sampleBuffer, imageBuffer: $0)
+        }) else {
+            // A malformed complete callback has no trustworthy crop geometry.
+            // Drop only that callback: the previously accepted, picker-approved
+            // frame remains safe and may be the only image a static source sends.
+            return
         }
         let incomingVideoFrame = PendingVideoFrame(
             sampleBuffer: sampleBuffer,
@@ -623,8 +628,11 @@ final class SampleBufferRenderer: @unchecked Sendable {
             pendingVideoFrame = incomingVideoFrame
             return
         }
+        if rendererRecoveryFlushID != nil {
+            pendingVideoFrame = incomingVideoFrame
+            return
+        }
         if case .suppressed = geometryTransitionGate.phase {
-            guard incomingVideoFrame.presentationGeometry != nil else { return }
             beginGeometryTransition(with: incomingVideoFrame)
             return
         }
@@ -636,11 +644,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
             return
         }
         if videoRenderer.status == .failed || videoRenderer.requiresFlushToResumeDecoding {
-            clearSnapshotFrame()
-            displayedFrameIsConfirmedCursorless = false
-            latestPointerSnapshot = nil
-            clearPublishedPointerSnapshot(token: token)
-            videoRenderer.flush()
+            pendingVideoFrame = incomingVideoFrame
+            beginRendererRecoveryOnRenderQueue(pointerToken: token)
+            return
         }
         if videoRenderer.isReadyForMoreMediaData {
             clearPendingVideoFrameOnRenderQueue()
@@ -655,6 +661,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard !isRequestingMediaData,
               presentationFlushGeneration == nil,
+              rendererRecoveryFlushID == nil,
               pendingVideoFrame != nil,
               geometryTransitionGate.canRequestMediaData else { return }
         isRequestingMediaData = true
@@ -667,6 +674,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard isRequestingMediaData else { return }
         guard presentationFlushGeneration == nil else { return }
+        guard rendererRecoveryFlushID == nil else { return }
         guard geometryTransitionGate.canRequestMediaData else {
             stopRequestingMediaDataOnRenderQueue()
             return
@@ -684,18 +692,16 @@ final class SampleBufferRenderer: @unchecked Sendable {
         }
         guard pendingVideoFrame.sampleBuffer.isValid else {
             clearPendingVideoFrameOnRenderQueue(token: pendingVideoFrame.token)
-            clearSnapshotFrame()
             displayedFrameIsConfirmedCursorless = false
             latestPointerSnapshot = nil
             clearPublishedPointerSnapshot(token: pendingVideoFrame.token)
             return
         }
         if videoRenderer.status == .failed || videoRenderer.requiresFlushToResumeDecoding {
-            clearSnapshotFrame()
-            displayedFrameIsConfirmedCursorless = false
-            latestPointerSnapshot = nil
-            clearPublishedPointerSnapshot(token: pendingVideoFrame.token)
-            videoRenderer.flush()
+            beginRendererRecoveryOnRenderQueue(
+                pointerToken: pendingVideoFrame.token
+            )
+            return
         }
         guard videoRenderer.isReadyForMoreMediaData else { return }
         self.pendingVideoFrame = nil
@@ -713,11 +719,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             pendingVideoFrame = frame
             return
         }
-        guard let presentationGeometry = frame.presentationGeometry else {
-            beginGeometryTransition(with: frame)
-            return
-        }
-        guard self.presentationGeometry() == presentationGeometry else {
+        guard presentationGeometry() == frame.presentationGeometry else {
             beginGeometryTransition(with: frame)
             return
         }
@@ -765,6 +767,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard case .hidden(let context) = geometryTransitionGate.phase,
               presentationFlushGeneration == nil,
+              rendererRecoveryFlushID == nil,
               let frame = pendingVideoFrame else { return }
         guard frame.token == context.token,
               frame.presentationGeneration == context.presentationGeneration,
@@ -780,14 +783,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
             clearPendingVideoFrameOnRenderQueue(token: frame.token)
             return
         }
-        guard frame.presentationGeometry != nil else {
-            pendingVideoFrame = nil
-            stopRequestingMediaDataOnRenderQueue()
-            _ = geometryTransitionGate.suppress(context)
-            return
-        }
         if videoRenderer.status == .failed || videoRenderer.requiresFlushToResumeDecoding {
-            videoRenderer.flush()
+            beginRendererRecoveryOnRenderQueue(pointerToken: frame.token)
+            return
         }
         guard videoRenderer.isReadyForMoreMediaData else {
             requestMediaDataWhenReadyIfNeeded()
@@ -824,6 +822,11 @@ final class SampleBufferRenderer: @unchecked Sendable {
             return
         }
         guard geometryTransitionGate.acknowledgeShow(context) else { return }
+        // The frame that completed this geometry transition may remain visible
+        // during a decoder recovery, but no newer pending frame may enter AVF
+        // until that uncancellable flush has completed. Recovery completion
+        // restarts the normal latest-frame drain once this phase is visible.
+        guard rendererRecoveryFlushID == nil else { return }
         guard let pendingVideoFrame else { return }
         guard pendingVideoFrame.token == context.token,
               pendingVideoFrame.presentationGeneration == context.presentationGeneration else {
@@ -911,9 +914,11 @@ final class SampleBufferRenderer: @unchecked Sendable {
         return transition.id
     }
 
-    /// Notifications may arrive without another ScreenCaptureKit sample. Clear
-    /// retained screenshot and pointer proof immediately when decoding becomes
-    /// unhealthy; the next complete frame safely republishes both.
+    /// Notifications may arrive without another ScreenCaptureKit sample. A
+    /// renderer reset is not a capture-authorization boundary, so preserve the
+    /// displayed image, matching screenshot geometry, and newest pending frame.
+    /// Static sources may emit only idle callbacks after this point. Pointer
+    /// proof is revoked independently until a later complete frame refreshes it.
     private func rendererHealthDidChange() {
         renderQueue.async { [weak self] in
             guard let self,
@@ -921,19 +926,41 @@ final class SampleBufferRenderer: @unchecked Sendable {
                     videoRenderer.requiresFlushToResumeDecoding else { return }
             if presentationFlushGeneration != nil {
                 // Presentation invalidation already owns an uncancellable flush.
-                // Preserve its newest pending frame for the generation barrier.
-                clearSnapshotFrame()
+                // Its fail-closed boundary and newest pending frame remain in
+                // charge; do not start a competing renderer reset.
                 displayedFrameIsConfirmedCursorless = false
                 latestPointerSnapshot = nil
                 clearPublishedPointerSnapshot(token: activeToken)
                 return
             }
-            clearPendingVideoFrameOnRenderQueue()
-            clearSnapshotFrame()
-            displayedFrameIsConfirmedCursorless = false
-            latestPointerSnapshot = nil
-            clearPublishedPointerSnapshot(token: activeToken)
-            videoRenderer.flush()
+            beginRendererRecoveryOnRenderQueue(pointerToken: activeToken)
+        }
+    }
+
+    /// Resets decoder state without treating it as a capture or presentation
+    /// invalidation. The displayed image and its acknowledged snapshot geometry
+    /// remain valid because the picker-authorized source has not changed.
+    private func beginRendererRecoveryOnRenderQueue(pointerToken: UUID?) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard presentationFlushGeneration == nil,
+              rendererRecoveryFlushID == nil else { return }
+
+        displayedFrameIsConfirmedCursorless = false
+        latestPointerSnapshot = nil
+        clearPublishedPointerSnapshot(token: pointerToken)
+        stopRequestingMediaDataOnRenderQueue()
+
+        let recoveryID = UUID()
+        rendererRecoveryFlushID = recoveryID
+        videoRenderer.flush(removingDisplayedImage: false) { [weak self] in
+            self?.renderQueue.async { [weak self] in
+                guard let self,
+                      rendererRecoveryFlushID == recoveryID else { return }
+                rendererRecoveryFlushID = nil
+                if pendingVideoFrame != nil {
+                    requestMediaDataWhenReadyIfNeeded()
+                }
+            }
         }
     }
 
@@ -1014,30 +1041,21 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
     private func replaceSnapshotAcceptance(
         token: UUID,
-        presentationGeneration: UUID,
-        retainingFrame: Bool
+        presentationGeneration: UUID
     ) {
         snapshotFrameLock.lock()
-        var update: PresentationGeometryUpdate?
         snapshotToken = token
         snapshotPresentationGeneration = presentationGeneration
-        if !retainingFrame {
-            snapshotPixelBuffer = nil
-            snapshotPresentationGeometry = nil
-            snapshotPresentationIsAcknowledged = false
-            snapshotPresentationRevision &+= 1
-            update = PresentationGeometryUpdate(
-                revision: snapshotPresentationRevision,
-                geometry: nil
-            )
-        } else {
-            snapshotPresentationIsAcknowledged = snapshotPixelBuffer != nil &&
-                snapshotPresentationGeometry != nil
-        }
+        snapshotPixelBuffer = nil
+        snapshotPresentationGeometry = nil
+        snapshotPresentationIsAcknowledged = false
+        snapshotPresentationRevision &+= 1
+        let update = PresentationGeometryUpdate(
+            revision: snapshotPresentationRevision,
+            geometry: nil
+        )
         snapshotFrameLock.unlock()
-        if let update {
-            notifyPresentationGeometryObservers(with: update)
-        }
+        notifyPresentationGeometryObservers(with: update)
     }
 
     private func revokeSnapshotAcceptance(token: UUID) {
@@ -1140,22 +1158,6 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 renderQueue.async(execute: completion)
             }
         }
-    }
-
-    private func retagPendingVideoFrameOnRenderQueue(
-        token: UUID,
-        presentationGeneration: UUID
-    ) {
-        dispatchPrecondition(condition: .onQueue(renderQueue))
-        guard let pendingVideoFrame, pendingVideoFrame.token == token else { return }
-        self.pendingVideoFrame = PendingVideoFrame(
-            sampleBuffer: pendingVideoFrame.sampleBuffer,
-            token: token,
-            presentationGeneration: presentationGeneration,
-            presentationGeometry: pendingVideoFrame.presentationGeometry,
-            isConfirmedCursorless: pendingVideoFrame.isConfirmedCursorless,
-            qualifyingRedDotTransitionID: nil
-        )
     }
 
     private func clearPendingVideoFrameOnRenderQueue(token: UUID? = nil) {
@@ -1341,21 +1343,18 @@ final class SampleBufferNSView: NSView {
     private var isPointerOverlayEnabled = false
     private var pointerAppearance: PointerAppearance = .presentationDefault
 
+    override var isOpaque: Bool { false }
+
     init(renderer: SampleBufferRenderer) {
         self.renderer = renderer
         super.init(frame: .zero)
         wantsLayer = true
         layer = CALayer()
-        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.isOpaque = false
         layer?.masksToBounds = true
-        layer?.addSublayer(renderer.displayLayer)
         configurePointerDotLayer()
         layer?.addSublayer(pointerDotLayer)
-        renderer.setPointerAvailabilityHandler { [weak self] in
-            guard let self else { return }
-            applyPointerAppearance(renderer.pointerAppearance())
-            updatePointerTimerState()
-        }
     }
 
     @available(*, unavailable)
@@ -1365,13 +1364,21 @@ final class SampleBufferNSView: NSView {
 
     override func layout() {
         super.layout()
-        renderer.displayLayer.frame = bounds
+        if renderer.displayLayer.superlayer === layer {
+            renderer.displayLayer.frame = bounds
+        }
         updatePointerOverlay()
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         updateWindowStateObservers()
+        guard window != nil else {
+            // A view leaving its window must never steal the renderer from a
+            // newer visible view that has already claimed the single layer.
+            stopPointerTimer()
+            return
+        }
         if renderer.displayLayer.superlayer !== layer {
             renderer.displayLayer.removeFromSuperlayer()
             layer?.insertSublayer(renderer.displayLayer, at: 0)
@@ -1380,12 +1387,13 @@ final class SampleBufferNSView: NSView {
             pointerDotLayer.removeFromSuperlayer()
             layer?.addSublayer(pointerDotLayer)
         }
-        renderer.displayLayer.frame = bounds
-        if window == nil {
-            stopPointerTimer()
-        } else {
+        renderer.setPointerAvailabilityHandler { [weak self] in
+            guard let self else { return }
+            applyPointerAppearance(renderer.pointerAppearance())
             updatePointerTimerState()
         }
+        renderer.displayLayer.frame = bounds
+        updatePointerTimerState()
     }
 
     override func viewDidChangeBackingProperties() {
@@ -1411,6 +1419,20 @@ final class SampleBufferNSView: NSView {
         }
         updatePointerTimerState()
         updatePointerOverlay()
+    }
+
+    /// Commits the media layer's frame before a crop wrapper reveals this
+    /// view. The explicit assignment preserves the invariant even when the
+    /// view is hidden and currently owns the renderer's single shared display
+    /// layer. Do not force an AppKit layout pass here: the geometry observer
+    /// can run from its parent's existing `layout()` pass.
+    func synchronizePresentationLayoutBeforeReveal() {
+        needsLayout = true
+        guard renderer.displayLayer.superlayer === layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        renderer.displayLayer.frame = bounds
+        CATransaction.commit()
     }
 
     /// Prepares an immutable replacement for the media layer, which AppKit's

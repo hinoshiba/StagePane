@@ -127,18 +127,19 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   through 2/2 with the still-enabled third-source action opening StagePane Pro;
   Pro mixed-source addition through 4/4; and a disabled Add Source action only
   at the physical 4/4 maximum;
-- per-source pause and resume (stop the stream, retain the last frame in both
-  renderers, then restart it), replace (with cancel preserving the old item),
-  per-source removal while other streams remain live, and Stop All draining
-  both renderers for every running or paused source;
+- per-source pause and resume (stop the stream, make the layer transparent in
+  Stage, Workspace, and Audience PNG while preserving placement/crop/z-order,
+  then reveal it only after Resume receives a new complete frame), replace
+  (with cancel preserving the old item), per-source removal while other streams
+  remain live, and Stop All deleting pixels and logical state for every source;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   free resize/minimum tile size, front ordering, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
 - strict two-window separation: the private Workspace contains the Canvas and
   Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
-  Privacy, and About; its Canvas hosts Arrange, Crop, and Draw; the public Stage has no
-  private toolbar, mode control, selection outline, resize handle, notice, or
-  other editing chrome;
+  Privacy, and About; its Canvas has Arrange and Draw global modes plus a Crop
+  action on each layer; the public Stage has no private toolbar, mode control,
+  selection outline, resize handle, notice, or other editing chrome;
 - exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
   sharing can expose private windows and the UI directs users to choose the
@@ -146,7 +147,8 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - Workspace close/reopen while live, drawing, resizing, choosing, and paused:
   closing ends an active stroke without stopping capture, clearing completed ink,
   closing Stage, or corrupting layout;
-  closing the public Stage continues to cover output and stop active capture;
+  closing the public Stage covers audience output without stopping capture or
+  clearing layer placement/crop, and reopening starts covered by the Curtain;
 - live source-window aspect changes, including a static slide after a layout or
   source resize, with no double letterbox and no transient black tile;
 - Curtain hiding only the public Stage while the private Workspace remains
@@ -162,17 +164,19 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   changes, a static System-to-Laser transition
   with no native/laser double pointer (advance the slide if macOS defers the first
   cursorless complete frame), and removal on Curtain/stop;
-- Arrange-mode drag/resize affecting only composition, with Arrange, Crop, and Draw
-  available in Workspace in both the local sandboxed build and exact Mac App
+- Arrange-mode drag/resize affecting only composition, with global Arrange and
+  Draw plus a crop button on every layer available in Workspace in both the local sandboxed build and exact Mac App
   Store candidate on every supported OS; confirm the persistent Permissions view
   describes only picker-scoped screen-sharing session access and neither build
   contains a cross-application input-forwarding or Accessibility permission path;
-- Crop mode editing one selected source at full Canvas size in the private
-  Workspace; verify drag, four-corner resize, keyboard and VoiceOver actions;
+- each tile and source row opening Crop for that exact layer at full Canvas size
+  in the private Workspace; verify the target layer name, drag, four-corner
+  resize, keyboard and VoiceOver actions;
   Reset to Full Source changes only the draft; Apply Crop is the only commit;
   Cancel, a mode change, or source loss discards the draft; the public Stage,
   laser projection, and every Audience PNG preset retain the previously applied
-  crop until Apply; applied crop geometry is session-only; and Crop never
+  crop until Apply; applied crop geometry remains in memory for the current
+  StagePane run and survives source-sharing disconnects on retained layers; Crop never
   narrows the complete picker-approved source handled by a running
   ScreenCaptureKit stream;
 - Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and

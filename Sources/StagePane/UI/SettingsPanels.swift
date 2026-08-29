@@ -357,9 +357,14 @@ struct PrivacyPanel: View {
                         }
                     }
 
-                    if capture.isCaptureActive || captureNeedsAttention {
+                    if capture.hasLayers || capture.isCaptureActive || captureNeedsAttention {
                         Button(action: controller.stopPreview) {
-                            Label(L10n.text("画面取得を完全に停止", "Stop Capture Completely"), systemImage: "stop.circle.fill")
+                            Label(
+                                L10n.stopAllAndRemoveLayersTitle,
+                                systemImage: capture.hasDisconnectedLayers && !capture.isCaptureActive
+                                    ? "trash.fill"
+                                    : "stop.circle.fill"
+                            )
                         }
                         .buttonStyle(PrimaryActionButtonStyle())
                     }
@@ -418,6 +423,7 @@ struct PrivacyPanel: View {
     }
 
     private var captureStatusSymbol: String {
+        if capture.hasDisconnectedLayers { return "rectangle.badge.exclamationmark" }
         if captureNeedsAttention { return "exclamationmark.triangle.fill" }
         if allSourcesPaused { return "pause.circle.fill" }
         if capture.isCaptureActive { return "rectangle.inset.filled" }
@@ -435,6 +441,12 @@ struct PrivacyPanel: View {
     }
 
     private var captureStatusTitle: String {
+        if capture.hasDisconnectedLayers {
+            return L10n.text(
+                "選び直しが必要なレイヤーがあります",
+                "A layer needs content selected again"
+            )
+        }
         if captureNeedsAttention {
             return L10n.text("プレビューの確認が必要", "Preview needs attention")
         }
@@ -452,6 +464,12 @@ struct PrivacyPanel: View {
     }
 
     private var captureStatusDetail: String {
+        if capture.hasDisconnectedLayers {
+            return L10n.text(
+                "配置と切り抜きは保持されています。ソース一覧の「選び直す」で同じレイヤーへ新しい対象を設定できます。下の削除操作は保持中のレイヤーをすべて削除します。",
+                "Placement and crop are preserved. Use Select Again in the source list to choose content for the same layer. The remove action below deletes every retained layer."
+            )
+        }
         if captureNeedsAttention {
             return capture.isCaptureActive
                 ? L10n.text(
@@ -465,8 +483,8 @@ struct PrivacyPanel: View {
         }
         if allSourcesPaused {
             return L10n.text(
-                "取得は停止中です。最後のフレームと配置を保持したまま、ソース一覧から再開できます。",
-                "Capture is paused. The last frames and layout remain in place until you resume from the source list."
+                "取得は停止中です。レイヤーは透明ですが、配置と切り抜きを保持したままソース一覧から再開できます。",
+                "Capture is paused. Layers are transparent, while their placement and crop remain ready to resume from the source list."
             )
         }
         if capture.isCaptureActive {

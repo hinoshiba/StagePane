@@ -54,7 +54,14 @@ final class CaptureSource: ObservableObject, Identifiable {
     @Published fileprivate(set) var contentSize: CGSize
     @Published fileprivate(set) var phase: CaptureSourcePhase = .preparing
     @Published fileprivate(set) var isPaused = false
+    /// False whenever the source must be transparent in Stage, Workspace, and
+    /// audience snapshots. The logical layer remains in the composition so its
+    /// placement, crop, and z-order survive Pause and Resume.
+    @Published fileprivate(set) var isPresentationVisible = false
     @Published fileprivate(set) var isOutputSuppressed = false
+    /// The capture permission ended outside StagePane, but the logical layer
+    /// remains available for an explicit picker-based reselection.
+    @Published fileprivate(set) var needsReselection = false
     /// MainActor fence for delayed preview-renderer geometry notifications.
     /// A suppression update must prevent an older accepted frame callback from
     /// restoring stale crop-editor dimensions.
@@ -147,12 +154,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     private var presentationGeneration: UUID
     private var presentationState: PresentationState = .awaitingFreshFrame
     private var explicitPauseState: ExplicitPauseState = .none
-    /// Resume deliberately keeps the paused image until either a fresh complete
-    /// frame replaces it or an unavailable marker proves it is no longer valid.
-    private var isRetainingPausedPresentationDuringResume = false
-    /// Unavailable markers observed during an intentional Pause do not remove
-    /// its held image, but they must invalidate that image when Resume begins.
-    private var didObserveUnavailablePresentationWhilePaused = false
 
     init(
         token: UUID,
@@ -189,19 +190,23 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         case .complete:
             guard presentationState != .replacingContent,
                   explicitPauseState != .paused else { return }
+            // Do not declare a generation ready unless the same complete frame
+            // has all geometry required by both presentation renderers. A
+            // malformed complete followed only by idle markers must leave the
+            // layer either on its previous valid image or transparently awaiting
+            // the next usable complete frame.
+            guard let geometry = completeFrameGeometry(from: sampleBuffer) else {
+                return
+            }
             if explicitPauseState == .resuming {
                 explicitPauseState = .none
-                isRetainingPausedPresentationDuringResume = false
-                didObserveUnavailablePresentationWhilePaused = false
             }
-            if let geometry = completeFrameGeometry(from: sampleBuffer),
-               geometryDiffersMeaningfully(geometry, from: lastGeometry) {
+            if geometryDiffersMeaningfully(geometry, from: lastGeometry) {
                 lastGeometry = geometry
                 geometryHandler(token, geometryGeneration, geometry)
             }
         default:
-            // Start/stop lifecycle markers carry no replacement pixels. In
-            // particular, an explicit Pause must retain its last complete frame.
+            // Start/stop lifecycle markers carry no replacement pixels.
             return
         }
 
@@ -225,8 +230,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .none
-        isRetainingPausedPresentationDuringResume = false
-        didObserveUnavailablePresentationWhilePaused = false
         self.presentationGeneration = presentationGeneration
         presentationState = .replacingContent
         renderers.invalidatePresentationOnRenderQueue(
@@ -249,21 +252,24 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         presentationState = .awaitingFreshFrame
     }
 
-    func beginExplicitPauseOnOutputQueue() {
+    func beginExplicitPauseOnOutputQueue(
+        presentationGeneration: UUID
+    ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .paused
-        isRetainingPausedPresentationDuringResume = false
-        didObserveUnavailablePresentationWhilePaused = false
+        self.presentationGeneration = presentationGeneration
+        presentationState = .awaitingFreshFrame
+        lastGeometry = nil
+        renderers.invalidatePresentationOnRenderQueue(
+            token: token,
+            presentationGeneration: presentationGeneration
+        )
     }
 
     func cancelExplicitPauseOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         guard explicitPauseState == .paused else { return }
         explicitPauseState = .none
-        if didObserveUnavailablePresentationWhilePaused {
-            didObserveUnavailablePresentationWhilePaused = false
-            beginUnavailablePresentationOnOutputQueue()
-        }
     }
 
     func beginExplicitResumeOnOutputQueue(
@@ -271,29 +277,21 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .resuming
-        isRetainingPausedPresentationDuringResume = true
         self.presentationGeneration = presentationGeneration
         presentationState = .awaitingFreshFrame
-        renderers.advancePresentationGenerationPreservingFrameOnRenderQueue(
+        lastGeometry = nil
+        renderers.advanceEmptyPresentationGenerationOnRenderQueue(
             token: token,
             presentationGeneration: presentationGeneration
         )
-        if didObserveUnavailablePresentationWhilePaused {
-            didObserveUnavailablePresentationWhilePaused = false
-            isRetainingPausedPresentationDuringResume = false
-            renderers.invalidatePresentationOnRenderQueue(
-                token: token,
-                presentationGeneration: presentationGeneration
-            )
-        }
     }
 
     func cancelExplicitResumeOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
-        if explicitPauseState == .resuming {
-            explicitPauseState = .paused
-            isRetainingPausedPresentationDuringResume = false
-        }
+        // A complete callback can race ahead of startCapture's failure and may
+        // already have advanced this state to `.none`. The failed Resume still
+        // returns the stream to an explicit paused boundary in every ordering.
+        explicitPauseState = .paused
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -315,18 +313,14 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
         dispatchPrecondition(condition: .onQueue(outputQueue))
         guard presentationState != .replacingContent else { return }
         if explicitPauseState == .paused {
-            didObserveUnavailablePresentationWhilePaused = true
             return
         }
 
-        let hasPresentationToInvalidate = presentationState == .ready ||
-            (explicitPauseState == .resuming &&
-                isRetainingPausedPresentationDuringResume)
+        let hasPresentationToInvalidate = presentationState == .ready
         guard hasPresentationToInvalidate else { return }
 
         let previousGeneration = presentationGeneration
         let nextGeneration = UUID()
-        isRetainingPausedPresentationDuringResume = false
         presentationGeneration = nextGeneration
         presentationState = .awaitingFreshFrame
         lastGeometry = nil
@@ -365,7 +359,19 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
               let contentRectDictionary = attachments[.contentRect] as? NSDictionary,
               let contentRect = CGRect(dictionaryRepresentation: contentRectDictionary),
               let contentScale = (attachments[.contentScale] as? NSNumber)?.doubleValue,
-              let pointPixelScale = (attachments[.scaleFactor] as? NSNumber)?.doubleValue else {
+              let pointPixelScale = (attachments[.scaleFactor] as? NSNumber)?.doubleValue,
+              let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
+              pointPixelScale.isFinite,
+              pointPixelScale > 0,
+              SourcePresentationGeometry(
+                  surfaceSize: CGSize(
+                      width: CGFloat(CVPixelBufferGetWidth(imageBuffer)) /
+                          CGFloat(pointPixelScale),
+                      height: CGFloat(CVPixelBufferGetHeight(imageBuffer)) /
+                          CGFloat(pointPixelScale)
+                  ),
+                  contentRect: contentRect
+              ) != nil else {
             return nil
         }
         return CaptureSourceGeometry(
@@ -391,6 +397,7 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
 private final class CaptureSession {
     enum TeardownOutcome: Sendable {
         case removed
+        case needsReselection(String)
         case failed(String)
     }
 
@@ -452,6 +459,10 @@ private final class CaptureSession {
     var requestedSurfaceWidth: Int
     var requestedSurfaceHeight: Int
     var teardownOutcome: TeardownOutcome?
+    /// Remains mutable through the renderer-drain barrier so an explicit
+    /// Remove/Stop All can still destroy a layer whose failed stream was
+    /// already finalizing as a retained, disconnected layer.
+    var removeLayerWhenFinalized = false
     var activeAttention: ActiveAttention?
     var stopCompletions: [(String?) -> Void] = []
     /// Once removal starts, no delayed stream operation may make this source
@@ -529,17 +540,25 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     @Published private(set) var layout = StageLayout()
 
     var canAddSource: Bool {
-        sessions.count < allowedSourceLimit && !isPickerPresented
+        sources.count < allowedSourceLimit && !isPickerPresented
     }
 
     /// Keeps the add action available at the Free limit so it can explain Pro,
     /// while still disabling it during a picker or at the physical maximum.
     var canRequestSourceAddition: Bool {
-        sessions.count < Self.maximumSources && !isPickerPresented
+        sources.count < Self.maximumSources && !isPickerPresented
     }
 
     var occupiedSourceSlots: Int {
-        sessions.count
+        sources.count
+    }
+
+    var hasLayers: Bool {
+        !sources.isEmpty
+    }
+
+    var hasDisconnectedLayers: Bool {
+        sources.contains(where: \.needsReselection)
     }
 
     var sourceLimitReachedHandler: (() -> Void)?
@@ -569,9 +588,17 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private var allowedSourceLimit = StagePaneAccess.freeSourceLimit
 
     var hasResettableFailure: Bool {
-        guard !isCaptureActive else { return false }
-        if case .failed = phase { return true }
-        return false
+        let hasCaptureFailure: Bool
+        if case .failed = phase {
+            hasCaptureFailure = true
+        } else {
+            hasCaptureFailure = false
+        }
+        return CaptureLayerRetentionPolicy.canResetCaptureFailure(
+            captureIsActive: isCaptureActive,
+            hasCaptureFailure: hasCaptureFailure,
+            hasRetainedLayers: !sources.isEmpty
+        )
     }
     private var lastFailure: String?
 
@@ -611,7 +638,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             return
         }
-        guard sessions.count < Self.maximumSources else {
+        guard sources.count < Self.maximumSources else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "同時に追加できるソースは最大\(Self.maximumSources)件です。",
@@ -620,7 +647,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             return
         }
-        guard sessions.count < allowedSourceLimit else {
+        guard sources.count < allowedSourceLimit else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",
@@ -644,26 +671,53 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     func replaceSource(_ sourceID: StageSourceID) {
-        guard !isPickerPresented,
-              let session = sessions[sourceID],
-              !session.isStopping,
-              !session.isUpdatingContent,
-              canReplaceSource(sourceID) else { return }
+        guard !isPickerPresented, canReplaceSource(sourceID) else { return }
+
+        if let session = sessions[sourceID],
+           let retainedOutcome = retainedTeardownOutcomeForReconnectRetry(session) {
+            beginTeardown(of: session, outcome: retainedOutcome) { [weak self] error in
+                guard error == nil else { return }
+                // finishStoppedSession removes the old session and retains the
+                // same logical source before invoking this completion. Re-enter
+                // the normal detached-layer path only after that barrier.
+                self?.replaceSource(sourceID)
+            }
+            return
+        }
 
         pickerIntent = .replace(sourceID)
         isPickerPresented = true
+        if let session = sessions[sourceID] {
+            if !publishStopFailureIfPresent() {
+                phase = .choosing
+                statusDetail = L10n.text(
+                    "「\(session.source.title)」に設定する新しい対象を1つ選んでください。",
+                    "Choose one new item for “\(session.source.title)”."
+                )
+            }
+            SCContentSharingPicker.shared.present(for: session.stream)
+            return
+        }
+
+        guard let source = source(for: sourceID), source.needsReselection else {
+            finishPickerPresentation()
+            publishSteadyState()
+            return
+        }
         if !publishStopFailureIfPresent() {
             phase = .choosing
             statusDetail = L10n.text(
-                "「\(session.source.title)」に設定する新しい対象を1つ選んでください。",
-                "Choose one new item for “\(session.source.title)”."
+                "「\(source.title)」レイヤーへ設定する対象をもう一度選んでください。",
+                "Select content again for the “\(source.title)” layer."
             )
         }
-        SCContentSharingPicker.shared.present(for: session.stream)
+        SCContentSharingPicker.shared.present()
     }
 
     func removeSource(_ sourceID: StageSourceID, completion: ((String?) -> Void)? = nil) {
         guard let session = sessions[sourceID] else {
+            invalidatePickerIntent(ifReplacing: sourceID)
+            removeDetachedSource(sourceID)
             completion?(nil)
             return
         }
@@ -698,6 +752,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     func stop(completion: ((String?) -> Void)? = nil) {
         lastFailure = nil
         invalidatePickerIntent()
+        removeAllDetachedSources()
         let targets = Array(sessions.values)
         guard !targets.isEmpty else {
             isCaptureActive = false
@@ -729,8 +784,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         for session in sessions.values {
             guard !session.source.isPaused, session.pauseTransition == nil else {
-                // A paused source deliberately retains its last video frame,
-                // but its live pointer overlay must not keep moving over it.
+                // A paused source is transparent and never owns visible pointer
+                // artwork until Resume accepts a fresh complete frame.
                 session.source.renderers.setPointerStyle(.hidden)
                 continue
             }
@@ -769,22 +824,73 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         sources.first { $0.id == sourceID }
     }
 
+    private func markSourceForReselection(
+        _ source: CaptureSource,
+        message: String,
+        publishing: Bool = true
+    ) {
+        guard sources.contains(where: { $0 === source }) else { return }
+        source.isPaused = false
+        source.isPresentationVisible = false
+        source.isOutputSuppressed = true
+        source.needsReselection = true
+        source.phase = .needsAttention(message)
+        lastFailure = message
+        if publishing { publishSteadyState() }
+    }
+
+    private func removeDetachedSource(
+        _ sourceID: StageSourceID,
+        publishing: Bool = true
+    ) {
+        guard sessions[sourceID] == nil,
+              let source = source(for: sourceID) else { return }
+        if case let .needsAttention(message) = source.phase,
+           lastFailure == message {
+            lastFailure = nil
+        }
+        source.renderers.flush()
+        sources.removeAll { $0.id == sourceID }
+        var updatedLayout = layout
+        _ = updatedLayout.removeSource(sourceID)
+        layout = updatedLayout
+        if publishing { publishSteadyState() }
+    }
+
+    private func removeAllDetachedSources() {
+        let sourceIDs = sources.compactMap { source in
+            sessions[source.id] == nil ? source.id : nil
+        }
+        guard !sourceIDs.isEmpty else { return }
+        for sourceID in sourceIDs {
+            removeDetachedSource(sourceID, publishing: false)
+        }
+    }
+
     /// True when removing this session leaves no renderer that can still be
     /// visible on the public Stage. Stop-failure sessions stay registered for
     /// retry but are output-suppressed, so a simple source count is insufficient.
     func removalLeavesNoVisibleSources(_ sourceID: StageSourceID) -> Bool {
-        guard sessions[sourceID] != nil else { return false }
-        return sessions.values.allSatisfy { session in
-            session.source.id == sourceID ||
-                session.outputSuppressed ||
+        guard source(for: sourceID) != nil else { return false }
+        return sources.allSatisfy { source in
+            guard source.id != sourceID else { return true }
+            guard let session = sessions[source.id] else { return true }
+            return session.outputSuppressed ||
                 session.isStopping ||
                 session.isFinalizing
         }
     }
 
     func canReplaceSource(_ sourceID: StageSourceID) -> Bool {
-        guard let session = sessions[sourceID],
-              session.isStarted,
+        guard !isPickerPresented else { return false }
+        guard let session = sessions[sourceID] else {
+            return source(for: sourceID)?.needsReselection == true &&
+                layout[sourceID: sourceID] != nil
+        }
+        if retainedTeardownOutcomeForReconnectRetry(session) != nil {
+            return true
+        }
+        guard session.isStarted,
               session.isStreamRunning,
               !session.isStopping,
               !session.source.isPaused,
@@ -913,8 +1019,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         layout = StageLayout(sources: reordered)
     }
 
-    private func beginCapture(with filter: SCContentFilter) {
-        guard sessions.count < Self.maximumSources else {
+    private func beginCapture(
+        with filter: SCContentFilter,
+        reusingLayer sourceIDToReuse: StageSourceID? = nil
+    ) {
+        let isReconnectingLayer = sourceIDToReuse != nil
+        guard isReconnectingLayer || sources.count < Self.maximumSources else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "同時に追加できるソースは最大\(Self.maximumSources)件です。",
@@ -923,7 +1033,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             return
         }
-        guard sessions.count < allowedSourceLimit else {
+        guard isReconnectingLayer || sources.count < allowedSourceLimit else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",
@@ -934,36 +1044,70 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
 
-        sourceOrdinal += 1
-        let ordinal = sourceOrdinal
-        let sourceID = StageSourceID(rawValue: UUID().uuidString)
+        let sourceID: StageSourceID
         var proposedLayout = layout
-        let proposedFrame = StageLayout.suggestedFrameForNewSource(
-            occupiedFrames: proposedLayout.sources.map(\.frame)
-        )
-        _ = proposedLayout.addSource(sourceID, frame: proposedFrame)
-        let renderers = CaptureSourceRenderers(renderQueue: outputQueue)
-        let metadata = sourceMetadata(for: filter, ordinal: ordinal)
-        let source = CaptureSource(
-            id: sourceID,
-            ordinal: ordinal,
-            title: metadata.title,
-            kind: metadata.kind,
-            contentSize: sourceContentSize(for: filter),
-            renderers: renderers
-        )
-        renderers.preview.addPresentationGeometryObserver {
-            [weak self, weak source] update in
-            guard let self, let source else { return }
-            if let revision = source.previewPresentationRevision,
-               update.revision < revision { return }
-            source.previewPresentationRevision = update.revision
-            guard let geometry = update.geometry,
-                  self.sources.contains(where: { $0 === source }) else { return }
-            let contentSize = geometry.contentRect.size
-            guard source.contentSize != contentSize else { return }
-            source.contentSize = contentSize
-            self.objectWillChange.send()
+        let proposedFrame: NormalizedStageRect
+        let proposedSourceCrop: NormalizedSourceRect
+        let renderers: CaptureSourceRenderers
+        let source: CaptureSource
+
+        if let sourceIDToReuse {
+            guard sessions[sourceIDToReuse] == nil,
+                  let existingSource = self.source(for: sourceIDToReuse),
+                  existingSource.needsReselection,
+                  let existingLayout = layout[sourceID: sourceIDToReuse] else {
+                publishSteadyState()
+                return
+            }
+            sourceID = sourceIDToReuse
+            source = existingSource
+            renderers = existingSource.renderers
+            proposedFrame = existingLayout.frame
+            proposedSourceCrop = existingLayout.sourceCrop
+            let metadata = sourceMetadata(
+                for: filter,
+                ordinal: existingSource.ordinal
+            )
+            source.title = metadata.title
+            source.kind = metadata.kind
+            source.contentSize = sourceContentSize(for: filter)
+            source.needsReselection = false
+            source.isPaused = false
+            source.isPresentationVisible = false
+            source.isOutputSuppressed = false
+            source.phase = .preparing
+        } else {
+            sourceOrdinal += 1
+            let ordinal = sourceOrdinal
+            sourceID = StageSourceID(rawValue: UUID().uuidString)
+            proposedFrame = StageLayout.suggestedFrameForNewSource(
+                occupiedFrames: proposedLayout.sources.map(\.frame)
+            )
+            proposedSourceCrop = .fullSource
+            _ = proposedLayout.addSource(sourceID, frame: proposedFrame)
+            renderers = CaptureSourceRenderers(renderQueue: outputQueue)
+            let metadata = sourceMetadata(for: filter, ordinal: ordinal)
+            source = CaptureSource(
+                id: sourceID,
+                ordinal: ordinal,
+                title: metadata.title,
+                kind: metadata.kind,
+                contentSize: sourceContentSize(for: filter),
+                renderers: renderers
+            )
+            renderers.preview.addPresentationGeometryObserver {
+                [weak self, weak source] update in
+                guard let self, let source else { return }
+                if let revision = source.previewPresentationRevision,
+                   update.revision < revision { return }
+                source.previewPresentationRevision = update.revision
+                guard let geometry = update.geometry,
+                      self.sources.contains(where: { $0 === source }) else { return }
+                let contentSize = geometry.contentRect.size
+                guard source.contentSize != contentSize else { return }
+                source.contentSize = contentSize
+                self.objectWillChange.send()
+            }
         }
 
         let token = UUID()
@@ -1002,14 +1146,39 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 }
             }
         )
-        let configuration = makeConfiguration(for: filter, frame: proposedFrame)
+        let configuration = makeConfiguration(
+            for: filter,
+            frame: proposedFrame,
+            sourceCrop: proposedSourceCrop
+        )
         let stream = SCStream(filter: filter, configuration: configuration, delegate: proxy)
 
         do {
             try stream.addStreamOutput(proxy, type: .screen, sampleHandlerQueue: outputQueue)
         } catch {
-            renderers.flush()
-            publishFailure(error.localizedDescription)
+            if isReconnectingLayer {
+                // Reused renderers cannot be activated for another picker
+                // attempt until this failed attempt's remove-image flush has
+                // completed. Otherwise its late completion can erase a frame
+                // accepted by the next stream generation.
+                let reconnectSourceID = sourceID
+                let message = error.localizedDescription
+                renderers.flush { [weak self] in
+                    Task { @MainActor [weak self] in
+                        guard let self,
+                              self.sessions[reconnectSourceID] == nil,
+                              let currentSource = self.source(for: reconnectSourceID)
+                        else { return }
+                        self.markSourceForReselection(
+                            currentSource,
+                            message: message
+                        )
+                    }
+                }
+            } else {
+                renderers.flush()
+                publishFailure(error.localizedDescription)
+            }
             return
         }
 
@@ -1026,8 +1195,10 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             appliedSurfaceHeight: configuration.height
         )
         sessions[sourceID] = session
-        sources.append(source)
-        layout = proposedLayout
+        if !isReconnectingLayer {
+            sources.append(source)
+            layout = proposedLayout
+        }
         isCaptureActive = true
         lastFailure = nil
         renderers.setPointerAppearance(pointerAppearance)
@@ -1142,12 +1313,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
               !session.isFinalizing else { return }
         if let errorMessage {
             session.startDidFail = true
-            beginTeardown(of: session, outcome: .failed(errorMessage))
+            beginTeardown(
+                of: session,
+                outcome: captureBindingEndOutcome(
+                    for: session,
+                    reason: .streamFailure,
+                    message: errorMessage
+                )
+            )
             return
         }
 
         session.isStarted = true
         session.isStreamRunning = true
+        session.source.needsReselection = false
         guard !session.isStopping, !session.outputSuppressed else {
             publishSteadyState()
             return
@@ -1166,8 +1345,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.sourceGeometryDebounceTask?.cancel()
         session.sourceGeometryDebounceTask = nil
         session.pendingSourceGeometry = nil
-        // Keep the displayed video image, but remove the independently sampled
-        // red-dot overlay before stopping the stream.
+        let presentationGeneration = UUID()
+        session.presentationGeneration = presentationGeneration
+        session.awaitsFreshPresentationFrame = true
+        session.isStreamContentActive = false
+        // Pause is a presentation boundary: remove pixels immediately while the
+        // logical layer, its placement, crop, and z-order remain available.
         session.source.renderers.setPointerStyle(.hidden)
         publishSteadyState()
 
@@ -1177,7 +1360,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         let outputQueue = self.outputQueue
         let streamBox = SendableBox(session.stream)
         outputQueue.async {
-            proxy.beginExplicitPauseOnOutputQueue()
+            proxy.beginExplicitPauseOnOutputQueue(
+                presentationGeneration: presentationGeneration
+            )
             streamBox.value.stopCapture { [weak self] error in
                 let message = error?.localizedDescription
                 outputQueue.async { [weak self] in
@@ -1219,8 +1404,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             restorePointerStyle(for: session)
             let message = L10n.text(
-                "「\(session.source.title)」を一時停止できませんでした。画面取得は継続しています。",
-                "“\(session.source.title)” could not be paused. Capture is still running."
+                "「\(session.source.title)」を一時停止できませんでした。画面取得は継続し、新しいフレームが届くまでレイヤーは透明です。",
+                "“\(session.source.title)” could not be paused. Capture is still running, and the layer stays transparent until a fresh frame arrives."
             ) + " (\(errorMessage))"
             session.activeAttention = .pauseFailure(message)
             session.source.phase = .needsAttention(message)
@@ -1255,8 +1440,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.presentationGeneration = presentationGeneration
         session.awaitsFreshPresentationFrame = true
         session.isStreamContentActive = false
-        // Remain visually paused until ScreenCaptureKit confirms the same
-        // stream has restarted.
+        // Remain transparent until ScreenCaptureKit has restarted this stream
+        // and a complete frame from this exact generation is accepted.
         session.source.renderers.setPointerStyle(.hidden)
         publishSteadyState()
 
@@ -1312,8 +1497,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 return
             }
             let message = L10n.text(
-                "「\(session.source.title)」を再開できませんでした。一時停止した画像を表示しています。",
-                "“\(session.source.title)” could not be resumed. Its paused image remains visible."
+                "「\(session.source.title)」を再開できませんでした。レイヤーは透明のままです。",
+                "“\(session.source.title)” could not be resumed. The layer remains transparent."
             ) + " (\(errorMessage))"
             session.activeAttention = .pauseFailure(message)
             session.source.phase = .needsAttention(message)
@@ -1349,7 +1534,14 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 publishSteadyState()
                 return
             }
-            beginTeardown(of: session, outcome: .failed(errorMessage))
+            beginTeardown(
+                of: session,
+                outcome: captureBindingEndOutcome(
+                    for: session,
+                    reason: .contentUpdateFailure,
+                    message: errorMessage
+                )
+            )
             return
         }
 
@@ -1501,7 +1693,14 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                             self.publishSteadyState()
                             return
                         }
-                        self.beginTeardown(of: current, outcome: .failed(message))
+                        self.beginTeardown(
+                            of: current,
+                            outcome: self.captureBindingEndOutcome(
+                                for: current,
+                                reason: .configurationFailure,
+                                message: message
+                            )
+                        )
                         return
                     }
 
@@ -1559,6 +1758,31 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
     }
 
+    private func retainedTeardownOutcomeForReconnectRetry(
+        _ session: CaptureSession
+    ) -> CaptureSession.TeardownOutcome? {
+        guard sessions[session.source.id] === session,
+              session.source.needsReselection,
+              session.isStarted,
+              session.isStreamRunning,
+              !session.isStopping,
+              !session.isFinalizing,
+              !session.isTeardownStopRequested,
+              !session.isUpdatingContent,
+              !session.isUpdatingConfiguration,
+              session.pauseTransition == nil,
+              session.outputSuppressed,
+              case .stopFailure = session.activeAttention,
+              case let .needsReselection(message) = session.teardownOutcome,
+              layout[sourceID: session.source.id] != nil,
+              CaptureLayerRetentionPolicy.canRetryRetainedTeardownAfterStopFailure(
+                  stopCaptureFailed: true,
+                  pendingDisposition: .retainLayerForReselection,
+                  removalWasExplicitlyRequested: session.removeLayerWhenFinalized
+              ) else { return nil }
+        return .needsReselection(message)
+    }
+
     private func beginTeardown(
         of target: CaptureSession,
         outcome: CaptureSession.TeardownOutcome,
@@ -1569,12 +1793,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
         if let completion { target.stopCompletions.append(completion) }
+        if case .removed = outcome {
+            target.removeLayerWhenFinalized = true
+        }
         // A stopped session remains registered while both presentation surfaces
         // finish draining. Later Stop/Quit requests must join that same barrier,
         // not report completion before the displayed images are discarded.
         guard !target.isFinalizing else { return }
         if target.isStopping {
-            if case .failed = outcome { target.teardownOutcome = outcome }
+            // A later explicit Remove or Stop All must win over an automatic
+            // failure detach that was already draining this session.
+            if case .removed = outcome {
+                target.teardownOutcome = .removed
+            } else if target.teardownOutcome == nil {
+                target.teardownOutcome = outcome
+            }
             return
         }
 
@@ -1585,6 +1818,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         target.activeAttention = nil
         target.isStopping = true
         target.outputSuppressed = true
+        target.source.isPresentationVisible = false
         target.source.isOutputSuppressed = true
         target.pendingFilter = nil
         target.sourceGeometryGeneration &+= 1
@@ -1593,7 +1827,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         target.pendingSourceGeometry = nil
         target.teardownOutcome = outcome
         target.source.phase = .stopping
-        target.source.renderers.deactivate(token: target.token)
+        // Removing the entry is the immediate presentation boundary. Deactivate
+        // the shared renderers exactly once after ScreenCaptureKit has stopped;
+        // issuing an untracked flush here and another tracked flush during
+        // finalization could let the first completion erase a reconnected frame.
+        target.source.renderers.setPointerStyle(.hidden)
         publishSteadyState()
 
         continueTeardown(of: target)
@@ -1646,11 +1884,49 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 let callbacks = session.stopCompletions
                 session.stopCompletions.removeAll()
                 session.isStopping = false
-                session.teardownOutcome = nil
-                let message = L10n.text(
-                    "「\(session.source.title)」を解除できませんでした。取得は継続中ですが、出力は隠しています。もう一度解除してください。",
-                    "“\(session.source.title)” could not be removed. Capture continues, but its output is hidden. Try removing it again."
-                ) + " (\(errorMessage))"
+                let pendingDisposition: CaptureLayerTeardownDisposition?
+                if case .needsReselection = session.teardownOutcome {
+                    pendingDisposition = .retainLayerForReselection
+                } else if case .removed = session.teardownOutcome {
+                    pendingDisposition = .removeLayer
+                } else {
+                    pendingDisposition = nil
+                }
+                let canRetryForReselection =
+                    CaptureLayerRetentionPolicy.canRetryRetainedTeardownAfterStopFailure(
+                        stopCaptureFailed: true,
+                        pendingDisposition: pendingDisposition,
+                        removalWasExplicitlyRequested: session.removeLayerWhenFinalized
+                    )
+                let dispositionAfterStopFailure =
+                    CaptureLayerRetentionPolicy.dispositionAfterStopFailure(
+                        pendingDisposition: pendingDisposition,
+                        removalWasExplicitlyRequested: session.removeLayerWhenFinalized
+                    )
+                if canRetryForReselection {
+                    // Keep the original .needsReselection(message) outcome.
+                    // Reconnect retries this same non-destructive teardown; it
+                    // must not silently become removal because stopCapture
+                    // happened to fail first.
+                    session.source.needsReselection = true
+                } else if dispositionAfterStopFailure == .removeLayer {
+                    // An explicit Remove or Stop All has taken ownership of
+                    // recovery. Do not leave a disabled Reconnect action as the
+                    // source's primary UI while destructive stop is retried.
+                    session.source.needsReselection = false
+                }
+                let message: String
+                if canRetryForReselection {
+                    message = L10n.text(
+                        "「\(session.source.title)」の画面取得を終了できませんでした。配置と切り抜きは保持し、出力を隠しています。「選び直す」で終了処理をもう一度試してください。",
+                        "Could not finish detaching capture for “\(session.source.title)”. Its placement and crop are kept, and output is hidden. Choose Select Again to try again."
+                    ) + " (\(errorMessage))"
+                } else {
+                    message = L10n.text(
+                        "「\(session.source.title)」を解除できませんでした。取得は継続中ですが、出力は隠しています。もう一度解除してください。",
+                        "“\(session.source.title)” could not be removed. Capture continues, but its output is hidden. Try removing it again."
+                    ) + " (\(errorMessage))"
+                }
                 session.activeAttention = .stopFailure(message)
                 session.source.phase = .needsAttention(message)
                 lastFailure = message
@@ -1662,7 +1938,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 // expected secondary "already stopped" cleanup error.
                 finalizeStoppedSession(
                     session,
-                    outcome: session.teardownOutcome ?? .failed(errorMessage)
+                    outcome: session.teardownOutcome ?? captureBindingEndOutcome(
+                        for: session,
+                        reason: .streamFailure,
+                        message: errorMessage
+                    )
                 )
             }
             return
@@ -1684,6 +1964,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.isFinalizing = true
         session.isStopping = true
         session.outputSuppressed = true
+        session.source.isPresentationVisible = false
         session.source.isOutputSuppressed = true
         session.source.phase = .stopping
         var finalOutcome = outcome
@@ -1694,7 +1975,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 "画面取得は停止しましたが、出力の後処理に失敗しました。",
                 "Capture stopped, but output cleanup failed."
             ) + " (\(error.localizedDescription))"
-            finalOutcome = .failed(message)
+            if case let .needsReselection(reason) = finalOutcome {
+                finalOutcome = .needsReselection("\(reason) (\(message))")
+            } else {
+                finalOutcome = .failed(message)
+            }
         }
 
         let sourceID = session.source.id
@@ -1705,7 +1990,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 guard let self,
                       let current = self.sessions[sourceID],
                       current === session else { return }
-                self.finishStoppedSession(current, outcome: resolvedOutcome)
+                self.finishStoppedSession(
+                    current,
+                    outcome: current.removeLayerWhenFinalized
+                        ? .removed
+                        : resolvedOutcome
+                )
             }
         }
     }
@@ -1717,16 +2007,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         guard sessions[session.source.id] === session else { return }
         let callbacks = session.stopCompletions
         sessions.removeValue(forKey: session.source.id)
-        sources.removeAll { $0.id == session.source.id }
-        var updatedLayout = layout
-        _ = updatedLayout.removeSource(session.source.id)
-        layout = updatedLayout
 
         let errorMessage: String?
         switch outcome {
         case .removed:
+            removeDetachedSource(session.source.id, publishing: false)
+            errorMessage = nil
+        case let .needsReselection(message):
+            markSourceForReselection(
+                session.source,
+                message: message,
+                publishing: false
+            )
             errorMessage = nil
         case let .failed(message):
+            removeDetachedSource(session.source.id, publishing: false)
             lastFailure = message
             errorMessage = message
         }
@@ -1800,9 +2095,43 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         _ failure: StreamStopFailure,
         for session: CaptureSession
     ) -> CaptureSession.TeardownOutcome {
-        failure.isUserStopped
-            ? session.teardownOutcome ?? .removed
-            : .failed(failure.message)
+        let reason: CaptureBindingEndReason = failure.isUserStopped
+            ? .userStoppedStream
+            : .streamFailure
+        let message = failure.isUserStopped
+            ? L10n.text(
+                "macOSで共有が停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
+                "Sharing was stopped in macOS. This layer's placement and crop were kept. Choose its source again."
+            )
+            : L10n.text(
+                "画面取得が停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
+                "Capture stopped. This layer's placement and crop were kept. Choose its source again."
+            ) + " (\(failure.message))"
+        return captureBindingEndOutcome(
+            for: session,
+            reason: reason,
+            message: message
+        )
+    }
+
+    private func captureBindingEndOutcome(
+        for session: CaptureSession,
+        reason: CaptureBindingEndReason,
+        message: String
+    ) -> CaptureSession.TeardownOutcome {
+        var removalWasExplicitlyRequested = session.removeLayerWhenFinalized
+        if case .removed = session.teardownOutcome {
+            removalWasExplicitlyRequested = true
+        }
+        switch CaptureLayerRetentionPolicy.disposition(
+            for: reason,
+            removalWasExplicitlyRequested: removalWasExplicitlyRequested
+        ) {
+        case .removeLayer:
+            return .removed
+        case .retainLayerForReselection:
+            return session.teardownOutcome ?? .needsReselection(message)
+        }
     }
 
     private func session(for stream: SCStream) -> CaptureSession? {
@@ -2034,6 +2363,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     private func publishSteadyState() {
+        refreshPresentationVisibility()
         isCaptureActive = !sessions.isEmpty
 
         // A failed stop leaves that source running with both renderers hidden.
@@ -2048,6 +2378,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     "この選択は適用されません。システムピッカーを閉じてください。",
                     "This selection will be ignored. Close the system picker."
                 )
+            } else if case let .replace(sourceID) = pickerIntent,
+                      sessions[sourceID] == nil,
+                      let source = source(for: sourceID) {
+                statusDetail = L10n.text(
+                    "「\(source.title)」レイヤーへ設定する対象を選び直してください。",
+                    "Select content again for the “\(source.title)” layer."
+                )
             } else if sessions.isEmpty {
                 statusDetail = L10n.text(
                     "追加する対象を1つ選んでください。",
@@ -2059,6 +2396,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     "Current sources remain live while you choose an item to add or replace."
                 )
             }
+            return
+        }
+
+        if let source = sources.first(where: { $0.needsReselection }),
+           case let .needsAttention(message) = source.phase {
+            phase = .failed(message)
+            statusDetail = message
             return
         }
 
@@ -2095,13 +2439,15 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 let runningCount = sessions.count - pausedCount
                 if runningCount == 0 {
                     statusDetail = L10n.text(
-                        "\(pausedCount)件を一時停止中 — 最後のフレームを表示しています",
-                        "\(pausedCount) source\(pausedCount == 1 ? " is" : "s are") paused — showing the last frame"
+                        "\(pausedCount)件を一時停止中 — レイヤーは透明です",
+                        pausedCount == 1
+                            ? "1 source is paused — its layer is transparent"
+                            : "\(pausedCount) sources are paused — their layers are transparent"
                     )
                 } else if pausedCount > 0 {
                     statusDetail = L10n.text(
-                        "\(runningCount)件を画面取得中・\(pausedCount)件を一時停止中",
-                        "Capturing \(runningCount); \(pausedCount) paused"
+                        "\(runningCount)件を画面取得中・\(pausedCount)件を一時停止中（透明）",
+                        "Capturing \(runningCount); \(pausedCount) paused and transparent"
                     )
                 } else {
                     statusDetail = L10n.text(
@@ -2119,6 +2465,24 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         } else {
             phase = .idle
             statusDetail = ""
+        }
+    }
+
+    private func refreshPresentationVisibility() {
+        for session in sessions.values {
+            session.source.isPresentationVisible =
+                CapturePresentationVisibilityPolicy.shouldPresent(
+                    CapturePresentationVisibilityInput(
+                        outputSuppressed: session.outputSuppressed ||
+                            session.source.isOutputSuppressed,
+                        needsReselection: session.source.needsReselection,
+                        isPaused: session.source.isPaused,
+                        isPauseTransitioning: session.pauseTransition != nil,
+                        isStreamRunning: session.isStreamRunning,
+                        awaitsFreshFrame: session.awaitsFreshPresentationFrame,
+                        hasFreshFrame: session.isStreamContentActive
+                    )
+                )
         }
     }
 
@@ -2180,6 +2544,10 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                 }
             } else if self.pickerIntent == .add {
                 self.finishPickerPresentation()
+            } else if case .replace = self.pickerIntent {
+                // Reconnecting a detached layer uses a picker without an
+                // associated SCStream, so cancellation also carries nil.
+                self.finishPickerPresentation()
             }
             self.publishSteadyState()
         }
@@ -2214,6 +2582,16 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
             } else {
                 // A nil stream with no local intent can originate from the
                 // system video menu and is still an explicit user selection.
+                if case let .replace(sourceID) = self.pickerIntent,
+                   self.sessions[sourceID] == nil,
+                   self.source(for: sourceID)?.needsReselection == true {
+                    self.finishPickerPresentation()
+                    self.beginCapture(
+                        with: filterBox.value,
+                        reusingLayer: sourceID
+                    )
+                    return
+                }
                 guard self.pickerIntent == nil || self.pickerIntent == .add else {
                     self.finishPickerPresentation()
                     self.publishSteadyState()
@@ -2238,8 +2616,22 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
             }
 
             if case let .replace(sourceID) = intent,
-               let session = self.sessions[sourceID],
-               !session.isStopping {
+               let source = self.source(for: sourceID) {
+                guard let session = self.sessions[sourceID] else {
+                    let reconnectMessage = L10n.text(
+                        "選択画面を開けませんでした。「\(source.title)」レイヤーは保持されています。",
+                        "The picker could not open. The “\(source.title)” layer was kept."
+                    ) + " (\(message))"
+                    self.markSourceForReselection(
+                        source,
+                        message: reconnectMessage
+                    )
+                    return
+                }
+                guard !session.isStopping else {
+                    self.publishSteadyState()
+                    return
+                }
                 let activeMessage = L10n.text(
                     "選択画面を開けませんでした。「\(session.source.title)」の取得は継続中です。",
                     "The picker could not open. “\(session.source.title)” remains active."

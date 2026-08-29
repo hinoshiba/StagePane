@@ -37,15 +37,18 @@ broad Screen Recording access.
 - **A source list and free layout** — add, pause or resume, replace, or remove
   each source independently in Workspace → Sources; drag and resize tiles on
   the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
-  Picture from Quick Layout.
-- **Per-source cropping** — Crop shows one complete selected source only in the
-  private Workspace while you draft its framed region. The audience Stage does
-  not change until you choose Apply Crop; Cancel discards the draft. Each active
-  source keeps its own applied crop for the current capture session.
+  Picture from Quick Layout. If macOS ends one source's sharing session, its
+  layer remains in place without an old frame and offers Select Again; its crop,
+  placement, and stacking order survive the reconnection.
+- **Per-layer cropping** — use the crop button on a Canvas tile or source row to
+  open that layer alone in the private Workspace and draft its framed region.
+  The audience Stage does not change until you choose Apply Crop; Cancel
+  discards the draft. Each layer keeps its own applied crop in memory for the
+  current StagePane run, including while that layer waits for Select Again.
 - **Focused private Workspace tools** — Arrange composes the audience Stage,
-  Crop chooses the visible part of each source, and Draw adds session-only pen,
+  each layer owns its crop, and Draw adds session-only pen,
   highlighter, and erasable ink while automatically hiding the audience
-  pointer. Returning to Arrange or Crop restores the selected pointer style.
+  pointer. Returning to Arrange restores the selected pointer style.
   StagePane never forwards input to a source app and does not request
   Accessibility or Input Monitoring permission.
 - **One-shot audience screenshots** — explicitly copy a clean Stage image or
@@ -109,18 +112,18 @@ Store Connect. See the [release instructions](docs/RELEASE.md).
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
    session; repeat for two sources in Free or up to four with StagePane Pro.
-3. In **Workspace → Canvas**, use **Arrange** to move and resize tiles. Use
-   **Crop** to draft a framed source region with the frame or its four corner
-   handles, then choose **Apply Crop**. The Stage keeps the previously applied
-   region until then. Use **Quick Layout** for Grid, Side by Side, Stacked, or
-   Picture in Picture.
+3. In **Workspace → Canvas**, use **Arrange** to move and resize tiles. Choose
+   the crop button on the layer you want to edit, adjust its frame or four
+   corner handles, then choose **Apply Crop**. The Stage keeps that layer's
+   previously applied region until then. Use **Quick Layout** for Grid, Side by
+   Side, Stacked, or Picture in Picture.
 4. Switch to **Draw** when you want to place session-only ink over the Stage.
    Use **Workspace → Sources** to pause or resume, crop, replace, or remove one
    item.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
 6. Use `Shift-Command-H` whenever you need the Privacy Curtain.
-7. Select **Stop All** to end every ScreenCaptureKit stream and discard all
-   displayed frames.
+7. Select **Stop All** to end every ScreenCaptureKit stream and remove all
+   layers, including disconnected layers whose placement and crop were retained.
 
 Selecting an app can include all windows owned by that app. Select a single
 window instead when you need the narrowest sharing scope.
@@ -128,11 +131,13 @@ window instead when you need the narrowest sharing scope.
 Cropping changes only the local composition shown on the Stage and in an
 Audience PNG. Whenever a source stream is running, ScreenCaptureKit handles the
 complete window, app, or display approved in Apple's picker. Pause stops that
-stream until Resume; Remove or Stop All ends its capture session. The private
-Workspace deliberately shows the complete source while Crop is active;
-only the selected source is shown there, and draft changes do not reach the
-Stage until Apply Crop. Keep the Workspace private and use the Curtain before
-applying content that is not ready for the audience.
+stream and makes its layer transparent in the Stage, private Workspace, and
+Audience PNG output. Resume reveals it only after a new complete frame arrives;
+placement, crop, and z-order remain unchanged. Remove or Stop All ends its
+capture session. The private Workspace deliberately shows the complete source
+while Crop is active; only the selected source is shown there, and draft changes
+do not reach the Stage until Apply Crop. Keep the Workspace private and use the
+Curtain before applying content that is not ready for the audience.
 
 Under **Appearance → Pointer appearance**, choose the standard macOS pointer,
 an audience-friendly laser pointer, or no pointer. Its color, diameter, and glow
@@ -144,20 +149,22 @@ in the lower-right of the holding screen, shared content, and Curtain by default
 is mirrored in the private Workspace. StagePane Pro can disable it in
 Appearance, including for the Curtain and explicit Audience PNG output.
 
-Pausing a source stops its ScreenCaptureKit stream while retaining its last
-frame in the Stage and private Workspace. Resume restarts that source; Remove or
-Stop All discards the retained frame.
+Pausing a source stops its ScreenCaptureKit stream and makes that layer
+transparent in the Stage, private Workspace, and Audience PNG output. Resume
+restarts the source but keeps it transparent until a new complete frame arrives.
+Its placement, crop, and z-order are preserved. Remove discards the source's
+pixels and deletes that layer; Stop All does so for every layer.
 
 Toggling the Privacy Curtain updates the Stage without bringing its window to
 the front, so the Workspace or source app you are using keeps its place.
 
-Dragging in **Arrange** changes only Stage placement. **Crop** drafts one
-source's visible region privately, then changes the Stage composition only when
-you apply it. **Draw** adds bounded vector ink with a pen or translucent
+Dragging in **Arrange** changes only Stage placement. A layer's crop button
+drafts only that layer's visible region privately, then changes the Stage
+composition only when you apply it. **Draw** adds bounded vector ink with a pen or translucent
 highlighter, plus a size-adjustable partial eraser
 whose gestures can be undone exactly. The document stays in memory, is hidden
 by the Curtain, and is cleared by Stop All or removal of the final source. All
-three modes remain available in every build. None requires Accessibility or
+three tools remain available in every build. None requires Accessibility or
 Input Monitoring permission.
 
 For PowerPoint Presenter View on one monitor, start the slide show, choose

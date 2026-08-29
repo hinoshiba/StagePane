@@ -23,9 +23,9 @@ Selected frames are rendered locally in parallel in the clean Stage window and t
 
 選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカルで並列に表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
 
-Crop changes only the part included in the local Stage composition and Audience PNG. It does not narrow Apple's picker approval or the stream: whenever that stream runs, ScreenCaptureKit handles the complete selected source. Pause stops the stream; Remove or Stop All ends its capture session. The complete source appears in the private Workspace while its crop is edited. Crop rectangles are kept only for the active session.
+Crop changes only the part included in the local Stage composition and Audience PNG. It does not narrow Apple's picker approval or the stream: whenever that stream runs, ScreenCaptureKit handles the complete selected source. Pause stops the stream and makes that layer transparent in the Stage, private Workspace, and Audience PNG output. Resume reveals it only after a new complete frame arrives; placement, crop, and z-order remain unchanged. Remove or Stop All ends its capture session, discards its pixels, and deletes its retained layer state. The complete source appears in the private Workspace while its crop is edited. Crop rectangles remain only in app memory, including while a disconnected layer waits for Select Again, until you Remove that layer, choose Stop All, or quit StagePane.
 
-切り抜きで変わるのはローカルのStage合成とAudience PNGに含める範囲だけです。Appleのピッカー許可やストリームの範囲は狭まらず、ストリームの動作中、ScreenCaptureKitは選択したソース全体を扱います。一時停止はストリームを止め、解除またはすべて停止は取得セッションを終了します。切り抜き編集中はソース全体を手元用Workspaceに表示します。切り抜き枠は取得中のセッション内だけに保持します。
+切り抜きで変わるのはローカルのStage合成とAudience PNGに含める範囲だけです。Appleのピッカー許可やストリームの範囲は狭まらず、ストリームの動作中、ScreenCaptureKitは選択したソース全体を扱います。一時停止はストリームを止め、Stage、手元用Workspace、Audience PNGでそのレイヤーを透明にします。再開後は新しい完全なフレームが届いてから再表示し、配置・切り抜き・重なり順は保持します。解除またはすべて停止は取得セッションを終了し、映像と保持中のレイヤー状態を削除します。切り抜き編集中はソース全体を手元用Workspaceに表示します。切り抜き枠は、共有終了後に「選び直す」を待つレイヤーを含めてアプリ内メモリだけに保持し、そのレイヤーを解除するか、すべて停止するか、StagePaneを終了すると破棄します。
 
 ## One-shot Audience PNG / 1枚のAudience PNG
 

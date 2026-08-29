@@ -37,6 +37,7 @@ private extension WorkspaceSection {
 struct StageWorkspaceView: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     private let focusesAppearanceForSnapshot: Bool
     private let snapshotFixture: StageWorkspaceSnapshotFixture?
 
@@ -108,18 +109,34 @@ struct StageWorkspaceView: View {
         VStack(spacing: 0) {
             workspaceToolbar
             privateWorkspaceWarning
-
-            if let notice = controller.transientNotice {
-                WorkspaceNoticeBanner(message: notice) {
-                    controller.dismissTransientNotice()
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 7)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
             workspaceDetail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .top) {
+                    Group {
+                        if let notice = controller.transientNoticeState.notice {
+                            WorkspaceNoticeToast(message: notice.message) {
+                                controller.dismissTransientNotice(id: notice.id)
+                            }
+                            .id(notice.id)
+                            .padding(.horizontal, 12)
+                            .padding(.top, 12)
+                            .transition(transientNoticeTransition)
+                            .zIndex(20)
+                        }
+                    }
+                    .animation(
+                        accessibilityReduceMotion
+                            ? .linear(duration: 0.10)
+                            : .easeOut(duration: 0.20),
+                        value: controller.transientNoticeState.notice?.id
+                    )
+                }
         }
+    }
+
+    private var transientNoticeTransition: AnyTransition {
+        if accessibilityReduceMotion { return .opacity }
+        return .opacity.combined(with: .move(edge: .top))
     }
 
     @ViewBuilder
@@ -397,36 +414,40 @@ struct StageWorkspaceView: View {
             Spacer(minLength: 8)
 
             if controller.workspaceSection == .canvas {
-                Picker(
-                    L10n.text("ワークスペースのモード", "Workspace mode"),
-                    selection: interactionModeBinding
-                ) {
-                    ForEach(controller.availableStageInteractionModes, id: \.rawValue) { mode in
-                        Label(
-                            L10n.stageInteractionModeName(mode),
-                            systemImage: modeSymbol(mode)
-                        )
-                        .tag(mode)
+                if controller.stageInteractionMode == .crop {
+                    cropToolbarIdentity(compact: compact)
+                } else {
+                    Picker(
+                        L10n.text("ワークスペースのモード", "Workspace mode"),
+                        selection: interactionModeBinding
+                    ) {
+                        ForEach(globalInteractionModes, id: \.rawValue) { mode in
+                            Label(
+                                L10n.stageInteractionModeName(mode),
+                                systemImage: modeSymbol(mode)
+                            )
+                            .tag(mode)
+                        }
                     }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(
+                        minWidth: compact ? 190 : 220,
+                        idealWidth: compact ? 210 : 250,
+                        maxWidth: compact ? 230 : 280
+                    )
+                    .accessibilityLabel(L10n.text(
+                        "ワークスペースのモード",
+                        "Workspace mode"
+                    ))
+                    .accessibilityValue(L10n.stageInteractionModeName(
+                        controller.stageInteractionMode
+                    ))
+                    .accessibilityHint(L10n.text(
+                        "配置または手書きを選びます。\(L10n.perLayerCropEntryHint)",
+                        "Choose Arrange or Draw. \(L10n.perLayerCropEntryHint)"
+                    ))
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(
-                    minWidth: compact ? 260 : 300,
-                    idealWidth: compact ? 280 : 340,
-                    maxWidth: compact ? 300 : 380
-                )
-                .accessibilityLabel(L10n.text(
-                    "ワークスペースのモード",
-                    "Workspace mode"
-                ))
-                .accessibilityValue(L10n.stageInteractionModeName(
-                    controller.stageInteractionMode
-                ))
-                .accessibilityHint(L10n.stageInteractionModeDetail(
-                    controller.stageInteractionMode,
-                    annotationTool: controller.annotationTool
-                ))
 
                 Spacer(minLength: 8)
             }
@@ -621,14 +642,11 @@ struct StageWorkspaceView: View {
     private var canvasHeader: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.text("ステージキャンバス", "STAGE CANVAS"))
+                Text(canvasTitle)
                     .font(.caption2.weight(.bold))
                     .tracking(1.0)
                     .foregroundStyle(StagePanePalette.aqua)
-                Text(L10n.stageInteractionModeDetail(
-                    controller.stageInteractionMode,
-                    annotationTool: controller.annotationTool
-                ))
+                Text(canvasDetail)
                     .font(.caption)
                     .foregroundStyle(Color.white.opacity(0.62))
                     .lineLimit(1)
@@ -755,15 +773,21 @@ struct StageWorkspaceView: View {
                     Image(systemName: "viewfinder")
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 1) {
+                        Text(cropEditingLayerTitle)
+                            .lineLimit(1)
                         Text(L10n.cropDraftStatusTitle)
-                        Text(L10n.cropCaptureScopeCompact)
                             .font(.caption2.weight(.regular))
                             .foregroundStyle(Color.white.opacity(0.60))
                     }
                 }
                 .foregroundStyle(Color.white.opacity(0.82))
                 .accessibilityElement(children: .combine)
-                .help(L10n.cropCaptureScopeDetail)
+
+                Image(systemName: "info.circle")
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .help("\(L10n.cropCaptureScopeCompact) \(L10n.cropCaptureScopeDetail)")
+                    .accessibilityLabel(L10n.cropCaptureScopeCompact)
+                    .accessibilityHint(L10n.cropCaptureScopeDetail)
 
                 Button {
                     controller.resetCropDraft()
@@ -855,16 +879,52 @@ struct StageWorkspaceView: View {
     }
 
     private var modeIdentity: some View {
-        Label(
-            L10n.stageInteractionModeName(controller.stageInteractionMode),
+        let modeTitle = controller.stageInteractionMode == .crop
+            ? L10n.cropLayerModeTitle
+            : L10n.stageInteractionModeName(controller.stageInteractionMode)
+
+        return Label(
+            modeTitle,
             systemImage: modeSymbol(controller.stageInteractionMode)
         )
         .font(.caption.weight(.bold))
         .foregroundStyle(StagePanePalette.aqua)
         .accessibilityLabel(L10n.text(
-            "現在のモード、\(L10n.stageInteractionModeName(controller.stageInteractionMode))",
-            "Current mode, \(L10n.stageInteractionModeName(controller.stageInteractionMode))"
+            "現在のモード、\(modeTitle)",
+            "Current mode, \(modeTitle)"
         ))
+    }
+
+    private func cropToolbarIdentity(compact: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "crop")
+                .foregroundStyle(StagePanePalette.aqua)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L10n.cropLayerModeTitle)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Color.white.opacity(0.58))
+                Text(cropEditingSourceTitle)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, compact ? 9 : 11)
+        .frame(
+            minWidth: compact ? 170 : 210,
+            maxWidth: compact ? 210 : 260,
+            minHeight: 32,
+            alignment: .leading
+        )
+        .background(StagePanePalette.aqua.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(StagePanePalette.aqua.opacity(0.18))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(cropEditingLayerTitle)
+        .accessibilityHint(L10n.stageInteractionModeDetail(.crop))
     }
 
     private func screenshotMenu(compact: Bool) -> some View {
@@ -960,6 +1020,41 @@ struct StageWorkspaceView: View {
             get: { controller.stageInteractionMode },
             set: { controller.setStageInteractionMode($0) }
         )
+    }
+
+    private var globalInteractionModes: [StageInteractionMode] {
+        controller.availableStageInteractionModes.filter { $0 != .crop }
+    }
+
+    private var cropEditingSourceTitle: String {
+        guard let sourceID = controller.cropEditingSourceID,
+              let source = capture.source(for: sourceID) else {
+            return L10n.text("対象レイヤー", "Target Layer")
+        }
+        return source.title
+    }
+
+    private var cropEditingLayerTitle: String {
+        L10n.cropEditingLayerTitle(cropEditingSourceTitle)
+    }
+
+    private var canvasTitle: String {
+        if controller.stageInteractionMode == .crop {
+            return L10n.cropLayerModeTitle.uppercased()
+        }
+        return L10n.text("ステージキャンバス", "STAGE CANVAS")
+    }
+
+    private var canvasDetail: String {
+        if controller.stageInteractionMode == .crop {
+            return cropEditingLayerTitle
+        }
+        let detail = L10n.stageInteractionModeDetail(
+            controller.stageInteractionMode,
+            annotationTool: controller.annotationTool
+        )
+        guard controller.stageInteractionMode == .arrange else { return detail }
+        return "\(detail) \(L10n.perLayerCropEntryHint)"
     }
 
     private var curtainButtonTitle: String {
@@ -1389,28 +1484,35 @@ private struct WorkspaceToolbarButtonStyle: ButtonStyle {
     }
 }
 
-private struct WorkspaceNoticeBanner: View {
+private struct WorkspaceNoticeToast: View {
     let message: String
     let dismiss: () -> Void
 
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(StagePanePalette.aqua)
+                .padding(.top, 3)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.caption.weight(.medium))
                 .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: dismiss) {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.bold))
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L10n.text("通知を閉じる", "Dismiss notice"))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 13)
-        .frame(maxWidth: 720, minHeight: 40)
+        .padding(.leading, 13)
+        .padding(.trailing, 8)
+        .padding(.vertical, 8)
+        .frame(maxWidth: 560, minHeight: 44)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
@@ -1418,6 +1520,6 @@ private struct WorkspaceNoticeBanner: View {
         }
         .shadow(color: .black.opacity(0.35), radius: 15, y: 7)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(message)
+        .accessibilityIdentifier("workspace.transientNotice")
     }
 }

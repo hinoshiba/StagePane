@@ -6,6 +6,9 @@ struct StageCompositeEntry: Identifiable {
     let id: StageSourceID
     let frame: NormalizedStageRect
     let sourceCrop: NormalizedSourceRect
+    /// Keeps a transparent logical layer in z-order while its capture pixels
+    /// are paused or awaiting a fresh presentation frame.
+    let isVisible: Bool
     let renderer: SampleBufferRenderer
 }
 
@@ -71,6 +74,7 @@ final class StageCompositeNSView: NSView {
                 addSubview(sourceView)
             }
             sourceView.update(sourceCrop: entry.sourceCrop)
+            sourceView.isHidden = !entry.isVisible
             sourceFrames[entry.id] = entry.frame
 
             if let previousView {
@@ -112,6 +116,7 @@ final class CroppedSampleBufferNSView: NSView {
     private var presentationGeometryObserverID: UUID?
 
     override var isFlipped: Bool { true }
+    override var isOpaque: Bool { false }
 
     init(renderer: SampleBufferRenderer) {
         self.renderer = renderer
@@ -119,7 +124,7 @@ final class CroppedSampleBufferNSView: NSView {
         super.init(frame: .zero)
         wantsLayer = true
         layer = CALayer()
-        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.backgroundColor = NSColor.clear.cgColor
         layer?.masksToBounds = true
         addSubview(sourceView)
         presentationGeometryObserverID = renderer.addPresentationGeometryObserver {
@@ -208,6 +213,12 @@ final class CroppedSampleBufferNSView: NSView {
 
         sourceView.frame = frame
         sourceView.setVisibleSurfaceCrop(surfaceCrop)
+        // A presentation acknowledgement may let the renderer enqueue its
+        // IOSurface immediately after this MainActor callback. Synchronize the
+        // media-layer bounds while the child is still hidden so a first frame
+        // or a surface-size transition cannot be revealed through a stale
+        // zero/previous display-layer frame.
+        sourceView.synchronizePresentationLayoutBeforeReveal()
         sourceView.isHidden = false
     }
 

@@ -23,7 +23,7 @@ StagePaneApplication
     └── AppController ─────────────── settings / actions / lifecycle
         ├── StageWorkspaceWindowController
         │   └── StageWorkspaceView    private unified working window
-        │       ├── StageLayoutEditor Arrange / Crop / Draw
+        │       ├── StageLayoutEditor Arrange / per-layer Crop / Draw
         │       ├── Sources           per-source lifecycle controls
         │       ├── Stage Settings / Appearance
         │       └── Permissions / Privacy / About
@@ -75,8 +75,9 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
    destination rectangle, an applied normalized source crop, and an ordered
    z-position. Arrange-mode drag and resize update destination placement.
-   `AppController` separately owns one Crop editing source ID and one draft.
-   Crop mode shows only that source, uncropped, in the private Workspace while
+   `AppController` separately owns one layer-scoped Crop editing source ID and
+   one draft. The Crop editor, entered only from that layer's action, shows only
+   that source uncropped in the private Workspace while
    the public Stage, laser overlay, and Audience PNG continue using the applied
    layout. Apply writes the draft to `StageLayout`; Cancel, a mode change, or
    source loss discards it. Neither the draft nor applied crop is persisted.
@@ -101,9 +102,11 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    and ownership does not fall through to a lower source. Draw mode removes the
    overlay, stops pointer-location sampling, and configures streams without a
    captured system cursor. Video frames remain on the zero-copy display path.
-8. Per-source **Pause** stops that source's `SCStream` while leaving its last
-   frame in both renderers and its tile in `StageLayout`. **Resume** restarts
-   the same stream. Pause is therefore a frozen-frame state, not teardown.
+8. Per-source **Pause** stops that source's `SCStream`, clears its presented
+   pixels from both renderers, and keeps its tile, crop, and z-order in
+   `StageLayout`. The layer is transparent in the Stage, private Workspace, and
+   Audience PNG output. **Resume** restarts the same stream, but visibility
+   reopens only after a new complete frame for that presentation generation.
 9. A screenshot is created only after a person explicitly chooses **Copy
     Audience Image** or **Save Audience Image…** in the private Workspace.
     `StageWindowSnapshotter`
@@ -163,8 +166,9 @@ Accessibility nor Input Monitoring permission.
   Workspace must remain private.
 - Closing Workspace ends an in-progress ink stroke, but does not close Stage,
   clear completed ink, or stop capture.
-  Closing the public Stage retains the stricter behavior: it covers output and
-  stops active capture.
+  Closing the public Stage covers audience output but retains source layers,
+  capture bindings, layout, and crop in the private Workspace. **Stop All** is
+  the explicit action that ends every binding and clears every session layer.
 - Aspect presets use `contentAspectRatio`; changing shape does not recreate the
   window or change its `CGWindowID`.
 - Always-on-top and all-Spaces behaviors are opt-in. Defaults match a normal
@@ -187,10 +191,12 @@ the last valid image visible until a frame from the new surface arrives. Removal
 sets a durable output-suppressed state before asking ScreenCaptureKit to stop,
 so no late completion can reveal a source after a failed stop.
 
-Pause and resume use explicit transition states. A successful pause stops the
-`SCStream` without flushing either renderer; resume starts that same stream and
-new frames replace the held image normally. Removal and Stop All still suppress
-output and flush the retained image whether a source is running or paused.
+Pause and resume use explicit transition states. A Pause request advances the
+presentation generation, immediately suppresses output, and flushes both
+renderers while retaining layout, crop, and z-order. Resume starts the same
+stream but remains transparent until stream startup and a new complete frame for
+the current generation have both succeeded; either arrival order is safe.
+Removal and Stop All additionally delete the retained logical layer state.
 
 Pointer geometry is scoped to the same stream generation and cleared on stop,
 blank/suspended frames, or flush. Source replacement updates that geometry only
@@ -206,8 +212,9 @@ eligibility while preserving the same z-order.
 
 Each renderer also retains a lock-protected reference to its latest complete
 frame solely so an explicit screenshot can rasterize the already-authorized
-pixels. The reference is replaced as playback advances, survives Pause with the
-same held frame, and is cleared by deactivate/flush. Screenshot layer
+pixels. The reference is replaced as playback advances and cleared at Pause,
+deactivate, or flush. A paused layer is omitted from Audience PNG output until
+Resume accepts a new complete frame. Screenshot layer
 substitution and restoration run synchronously on the main actor; the generated
 PNG is independent before source removal or Stop All can drain the live layers.
 
