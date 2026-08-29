@@ -12,13 +12,13 @@
 - **Promotional Text (EN):** A clean stage for everything you share. Free
   includes two sources; StagePane Pro expands to four and removes the mark.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で2ソース、StagePane Proなら最大4ソースとロゴ非表示。
-- **What's New 0.3.0 (EN):** Crop each source in a private draft before applying
+- **What's New 0.3.1 (EN):** Crop each source in a private draft before applying
   it to the shared Stage. Crop supports drag, corner handles, keyboard, and
   VoiceOver. Source layers now retain placement, crop, and order if sharing
   ends. Paused sources now stay hidden until a fresh frame arrives on resume,
   the Stage can close without clearing your Workspace, and notices no longer
   resize the preview.
-- **What's New 0.3.0 (JA):** ソースごとの切り抜きを追加しました。手元の下書きでドラッグ、四隅のハンドル、キーボード、VoiceOverを使って調整し、「適用」するまで共有Stageには反映されません。共有終了時もレイヤーの配置・切り抜き・重なり順を保持します。一時停止したソースは、再開後に新しいフレームが届くまで非表示になります。Stageを閉じてもWorkspaceの状態を維持し、通知によるプレビューのサイズ変化も解消しました。
+- **What's New 0.3.1 (JA):** ソースごとの切り抜きを追加しました。手元の下書きでドラッグ、四隅のハンドル、キーボード、VoiceOverを使って調整し、「適用」するまで共有Stageには反映されません。共有終了時もレイヤーの配置・切り抜き・重なり順を保持します。一時停止したソースは、再開後に新しいフレームが届くまで非表示になります。Stageを閉じてもWorkspaceの状態を維持し、通知によるプレビューのサイズ変化も解消しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
@@ -127,7 +127,7 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.3.0 App Review notes
+## 0.3.1 App Review notes
 
 Use this concise block in App Store Connect:
 

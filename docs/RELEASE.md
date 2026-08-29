@@ -33,8 +33,8 @@ macOS > Build Uploads** and record the largest uploaded build number. Update
 `STAGEPANE_PREVIOUS_UPLOADED_BUILD` in `project.yml` to that value and set
 `CURRENT_PROJECT_VERSION` plus the development `Info.plist` build to a strictly
 larger canonical integer. macOS build numbers must increase across every
-marketing version. For StagePane 0.3.0, the verified uploaded floor is `3` and
-the candidate build is `4`.
+marketing version. For StagePane 0.3.1, the verified uploaded floor is `3` and
+the candidate build is `5`.
 
 The exact candidate commit must:
 
@@ -222,8 +222,8 @@ must be exactly `v<major>.<minor>.<patch>` and its version must equal
 `MARKETING_VERSION`:
 
 ```bash
-git tag -s v0.3.0 -m "StagePane 0.3.0"
-git push origin v0.3.0
+git tag -s v0.3.1 -m "StagePane 0.3.1"
+git push origin v0.3.1
 ```
 
 Confirm the signed local tag and its pushed dereference both resolve to the
