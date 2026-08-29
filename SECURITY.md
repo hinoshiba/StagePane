@@ -30,7 +30,7 @@ exposed. Remove unrelated private data.
 - Capture starts only from the macOS system picker after user action.
 - Audio and microphone capture remain disabled.
 - No network entitlement or third-party runtime dependency ships in 0.3.0.
-- App Sandbox, Hardened Runtime, Xcode Cloud/App Store signing, and release
+- App Sandbox, Hardened Runtime, automatic App Store signing, and release
   checks stay enabled. StagePane contains no cross-application input or
   Accessibility permission/action path.
 - Private APIs, raw mouse/keyboard event synthesis, unconsented or ambiguous

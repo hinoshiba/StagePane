@@ -21,17 +21,17 @@
       and localized-price tests pass
 - [ ] Family Sharing remains off unless its irreversible enablement and support
       policy have separate approval
-- [ ] Xcode Cloud repository access, automatic signing, roles, and recovery
-      process verified for Team `94HVVWXLK3`
-- [ ] Tagged Xcode Cloud archive is signed for TestFlight and App Store
+- [ ] Local Xcode account access, automatic signing, release-owner role, and
+      recovery process verified for Team `94HVVWXLK3`
+- [ ] Reviewed/tagged local Organizer archive is verified before upload
 - [ ] App Sandbox entitlement and privacy manifest match the binary
 - [ ] Mac App Store archive contains Arrange, Crop, and Draw but no cross-application
       input or Accessibility path, or Accessibility/Input Monitoring
       permission request
 - [ ] No private APIs, forbidden entitlements, updater, license key, or driver
 - [ ] Mac App Store archive has no absolute `LC_RPATH`, placeholder, or missing
-      legal/help/localization/icon resource; Xcode Cloud and App Store Connect
-      validation pass
+      legal/help/localization/icon resource; local archive verification and App
+      Store Connect validation pass
 - [ ] App Review notes and demo path independently reproduced
 
 ## Privacy and consumer terms

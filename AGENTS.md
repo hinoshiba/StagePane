@@ -25,15 +25,19 @@ These instructions apply to the entire repository.
 ## App Store distribution
 
 - The official Apple Developer Team ID is `94HVVWXLK3`.
-- Official binaries are built by the `App Store Release` Xcode Cloud workflow
-  from immutable `v<major>.<minor>.<patch>` tags. Do not add another local
-  release, signing, notarization, DMG, or upload path.
+- Official binaries are archived locally from a reviewed `main` commit carrying
+  an annotated signed `v<major>.<minor>.<patch>` tag that is never moved or
+  reused. Use only the checked-in
+  `Scripts/archive-app-store.sh` entrypoint; it archives the shared
+  `StagePane-AppStore` scheme and opens the verified archive in Xcode Organizer.
+- Do not add another signing, notarization, DMG, archive, export, or upload path.
 - Keep automatic signing enabled for the checked-in `StagePane-AppStore`
-  scheme. Xcode Cloud manages distribution signing for Team `94HVVWXLK3`; do
-  not add certificate fingerprints, profiles, or private signing material to
-  the repository.
+  scheme. Xcode manages distribution signing for Team `94HVVWXLK3`; do not add
+  certificate fingerprints, profiles, or private signing material to the
+  repository.
 - The tag version must equal `MARKETING_VERSION`. Build numbers are assigned by
-  Xcode Cloud and, because this is a macOS app, must remain monotonically
-  increasing across marketing versions.
-- Pushing a tag authorizes a cloud archive/upload, not App Review submission or
-  public release. Those remain explicit App Store Connect decisions.
+  the release owner in the checked-in project and, because this is a macOS app,
+  must remain monotonically increasing across marketing versions.
+- Creating the verified local archive does not authorize upload, App Review
+  submission, or public release. Those remain explicit Xcode Organizer and App
+  Store Connect decisions.

@@ -9,7 +9,7 @@ unset STAGEPANE_LOCAL_SIGNING_IDENTITY
 
 if [[ $# -ne 0 ]]; then
     print -u2 "Usage: ./build.sh"
-    print -u2 "Official releases are built from v<version> tags by Xcode Cloud."
+    print -u2 "Official App Store archives use ./Scripts/archive-app-store.sh."
     exit 64
 fi
 
