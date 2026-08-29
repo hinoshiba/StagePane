@@ -284,102 +284,152 @@ private struct StageSourceCropOverlay: View {
     @State private var resizeStart: NormalizedSourceRect?
 
     var body: some View {
-        GeometryReader { proxy in
-            if let fullSourceFrame = SourceCropProjection.sourceFrame(
-                sourceSize: source.contentSize,
-                sourceCrop: .fullSource,
-                destinationSize: proxy.size
-            ), let selectionFrame = SourceCropProjection.selectionFrame(
-                sourceSize: source.contentSize,
-                sourceCrop: sourceCrop,
-                destinationSize: proxy.size
-            ) {
-                ZStack(alignment: .topLeading) {
-                    cropShade(
-                        fullSourceFrame: fullSourceFrame,
-                        selectionFrame: selectionFrame
-                    )
-                    selectionSurface(
-                        selectionFrame: selectionFrame,
-                        fullSourceFrame: fullSourceFrame
-                    )
+        cropEditorWithSupplementalAccessibilityActions
+    }
 
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .stroke(StagePanePalette.aquaReadable, lineWidth: 2)
-                        .frame(
-                            width: selectionFrame.width,
-                            height: selectionFrame.height
-                        )
-                        .position(
-                            x: selectionFrame.midX,
-                            y: selectionFrame.midY
-                        )
-                        .allowsHitTesting(false)
+    private var cropEditorWithSupplementalAccessibilityActions: some View {
+        cropEditorWithMoveAccessibilityActions
+            .accessibilityAction(named: L10n.cropResetDraftTitle) {
+                controller.resetCropDraft()
+            }
+            .accessibilityAction(named: L10n.cropExpandAction) {
+                resizeAroundCenter(by: 0.05)
+            }
+            .accessibilityAction(named: L10n.cropTightenAction) {
+                resizeAroundCenter(by: -0.05)
+            }
+    }
 
-                    ForEach(SourceCropCorner.allCases, id: \.self) { corner in
-                        cropHandle(corner)
-                            .position(handlePosition(
-                                corner,
-                                selectionFrame: selectionFrame,
-                                tileSize: proxy.size
-                            ))
-                            .highPriorityGesture(resizeGesture(
-                                corner: corner,
-                                fullSourceFrame: fullSourceFrame
-                            ))
-                    }
+    private var cropEditorWithMoveAccessibilityActions: some View {
+        accessibleCropEditor
+            .accessibilityAction(named: L10n.cropMoveLeftAction) {
+                moveDraft(byX: -0.01, y: 0)
+            }
+            .accessibilityAction(named: L10n.cropMoveRightAction) {
+                moveDraft(byX: 0.01, y: 0)
+            }
+            .accessibilityAction(named: L10n.cropMoveUpAction) {
+                moveDraft(byX: 0, y: -0.01)
+            }
+            .accessibilityAction(named: L10n.cropMoveDownAction) {
+                moveDraft(byX: 0, y: 0.01)
+            }
+    }
 
-                    sourceBadge
-                        .frame(maxWidth: .infinity, alignment: .top)
+    private var accessibleCropEditor: some View {
+        interactiveCropEditor
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L10n.cropEditorAccessibilityLabel(source.title))
+            .accessibilityValue(cropAccessibilityValue)
+            .accessibilityHint(L10n.cropEditorAccessibilityHint)
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: resizeAroundCenter(by: 0.05)
+                case .decrement: resizeAroundCenter(by: -0.05)
+                @unknown default: break
                 }
             }
-        }
-        .contentShape(Rectangle())
-        .focusable()
-        .onMoveCommand(perform: handleKeyboardMove)
-        .onExitCommand(perform: controller.cancelCropEditing)
-        .contextMenu {
-            Button {
-                controller.resetCropDraft()
-            } label: {
-                Label(
-                    L10n.cropResetDraftTitle,
-                    systemImage: "arrow.counterclockwise"
-                )
+    }
+
+    private var interactiveCropEditor: some View {
+        cropGeometry
+            .contentShape(Rectangle())
+            .focusable()
+            .onMoveCommand(perform: handleKeyboardMove)
+            .onExitCommand(perform: controller.cancelCropEditing)
+            .contextMenu {
+                Button {
+                    controller.resetCropDraft()
+                } label: {
+                    Label(
+                        L10n.cropResetDraftTitle,
+                        systemImage: "arrow.counterclockwise"
+                    )
+                }
+                .disabled(sourceCrop == .fullSource)
             }
-            .disabled(sourceCrop == .fullSource)
+    }
+
+    private var cropGeometry: some View {
+        GeometryReader { proxy in
+            cropGeometryContent(tileSize: proxy.size)
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L10n.cropEditorAccessibilityLabel(source.title))
-        .accessibilityValue(cropAccessibilityValue)
-        .accessibilityHint(L10n.cropEditorAccessibilityHint)
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: resizeAroundCenter(by: 0.05)
-            case .decrement: resizeAroundCenter(by: -0.05)
-            @unknown default: break
-            }
+    }
+
+    @ViewBuilder
+    private func cropGeometryContent(tileSize: CGSize) -> some View {
+        if let fullSourceFrame = SourceCropProjection.sourceFrame(
+            sourceSize: source.contentSize,
+            sourceCrop: .fullSource,
+            destinationSize: tileSize
+        ), let selectionFrame = SourceCropProjection.selectionFrame(
+            sourceSize: source.contentSize,
+            sourceCrop: sourceCrop,
+            destinationSize: tileSize
+        ) {
+            cropGeometryContent(
+                fullSourceFrame: fullSourceFrame,
+                selectionFrame: selectionFrame,
+                tileSize: tileSize
+            )
         }
-        .accessibilityAction(named: L10n.cropMoveLeftAction) {
-            moveDraft(byX: -0.01, y: 0)
+    }
+
+    private func cropGeometryContent(
+        fullSourceFrame: CGRect,
+        selectionFrame: CGRect,
+        tileSize: CGSize
+    ) -> some View {
+        ZStack(alignment: .topLeading) {
+            cropShade(
+                fullSourceFrame: fullSourceFrame,
+                selectionFrame: selectionFrame
+            )
+            selectionSurface(
+                selectionFrame: selectionFrame,
+                fullSourceFrame: fullSourceFrame
+            )
+            selectionOutline(selectionFrame: selectionFrame)
+            cropHandles(
+                selectionFrame: selectionFrame,
+                fullSourceFrame: fullSourceFrame,
+                tileSize: tileSize
+            )
+            sourceBadge
+                .frame(maxWidth: .infinity, alignment: .top)
         }
-        .accessibilityAction(named: L10n.cropMoveRightAction) {
-            moveDraft(byX: 0.01, y: 0)
-        }
-        .accessibilityAction(named: L10n.cropMoveUpAction) {
-            moveDraft(byX: 0, y: -0.01)
-        }
-        .accessibilityAction(named: L10n.cropMoveDownAction) {
-            moveDraft(byX: 0, y: 0.01)
-        }
-        .accessibilityAction(named: L10n.cropResetDraftTitle) {
-            controller.resetCropDraft()
-        }
-        .accessibilityAction(named: L10n.cropExpandAction) {
-            resizeAroundCenter(by: 0.05)
-        }
-        .accessibilityAction(named: L10n.cropTightenAction) {
-            resizeAroundCenter(by: -0.05)
+    }
+
+    private func selectionOutline(selectionFrame: CGRect) -> some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .stroke(StagePanePalette.aquaReadable, lineWidth: 2)
+            .frame(
+                width: selectionFrame.width,
+                height: selectionFrame.height
+            )
+            .position(
+                x: selectionFrame.midX,
+                y: selectionFrame.midY
+            )
+            .allowsHitTesting(false)
+    }
+
+    private func cropHandles(
+        selectionFrame: CGRect,
+        fullSourceFrame: CGRect,
+        tileSize: CGSize
+    ) -> some View {
+        ForEach(SourceCropCorner.allCases, id: \.self) { corner in
+            cropHandle(corner)
+                .position(handlePosition(
+                    corner,
+                    selectionFrame: selectionFrame,
+                    tileSize: tileSize
+                ))
+                .highPriorityGesture(resizeGesture(
+                    corner: corner,
+                    fullSourceFrame: fullSourceFrame
+                ))
         }
     }
 
