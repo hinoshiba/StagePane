@@ -1,7 +1,7 @@
 # License and distribution audit
 
-Audit date: 2026-08-26<br>
-Scope: StagePane 0.2.0 source tree and macOS application bundle
+Audit date: 2026-08-29<br>
+Scope: StagePane 0.3.0 source tree and macOS application bundle
 
 This is an engineering compliance record, not a formal legal opinion.
 
@@ -13,7 +13,7 @@ preserved and every pre-release legal, trademark, Apple, consumer-law, and
 signing gate below is completed. No current default `dist/StagePane.app`
 development artifact is approved for public distribution.
 
-There is no third-party runtime dependency in 0.2.0. The application dynamically
+There is no third-party runtime dependency in 0.3.0. The application dynamically
 links Apple frameworks already present on macOS and bundles only original
 StagePane code/artwork plus project legal/help documents. This substantially
 reduces license, supply-chain, and privacy risk.
