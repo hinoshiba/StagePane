@@ -14,7 +14,7 @@ fi
 /usr/bin/plutil -lint Info.plist Config/StagePane-AppStore-Info.plist \
     StagePane.entitlements Resources/PrivacyInfo.xcprivacy
 /bin/zsh -n build.sh Scripts/*.sh
-/bin/sh -n ci_scripts/*.sh
+/bin/sh -n Scripts/app-store-archive-guard.sh
 ENTITLEMENT_KEY_COUNT=$(/usr/bin/plutil -p StagePane.entitlements | /usr/bin/grep -c ' => ')
 if [[ "$ENTITLEMENT_KEY_COUNT" -ne 2 ]] || \
    [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' StagePane.entitlements)" != true ]] || \
@@ -42,18 +42,27 @@ fi
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
 BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)
 PROJECT_VERSION=$(awk '$1 == "MARKETING_VERSION:" { gsub(/"/, "", $2); print $2; exit }' project.yml)
-if [[ ${#VERSION} -gt 32 || ! "$VERSION" =~ '^[0-9]+([.][0-9]+){0,2}$' ]]; then
+PROJECT_BUILD_NUMBER=$(awk '$1 == "CURRENT_PROJECT_VERSION:" { gsub(/"/, "", $2); print $2; exit }' project.yml)
+PREVIOUS_UPLOADED_BUILD=$(awk '$1 == "STAGEPANE_PREVIOUS_UPLOADED_BUILD:" { gsub(/"/, "", $2); print $2; exit }' project.yml)
+if [[ ${#VERSION} -gt 32 || ! "$VERSION" =~ '^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$' ]]; then
     print -u2 "Refusing invalid CFBundleShortVersionString: $VERSION"
     exit 70
 fi
-if [[ ${#BUILD_NUMBER} -gt 32 || \
-      ! "$BUILD_NUMBER" =~ '^[0-9]+([.][0-9]+){0,2}$' ]]; then
+if [[ ${#BUILD_NUMBER} -gt 18 || ! "$BUILD_NUMBER" =~ '^[1-9][0-9]*$' ]]; then
     print -u2 "Refusing invalid CFBundleVersion: $BUILD_NUMBER"
     exit 70
 fi
 if [[ "$PROJECT_VERSION" != "$VERSION" ]] || \
-   ! grep -F -q "MARKETING_VERSION = $VERSION;" StagePane.xcodeproj/project.pbxproj; then
+   [[ "$(sed -n 's/^[[:space:]]*MARKETING_VERSION = \([^;]*\);/\1/p' StagePane.xcodeproj/project.pbxproj | sort -u)" != "$VERSION" ]]; then
     print -u2 "Info.plist, project.yml, and the checked-in Xcode project must use version $VERSION"
+    exit 70
+fi
+if [[ "$PROJECT_BUILD_NUMBER" != "$BUILD_NUMBER" ]] || \
+   [[ ${#PREVIOUS_UPLOADED_BUILD} -gt 18 || ! "$PREVIOUS_UPLOADED_BUILD" =~ '^[1-9][0-9]*$' ]] || \
+   (( BUILD_NUMBER <= PREVIOUS_UPLOADED_BUILD )) || \
+   [[ "$(sed -n 's/^[[:space:]]*CURRENT_PROJECT_VERSION = \([^;]*\);/\1/p' StagePane.xcodeproj/project.pbxproj | sort -u)" != "$BUILD_NUMBER" ]] || \
+   [[ "$(sed -n 's/^[[:space:]]*STAGEPANE_PREVIOUS_UPLOADED_BUILD = \([^;]*\);/\1/p' StagePane.xcodeproj/project.pbxproj | sort -u)" != "$PREVIOUS_UPLOADED_BUILD" ]]; then
+    print -u2 "Info.plist, project.yml, and the checked-in Xcode project must use a build greater than the recorded App Store floor"
     exit 70
 fi
 if ! grep -F -q 'DEVELOPMENT_TEAM = 94HVVWXLK3;' StagePane.xcodeproj/project.pbxproj || \
@@ -68,7 +77,11 @@ for required in LICENSE NOTICE THIRD_PARTY_NOTICES.md TRADEMARKS.md \
     docs/MONETIZATION.md docs/sbom.spdx.json Config/XcodeGen.lock \
     Config/StagePane.storekit SECURITY.md \
     project.yml StagePane.xcodeproj/project.pbxproj \
-    Config/StagePane-AppStore-Info.plist ci_scripts/ci_pre_xcodebuild.sh; do
+    Config/StagePane-AppStore-Info.plist \
+    Scripts/app-store-archive-guard.sh Scripts/archive-app-store.sh \
+    Scripts/test-app-store-archive-guard.sh Scripts/test-app-store-release-scripts.sh \
+    Scripts/verify-app-store-source.sh \
+    Scripts/verify-app-store-archive.sh; do
     if [[ ! -s "$required" ]]; then
         print -u2 "Missing required release document: $required"
         exit 70
@@ -98,10 +111,18 @@ if grep -n -E 'pre-release draft|Continue Setup|ad-hoc|local development build|r
     print -u2 "Mac App Store help/privacy resources contain development-only guidance"
     exit 70
 fi
-if [[ ! -x ci_scripts/ci_pre_xcodebuild.sh ]]; then
-    print -u2 "Xcode Cloud pre-build script must be executable"
-    exit 70
-fi
+for executable in Scripts/app-store-archive-guard.sh \
+    Scripts/archive-app-store.sh Scripts/test-app-store-archive-guard.sh \
+    Scripts/test-app-store-release-scripts.sh \
+    Scripts/verify-app-store-source.sh \
+    Scripts/verify-app-store-archive.sh; do
+    if [[ ! -x "$executable" ]]; then
+        print -u2 "App Store release helper must be executable: $executable"
+        exit 70
+    fi
+done
+Scripts/test-app-store-archive-guard.sh
+Scripts/test-app-store-release-scripts.sh
 
 if grep -R -n -E 'CGVirtualDisplay|com\.apple\.security\.screen-capture' Sources StagePane.entitlements; then
     print -u2 "Private display API or invalid screen-capture entitlement detected"

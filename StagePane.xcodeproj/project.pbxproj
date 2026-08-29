@@ -266,6 +266,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 36022CB3E7AB4FEFBB5D35FF /* Build configuration list for PBXNativeTarget "StagePaneAppStore" */;
 			buildPhases = (
+				30F42507A1C69419957B00F8 /* Enforce App Store archive entrypoint */,
 				C748F163D8FA6FED59A5E3F2 /* Sources */,
 				C3D8D29769D30E8A5E9CE8A8 /* Resources */,
 				03CCE79B9C511A42B5B80641 /* Frameworks */,
@@ -354,6 +355,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "set -euo pipefail\nBINARY_PATH=\"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\nABSOLUTE_RPATHS=\"$(/usr/bin/otool -l \"$BINARY_PATH\" | /usr/bin/awk '\n  $1 == \"cmd\" && $2 == \"LC_RPATH\" { getline; getline; if ($2 ~ /^\\//) print $2 }\n' | /usr/bin/sort -u)\"\nif [ -n \"$ABSOLUTE_RPATHS\" ]; then\n  printf '%s\\n' \"$ABSOLUTE_RPATHS\" | while IFS= read -r rpath; do\n    /usr/bin/install_name_tool -delete_rpath \"$rpath\" \"$BINARY_PATH\"\n  done\nfi\nif /usr/bin/otool -l \"$BINARY_PATH\" | /usr/bin/awk '\n  $1 == \"cmd\" && $2 == \"LC_RPATH\" { getline; getline; if ($2 ~ /^\\//) found = 1 }\n  END { exit(found ? 0 : 1) }\n'; then\n  echo \"error: absolute LC_RPATH remained after normalization\" >&2\n  exit 1\nfi\n";
+		};
+		30F42507A1C69419957B00F8 /* Enforce App Store archive entrypoint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Enforce App Store archive entrypoint";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${ACTION:-}\" = \"install\" ]; then\n  \"$SRCROOT/Scripts/app-store-archive-guard.sh\"\nfi\n";
 		};
 		48BA4FBF2D4D00D5F61AB21D /* Install legal and privacy resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -478,7 +498,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 94HVVWXLK3;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -504,6 +524,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 3;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -601,7 +622,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 94HVVWXLK3;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -621,6 +642,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 3;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

@@ -93,15 +93,17 @@ creates a normal shareable window, not an `NSScreen`.
 
 ## Shipping build route
 
-Push a reviewed `v<major>.<minor>.<patch>` tag and let the `App Store Release`
-Xcode Cloud workflow archive the checked-in `StagePane.xcodeproj` with the
-shared `StagePane-AppStore` scheme. The target is sandboxed, has no network
+Create and push an annotated signed `v<major>.<minor>.<patch>` tag on the exact
+reviewed `main` commit, then run `Scripts/archive-app-store.sh`. The helper
+archives the checked-in `StagePane.xcodeproj` with the shared
+`StagePane-AppStore` scheme, verifies the candidate, and opens it in Xcode
+Organizer without uploading it. The target is sandboxed, has no network
 entitlement, grants read/write access only to locations the user explicitly
 selects for Audience PNG export, and bundles the privacy manifest, English/Japanese usage strings,
 `AppIcon.icns`, help, privacy policy, license, notices, trademark policy, and
-brand-asset license. Xcode Cloud uses automatic signing for Team `94HVVWXLK3`
-and the canonical `com.hinoshiba.stagepane` bundle identifier. See
-`RELEASE.md` for workflow settings, tag/version gates, and handoff steps.
+brand-asset license. Xcode uses automatic signing for Team `94HVVWXLK3` and the
+canonical `com.hinoshiba.stagepane` bundle identifier. See `RELEASE.md` for
+tag/version/build gates, archive verification, and Organizer handoff steps.
 
 The submitted Mac App Store binary includes Arrange, Crop, and Draw and contains no
 cross-application input or Accessibility permission/action path. No

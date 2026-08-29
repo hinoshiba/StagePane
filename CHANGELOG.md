@@ -24,6 +24,10 @@ Versioning once 1.0.0 is released.
 - Pausing a source now clears its visible pixels from the Stage, Workspace, and
   Audience PNG while retaining the layer's placement, crop, and stacking order.
   Resume reveals the layer only after a new complete frame arrives.
+- Mac App Store candidates now use the checked-in local Organizer archive
+  helper from an annotated signed release tag. The helper pins the App Store
+  scheme, validates release provenance and signing settings, verifies the
+  archive, and leaves upload as a separate explicit action.
 
 ### Fixed
 

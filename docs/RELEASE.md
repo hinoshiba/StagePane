@@ -1,8 +1,13 @@
 # App Store release operations
 
 StagePane is distributed through the Mac App Store. Official binaries are
-built and uploaded by Xcode Cloud from immutable semantic-version tags; there
-is no local release signing, notarization, DMG, archive, or upload procedure.
+built locally from reviewed `main` commits carrying annotated signed
+semantic-version tags that are never moved or reused.
+`Scripts/archive-app-store.sh` is the only authorized
+Archive entrypoint. It pins the checked-in `StagePane-AppStore` scheme, uses
+automatic signing, verifies the archive, and opens it in Xcode Organizer.
+Upload, TestFlight distribution, App Review submission, and public release are
+separate explicit actions.
 
 `./build.sh` remains available only for local development. By default its
 `dist/StagePane.app` is ad-hoc signed. A developer may set
@@ -11,60 +16,51 @@ identity for development signing. The value stays outside the repository and
 the script neither discovers nor prints it. Both signing modes use the same App
 Sandbox entitlements and Arrange/Crop/Draw feature set as the Store target, retain
 Hardened Runtime, and must never be published. This opt-in has no effect on the
-separate Xcode Cloud Mac App Store archive path.
+separate Mac App Store archive path.
 
-## Xcode Cloud workflow
+## Local Organizer release authority
 
-Complete the app's initial Xcode Cloud setup from Xcode. Edit the suggested
-workflow to use a non-Archive **Build** action and run it once from `main`;
-the release guard intentionally rejects an Archive without a release tag.
-After that setup build, edit the workflow in Xcode or App Store Connect:
+The release owner must use a Mac signed into Xcode with access to Apple
+Developer Team `94HVVWXLK3`. Keep automatic signing enabled. Reuse the existing
+approved team distribution path; do not create, revoke, rotate, import, export,
+or force a signing identity or provisioning profile as a retry. Never add
+`-allowProvisioningUpdates`, `CODE_SIGN_IDENTITY`, a certificate fingerprint,
+profile content, private key, `.p12`, or App Store Connect credential to a
+command, tracked file, log, or release record.
 
-- **Name:** `App Store Release`
-- **General:** enable **Restrict Editing** and limit workflow administrators to
-  the designated release managers
-- **Product:** StagePane (`com.hinoshiba.stagepane`), Team `94HVVWXLK3`
-- **Repository:** `hinoshiba/StagePane`
-- **Start condition:** Tag Changes; include `v*`
-  and add no branch, pull-request, or schedule start condition; in this tag
-  condition's **Options**, set **Auto-cancel Builds** to **Off** so a later tag
-  cannot cancel an in-progress release archive
-- **Environment:** the latest released macOS and Xcode; enable **Clean**
-- **Action:** Archive, macOS, scheme `StagePane-AppStore`
-- **Deployment Preparation:** `TestFlight and App Store`
-- **Post-actions:** none by default. Add TestFlight distribution only after an
-  intended tester group exists and the release owner approves automatic
-  distribution to that exact group.
+Before each release, inspect **App Store Connect > StagePane > TestFlight >
+macOS > Build Uploads** and record the largest uploaded build number. Update
+`STAGEPANE_PREVIOUS_UPLOADED_BUILD` in `project.yml` to that value and set
+`CURRENT_PROJECT_VERSION` plus the development `Info.plist` build to a strictly
+larger canonical integer. macOS build numbers must increase across every
+marketing version. For StagePane 0.3.0, the verified uploaded floor is `3` and
+the candidate build is `4`.
 
-Keep automatic signing enabled. Xcode Cloud manages the distribution signing
-assets; do not store certificates, profiles, App Store Connect keys, or Apple
-Account credentials in this repository or in non-secret workflow variables.
+The exact candidate commit must:
 
-After the non-Archive setup build succeeds, remove the generated branch/PR
-start conditions from this release workflow and retain only the tag condition
-above.
+- be a clean local `main` checkout equal to the canonical public repository's
+  live `main`;
+- have passing GitHub CI and the completed manual acceptance record;
+- carry an annotated signed `v<major>.<minor>.<patch>` tag whose version equals
+  `MARKETING_VERSION` and whose remote dereference resolves to that commit; and
+- retain the checked-in Team, bundle ID, automatic signing, sandbox,
+  Hardened Runtime, Release configuration, and universal architectures.
 
-Xcode Cloud assigns the build number used by App Store Connect. Because this is
-a macOS app, the build number must increase across all marketing versions. For
-an existing app, open **App Store Connect > StagePane > Xcode Cloud > Settings
-> Build Number** and set **Next Build Number** to an integer greater than the
-largest build already uploaded for StagePane before the first tagged build.
-
-## Protect release authority
-
-Before enabling the release workflow, create an **Active** tag ruleset in
-GitHub **Settings > Rules > Rulesets** for the `v*` target pattern. Enable
-**Restrict creations**, **Restrict updates**, and **Restrict deletions**, and
-allow bypass only for the designated release manager. Create a release tag only
-on a reviewed `main` commit. Never move, replace, or reuse it. A permitted tag
-creation authorizes Xcode Cloud to build and upload a signed candidate.
+Never move, replace, or reuse a release tag. Record its tag object ID and commit
+SHA in the private release record. The App Store target build phase rejects
+normal raw Product > Archive, raw `xcodebuild archive`, and every Xcode Cloud
+Archive action. Only `Scripts/archive-app-store.sh` creates and consumes the
+one-time local authorization context after independently checking the release
+source. This keeps one auditable Archive path while still handing the verified
+result to Organizer.
 
 ## Prepare a release change
 
 Update and review these values in one pull request:
 
-- `Info.plist`: `CFBundleShortVersionString`
-- `project.yml`: `MARKETING_VERSION`
+- `Info.plist`: `CFBundleShortVersionString` and `CFBundleVersion`
+- `project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, and
+  `STAGEPANE_PREVIOUS_UPLOADED_BUILD`
 - the checked-in Xcode project regenerated with XcodeGen 2.45.4
 - `CHANGELOG.md`, App Store metadata, privacy answers, and review notes when
   behavior or claims changed
@@ -219,7 +215,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 Record the exact commit, hardware, OS/app versions, results, and approved
 exceptions in the release record.
 
-## Start the cloud build
+## Create the release tag
 
 Only tag the reviewed commit after GitHub CI and manual acceptance pass. The tag
 must be exactly `v<major>.<minor>.<patch>` and its version must equal
@@ -230,19 +226,46 @@ git tag -s v0.3.0 -m "StagePane 0.3.0"
 git push origin v0.3.0
 ```
 
-`ci_scripts/ci_pre_xcodebuild.sh` rejects an Archive without Xcode Cloud, a
-release tag, or a positive Cloud build number, as well as malformed tags,
-tag/version mismatches,
-or a cloud action configured with the wrong platform, scheme, bundle ID, or
-team. It applies the Cloud build number to the temporary Xcode project. A
-passing tag build archives the Release configuration and makes the
-build available in App Store Connect for TestFlight/App Store use.
+Confirm the signed local tag and its pushed dereference both resolve to the
+reviewed `main` commit. Do not create the tag from a release branch and do not
+retag after an Archive or upload.
+
+## Create and verify the local archive
+
+Run the only authorized entrypoint from the clean tagged `main` checkout:
+
+```bash
+./Scripts/archive-app-store.sh
+```
+
+The helper runs the complete source checks, creates a new temporary directory
+outside the checkout, and invokes Xcode with fixed project, scheme,
+configuration, platform, and archive path arguments. It deliberately omits
+upload/export options, `-allowProvisioningUpdates`, and signing-identity
+overrides. The target Archive guard independently verifies the canonical
+repository's live `main` commit, the exact signed remote tag object,
+version/build floor, Team, bundle ID, automatic signing, sandbox, Hardened
+Runtime, and universal settings. The helper repeats source, branch, remote, and
+tag verification after the build to catch changes before Organizer opens.
+
+After Xcode succeeds, `verify-app-store-archive.sh` checks Apple-anchored
+code-signature validity and cryptographic Team identity, archive metadata,
+bundle ID, version/build, both architectures, the exact entitlement set,
+byte-identical reviewed resources, privacy manifest, unexpected executables,
+and absolute `LC_RPATH` entries. Only then does the helper open the `.xcarchive`
+in Xcode Organizer. An Archive can be development-signed; Organizer may select
+the final Mac App Distribution application and installer signing path during
+distribution. Verify the final signer against the maintainer's private approved
+inventory in Organizer's Distribution Summary without copying signer details
+into the repository or public logs. Stop before upload if that identity cannot
+be verified.
 
 ## Verify and submit
 
-In the completed Xcode Cloud build and App Store Connect, verify:
+In Xcode Organizer and App Store Connect, verify:
 
-- source tag and commit, Xcode/macOS versions, version/build, and archive logs;
+- source tag and commit, Xcode/macOS versions, version/build, local archive
+  verification, and Organizer Distribution Summary;
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
@@ -257,10 +280,12 @@ In the completed Xcode Cloud build and App Store Connect, verify:
 - metadata, screenshots, privacy answers, export compliance, review notes,
   pricing, territories, and release mode against the exact build.
 
-Xcode Cloud artifacts are retained for a limited period, so preserve the
-release archive and logs in the private release record.
+Preserve the local archive, validation result, upload result, and final
+Distribution Summary reference in the private release record. Do not commit the
+archive, package, profiles, certificates, signing inventory, or credentials.
 
-Tagging authorizes the Xcode Cloud build and upload only. Selecting a build for
-an App Store version, distributing to testers, adding it for review, submitting
-for review, and releasing it are separate App Store Connect actions. Do not
-perform any of them without the release owner's explicit approval.
+Creating an Archive does not authorize Organizer validation/distribution or
+upload. Uploading does not authorize selecting the build for an App Store
+version, distributing to testers, adding it for review, submitting for review,
+or releasing it. Treat every action as a separate handoff and do not perform it
+without the release owner's explicit approval.

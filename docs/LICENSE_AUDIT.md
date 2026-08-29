@@ -88,12 +88,13 @@ request Accessibility or Input Monitoring permission. Apple requires App
 Sandbox for Mac App Store apps; StagePane's Arrange, Crop, Draw, source composition,
 and screenshot workflow remain within that boundary.
 
-- **Mac App Store:** an immutable semantic-version tag starts Xcode Cloud, which
-  archives the checked-in `StagePaneAppStore` target with automatic signing and
-  App Sandbox for TestFlight and App Store use. CI and release review check the
-  absence of cross-application input and Accessibility permission paths as well
-  as entitlements, universal slices, resources, placeholders, and absolute
-  `LC_RPATH` entries.
+- **Mac App Store:** an annotated signed semantic-version tag identifies the
+  exact reviewed `main` commit. The checked-in local archive helper builds the
+  `StagePaneAppStore` target with automatic signing and App Sandbox, verifies
+  the candidate, and opens it in Xcode Organizer for an explicit upload. CI and
+  release review check the absence of cross-application input and Accessibility
+  permission paths as well as entitlements, universal slices, resources,
+  placeholders, and absolute `LC_RPATH` entries.
   Do not add Sparkle, an external license-key system, or an independent updater.
   Apple approval is never guaranteed.
 - **Marketing:** describe the product as a “screen share stage” or
@@ -119,7 +120,8 @@ and screenshot workflow remain within that boundary.
    accessibility claims with professional review.
 7. Run the signed compatibility matrix and App Review notes in `APP_STORE.md`.
 8. Generate the final SBOM, verify bundle notices, sign an annotated tag, and
-   preserve the Xcode Cloud release provenance.
+   preserve the local archive, verification log, and Organizer release
+   provenance.
 
 ## Contribution policy
 

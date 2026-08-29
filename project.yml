@@ -15,11 +15,12 @@ settings:
   base:
     ARCHS: "arm64 x86_64"
     CLANG_ENABLE_MODULES: YES
-    CURRENT_PROJECT_VERSION: 2
+    CURRENT_PROJECT_VERSION: 4
     DEVELOPMENT_TEAM: "94HVVWXLK3"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     MARKETING_VERSION: 0.3.0
     ONLY_ACTIVE_ARCH: NO
+    STAGEPANE_PREVIOUS_UPLOADED_BUILD: 3
     SWIFT_VERSION: "5.0"
 
 targets:
@@ -82,6 +83,13 @@ targets:
           SWIFT_COMPILATION_MODE: wholemodule
           SWIFT_OPTIMIZATION_LEVEL: -O
           VALIDATE_PRODUCT: YES
+    preBuildScripts:
+      - name: Enforce App Store archive entrypoint
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "${ACTION:-}" = "install" ]; then
+            "$SRCROOT/Scripts/app-store-archive-guard.sh"
+          fi
     postBuildScripts:
       - name: Install legal and privacy resources
         basedOnDependencyAnalysis: true

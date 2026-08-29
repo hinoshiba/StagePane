@@ -123,11 +123,34 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Reject raw Mac App Store Archive
+        run: |
+          set -euo pipefail
+          ARCHIVE_DIR="$(mktemp -d "$RUNNER_TEMP/stagepane-raw-archive.XXXXXX")"
+          LOG="$ARCHIVE_DIR/xcodebuild.log"
+          if STAGEPANE_APP_STORE_ARCHIVE=YES xcodebuild -quiet \
+            -project StagePane.xcodeproj \
+            -scheme StagePane-AppStore \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$ARCHIVE_DIR/StagePane.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive >"$LOG" 2>&1; then
+            echo "Raw Mac App Store Archive unexpectedly succeeded" >&2
+            exit 1
+          fi
+          grep -Fq 'run Scripts/archive-app-store.sh instead of invoking Archive directly' "$LOG"
+
       - name: Verify Mac App Store build shape
         run: |
           APP="$RUNNER_TEMP/stagepane-mas-derived/Build/Products/Release/StagePane.app"
           BINARY="$APP/Contents/MacOS/StagePane"
+          SOURCE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)"
+          SOURCE_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")" = com.hinoshiba.stagepane
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" = "$SOURCE_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")" = "$SOURCE_BUILD"
           test -s "$APP/Contents/Resources/AppIcon.icns"
           test -s "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
           test -s "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
