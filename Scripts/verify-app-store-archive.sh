@@ -20,6 +20,12 @@ INFO_PATH="$APP_PATH/Contents/Info.plist"
 BINARY_PATH="$APP_PATH/Contents/MacOS/StagePane"
 [[ -d "$APP_PATH" && ! -L "$APP_PATH" && -f "$INFO_PATH" && -f "$BINARY_PATH" ]] || \
     fail "Archive does not contain the expected StagePane app"
+if /usr/bin/find "$APP_PATH" -type f ! -perm -0004 -print -quit | /usr/bin/grep -q .; then
+    fail "Archive contains a file that non-root users cannot read"
+fi
+if /usr/bin/find "$APP_PATH" -type d ! -perm -0001 -print -quit | /usr/bin/grep -q .; then
+    fail "Archive contains a directory that non-root users cannot traverse"
+fi
 
 ARCHIVE_INFO="$ARCHIVE_PATH/Info.plist"
 [[ -f "$ARCHIVE_INFO" ]] || fail "Archive metadata is missing"

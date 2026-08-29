@@ -15,6 +15,7 @@ fi
 
 umask 077
 ARCHIVE_DIR=$(/usr/bin/mktemp -d /tmp/StagePane-AppStore.XXXXXX)
+/bin/chmod 0700 "$ARCHIVE_DIR"
 ARCHIVE_PATH="$ARCHIVE_DIR/StagePane.xcarchive"
 XCODEBUILD_LOG="$ARCHIVE_DIR/xcodebuild.log"
 SOURCE_COMMIT=$(/usr/bin/git rev-parse HEAD)
@@ -25,8 +26,11 @@ AUTHORIZATION_TOKEN=$(/usr/bin/uuidgen)
 printf 'STAGEPANE_APP_STORE_ARCHIVE_V1\n%s\n%s\n%s\n%s\n' \
     "$AUTHORIZATION_TOKEN" "$SOURCE_COMMIT" "$SOURCE_VERSION" "$SOURCE_BUILD" >"$AUTHORIZATION_FILE"
 /bin/chmod 0600 "$AUTHORIZATION_FILE"
+: >"$XCODEBUILD_LOG"
+/bin/chmod 0600 "$XCODEBUILD_LOG"
 
-if ! STAGEPANE_APP_STORE_AUTHORIZATION_FILE="$AUTHORIZATION_FILE" \
+umask 022
+if STAGEPANE_APP_STORE_AUTHORIZATION_FILE="$AUTHORIZATION_FILE" \
         STAGEPANE_APP_STORE_AUTHORIZATION_TOKEN="$AUTHORIZATION_TOKEN" \
         /usr/bin/xcodebuild -quiet \
         -project StagePane.xcodeproj \
@@ -35,6 +39,13 @@ if ! STAGEPANE_APP_STORE_AUTHORIZATION_FILE="$AUTHORIZATION_FILE" \
         -destination 'generic/platform=macOS' \
         -archivePath "$ARCHIVE_PATH" \
         clean archive >"$XCODEBUILD_LOG" 2>&1; then
+    XCODEBUILD_STATUS=0
+else
+    XCODEBUILD_STATUS=$?
+fi
+umask 077
+
+if [[ "$XCODEBUILD_STATUS" -ne 0 ]]; then
     print -u2 "Archive failed. Keep signing details private and inspect: $XCODEBUILD_LOG"
     exit 1
 fi

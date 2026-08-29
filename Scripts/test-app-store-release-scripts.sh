@@ -18,6 +18,10 @@ for expected in \
     "-destination 'generic/platform=macOS'" \
     'Scripts/verify-app-store-source.sh' \
     'Scripts/verify-app-store-archive.sh' \
+    'umask 022' \
+    'umask 077' \
+    ': >"$XCODEBUILD_LOG"' \
+    '/bin/chmod 0600 "$XCODEBUILD_LOG"' \
     '/usr/bin/open -a Xcode'; do
     /usr/bin/grep -Fq -- "$expected" "$ARCHIVE_HELPER" || fail "archive helper lost a fixed release control"
 done
@@ -50,5 +54,37 @@ expect_verifier_rejection missing-argument
 expect_verifier_rejection relative-path relative/StagePane.xcarchive
 expect_verifier_rejection missing-app "$MISSING_ARCHIVE"
 expect_verifier_rejection symlink "$FIXTURE_ROOT/Symlink.xcarchive"
+
+PERMISSION_ARCHIVE="$FIXTURE_ROOT/Permissions.xcarchive"
+PERMISSION_APP="$PERMISSION_ARCHIVE/Products/Applications/StagePane.app"
+/bin/mkdir -p "$PERMISSION_APP/Contents/MacOS"
+: >"$PERMISSION_APP/Contents/Info.plist"
+: >"$PERMISSION_APP/Contents/MacOS/StagePane"
+/usr/bin/find "$PERMISSION_APP" -type d -exec /bin/chmod 0755 {} +
+/usr/bin/find "$PERMISSION_APP" -type f -exec /bin/chmod 0644 {} +
+
+POSITIVE_OUTPUT="$FIXTURE_ROOT/permissions-positive.log"
+if "$ARCHIVE_VERIFIER" "$PERMISSION_ARCHIVE" >"$POSITIVE_OUTPUT" 2>&1; then
+    fail "incomplete readable fixture unexpectedly passed archive verification"
+fi
+/usr/bin/grep -Fq 'Archive metadata is missing' "$POSITIVE_OUTPUT" || \
+    fail "archive verifier did not accept non-root-readable fixture permissions"
+
+/bin/chmod 0600 "$PERMISSION_APP/Contents/Info.plist"
+NEGATIVE_FILE_OUTPUT="$FIXTURE_ROOT/permissions-file-negative.log"
+if "$ARCHIVE_VERIFIER" "$PERMISSION_ARCHIVE" >"$NEGATIVE_FILE_OUTPUT" 2>&1; then
+    fail "archive verifier accepted a root-only-readable file"
+fi
+/usr/bin/grep -Fq 'file that non-root users cannot read' "$NEGATIVE_FILE_OUTPUT" || \
+    fail "archive verifier did not reject a root-only-readable file"
+
+/bin/chmod 0644 "$PERMISSION_APP/Contents/Info.plist"
+/bin/chmod 0700 "$PERMISSION_APP/Contents/MacOS"
+NEGATIVE_DIRECTORY_OUTPUT="$FIXTURE_ROOT/permissions-directory-negative.log"
+if "$ARCHIVE_VERIFIER" "$PERMISSION_ARCHIVE" >"$NEGATIVE_DIRECTORY_OUTPUT" 2>&1; then
+    fail "archive verifier accepted a root-only-traversable directory"
+fi
+/usr/bin/grep -Fq 'directory that non-root users cannot traverse' "$NEGATIVE_DIRECTORY_OUTPUT" || \
+    fail "archive verifier did not reject a root-only-traversable directory"
 
 print "App Store release script tests passed"

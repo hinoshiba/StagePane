@@ -5,6 +5,14 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-29
+
+### Fixed
+
+- Mac App Store archives now give non-root users read and traversal access to
+  every file and directory in the app bundle, allowing Apple's installer
+  package validation to verify the code signature when the app runs.
+
 ## [0.3.0] - 2026-08-29
 
 ### Added
