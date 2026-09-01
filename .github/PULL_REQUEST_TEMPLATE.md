@@ -20,7 +20,7 @@ Describe the user problem and why this scope is appropriate.
 ## Verification
 
 - [ ] `./Scripts/release-check.sh`
-- [ ] `swift build -Xswiftc -warnings-as-errors`
+- [ ] `swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors`
 - [ ] Synthetic screenshots attached for visual changes
 - [ ] Manual macOS/meeting-app matrix listed below where relevant
 

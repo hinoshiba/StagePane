@@ -24,6 +24,12 @@
 - [ ] Local Xcode account access, automatic signing, release-owner role, and
       recovery process verified for Team `94HVVWXLK3`
 - [ ] Reviewed/tagged local Organizer archive is verified before upload
+- [ ] After separate upload authorization, the release owner privately verifies
+      Organizer Distribution Summary and manually uploads the verified archive
+      from the same Mac; no alternate upload path is used
+- [ ] Exact uploaded version/build reaches an authoritative processing-complete
+      state, is selected and saved on the matching App Store version, and
+      remains selected after reload
 - [ ] App Sandbox entitlement and privacy manifest match the binary
 - [ ] Mac App Store archive contains Arrange, Crop, and Draw but no cross-application
       input or Accessibility path, or Accessibility/Input Monitoring
@@ -53,6 +59,10 @@
 - [ ] Screenshots/metadata show the exact Mac App Store app, describe only
       picker-scoped sharing access, and avoid “virtual display” claims
 - [ ] Website URLs, SBOM, App Store listing, and support channels verified
+- [ ] Draft Submission contains the exact platform version/build; Submit for
+      Review has recorded approval, and release-mode choice records either a
+      later manual-release approval or advance approval of automatic release
+      after review; authoritative App Store Connect status is verified
 - [ ] After the listing is publicly available, the website hero and closing
       primary CTA use the official Mac App Store campaign link and badge;
       GitHub remains the secondary source-code action, and structured data plus

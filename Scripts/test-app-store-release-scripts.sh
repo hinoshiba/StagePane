@@ -22,6 +22,9 @@ for expected in \
     'umask 077' \
     ': >"$XCODEBUILD_LOG"' \
     '/bin/chmod 0600 "$XCODEBUILD_LOG"' \
+    'Upload is not authorized by this helper' \
+    'When separately authorized, the release owner must verify Distribution Summary and upload manually' \
+    'Build selection and App Review submission remain separately authorized; public release requires release-mode-aware authorization' \
     '/usr/bin/open -a Xcode'; do
     /usr/bin/grep -Fq -- "$expected" "$ARCHIVE_HELPER" || fail "archive helper lost a fixed release control"
 done

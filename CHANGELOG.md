@@ -5,6 +5,12 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Changed
+
+- Documented the canonical signed release-PR, merge, tag, local Organizer
+  archive, release-owner upload, App Store Connect processing, build-selection,
+  review-submission, and public-release handoffs.
+
 ## [0.3.2] - 2026-09-01
 
 ### Changed

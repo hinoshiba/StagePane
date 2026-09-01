@@ -60,5 +60,7 @@ fi
 print "Source commit: $SOURCE_COMMIT"
 print "Verified archive: $ARCHIVE_PATH"
 print "Private Xcode log: $XCODEBUILD_LOG"
-print "Xcode Organizer is opening. Upload and App Review actions remain manual."
+print "Xcode Organizer is opening. Upload is not authorized by this helper."
+print "When separately authorized, the release owner must verify Distribution Summary and upload manually."
+print "Build selection and App Review submission remain separately authorized; public release requires release-mode-aware authorization."
 /usr/bin/open -a Xcode "$ARCHIVE_PATH"
