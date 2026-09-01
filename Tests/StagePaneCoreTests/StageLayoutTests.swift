@@ -142,6 +142,46 @@ final class StageLayoutTests: XCTestCase {
         )
     }
 
+    func testSuggestedFramesAboveFiveDoNotExactlyCoverAnExistingTile() {
+        var occupied = [NormalizedStageRect.fullCanvas]
+
+        for _ in 1 ..< 12 {
+            let suggested = StageLayout.suggestedFrameForNewSource(
+                occupiedFrames: occupied
+            )
+            XCTAssertFalse(occupied.contains(suggested))
+            occupied.append(suggested)
+        }
+    }
+
+    func testSuggestedFrameDoesNotReuseACornerAfterFullCanvasRemoval() {
+        let occupiedCorners = [
+            NormalizedStageRect(x: 0.52, y: 0.52, width: 0.46, height: 0.46),
+            NormalizedStageRect(x: 0.02, y: 0.52, width: 0.46, height: 0.46),
+            NormalizedStageRect(x: 0.52, y: 0.02, width: 0.46, height: 0.46),
+            NormalizedStageRect(x: 0.02, y: 0.02, width: 0.46, height: 0.46)
+        ]
+
+        let suggested = StageLayout.suggestedFrameForNewSource(
+            occupiedFrames: occupiedCorners
+        )
+        XCTAssertFalse(occupiedCorners.contains(suggested))
+        XCTAssertTrue(StageLayout.automaticFrames(count: 5).contains(suggested))
+    }
+
+    func testSuggestedFrameFillsMissingAutomaticGridCellWithoutMovingOthers() {
+        let sixCellGrid = StageLayout.automaticFrames(count: 6)
+        let missingFrame = sixCellGrid[2]
+        let occupied = sixCellGrid.enumerated().compactMap { index, frame in
+            index == 2 ? nil : frame
+        }
+
+        XCTAssertEqual(
+            StageLayout.suggestedFrameForNewSource(occupiedFrames: occupied),
+            missingFrame
+        )
+    }
+
     func testRemovePreservesRemainingFrame() {
         let retainedFrame = NormalizedStageRect(x: 0.4, y: 0.1, width: 0.5, height: 0.7)
         var layout = StageLayout(sources: [

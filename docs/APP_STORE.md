@@ -10,8 +10,9 @@
 - **Tagline (EN):** A clean stage for everything you share.
 - **Tagline (JA):** 見せたいものだけ、ひとつのステージへ。
 - **Promotional Text (EN):** A clean stage for everything you share. Free
-  includes two sources; StagePane Pro expands to four and removes the mark.
-- **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で2ソース、StagePane Proなら最大4ソースとロゴ非表示。
+  includes four sources; Pro removes the app's source-count limit and mark.
+  Source count depends on your Mac and OS.
+- **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
 - **What's New 0.3.1 (EN):** Crop each source in a private draft before applying
   it to the shared Stage. Crop supports drag, corner handles, keyboard, and
   VoiceOver. Source layers now retain placement, crop, and order if sharing
@@ -44,7 +45,7 @@ creates a normal shareable window, not an `NSScreen`.
 > ウインドウを選んで共有します。
 >
 > 無料版で使える機能：
-> ・同時に2つのソースを配置
+> ・同時に4つのソースを配置
 > ・自由配置とクイック配置
 > ・選択した1ソースを手元で下書きし、「適用」で反映する切り抜き
 > ・ペン、蛍光ペン、部分消しゴム
@@ -53,7 +54,7 @@ creates a normal shareable window, not an `NSScreen`.
 > ・Audience Stage画像のコピー／PNG保存（StagePaneロゴ入り）
 >
 > StagePane Pro（1回限りのアプリ内課金）：
-> ・同時ソースを最大4つへ拡張
+> ・アプリ側のソース件数制限を解除（利用可能数はMacの性能とOSの制約に依存）
 > ・Stage、Curtain、Audience画像のStagePaneロゴを非表示
 >
 > Proは買い切りで、サブスクリプションではありません。価格はApp Storeが
@@ -71,7 +72,7 @@ creates a normal shareable window, not an `NSScreen`.
 > then share the normal “StagePane Stage” window in your meeting app.
 >
 > Included free:
-> • Compose two simultaneous sources
+> • Compose four simultaneous sources
 > • Freeform and quick layouts
 > • Per-source Crop with a private one-source draft and explicit Apply or Cancel
 > • Pen, highlighter, and partial eraser
@@ -80,7 +81,8 @@ creates a normal shareable window, not an `NSScreen`.
 > • Copy or save an Audience Stage PNG with the StagePane mark
 >
 > StagePane Pro — one-time In-App Purchase:
-> • Expand to four simultaneous sources
+> • Remove StagePane's source-count limit (available total depends on Mac
+>   performance and operating-system constraints)
 > • Hide the StagePane mark from the Stage, Curtain, and Audience images
 >
 > Pro is a one-time purchase, not a subscription. The App Store shows the price
@@ -113,8 +115,8 @@ direct-distribution build currently ships.
 
 1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
    private Stage Workspace, making the share/private boundary unmistakable.
-2. **Proなら最大4つ。無料でも安全機能はすべて。** — Workspace → Sources,
-   the clear Pro label, and its removal caution.
+2. **無料で4つ。Proならアプリ側の件数制限なし。** — Workspace → Sources,
+   the clear Pro label, the Mac/OS resource qualification, and its removal caution.
 3. **配置・切り抜き・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
    Mac App Store build's Arrange and Draw modes, per-layer Crop actions, bounded in-memory ink, and
    explicit Copy/Save Audience Image actions.
@@ -136,8 +138,8 @@ Use this concise block in App Store Connect:
 > StagePane has two normal macOS windows: “StagePane Stage” is the
 > audience-facing window to share; “StagePane Workspace — Keep Private” is the
 > private editor. In Workspace, choose Add Source and approve a harmless
-> window, app, or display in Apple’s ScreenCaptureKit picker. Free supports two
-> simultaneous sources. With two sources active, choose Add Source again to
+> window, app, or display in Apple’s ScreenCaptureKit picker. Free supports four
+> simultaneous sources. With four sources active, choose Add Source again to
 > open StagePane Pro.
 >
 > StagePane Pro is a one-time non-consumable In-App Purchase
@@ -145,9 +147,11 @@ Use this concise block in App Store Connect:
 > sidebar, the app menu, and by trying to turn off the StagePane mark under
 > Appearance. The Pro screen shows StoreKit’s localized price, states that it
 > is not a subscription, and includes Restore Purchases and Continue Free. Pro
-> unlocks up to four sources and makes the StagePane mark optional on the
-> Stage, Privacy Curtain, and explicitly copied/saved Audience PNG. Canceling
-> does not change or stop the current Stage.
+> removes StagePane's source-count limit and makes the StagePane mark optional
+> on the Stage, Privacy Curtain, and explicitly copied/saved Audience PNG. The
+> number of sources that can run in practice depends on Mac performance and
+> operating-system constraints. Canceling does not change or stop the current
+> Stage.
 >
 > Arrange changes only StagePane’s local composition. Each tile and source row
 > has a Crop action that opens that exact source as a private draft. Drag or
@@ -180,8 +184,13 @@ Use this concise block in App Store Connect:
 > The app can be tested without permission by sharing its neutral Stage window.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
-> repeat for two sources in Free or up to four after the StagePane Pro
-> non-consumable purchase. Each source appears in the private source list,
+> repeat for up to four sources in Free. A StagePane Pro non-consumable purchase
+> removes StagePane's source-count limit, so source five and additional sources
+> can be added while Mac performance and operating-system constraints permit.
+> To verify entitlement loss, first keep more than four sources active with Pro,
+> then revoke or refund the test entitlement: the existing session remains
+> intact, the StagePane mark returns, and only new source additions are blocked.
+> Each source appears in the private source list,
 > where “Pause” stops only that stream and makes its layer transparent in the
 > Stage, private Workspace, and Audience PNG output while preserving placement,
 > crop, and z-order. “Resume” starts it again and reveals it only after a new
@@ -218,7 +227,7 @@ Use this concise block in App Store Connect:
 > Stage Workspace must remain private.
 >
 > StagePane Pro is reachable from the private Workspace sidebar, the app menu,
-> a third Add Source attempt in Free, or an attempt to turn off the StagePane
+> a fifth Add Source attempt in Free, or an attempt to turn off the StagePane
 > mark. It is a one-time non-consumable purchase. The screen shows StoreKit's
 > localized price, clearly says it is not a subscription, offers Continue Free
 > and Restore Purchases, and never appears in the audience Stage. Only a
@@ -246,7 +255,7 @@ Use this concise block in App Store Connect:
 > Accessibility/Input Monitoring permission request.
 
 Attach a short reviewer video showing both window titles and roles, adding
-two Free sources, the third-source Pro entry point, the normal Pro screen and
+four Free sources, the fifth-source Pro entry point, the normal Pro screen and
 Restore Purchases, per-source pause/resume, replace, removal confirmation, drag,
 resize, all four Quick Layout presets, the Arrange/Draw switch, each layer's
 Crop action and target label, crop draft, Reset to

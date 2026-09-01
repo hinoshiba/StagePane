@@ -1,21 +1,38 @@
 /// The product boundary between the useful free stage and StagePane Pro.
 ///
 /// Keep privacy, safety, and presentation controls outside this policy. Pro is
-/// deliberately limited to professional scale and branding so the free app
+/// deliberately focused on professional scale and branding so the free app
 /// remains useful before a person is asked to purchase anything.
 public enum StagePaneAccess {
-    public static let freeSourceLimit = 2
-    public static let proSourceLimit = 4
+    public static let freeSourceLimit = 4
 
-    public static func sourceLimit(hasProAccess: Bool) -> Int {
-        hasProAccess ? proSourceLimit : freeSourceLimit
+    /// The app-enforced simultaneous-source limit for the current plan.
+    ///
+    /// `nil` means StagePane does not impose a count limit. The number of
+    /// streams a Mac can sustain can still vary with macOS and hardware.
+    public static func sourceLimit(hasProAccess: Bool) -> Int? {
+        hasProAccess ? nil : freeSourceLimit
     }
 
     public static func canAddSource(
         currentCount: Int,
         hasProAccess: Bool
     ) -> Bool {
-        currentCount < sourceLimit(hasProAccess: hasProAccess)
+        canAddSource(
+            currentCount: currentCount,
+            sourceLimit: sourceLimit(hasProAccess: hasProAccess)
+        )
+    }
+
+    /// Applies an already-resolved plan limit at capture-system boundaries.
+    public static func canAddSource(
+        currentCount: Int,
+        sourceLimit: Int?
+    ) -> Bool {
+        guard let sourceLimit else {
+            return true
+        }
+        return currentCount < sourceLimit
     }
 
     public static func requiresProForNextSource(
@@ -23,8 +40,7 @@ public enum StagePaneAccess {
         hasProAccess: Bool
     ) -> Bool {
         !hasProAccess &&
-            currentCount >= freeSourceLimit &&
-            currentCount < proSourceLimit
+            currentCount >= freeSourceLimit
     }
 
     /// Resolves the visible mark independently from the stored preference.

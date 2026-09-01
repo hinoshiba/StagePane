@@ -5,8 +5,10 @@
 1. Keep **StagePane Workspace — Keep Private** on your Mac.<br>
    **StagePane Workspace — 共有しない編集画面** は手元に置きます。
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
-   display in the macOS system picker. Free supports two simultaneous sources;
-   the one-time StagePane Pro purchase supports up to four.
+   display in the macOS system picker. Free supports four simultaneous sources;
+   the one-time StagePane Pro purchase removes StagePane's source-count limit.
+   The number that can run in practice depends on Mac performance and
+   operating-system constraints.
 3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange,
    crop, or draw. Drag and resize sources there. Use **Pause / 一時停止**,
    **Resume / 再開**, **Replace / 選び直す**,
@@ -251,12 +253,15 @@ StagePane自身はフレームをローカル処理し、外部送信しませ�
 ## StagePane Pro / 購入と復元
 
 In the Mac App Store build, open **StagePane Pro** in Workspace to see the
-localized one-time price. Pro unlocks source three and four and makes the
-StagePane mark optional. **Restore Purchases / 購入を復元** is available on the
-same screen. A canceled purchase never changes or stops the current Stage.
+localized one-time price. Pro removes StagePane's source-count limit and makes
+the StagePane mark optional. The practical source total depends on Mac
+performance and operating-system constraints. **Restore Purchases / 購入を復元**
+is available on the same screen. A canceled purchase never changes or stops the
+current Stage.
 
 Mac App Store版ではWorkspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を
-確認できます。Proは3・4件目のソースとロゴ非表示を開放します。同じ画面から
+確認できます。無料版は同時に4件まで利用でき、Proではアプリ側のソース件数制限がなくなり、
+ロゴ非表示も開放します。実際に利用できる件数はMacの性能とOSの制約に依存します。同じ画面から
 **購入を復元** できます。購入をキャンセルしても、現在のStageを変更・停止しません。
 
 ## Support / サポート

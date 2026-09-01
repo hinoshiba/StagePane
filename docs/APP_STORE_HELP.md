@@ -8,13 +8,13 @@ This help describes StagePane's sandboxed Arrange/Crop/Draw workflow.
 ## Create and share a Stage / Stageを作って共有する
 
 1. In **StagePane Workspace — Keep Private**, choose **Add Source / ソースを追加**.
-2. In Apple's picker, choose one window, app, or display. Free supports two simultaneous sources; StagePane Pro supports up to four.
+2. In Apple's picker, choose one window, app, or display. Free supports four simultaneous sources. StagePane Pro removes StagePane's source-count limit; the number that can run in practice depends on Mac performance and operating-system constraints.
 3. Use **Arrange / 配置** to move and resize layers, the crop button on each layer to choose its framed Stage area, or **Draw / 手書き** to annotate the Stage.
 4. In your meeting app, share the exact window named **StagePane Stage — Share This Window / このウインドウを共有**.
 5. Check the target, then choose **Reveal Stage / カーテンを開く**.
 
 1. **StagePane Workspace — 共有しない編集画面** で **ソースを追加** を選びます。
-2. Appleのピッカーで、ウインドウ、アプリ、または画面を1件選びます。無料版は同時に2件、StagePane Proは最大4件まで追加できます。
+2. Appleのピッカーで、ウインドウ、アプリ、または画面を1件選びます。無料版は同時に4件まで追加できます。StagePane Proにはアプリ側の件数制限がなく、実際に利用できる件数はMacの性能とOSの制約に依存します。
 3. **配置** でレイヤーを移動・サイズ変更し、各レイヤーの切り抜きボタンでStageへ見せる枠内を選び、**手書き** でStageへ注釈を加えます。
 4. 会議アプリでは、正確に **StagePane Stage — このウインドウを共有** を選びます。
 5. 共有対象を確認してから **カーテンを開く** を選びます。
@@ -92,9 +92,9 @@ StagePaneには、アカウント、広告、解析、マイク・音声取得�
 
 ## StagePane Pro / 購入と復元
 
-Open **StagePane Pro** in Workspace to see the App Store's localized one-time price. Pro unlocks source three and four and makes the StagePane mark optional on the Stage, Curtain, and Audience PNG. Use **Restore Purchases** on the same screen for a previous purchase. Canceling never changes or stops the current Stage.
+Open **StagePane Pro** in Workspace to see the App Store's localized one-time price. Pro removes StagePane's source-count limit and makes the StagePane mark optional on the Stage, Curtain, and Audience PNG. The practical source total depends on Mac performance and operating-system constraints. Use **Restore Purchases** on the same screen for a previous purchase. Canceling never changes or stops the current Stage.
 
-Workspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を確認できます。Proは3・4件目のソースを開放し、Stage、カーテン、Audience PNGのロゴを任意にします。同じ画面の **購入を復元** から以前の購入を復元できます。キャンセルしても現在のStageを変更・停止しません。
+Workspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を確認できます。無料版は同時に4件まで利用でき、Proではアプリ側のソース件数制限がなくなり、Stage、カーテン、Audience PNGのロゴを任意にできます。実際に利用できる件数はMacの性能とOSの制約に依存します。同じ画面の **購入を復元** から以前の購入を復元できます。キャンセルしても現在のStageを変更・停止しません。
 
 ## If something is wrong / 問題がある場合
 

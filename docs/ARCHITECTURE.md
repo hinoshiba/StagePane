@@ -35,7 +35,7 @@ StagePaneApplication
         └── CaptureCoordinator
             ├── SCContentSharingPicker
             ├── StageLayout           normalized frame / z-order by SourceID
-            └── CaptureSession[0...4]
+            └── CaptureSession[0...]  one per selected source
                 ├── SCStream          one independently consented source
                 └── CaptureSourceRenderers
                     ├── Stage SampleBufferRenderer
@@ -57,8 +57,9 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    permission.
 3. The returned `SCContentFilter` represents one window, application, or
    display. StagePane creates one independent `SCStream` for it at up to 30 fps.
-   Repeating this flow adds two sources in Free or up to four with StagePane
-   Pro; multiple-selection picker modes
+   Repeating this flow adds up to four sources in Free. StagePane Pro removes
+   the app's source-count limit, although the practical total depends on Mac
+   performance and operating-system constraints. Multiple-selection picker modes
    are deliberately disabled so every source can be configured and removed
    independently. Audio and microphone capture are disabled.
 4. Each valid `CMSampleBuffer` is enqueued into two macOS 14
@@ -66,8 +67,8 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    and one in the private Stage Workspace editor. Both consume the same
    ScreenCaptureKit buffer; there is no pixel copy or encoded preview path.
    Each stream uses a source-aspect IOSurface capped to its tile's pixel budget,
-   so the display layer performs the only letterbox fit and four sources do not
-   each allocate a full-Stage surface. Complete-frame `contentRect`,
+   so the display layer performs the only letterbox fit and each source avoids
+   allocating a full-Stage surface. Complete-frame `contentRect`,
    `contentScale`, and display-scale metadata are debounced to follow live
    source-window aspect changes. A dimension-only reconfiguration keeps the
    last valid frame visible until its replacement arrives instead of flushing

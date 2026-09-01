@@ -1331,11 +1331,17 @@ struct SampleBufferBitmapSnapshotLayerState {
 
 final class SampleBufferNSView: NSView {
     private let renderer: SampleBufferRenderer
+    /// Clips every audience-facing representation owned by the backing layer:
+    /// live video, the local pointer, and the temporary bitmap used by PNG
+    /// export. The crop wrapper can be wider or taller than the aspect-fitted
+    /// crop, so clipping only at the wrapper bounds would reveal excluded
+    /// source pixels in that margin.
+    private let visibleSurfaceMaskLayer = CALayer()
     private let pointerDotLayer = CAShapeLayer()
     private var pointerTimer: Timer?
     /// Normalized in the full accepted IOSurface. The crop wrapper moves the
-    /// entire child view; this rectangle only rejects a dot whose center is not
-    /// in the audience-visible source region.
+    /// entire child view; this rectangle masks pixels outside the selected
+    /// region and rejects a dot whose center is not audience-visible.
     private var visibleSurfaceCrop: CGRect? = CGRect(x: 0, y: 0, width: 1, height: 1)
     /// The compositor grants pointer ownership to exactly one source view.
     /// This is independent of the renderer's cursor-safety state: inactive
@@ -1353,6 +1359,9 @@ final class SampleBufferNSView: NSView {
         layer?.backgroundColor = NSColor.clear.cgColor
         layer?.isOpaque = false
         layer?.masksToBounds = true
+        visibleSurfaceMaskLayer.backgroundColor = NSColor.black.cgColor
+        visibleSurfaceMaskLayer.isOpaque = true
+        layer?.mask = visibleSurfaceMaskLayer
         configurePointerDotLayer()
         layer?.addSublayer(pointerDotLayer)
     }
@@ -1364,6 +1373,7 @@ final class SampleBufferNSView: NSView {
 
     override func layout() {
         super.layout()
+        updateVisibleSurfaceMask()
         if renderer.displayLayer.superlayer === layer {
             renderer.displayLayer.frame = bounds
         }
@@ -1412,8 +1422,12 @@ final class SampleBufferNSView: NSView {
     }
 
     func setVisibleSurfaceCrop(_ crop: CGRect?) {
-        guard visibleSurfaceCrop != crop else { return }
+        guard visibleSurfaceCrop != crop else {
+            updateVisibleSurfaceMask()
+            return
+        }
         visibleSurfaceCrop = crop
+        updateVisibleSurfaceMask()
         if crop == nil {
             setPointerDotHidden(true)
         }
@@ -1428,10 +1442,36 @@ final class SampleBufferNSView: NSView {
     /// can run from its parent's existing `layout()` pass.
     func synchronizePresentationLayoutBeforeReveal() {
         needsLayout = true
+        updateVisibleSurfaceMask()
         guard renderer.displayLayer.superlayer === layer else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         renderer.displayLayer.frame = bounds
+        CATransaction.commit()
+    }
+
+    /// `visibleSurfaceCrop` uses the compositor's top-left normalized
+    /// coordinate system, while a non-flipped backing layer uses a bottom-left
+    /// origin. Commit the one Y flip synchronously before a source is revealed.
+    private func updateVisibleSurfaceMask() {
+        let topLeftFrame = visibleSurfaceCrop.flatMap {
+            SourceCropProjection.visibleSurfaceFrame(
+                surfaceCrop: $0,
+                surfaceSize: bounds.size
+            )
+        }
+        let maskFrame = topLeftFrame.map {
+            CGRect(
+                x: bounds.minX + $0.minX,
+                y: bounds.maxY - $0.maxY,
+                width: $0.width,
+                height: $0.height
+            )
+        } ?? .zero
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        visibleSurfaceMaskLayer.frame = maskFrame
         CATransaction.commit()
     }
 

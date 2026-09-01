@@ -106,6 +106,37 @@ public enum SourceCropProjection {
         return crop
     }
 
+    /// Expands a normalized IOSurface crop into a concrete frame inside a
+    /// complete rendered surface. The result keeps the top-left origin used by
+    /// the rest of the projection API; AppKit callers perform the Y flip when
+    /// installing it as a Core Animation mask.
+    ///
+    /// Masking the rendered surface to this frame is required when the crop's
+    /// aspect ratio differs from its destination tile. Otherwise, pixels just
+    /// outside the selected crop can remain visible in the aspect-fit margin.
+    public static func visibleSurfaceFrame(
+        surfaceCrop: CGRect,
+        surfaceSize: CGSize
+    ) -> CGRect? {
+        guard surfaceSize.isFiniteAndNonEmpty,
+              surfaceCrop.isFiniteAndNonEmpty else { return nil }
+
+        let minX = min(max(surfaceCrop.minX, 0), 1)
+        let minY = min(max(surfaceCrop.minY, 0), 1)
+        let maxX = min(max(surfaceCrop.maxX, 0), 1)
+        let maxY = min(max(surfaceCrop.maxY, 0), 1)
+        guard maxX > minX, maxY > minY else { return nil }
+
+        let frame = CGRect(
+            x: surfaceSize.width * minX,
+            y: surfaceSize.height * minY,
+            width: surfaceSize.width * (maxX - minX),
+            height: surfaceSize.height * (maxY - minY)
+        )
+        guard frame.isFiniteAndNonEmpty else { return nil }
+        return frame
+    }
+
     /// Locates a source-space crop over a full-source aspect-fit preview.
     public static func selectionFrame(
         sourceSize: CGSize,

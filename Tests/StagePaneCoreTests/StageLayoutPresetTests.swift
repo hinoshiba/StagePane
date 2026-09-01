@@ -2,12 +2,9 @@ import XCTest
 @testable import StagePaneCore
 
 final class StageLayoutPresetTests: XCTestCase {
-    private let sourceIDs = [
-        StageSourceID(rawValue: "source-a"),
-        StageSourceID(rawValue: "source-b"),
-        StageSourceID(rawValue: "source-c"),
-        StageSourceID(rawValue: "source-d")
-    ]
+    private let sourceIDs = (0 ..< 10).map {
+        StageSourceID(rawValue: "source-\($0)")
+    }
 
     func testPresetCasesAreStableCodableAndSendable() throws {
         XCTAssertEqual(
@@ -22,9 +19,9 @@ final class StageLayoutPresetTests: XCTestCase {
         }
     }
 
-    func testEveryPresetIsDeterministicAndPreservesZeroThroughFourSources() {
+    func testEveryPresetIsDeterministicAndPreservesZeroThroughNineSources() {
         for preset in StageLayoutPreset.allCases {
-            for count in 0 ... 4 {
+            for count in 0 ... 9 {
                 var first = makeLayout(count: count, reversedFrames: false)
                 var second = makeLayout(count: count, reversedFrames: true)
 
@@ -52,7 +49,7 @@ final class StageLayoutPresetTests: XCTestCase {
     }
 
     func testGridPresetRetainsAutomaticArrangementCompatibility() {
-        for count in 0 ... 4 {
+        for count in 0 ... 9 {
             XCTAssertEqual(
                 StageLayout.frames(for: .grid, sourceCount: count),
                 StageLayout.automaticFrames(count: count)
@@ -109,15 +106,25 @@ final class StageLayoutPresetTests: XCTestCase {
         }
     }
 
+    func testPictureInPictureFallsBackToGridForFiveOrMoreSources() {
+        for count in 5 ... 9 {
+            XCTAssertEqual(
+                StageLayout.frames(for: .pictureInPicture, sourceCount: count),
+                StageLayout.frames(for: .grid, sourceCount: count),
+                "\(count) sources"
+            )
+        }
+    }
+
     func testEveryPresetClampsPathologicalGaps() {
         let gaps = [-100.0, 100.0, .infinity, -.infinity, .nan]
 
         for preset in StageLayoutPreset.allCases {
             for gap in gaps {
-                let frames = StageLayout.frames(for: preset, sourceCount: 4, gap: gap)
+                let frames = StageLayout.frames(for: preset, sourceCount: 9, gap: gap)
                 assertValidDistinctFrames(
                     frames,
-                    expectedCount: 4,
+                    expectedCount: 9,
                     message: "\(preset), gap \(gap)"
                 )
             }
@@ -126,12 +133,14 @@ final class StageLayoutPresetTests: XCTestCase {
     }
 
     private func makeLayout(count: Int, reversedFrames: Bool) -> StageLayout {
-        let frames = [
-            NormalizedStageRect(x: 0.03, y: 0.05, width: 0.20, height: 0.21),
-            NormalizedStageRect(x: 0.27, y: 0.13, width: 0.22, height: 0.23),
-            NormalizedStageRect(x: 0.51, y: 0.21, width: 0.24, height: 0.25),
-            NormalizedStageRect(x: 0.69, y: 0.29, width: 0.26, height: 0.27)
-        ]
+        let frames = sourceIDs.indices.map { index in
+            NormalizedStageRect(
+                x: 0.01 + Double(index % 5) * 0.19,
+                y: 0.03 + Double(index / 5) * 0.45,
+                width: 0.16,
+                height: 0.32
+            )
+        }
         let orderedFrames = reversedFrames ? Array(frames.reversed()) : frames
         return StageLayout(sources: zip(sourceIDs.prefix(count), orderedFrames).map {
             StageSourceLayout(id: $0.0, frame: $0.1)

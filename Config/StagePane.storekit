@@ -20,12 +20,12 @@
       "internalID" : "53505052",
       "localizations" : [
         {
-          "description" : "Hide the mark and compose up to four sources.",
+          "description" : "Hide the mark and remove the source limit.",
           "displayName" : "StagePane Pro",
           "locale" : "en_US"
         },
         {
-          "description" : "ロゴ非表示と最大4ソースを買い切りで開放",
+          "description" : "ロゴ非表示とソース数制限なしを買い切りで開放",
           "displayName" : "StagePane Pro",
           "locale" : "ja_JP"
         }

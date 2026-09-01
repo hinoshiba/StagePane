@@ -35,8 +35,10 @@ and end capture with no retained frame or orphaned state.
 - Apple system picker for one window/app/display source consent at a time;
   access is scoped to that selection and capture session, with no separate
   broad Screen Recording permission
-- two independently pausable/resumable, replaceable, and removable in-memory
-  video sources in Free, or up to four with the one-time StagePane Pro purchase;
+- four independently pausable/resumable, replaceable, and removable in-memory
+  video sources in Free; the one-time StagePane Pro purchase removes the app's
+  source-count limit, while the practical total depends on Mac performance and
+  operating-system constraints;
   pause stops the stream and makes its layer transparent in the Stage, private
   Workspace, and Audience PNG while retaining placement, crop, and z-order;
   resume reveals it only after a new complete frame arrives

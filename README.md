@@ -14,10 +14,12 @@ StagePane is deliberately **not** a virtual display driver or alternate
 desktop. It doesn't modify macOS display configuration and doesn't use private
 `CGVirtualDisplay` APIs. With your explicit approval, Apple's public
 ScreenCaptureKit picker can add a window, an app, or a display as an independent
-source. The free Mac App Store app supports two simultaneous sources and the
-one-time StagePane Pro purchase supports up to four. Approval is scoped to each
-picker selection and capture session; StagePane does not request separate,
-broad Screen Recording access.
+source. The free Mac App Store app supports four simultaneous sources, while
+the one-time StagePane Pro purchase removes StagePane's source-count limit.
+The number that can run in practice depends on Mac performance and
+operating-system constraints. Approval is scoped to each picker selection and
+capture session; StagePane does not request separate, broad Screen Recording
+access.
 
 ## Why StagePane
 
@@ -112,7 +114,9 @@ Organizer action. See the [release instructions](docs/RELEASE.md).
 1. Open StagePane. Keep **StagePane Workspace — Keep Private** on your screen.
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
-   session; repeat for two sources in Free or up to four with StagePane Pro.
+   session; repeat for up to four sources in Free. StagePane Pro removes the
+   app's source-count limit; the practical total depends on Mac performance and
+   operating-system constraints.
 3. In **Workspace → Canvas**, use **Arrange** to move and resize tiles. Choose
    the crop button on the layer you want to edit, adjust its frame or four
    corner handles, then choose **Apply Crop**. The Stage keeps that layer's
@@ -198,7 +202,8 @@ or control every meeting app's sharing session.
 ## Architecture
 
 ```text
-Up to four user-approved windows / apps / displays
+User-approved windows / apps / displays
+       Free: up to four · Pro: no app-imposed source-count limit
               │  one ScreenCaptureKit stream per source (video only)
               ▼
       normalized position / size / front-to-back order
@@ -270,5 +275,6 @@ Stage設定、見た目と動作、アクセス権限、プライバシー、こ
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
 求めません。明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
 自動撮影、録画、画面内容の外部送信、StagePaneアカウント、広告、解析はありません。
-Mac App Store版は無料で2ソース、買い切りのStagePane Proで最大4ソースと
-ロゴ非表示を利用できます。購入と購入状態の確認はAppleのStoreKitが処理します。
+Mac App Store版は無料で同時に4ソースまで利用でき、買い切りのStagePane Proでは
+アプリ側のソース件数制限がなくなり、ロゴ非表示も利用できます。実際に利用できる件数は
+Macの性能とOSの制約に依存します。購入と購入状態の確認はAppleのStoreKitが処理します。

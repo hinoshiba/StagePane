@@ -217,24 +217,30 @@ struct PermissionsPanel: View {
     private var addSourceButton: some View {
         Button(action: controller.chooseSource) {
             Label(
-                StagePaneAccess.requiresProForNextSource(
-                    currentCount: capture.occupiedSourceSlots,
-                    hasProAccess: controller.hasProAccess
-                )
-                    ? L10n.text("Proで3つ目を追加", "Add a Third Source with Pro")
+                requiresProForSourceAddition
+                    ? L10n.text("Proでさらに追加", "Add More with Pro")
                     : L10n.text("ソースを追加", "Add Source"),
-                systemImage: StagePaneAccess.requiresProForNextSource(
-                    currentCount: capture.occupiedSourceSlots,
-                    hasProAccess: controller.hasProAccess
-                ) ? "lock.open.fill" : "plus"
+                systemImage: requiresProForSourceAddition ? "lock.open.fill" : "plus"
             )
         }
         .buttonStyle(PrimaryActionButtonStyle())
         .disabled(!controller.canRequestSourceAddition)
-        .accessibilityHint(L10n.text(
-            "Appleの共有内容選択画面を開きます。",
-            "Opens Apple’s content-sharing picker."
-        ))
+        .accessibilityHint(requiresProForSourceAddition
+            ? L10n.text(
+                "StagePane Proの購入画面を開きます。",
+                "Opens the StagePane Pro purchase screen."
+            )
+            : L10n.text(
+                "Appleの共有内容選択画面を開きます。",
+                "Opens Apple’s content-sharing picker."
+            ))
+    }
+
+    private var requiresProForSourceAddition: Bool {
+        StagePaneAccess.requiresProForNextSource(
+            currentCount: capture.occupiedSourceSlots,
+            hasProAccess: controller.hasProAccess
+        )
     }
 
 }

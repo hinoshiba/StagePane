@@ -2,42 +2,48 @@ import XCTest
 @testable import StagePaneCore
 
 final class StagePaneAccessTests: XCTestCase {
-    func testFreePlanAllowsTwoSources() {
-        XCTAssertEqual(StagePaneAccess.sourceLimit(hasProAccess: false), 2)
+    func testFreePlanAllowsFourSources() {
+        XCTAssertEqual(StagePaneAccess.sourceLimit(hasProAccess: false), 4)
         XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 0, hasProAccess: false))
-        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 1, hasProAccess: false))
-        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 2, hasProAccess: false))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 3, hasProAccess: false))
+        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 4, hasProAccess: false))
     }
 
-    func testProPlanAllowsFourSources() {
-        XCTAssertEqual(StagePaneAccess.sourceLimit(hasProAccess: true), 4)
-        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 2, hasProAccess: true))
-        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 3, hasProAccess: true))
-        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 4, hasProAccess: true))
+    func testProPlanDoesNotImposeASourceLimit() {
+        XCTAssertNil(StagePaneAccess.sourceLimit(hasProAccess: true))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 4, hasProAccess: true))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 128, hasProAccess: true))
     }
 
-    func testThirdSourceIsTheUpgradeBoundary() {
+    func testResolvedSourceLimitPolicyMatchesCaptureBoundary() {
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 3, sourceLimit: 4))
+        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 4, sourceLimit: 4))
+        XCTAssertFalse(StagePaneAccess.canAddSource(currentCount: 8, sourceLimit: 4))
+        XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 128, sourceLimit: nil))
+    }
+
+    func testFifthSourceIsTheUpgradeBoundary() {
         XCTAssertFalse(
             StagePaneAccess.requiresProForNextSource(
-                currentCount: 1,
+                currentCount: 3,
                 hasProAccess: false
             )
         )
         XCTAssertTrue(
             StagePaneAccess.requiresProForNextSource(
-                currentCount: 2,
+                currentCount: 4,
                 hasProAccess: false
             )
         )
         XCTAssertFalse(
             StagePaneAccess.requiresProForNextSource(
-                currentCount: 2,
+                currentCount: 4,
                 hasProAccess: true
             )
         )
-        XCTAssertFalse(
+        XCTAssertTrue(
             StagePaneAccess.requiresProForNextSource(
-                currentCount: 4,
+                currentCount: 8,
                 hasProAccess: false
             )
         )

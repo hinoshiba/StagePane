@@ -59,8 +59,9 @@
       “source only” copy are updated. Never publish a guessed or pre-live URL
 - [ ] Incident response, rollback message, release signing, and key rotation ready
 - [ ] Rating prompt uses StoreKit only after a successful natural stopping point
-- [ ] Free/Pro screenshots and copy accurately label Free 2 sources, Pro 4
-      sources, and the Free-always-on / Pro-optional StagePane mark
+- [ ] Free/Pro screenshots and copy accurately label Free 4 sources, Pro with
+      no app-imposed source-count limit (subject to Mac performance and OS
+      constraints), and the Free-always-on / Pro-optional StagePane mark
 
 No unchecked item should be silently waived. Record approver, evidence, date,
 scope, and expiry for every exception.

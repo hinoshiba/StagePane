@@ -11,12 +11,15 @@ non-consumable In-App Purchase:
 
 | | Free | StagePane Pro |
 |---|---:|---:|
-| Simultaneous sources | 2 | 4 |
+| Simultaneous sources | 4 | No app-imposed limit¹ |
 | StagePane mark | Always shown | Optional |
 | Curtain, Stop All, pause, replace, and remove | Included | Included |
 | Arrange, Crop, Draw, layouts, pointer, and stage shapes | Included | Included |
 | Audience image copy/save | Included, with mark | Included, mark optional |
 | Billing | None | One-time purchase |
+
+¹ The practical source total depends on Mac performance and operating-system
+constraints.
 
 - Product ID: `com.hinoshiba.stagepane.pro`
 - App Store Connect Apple ID: `6805630496`
@@ -39,10 +42,10 @@ Future Pro additions are not advertised before they ship.
 ## Why this boundary
 
 The free product must demonstrate StagePane's entire trust proposition before
-asking for money. One or two sources are enough for an everyday meeting and let
-people validate the exact Stage/Workspace boundary, Apple picker, Curtain,
-Stop All, layouts, Crop, Draw, and PNG export. A third source is a natural signal that
-the person is using StagePane for a professional demo, class, or production.
+asking for money. Up to four sources cover everyday meetings and let people
+validate the exact Stage/Workspace boundary, Apple picker, Curtain, Stop All,
+layouts, Crop, Draw, and PNG export. A fifth source is a natural signal that the
+person is using StagePane for a larger professional demo, class, or production.
 
 Brand removal is similarly tied to professional output rather than safety. It
 must cover every audience-facing state consistently: holding screen, captured
@@ -61,11 +64,11 @@ The following must never become paid safety gates:
 
 | Priority | Persona | Job to be done | Main anxiety | Honest purchase moment |
 |---:|---|---|---|---|
-| 1 | Sales engineer, customer success, developer advocate | Show slides, a live product, and a terminal/reference without leaking chat or notifications | Sharing the wrong window in front of a customer | Adds a third source |
-| 2 | Teacher, trainer, workshop host | Combine lesson material, a code/demo window, and supporting content while drawing attention live | Losing time to complex broadcast software | Adds a third source; wants a clean recorded/classroom image |
+| 1 | Sales engineer, customer success, developer advocate | Show slides, a live product, and several supporting references without leaking chat or notifications | Sharing the wrong window in front of a customer | Adds a fifth source |
+| 2 | Teacher, trainer, workshop host | Combine lesson material, a code/demo window, and several supporting items while drawing attention live | Losing time to complex broadcast software | Adds a fifth source; wants a clean recorded/classroom image |
 | 3 | Consultant, executive, client-facing presenter | Deliver a polished client-branded presentation | A utility logo makes the output feel informal | Turns the StagePane mark off |
-| 4 | Creator or lightweight streamer | Compose a few sources without learning OBS | Simple tools becoming unreliable or unexpectedly recording data | Adds a third source; turns the mark off |
-| 5 | Everyday meeting participant | Share one or two windows safely | Being forced to subscribe before proving value | Remains on Free and can become an advocate |
+| 4 | Creator or lightweight streamer | Compose several sources without learning OBS | Simple tools becoming unreliable or unexpectedly recording data | Adds a fifth source; turns the mark off |
+| 5 | Everyday meeting participant | Share up to four windows safely | Being forced to subscribe before proving value | Remains on Free and can become an advocate |
 | 6 | Open-source user who prefers the official signed build | Install and update through the App Store while supporting continued maintenance | Being guilted into paying for code that can be built freely | Buys Pro for its shipped unlocks and convenience, never as a donation requirement |
 
 Organizations using Apple Business Manager or Apple School Manager are a
@@ -79,7 +82,7 @@ Prices and offers change; verify them again before every pricing decision.
 
 | Product | Observed model | Implication for StagePane |
 |---|---|---|
-| [Screegle US](https://apps.apple.com/us/app/screegle-clean-screen-sharing/id1591051659?mt=12) / [Japan](https://apps.apple.com/jp/app/screegle-clean-screen-sharing/id1591051659?mt=12) | Free: two windows and non-removable branding; Pro about $7.99 / ¥1,300 | Strong validation of the same Free-2 plus brand-removal boundary |
+| [Screegle US](https://apps.apple.com/us/app/screegle-clean-screen-sharing/id1591051659?mt=12) / [Japan](https://apps.apple.com/jp/app/screegle-clean-screen-sharing/id1591051659?mt=12) | Free: two windows and non-removable branding; Pro about $7.99 / ¥1,300 | Validates a free source limit plus brand-removal boundary, while StagePane Free differentiates with four sources |
 | [SliceShare](https://apps.apple.com/us/app/sliceshare-screen-sharing/id6736578460?mt=12) | Free plus about $8.99 Pro | Focused selective-sharing utilities sit near the $10 one-time anchor |
 | [Sel](https://apps.apple.com/us/app/sel-screen-window-sharing/id6780409611?mt=12) | Free plus about $19.99 / ¥3,000 lifetime | A $20 tier needs broader scene, camera, recording, or overlay value |
 | [Zone Share](https://apps.apple.com/us/app/zone-share-screen-sharing-tool/id6743621581?mt=12) | Subscription and lifetime options around $19.99–24.99 | Reliability in real meeting apps matters more than a long feature list |
@@ -129,7 +132,7 @@ References:
 
 There are exactly three entry points:
 
-1. A Free user with two active sources chooses Add Source.
+1. A Free user with four active sources chooses Add Source.
 2. A Free user turns off the StagePane mark in Appearance.
 3. A person deliberately opens StagePane Pro from the Workspace or app menu.
 
@@ -137,12 +140,12 @@ Do not show the purchase screen at first launch, before the first picker, while
 a person is presenting, after a purchase cancellation, or as a condition of
 using a privacy control.
 
-### Third-source flow
+### Fifth-source flow
 
-1. Keep both active sources running and unchanged.
+1. Keep all four active sources running and unchanged.
 2. Open StagePane Pro inside the private Workspace; never alter the audience
    Stage or put purchase UI in it.
-3. Explain why this screen appeared: “Your third source is ready with Pro.”
+3. Explain why this screen appeared: “Add more sources with Pro.”
 4. Show the localized `Product.displayPrice` and state explicitly that this is
    a one-time purchase.
 5. On a verified successful transaction, dismiss the StoreKit purchase UI and
@@ -198,10 +201,11 @@ Security and lifecycle requirements:
 - Never persist a Boolean “isPro” as an entitlement source.
 - Fail closed for Pro-only operations while entitlement is checking or cannot
   be verified; keep every free and safety feature available.
-- Keep the physical capture maximum at four and the current plan limit at two
-  or four. Enforce the plan again immediately before creating a stream because
+- Keep the Free plan limit at four and give Pro no app-imposed source-count
+  limit. Enforce the plan again immediately before creating a stream because
   ScreenCaptureKit's system video menu can bypass the app's Add Source button.
-- If access is revoked with three or four sources active, preserve that live
+  System resources may still limit the number that can run on a particular Mac.
+- If access is revoked with more than four sources active, preserve that live
   session and block only new additions. Do not destructively stop a presentation.
 - Official builds use StoreKit. Source builds have full feature access so the
   Apache-licensed repository remains useful to contributors.
@@ -235,8 +239,8 @@ Admin, or App Manager should perform and independently review these steps.
 
 | Locale | Display name | Description |
 |---|---|---|
-| Japanese | `StagePane Pro` | `ロゴ非表示と最大4ソースを買い切りで開放` |
-| English (U.S.) | `StagePane Pro` | `Hide the mark and compose up to four sources.` |
+| Japanese | `StagePane Pro` | `ロゴ非表示とソース数制限なしを買い切りで開放` |
+| English (U.S.) | `StagePane Pro` | `Hide the mark and remove the source limit.` |
 
 Both descriptions fit App Store Connect's current 45-character maximum; verify
 the live limits again before submission.
@@ -262,18 +266,20 @@ References:
 > StagePane Pro is a one-time, non-consumable In-App Purchase. In the private
 > “StagePane Workspace — Keep Private” window, choose “StagePane Pro” in the
 > sidebar. The same screen also appears when a Free user attempts to add a
-> third source or turns off the StagePane mark under Appearance.
+> fifth source or turns off the StagePane mark under Appearance.
 >
-> Free supports two simultaneous sources and includes all privacy and safety
-> controls. Pro supports up to four simultaneous sources and makes the
-> StagePane mark optional on the audience Stage, Privacy Curtain, and explicit
-> Audience PNG copy/save output. Purchase UI never appears in the shareable
-> Stage window. “Restore Purchases” explicitly invokes App Store sync. Only a
-> StoreKit-verified transaction for `com.hinoshiba.stagepane.pro` unlocks Pro.
+> Free supports four simultaneous sources and includes all privacy and safety
+> controls. Pro removes StagePane's source-count limit and makes the StagePane
+> mark optional on the audience Stage, Privacy Curtain, and explicit Audience
+> PNG copy/save output. The number of sources that can run in practice depends
+> on Mac performance and operating-system constraints. Purchase UI never appears
+> in the shareable Stage window. “Restore Purchases” explicitly invokes App
+> Store sync. Only a StoreKit-verified transaction for
+> `com.hinoshiba.stagepane.pro` unlocks Pro.
 >
-> To test the source-limit entry point, add two harmless test windows with
+> To test the source-limit entry point, add four harmless test windows with
 > Apple's ScreenCaptureKit picker, then choose Add Source again. Canceling the
-> purchase changes nothing and does not interrupt either active source.
+> purchase changes nothing and does not interrupt the four active sources.
 
 ## Verification matrix
 
@@ -282,7 +288,7 @@ References:
 - Product loads with Japanese and English localization.
 - Price is read from `Product.displayPrice`.
 - Successful purchase unlocks immediately.
-- Third-source purchase resumes the picker.
+- Fifth-source purchase resumes the picker.
 - Mark-removal purchase immediately hides the mark.
 - Cancel preserves current state and is not shown as an error.
 - Ask to Buy/pending prevents duplicate purchase attempts and later unlocks
@@ -300,14 +306,16 @@ References:
 - App Store product missing/not-yet-approved behavior.
 - VoiceOver and keyboard completion of purchase, restore, retry, and Continue Free.
 - No purchase or review UI appears in the audience Stage.
-- Existing three/four-source session remains stable if entitlement changes.
+- An existing session with more than four sources remains stable if entitlement
+  changes; only new additions are blocked after Pro access is lost.
 - Mac App Store receipt and transaction behavior offline after a prior purchase.
 
 ### Regression
 
-- Free source 1 and 2 still open Apple's picker.
-- Free source 3 opens Pro from every entry point, including the system video menu.
-- Pro source 4 works; source 5 is rejected by the physical maximum.
+- Free sources 1 through 4 still open Apple's picker.
+- Free source 5 opens Pro from every entry point, including the system video menu.
+- Pro source 5 and additional sources can be added while Mac performance and
+  operating-system constraints permit.
 - Free Stage, Curtain, Workspace preview, Copy, and Save always include the mark.
 - Pro mark preference applies consistently to every audience representation.
 - Curtain, Stop All, Draw, and permission guidance remain free.
@@ -322,7 +330,8 @@ ratings. Optimize the inputs StagePane can honestly control:
 
 1. First value in under 60 seconds; no launch paywall.
 2. Screenshot 1: unmistakable private Workspace versus audience Stage.
-3. Screenshot 2: “Up to four sources with StagePane Pro,” visibly labeled Pro.
+3. Screenshot 2: “Four sources free; no app-imposed limit with StagePane Pro,”
+   visibly labeled Pro and qualified by Mac performance and OS constraints.
 4. Screenshot 3: Curtain, Draw, and Stop All as included trust features.
 5. Screenshot 4: no recording, account, analytics, ads, or publisher server.
 6. Request the system review prompt only after three clean completed capture

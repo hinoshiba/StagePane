@@ -67,11 +67,12 @@ Update and review these values in one pull request:
 - localized website fixture screenshots and Open Graph images regenerated
   whenever an audience-visible default or Workspace layout changes. The
   source-built `dist` app intentionally has full Pro access, so these generated
-  fixtures are not evidence of the Free commerce state and must label every
-  three/four-source or optional-mark image as StagePane Pro. Because the app is
-  sandboxed, write snapshots inside its app container, then copy the completed
-  PNGs to the review workspace. Run once for each language, using a different
-  generated directory:
+  fixtures are not evidence of the Free commerce state. Label every image that
+  shows more than four sources or an optional mark as StagePane Pro, but do not
+  present a composition of four or fewer sources as a Pro-only unlock merely
+  because the fixture build has Pro access. Because the app is sandboxed, write
+  snapshots inside its app container, then copy the completed PNGs to the review
+  workspace. Run once for each language, using a different generated directory:
 
   ```bash
   SNAPSHOT_PARENT="$HOME/Library/Containers/com.hinoshiba.stagepane/Data/tmp"
@@ -120,9 +121,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   and exposes no Screen Recording settings step in the source flow; end access
   by removing the source or stopping all sources;
 - one-item window/application/display selection; Free mixed-source addition
-  through 2/2 with the still-enabled third-source action opening StagePane Pro;
-  Pro mixed-source addition through 4/4; and a disabled Add Source action only
-  at the physical 4/4 maximum;
+  through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
+  Pro mixed-source addition at source five and beyond while Mac performance and
+  operating-system constraints permit; no app-imposed Pro source-count ceiling;
 - per-source pause and resume (stop the stream, make the layer transparent in
   Stage, Workspace, and Audience PNG while preserving placement/crop/z-order,
   then reveal it only after Resume receives a new complete frame), replace
@@ -204,13 +205,16 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - no Accessibility or Input Monitoring request, raw mouse/keyboard event
   synthesis, keyboard capture/forwarding, or event tap; keyboard/VoiceOver
   Arrange, Crop, and Draw actions; Spaces/full-screen/display
-  changes; four-source CPU/memory; and the currently claimed meeting-app
+  changes; four-source Free CPU/memory plus higher-count Pro CPU/memory and
+  graceful system-resource failure; and the currently claimed meeting-app
   workflows.
 - StoreKit Configuration, Sandbox, and TestFlight purchase paths: localized
   `Product.displayPrice`, verified success, cancel, pending/Ask to Buy, product
   load failure and retry, restore, reinstall/second Mac, refund/revocation, and
   rejection of unverified transactions; purchase success must resume the exact
-  third-source or mark-removal action that opened Pro.
+  fifth-source or mark-removal action that opened Pro; entitlement loss with
+  more than four sources must preserve the existing session and block only new
+  additions.
 
 Record the exact commit, hardware, OS/app versions, results, and approved
 exceptions in the release record.

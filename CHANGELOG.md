@@ -5,6 +5,18 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Changed
+
+- The Mac App Store Free tier now supports four simultaneous sources, while
+  StagePane Pro removes StagePane's source-count limit. The number of sources
+  that can run in practice still depends on Mac performance and operating-system
+  constraints.
+
+### Fixed
+
+- Cropped layers no longer reveal pixels outside the selected region when a
+  Stage tile's aspect ratio leaves horizontal or vertical margins.
+
 ## [0.3.1] - 2026-08-29
 
 ### Fixed

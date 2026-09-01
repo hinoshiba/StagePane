@@ -384,8 +384,9 @@ public struct StageLayout: Codable, Equatable, Sendable {
     }
 
     /// Applies a quick layout without replacing source values or changing
-    /// their order. The presets are designed for StagePane's supported range
-    /// of zero through four sources.
+    /// their order. Every preset supports source counts above four; picture in
+    /// picture uses its curated composition through four sources, then falls
+    /// back to the automatic grid.
     public mutating func apply(
         preset: StageLayoutPreset,
         gap: Double = StageLayout.defaultGap
@@ -565,8 +566,8 @@ public struct StageLayout: Codable, Equatable, Sendable {
         guard count > 0 else { return [] }
         guard count > 1 else { return [.fullCanvas] }
 
-        // StagePane exposes at most four simultaneous sources. A grid remains
-        // a safe deterministic recovery path for malformed future data.
+        // More than three overlays would obscure the primary source, so larger
+        // compositions use the same deterministic grid as Auto Arrange.
         guard count <= 4 else { return automaticFrames(count: count, gap: gap) }
 
         let actualGap = boundedGap(gap, maximum: 0.08)
@@ -605,9 +606,11 @@ public struct StageLayout: Codable, Equatable, Sendable {
     }
 
     /// A predictable initial placement that never moves existing sources.
-    /// The first source fills the Stage; later sources arrive as editable
-    /// picture-in-picture tiles at the remaining corners. Auto Arrange remains
-    /// an explicit user action.
+    /// The first source fills the Stage; the next four choose the least
+    /// occupied picture-in-picture corner. Later sources use the least
+    /// overlapping unoccupied cell from the next automatic grid without moving
+    /// existing sources. Auto Arrange remains the explicit way to reflow all
+    /// sources into a non-overlapping grid.
     public static func suggestedFrameForNewSource(
         occupiedFrames: [NormalizedStageRect]
     ) -> NormalizedStageRect {
@@ -618,10 +621,27 @@ public struct StageLayout: Codable, Equatable, Sendable {
             NormalizedStageRect(x: 0.52, y: 0.02, width: 0.46, height: 0.46),
             NormalizedStageRect(x: 0.02, y: 0.02, width: 0.46, height: 0.46)
         ]
-        return pictureInPictureFrames.min { left, right in
+
+        if occupiedFrames.count <= pictureInPictureFrames.count {
+            let unusedPictureInPictureFrames = pictureInPictureFrames.filter { candidate in
+                !occupiedFrames.contains(candidate)
+            }
+            if let suggestedFrame = unusedPictureInPictureFrames.min(by: { left, right in
+                overlapArea(of: left, with: occupiedFrames) <
+                    overlapArea(of: right, with: occupiedFrames)
+            }) {
+                return suggestedFrame
+            }
+        }
+
+        let gridFrames = automaticFrames(count: occupiedFrames.count + 1)
+        let unusedGridFrames = gridFrames.filter { candidate in
+            !occupiedFrames.contains(candidate)
+        }
+        return unusedGridFrames.min { left, right in
             overlapArea(of: left, with: occupiedFrames) <
                 overlapArea(of: right, with: occupiedFrames)
-        } ?? pictureInPictureFrames[0]
+        } ?? gridFrames.last ?? pictureInPictureFrames[0]
     }
 
     private static func overlapArea(

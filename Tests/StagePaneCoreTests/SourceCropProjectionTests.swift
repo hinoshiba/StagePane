@@ -57,6 +57,93 @@ final class SourceCropProjectionTests: XCTestCase {
         assertRect(frame, x: -300, y: -135, width: 960, height: 540)
     }
 
+    func testNarrowCropMasksExcludedPixelsInWideDestinationMargins() throws {
+        let presentation = try XCTUnwrap(SourcePresentationGeometry(
+            surfaceSize: CGSize(width: 1_600, height: 900),
+            contentRect: CGRect(x: 0, y: 0, width: 1_600, height: 900)
+        ))
+        let crop = NormalizedSourceRect(x: 0.25, y: 0, width: 0.5, height: 1)
+        let sourceFrame = try XCTUnwrap(SourceCropProjection.sourceFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: CGSize(width: 1_600, height: 900)
+        ))
+        let visibleFrame = try projectedVisibleFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: CGSize(width: 1_600, height: 900)
+        )
+
+        assertRect(sourceFrame, x: 0, y: 0, width: 1_600, height: 900)
+        assertRect(visibleFrame, x: 400, y: 0, width: 800, height: 900)
+        XCTAssertLessThan(sourceFrame.minX, visibleFrame.minX)
+        XCTAssertGreaterThan(sourceFrame.maxX, visibleFrame.maxX)
+    }
+
+    func testShortCropMasksExcludedPixelsInTallDestinationMargins() throws {
+        let presentation = try XCTUnwrap(SourcePresentationGeometry(
+            surfaceSize: CGSize(width: 1_600, height: 900),
+            contentRect: CGRect(x: 0, y: 0, width: 1_600, height: 900)
+        ))
+        let crop = NormalizedSourceRect(x: 0, y: 0.25, width: 1, height: 0.5)
+        let sourceFrame = try XCTUnwrap(SourceCropProjection.sourceFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: CGSize(width: 1_600, height: 900)
+        ))
+        let visibleFrame = try projectedVisibleFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: CGSize(width: 1_600, height: 900)
+        )
+
+        assertRect(sourceFrame, x: 0, y: 0, width: 1_600, height: 900)
+        assertRect(visibleFrame, x: 0, y: 225, width: 1_600, height: 450)
+        XCTAssertLessThan(sourceFrame.minY, visibleFrame.minY)
+        XCTAssertGreaterThan(sourceFrame.maxY, visibleFrame.maxY)
+    }
+
+    func testVisibleMaskHandlesPaddedSurfaceAndAspectMismatch() throws {
+        let presentation = try XCTUnwrap(SourcePresentationGeometry(
+            surfaceSize: CGSize(width: 960, height: 540),
+            contentRect: CGRect(x: 120, y: 45, width: 720, height: 450)
+        ))
+        let crop = NormalizedSourceRect(x: 0.25, y: 0.2, width: 0.5, height: 0.6)
+        let destinationSize = CGSize(width: 800, height: 450)
+        let sourceFrame = try XCTUnwrap(SourceCropProjection.sourceFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: destinationSize
+        ))
+        let visibleFrame = try projectedVisibleFrame(
+            presentation: presentation,
+            sourceCrop: crop,
+            destinationSize: destinationSize
+        )
+
+        assertRect(sourceFrame, x: -400, y: -225, width: 1_600, height: 900)
+        assertRect(visibleFrame, x: 100, y: 0, width: 600, height: 450)
+    }
+
+    func testMatchingCropAndDestinationAspectUsesEntireDestination() throws {
+        let presentation = try XCTUnwrap(SourcePresentationGeometry(
+            surfaceSize: CGSize(width: 1_600, height: 900),
+            contentRect: CGRect(x: 0, y: 0, width: 1_600, height: 900)
+        ))
+        let visibleFrame = try projectedVisibleFrame(
+            presentation: presentation,
+            sourceCrop: NormalizedSourceRect(
+                x: 0.25,
+                y: 0.25,
+                width: 0.5,
+                height: 0.5
+            ),
+            destinationSize: CGSize(width: 800, height: 450)
+        )
+
+        assertRect(visibleFrame, x: 0, y: 0, width: 800, height: 450)
+    }
+
     func testPresentationGeometryClipsContentToTheSurface() throws {
         let presentation = try XCTUnwrap(SourcePresentationGeometry(
             surfaceSize: CGSize(width: 100, height: 80),
@@ -114,6 +201,35 @@ final class SourceCropProjectionTests: XCTestCase {
             sourceCrop: .fullSource,
             destinationSize: CGSize(width: CGFloat.infinity, height: 100)
         ))
+        XCTAssertNil(SourceCropProjection.visibleSurfaceFrame(
+            surfaceCrop: .zero,
+            surfaceSize: CGSize(width: 100, height: 100)
+        ))
+        XCTAssertNil(SourceCropProjection.visibleSurfaceFrame(
+            surfaceCrop: CGRect(x: 0, y: 0, width: 1, height: 1),
+            surfaceSize: .zero
+        ))
+    }
+
+    private func projectedVisibleFrame(
+        presentation: SourcePresentationGeometry,
+        sourceCrop: NormalizedSourceRect,
+        destinationSize: CGSize
+    ) throws -> CGRect {
+        let sourceFrame = try XCTUnwrap(SourceCropProjection.sourceFrame(
+            presentation: presentation,
+            sourceCrop: sourceCrop,
+            destinationSize: destinationSize
+        ))
+        let surfaceCrop = try XCTUnwrap(SourceCropProjection.surfaceCropRect(
+            presentation: presentation,
+            sourceCrop: sourceCrop
+        ))
+        let localMask = try XCTUnwrap(SourceCropProjection.visibleSurfaceFrame(
+            surfaceCrop: surfaceCrop,
+            surfaceSize: sourceFrame.size
+        ))
+        return localMask.offsetBy(dx: sourceFrame.minX, dy: sourceFrame.minY)
     }
 
     private func assertRect(

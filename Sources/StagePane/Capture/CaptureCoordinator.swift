@@ -530,8 +530,6 @@ private final class CaptureStopBatch {
 /// persists, or transmits captured frames.
 @MainActor
 final class CaptureCoordinator: NSObject, ObservableObject {
-    static let maximumSources = StagePaneAccess.proSourceLimit
-
     @Published private(set) var phase: CapturePhase = .idle
     @Published private(set) var statusDetail = ""
     @Published private(set) var isCaptureActive = false
@@ -540,13 +538,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     @Published private(set) var layout = StageLayout()
 
     var canAddSource: Bool {
-        sources.count < allowedSourceLimit && !isPickerPresented
+        hasAvailableSourceSlot && !isPickerPresented
     }
 
     /// Keeps the add action available at the Free limit so it can explain Pro,
-    /// while still disabling it during a picker or at the physical maximum.
+    /// while still enforcing a single picker presentation at a time.
     var canRequestSourceAddition: Bool {
-        sources.count < Self.maximumSources && !isPickerPresented
+        !isPickerPresented
     }
 
     var occupiedSourceSlots: Int {
@@ -585,7 +583,14 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private var outputHeight = 1080
     private var configurationRevision = 0
     private var sourceOrdinal = 0
-    private var allowedSourceLimit = StagePaneAccess.freeSourceLimit
+    private var allowedSourceLimit: Int? = StagePaneAccess.freeSourceLimit
+
+    private var hasAvailableSourceSlot: Bool {
+        StagePaneAccess.canAddSource(
+            currentCount: sources.count,
+            sourceLimit: allowedSourceLimit
+        )
+    }
 
     var hasResettableFailure: Bool {
         let hasCaptureFailure: Bool
@@ -611,7 +616,10 @@ final class CaptureCoordinator: NSObject, ObservableObject {
 
         let picker = SCContentSharingPicker.shared
         picker.defaultConfiguration = makePickerConfiguration()
-        picker.maximumStreamCount = Self.maximumSources
+        // Keep the Control Center entry point available at the Free boundary
+        // so StagePane can explain Pro there too. `beginCapture` rechecks the
+        // local plan before it creates any source, session, layout, or stream.
+        picker.maximumStreamCount = nil
         picker.add(self)
         picker.isActive = true
     }
@@ -624,8 +632,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         addSource()
     }
 
-    func setAllowedSourceLimit(_ limit: Int) {
-        allowedSourceLimit = min(max(0, limit), Self.maximumSources)
+    func setAllowedSourceLimit(_ limit: Int?) {
+        allowedSourceLimit = limit.map { max(0, $0) }
     }
 
     func addSource() {
@@ -638,16 +646,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             }
             return
         }
-        guard sources.count < Self.maximumSources else {
-            if !publishStopFailureIfPresent() {
-                statusDetail = L10n.text(
-                    "同時に追加できるソースは最大\(Self.maximumSources)件です。",
-                    "You can add up to \(Self.maximumSources) sources at once."
-                )
-            }
-            return
-        }
-        guard sources.count < allowedSourceLimit else {
+        guard hasAvailableSourceSlot else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",
@@ -1024,16 +1023,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         reusingLayer sourceIDToReuse: StageSourceID? = nil
     ) {
         let isReconnectingLayer = sourceIDToReuse != nil
-        guard isReconnectingLayer || sources.count < Self.maximumSources else {
-            if !publishStopFailureIfPresent() {
-                statusDetail = L10n.text(
-                    "同時に追加できるソースは最大\(Self.maximumSources)件です。",
-                    "You can add up to \(Self.maximumSources) sources at once."
-                )
+        guard isReconnectingLayer || hasAvailableSourceSlot else {
+            // The current callback path clears an app-presented Add picker
+            // before entering here. Keep this boundary fail-safe if a future
+            // caller reaches it while entitlement changes are in flight.
+            if pickerIntent == .add {
+                finishPickerPresentation()
             }
-            return
-        }
-        guard isReconnectingLayer || sources.count < allowedSourceLimit else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在のプランで追加できるソース数の上限に達しました。",

@@ -40,7 +40,7 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSScreenCaptureUsageDescription</key>
-	<string>StagePane displays only windows, apps, or displays you choose in Apple’s picker, up to four sources. It never records or sends them. Copy or Save Audience Image creates one local PNG only when you choose that action.</string>
+	<string>StagePane displays only windows, apps, or displays you choose in Apple’s picker. It never records or sends them. Copy or Save Audience Image creates one local PNG only when you choose that action.</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSRequiresAquaSystemAppearance</key>

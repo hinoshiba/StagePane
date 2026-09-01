@@ -287,7 +287,7 @@ struct StageWorkspaceView: View {
                     Spacer(minLength: 4)
 
                     if section == .sources {
-                        Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
+                        Text("\(displayedSourceCount) / \(controller.activeSourceLimitDescription)")
                             .font(.caption2.monospacedDigit().weight(.semibold))
                             .foregroundStyle(Color.white.opacity(0.48))
                     } else if section == .pro {
@@ -338,10 +338,9 @@ struct StageWorkspaceView: View {
             values.append(L10n.text("選択中", "Selected"))
         }
         if section == .sources {
-            values.append(L10n.text(
-                "\(displayedSourceCount)件",
-                "\(displayedSourceCount) of \(controller.activeSourceLimit)"
-            ))
+            values.append(
+                controller.sourceCountAccessibilityDescription(displayedSourceCount)
+            )
         }
         if section == .pro, controller.hasProAccess {
             values.append(L10n.text("有効", "Active"))
@@ -594,9 +593,12 @@ struct StageWorkspaceView: View {
                         .frame(minHeight: 17)
                         .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
                 }
-                Text("\(displayedSourceCount) / \(controller.activeSourceLimit)")
+                Text("\(displayedSourceCount) / \(controller.activeSourceLimitDescription)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel(
+                        controller.sourceCountAccessibilityDescription(displayedSourceCount)
+                    )
             }
             .padding(.horizontal, 15)
             .frame(minHeight: 42)

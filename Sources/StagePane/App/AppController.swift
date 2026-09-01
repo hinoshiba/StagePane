@@ -132,8 +132,32 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     var hasProAccess: Bool { purchases.hasProAccess }
 
-    var activeSourceLimit: Int {
+    var activeSourceLimit: Int? {
         StagePaneAccess.sourceLimit(hasProAccess: hasProAccess)
+    }
+
+    var activeSourceLimitDescription: String {
+        activeSourceLimit.map(String.init) ?? "∞"
+    }
+
+    func sourceCountAccessibilityDescription(_ count: Int) -> String {
+        let englishSource = count == 1 ? "source" : "sources"
+        guard let activeSourceLimit else {
+            return L10n.text(
+                "\(count)件、StagePaneによる上限なし",
+                "\(count) \(englishSource), no app-imposed limit"
+            )
+        }
+        if count > activeSourceLimit {
+            return L10n.text(
+                "\(count)件、無料版の上限\(activeSourceLimit)件",
+                "\(count) \(englishSource); Free limit \(activeSourceLimit)"
+            )
+        }
+        return L10n.text(
+            "\(count)件、無料版の上限\(activeSourceLimit)件",
+            "\(count) of \(activeSourceLimit) sources"
+        )
     }
 
     var canRequestSourceAddition: Bool {

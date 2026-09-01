@@ -1320,9 +1320,12 @@ struct CaptureSourceList: View {
                     Text(L10n.text("ソース", "Sources"))
                         .font(.headline)
                     Spacer()
-                    Text("\(capture.sources.count) / \(controller.activeSourceLimit)")
+                    Text("\(capture.sources.count) / \(controller.activeSourceLimitDescription)")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(
+                            controller.sourceCountAccessibilityDescription(capture.sources.count)
+                        )
                     if controller.hasProAccess {
                         Text("PRO")
                             .font(.system(size: 8, weight: .black, design: .rounded))
@@ -1364,6 +1367,7 @@ struct CaptureSourceList: View {
                 .buttonStyle(SecondaryActionButtonStyle())
                 .keyboardShortcut("p", modifiers: [.command, .shift])
                 .disabled(!controller.canRequestSourceAddition)
+                .accessibilityHint(addSourceAccessibilityHint)
             } else {
                 Button(action: controller.chooseSource) {
                     Label(addSourceTitle, systemImage: addSourceSymbol)
@@ -1372,6 +1376,7 @@ struct CaptureSourceList: View {
                 .buttonStyle(PrimaryActionButtonStyle())
                 .keyboardShortcut("p", modifiers: [.command, .shift])
                 .disabled(!controller.canRequestSourceAddition)
+                .accessibilityHint(addSourceAccessibilityHint)
             }
 
             Button(action: capture.arrangeSourcesAutomatically) {
@@ -1394,20 +1399,33 @@ struct CaptureSourceList: View {
     }
 
     private var addSourceTitle: String {
-        if StagePaneAccess.requiresProForNextSource(
-            currentCount: capture.occupiedSourceSlots,
-            hasProAccess: controller.hasProAccess
-        ) {
-            return L10n.text("Proで3つ目を追加", "Add a Third Source with Pro")
+        if requiresProForSourceAddition {
+            return L10n.text("Proでさらに追加", "Add More with Pro")
         }
         return L10n.text("ソースを追加", "Add Source")
     }
 
     private var addSourceSymbol: String {
+        requiresProForSourceAddition ? "lock.open.fill" : "plus"
+    }
+
+    private var addSourceAccessibilityHint: String {
+        requiresProForSourceAddition
+            ? L10n.text(
+                "StagePane Proの購入画面を開きます。",
+                "Opens the StagePane Pro purchase screen."
+            )
+            : L10n.text(
+                "Appleの共有内容選択画面を開きます。",
+                "Opens Apple’s content-sharing picker."
+            )
+    }
+
+    private var requiresProForSourceAddition: Bool {
         StagePaneAccess.requiresProForNextSource(
             currentCount: capture.occupiedSourceSlots,
             hasProAccess: controller.hasProAccess
-        ) ? "lock.open.fill" : "plus"
+        )
     }
 }
 

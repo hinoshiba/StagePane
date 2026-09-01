@@ -158,7 +158,7 @@ struct WorkspaceSourcesSnapshotPanel: View {
                     Text(L10n.text("ソース", "Sources"))
                         .font(.headline)
                     Spacer()
-                    Text("3 / \(CaptureCoordinator.maximumSources)")
+                    Text("3 / ∞")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }

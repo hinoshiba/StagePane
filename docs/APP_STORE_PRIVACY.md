@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / StagePane プライバシーポリシー
 
-Effective date / 発効日: 2026-08-28
+Effective date / 発効日: 2026-09-01
 Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
 
 ## Summary / 概要
@@ -15,9 +15,9 @@ StagePaneのすべてのビルドは配置、切り抜き、手書きを提供�
 
 ## Screen content / 画面内容
 
-StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. Free supports two independently pausable and removable sources; StagePane Pro supports up to four. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
+StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. Free supports four independently pausable and removable sources. StagePane Pro removes StagePane's source-count limit; the number that can run in practice depends on Mac performance and operating-system constraints. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
 
-StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。無料版は2件、StagePane Proは最大4件まで個別に一時停止・解除できます。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
+StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。無料版は4件まで個別に一時停止・解除できます。StagePane Proにはアプリ側の件数制限がなく、実際に利用できる件数はMacの性能とOSの制約に依存します。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
 
 Selected frames are rendered locally in parallel in the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
 

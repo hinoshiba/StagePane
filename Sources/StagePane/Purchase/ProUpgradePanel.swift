@@ -66,8 +66,8 @@ struct ProUpgradePanel: View {
                 .tracking(-0.7)
                 .accessibilityHeading(.h1)
                 Text(L10n.text(
-                    "買い切りで、最大4つのソースとロゴのないStageを開放します。",
-                    "One purchase unlocks up to four sources and a Stage without the StagePane mark."
+                    "買い切りでソース数の制限がなくなり、ロゴも非表示にできます。",
+                    "One purchase removes StagePane’s source limit and lets you hide the StagePane mark."
                 ))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -94,12 +94,12 @@ struct ProUpgradePanel: View {
             UpgradeReasonCard(
                 symbol: "rectangle.3.group.fill",
                 title: L10n.text(
-                    "3つ目のソースはProで追加できます",
-                    "Your third source is ready with Pro"
+                    "さらにソースを追加するにはPro",
+                    "Add more sources with Pro"
                 ),
                 detail: L10n.text(
-                    "今の2つのソースはそのままです。購入後、追加する内容をAppleの選択画面で選べます。",
-                    "Your current two sources stay in place. After purchase, choose the next item in Apple’s picker."
+                    "現在のソースはそのままです。購入後、追加する内容をAppleの選択画面で選べます。",
+                    "Your current sources stay in place. After purchase, choose the next item in Apple’s picker."
                 )
             )
         case .watermark:
@@ -126,7 +126,10 @@ struct ProUpgradePanel: View {
         ) {
             ProBenefitCard(
                 symbol: "rectangle.3.group.fill",
-                title: L10n.text("最大4ソース", "Up to four sources"),
+                title: L10n.text(
+                    "アプリ側のソース数制限なし",
+                    "No app-imposed source limit"
+                ),
                 detail: L10n.text(
                     "スライド、デモ、コード、資料をひとつのStageへ。",
                     "Bring slides, a demo, references, and more onto one Stage."
@@ -158,8 +161,8 @@ struct ProUpgradePanel: View {
 
             PlanComparisonRow(
                 title: L10n.text("同時に使えるソース", "Simultaneous sources"),
-                freeValue: L10n.text("2つ", "Two"),
-                proValue: L10n.text("4つ", "Four")
+                freeValue: L10n.text("4つ", "Four"),
+                proValue: L10n.text("アプリ側の上限なし", "No app limit")
             )
             Divider()
             PlanComparisonRow(
@@ -271,8 +274,8 @@ struct ProUpgradePanel: View {
                         : L10n.text("StagePane Proが有効です", "StagePane Pro is active"))
                         .font(.headline)
                     Text(L10n.text(
-                        "最大4つのソースとロゴ表示の切り替えを利用できます。",
-                        "You can use up to four sources and choose whether to show the StagePane mark."
+                        "StagePaneによる件数制限なしでソースを追加し、ロゴ表示も切り替えられます。",
+                        "You can add sources without an app-imposed limit and choose whether to show the StagePane mark."
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
