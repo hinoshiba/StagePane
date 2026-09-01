@@ -23,9 +23,9 @@ BASE_ENV=(
     SWIFT_STRICT_CONCURRENCY=complete
     SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
     ARCHS="arm64 x86_64"
-    CURRENT_PROJECT_VERSION=5
-    STAGEPANE_PREVIOUS_UPLOADED_BUILD=3
-    MARKETING_VERSION=0.3.1
+    CURRENT_PROJECT_VERSION=6
+    STAGEPANE_PREVIOUS_UPLOADED_BUILD=5
+    MARKETING_VERSION=0.3.2
 )
 
 /usr/bin/env "${BASE_ENV[@]}" "$GUARD" --settings-only
@@ -65,8 +65,8 @@ expect_rejection zero-build CURRENT_PROJECT_VERSION=0
 expect_rejection dotted-build CURRENT_PROJECT_VERSION=4.1
 expect_rejection leading-zero-build CURRENT_PROJECT_VERSION=04
 expect_rejection overlong-build CURRENT_PROJECT_VERSION=1234567890123456789
-expect_rejection reused-build CURRENT_PROJECT_VERSION=3
-expect_rejection old-build CURRENT_PROJECT_VERSION=2
+expect_rejection reused-build CURRENT_PROJECT_VERSION=5
+expect_rejection old-build CURRENT_PROJECT_VERSION=4
 expect_rejection missing-previous-build STAGEPANE_PREVIOUS_UPLOADED_BUILD=
 expect_rejection zero-previous-build STAGEPANE_PREVIOUS_UPLOADED_BUILD=0
 expect_rejection overlong-previous-build STAGEPANE_PREVIOUS_UPLOADED_BUILD=1234567890123456789

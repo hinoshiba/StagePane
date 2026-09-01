@@ -5,6 +5,8 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-01
+
 ### Changed
 
 - The Mac App Store Free tier now supports four simultaneous sources, while

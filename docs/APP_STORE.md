@@ -13,13 +13,12 @@
   includes four sources; Pro removes the app's source-count limit and mark.
   Source count depends on your Mac and OS.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
-- **What's New 0.3.1 (EN):** Crop each source in a private draft before applying
-  it to the shared Stage. Crop supports drag, corner handles, keyboard, and
-  VoiceOver. Source layers now retain placement, crop, and order if sharing
-  ends. Paused sources now stay hidden until a fresh frame arrives on resume,
-  the Stage can close without clearing your Workspace, and notices no longer
-  resize the preview.
-- **What's New 0.3.1 (JA):** ソースごとの切り抜きを追加しました。手元の下書きでドラッグ、四隅のハンドル、キーボード、VoiceOverを使って調整し、「適用」するまで共有Stageには反映されません。共有終了時もレイヤーの配置・切り抜き・重なり順を保持します。一時停止したソースは、再開後に新しいフレームが届くまで非表示になります。Stageを閉じてもWorkspaceの状態を維持し、通知によるプレビューのサイズ変化も解消しました。
+- **What's New 0.3.2 (EN):** Free now supports up to four simultaneous
+  sources. StagePane Pro removes StagePane's source-count limit; the practical
+  number depends on your Mac and macOS. This update also fixes cropped layers
+  sometimes revealing pixels outside the selected region when a Stage tile's
+  aspect ratio creates horizontal or vertical margins.
+- **What's New 0.3.2 (JA):** 無料版で同時に4つのソースを使えるようになりました。StagePane Proではアプリ側のソース件数制限がなくなります（実際に利用できる件数はMacの性能とmacOSの制約に依存します）。また、Stageタイルの縦横比によって左右または上下に余白が生じる場合に、切り抜き範囲外の映像が表示されることがある不具合を修正しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
@@ -129,7 +128,7 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.3.1 App Review notes
+## 0.3.2 App Review notes
 
 Use this concise block in App Store Connect:
 

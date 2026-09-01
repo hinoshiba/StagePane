@@ -29,7 +29,7 @@ exposed. Remove unrelated private data.
   action renders one clean Stage PNG to the clipboard or a user-selected file.
 - Capture starts only from the macOS system picker after user action.
 - Audio and microphone capture remain disabled.
-- No network entitlement or third-party runtime dependency ships in 0.3.1.
+- No network entitlement or third-party runtime dependency ships in 0.3.2.
 - App Sandbox, Hardened Runtime, automatic App Store signing, and release
   checks stay enabled. StagePane contains no cross-application input or
   Accessibility permission/action path.
