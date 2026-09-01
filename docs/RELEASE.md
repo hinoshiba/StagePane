@@ -9,6 +9,42 @@ automatic signing, verifies the archive, and opens it in Xcode Organizer.
 Upload, TestFlight distribution, App Review submission, and public release are
 separate explicit actions.
 
+## Canonical end-to-end sequence
+
+Use this order for every official release:
+
+1. Fast-forward a clean local `main` to the canonical remote `main`, then read
+   the live maximum uploaded macOS build number in App Store Connect.
+2. Create `codex/release-<version>` and update the marketing version, a strictly
+   larger build number, the uploaded-build floor, generated project, metadata,
+   release notes, and required legal or SBOM records together.
+3. Run the source gates. Commit with cryptographic signing and a DCO
+   `Signed-off-by` trailer, push the branch, and open a non-draft pull request.
+4. Complete review, pull-request CI, and the exact-candidate manual acceptance
+   record. Use a normal merge commit so the reviewed signed release commit stays
+   in `main` history; do not squash or rebase it.
+5. Fast-forward local `main` to the merged remote commit and wait for the
+   merged-`main` CI to pass. Confirm its tree is identical to the accepted
+   release tree; if it differs, repeat review and manual acceptance on exact
+   `main`. Only then create and push the immutable annotated signed release tag,
+   and verify the local and remote tag object and peeled commit are identical.
+6. Run only `Scripts/archive-app-store.sh`. Keep its verified archive and
+   private log outside the checkout and let it open Xcode Organizer.
+7. Opening Organizer does not authorize upload. When upload is separately
+   authorized, the release owner privately verifies Distribution Summary and
+   uploads from that same Mac. The repository provides no automated upload path.
+8. After the owner reports upload success, wait for the exact version/build to
+   finish App Store Connect processing. Do not re-upload a build while it is
+   processing.
+9. Configure the matching App Store version and localizations, select the exact
+   build, save and verify the state, and add the version for review only with
+   explicit release-owner authorization.
+10. Set the release mode before submission. For manual release, Submit for App
+    Review and the later public release require separate authorization. For
+    automatic release after approval, the Submit authorization must explicitly
+    include the future public release. Verify the authoritative App Store
+    Connect status after every action.
+
 `./build.sh` remains available only for local development. By default its
 `dist/StagePane.app` is ad-hoc signed. A developer may set
 `STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed Keychain
@@ -33,8 +69,9 @@ macOS > Build Uploads** and record the largest uploaded build number. Update
 `STAGEPANE_PREVIOUS_UPLOADED_BUILD` in `project.yml` to that value and set
 `CURRENT_PROJECT_VERSION` plus the development `Info.plist` build to a strictly
 larger canonical integer. macOS build numbers must increase across every
-marketing version. For StagePane 0.3.2, the verified uploaded floor is `5` and
-the candidate build is `6`.
+marketing version. After a successful upload, record that build as the floor
+for the next candidate; do not edit the already archived candidate or move its
+tag merely to advance the floor.
 
 The exact candidate commit must:
 
@@ -55,6 +92,12 @@ source. This keeps one auditable Archive path while still handing the verified
 result to Organizer.
 
 ## Prepare a release change
+
+Start from a clean, fast-forwarded `main`, create
+`codex/release-<version>`, and keep the release changes in one coherent branch.
+Every commit in the release pull request must be cryptographically signed and
+have a valid DCO `Signed-off-by` trailer. Open a non-draft pull request to
+`main`; do not tag or Archive from the release branch.
 
 Update and review these values in one pull request:
 
@@ -216,8 +259,18 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   more than four sources must preserve the existing session and block only new
   additions.
 
-Record the exact commit, hardware, OS/app versions, results, and approved
-exceptions in the release record.
+Record the exact commit, release-commit signature and DCO verification, pull
+request URL, review, pull-request and merged-`main` CI results, hardware, OS/app
+versions, manual results, and approved exceptions in the release record.
+
+Merge only after review, pull-request CI, and manual acceptance pass. Use a
+normal merge commit so the signed release commit remains reachable from
+`main`. Then fast-forward the local `main` to the canonical remote, confirm the
+release commit is an ancestor, and require the merged-`main` CI to pass. Compare
+the merged `main` tree with the exact release commit used for manual acceptance;
+if they differ because `main` advanced or conflict resolution changed content,
+repeat review and manual acceptance on exact `main` before creating the release
+tag.
 
 ## Create the release tag
 
@@ -226,8 +279,9 @@ must be exactly `v<major>.<minor>.<patch>` and its version must equal
 `MARKETING_VERSION`:
 
 ```bash
-git tag -s v0.3.2 -m "StagePane 0.3.2"
-git push origin v0.3.2
+release_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+git tag -s "v${release_version}" -m "StagePane ${release_version}"
+git push origin "v${release_version}"
 ```
 
 Confirm the signed local tag and its pushed dereference both resolve to the
@@ -264,7 +318,39 @@ inventory in Organizer's Distribution Summary without copying signer details
 into the repository or public logs. Stop before upload if that identity cannot
 be verified.
 
-## Verify and submit
+## Upload in Xcode Organizer
+
+Opening Organizer does not authorize upload. After separate upload approval,
+the release owner performs the only authorized upload from the verified archive
+on the same Mac that ran the helper:
+
+1. Open the archive that the helper placed in Organizer.
+2. Choose Distribute App and the App Store Connect upload route.
+3. Inspect Distribution Summary and compare the final application and installer
+   signing path with the private approved inventory. Do not copy signer names,
+   fingerprints, profiles, or credentials into the repository or public logs.
+4. Upload only after the exact bundle ID, Team, version/build, and final signer
+   are approved. Preserve the upload result in the private release record.
+
+The helper verifies the local archive but never performs Organizer/App Store
+validation, export, or upload on the owner's behalf. Do not add another script,
+Xcode Cloud action, API key, or export-options path for this handoff.
+
+## Wait for App Store Connect processing
+
+After the owner reports a successful upload, inspect **TestFlight > macOS >
+Build Uploads** until the exact version/build has an authoritative
+processing-complete state, record the displayed state, and verify that the build
+can be selected for App Store submission. Processing is expected and is not
+evidence that a replacement binary is required. Never upload the same build
+again or increment its build number merely because it has not appeared yet.
+
+If Apple reports a terminal processing failure and a replacement binary is
+required, leave the existing release tag immutable. Prepare a new candidate
+with a larger build number through a new release branch, pull request, review,
+CI, manual acceptance record, merge, and new semantic version tag.
+
+## Configure, select, and submit
 
 In Xcode Organizer and App Store Connect, verify:
 
@@ -283,6 +369,22 @@ In Xcode Organizer and App Store Connect, verify:
   copy/save path; and
 - metadata, screenshots, privacy answers, export compliance, review notes,
   pricing, territories, and release mode against the exact build.
+
+Create or open the App Store version whose version exactly matches the binary.
+Save and verify each Japanese and English localization before changing another.
+Under Build, select the exact processed version/build, choose Done, save, and
+reload only after the save succeeds. Confirm the build remains selected and the
+intended release mode is set before choosing Add for Review.
+
+After Add for Review, inspect the Draft Submission and confirm it contains the
+exact platform version and build. Set and verify release mode before submission.
+Treat Submit for Review as a final external action and request release-owner
+confirmation immediately before it. For manual release, request a separate
+authorization before public release; for automatic release after approval, the
+Submit confirmation must explicitly authorize that future public release. Then
+verify the submission ID, timestamp, version/build, and authoritative status
+such as Waiting for Review. Never withdraw or cancel a submitted version without
+approval.
 
 Preserve the local archive, validation result, upload result, and final
 Distribution Summary reference in the private release record. Do not commit the

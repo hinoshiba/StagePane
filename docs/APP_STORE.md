@@ -94,17 +94,25 @@ creates a normal shareable window, not an `NSScreen`.
 
 ## Shipping build route
 
-Create and push an annotated signed `v<major>.<minor>.<patch>` tag on the exact
-reviewed `main` commit, then run `Scripts/archive-app-store.sh`. The helper
+Prepare the release on `codex/release-<version>` with signed, DCO-compliant
+commits; require pull-request review, pull-request CI, exact-candidate manual
+acceptance, a normal merge, and passing merged-`main` CI. Create and push an
+annotated signed `v<major>.<minor>.<patch>` tag on that exact reviewed `main`
+commit, then run `Scripts/archive-app-store.sh`. The helper
 archives the checked-in `StagePane.xcodeproj` with the shared
 `StagePane-AppStore` scheme, verifies the candidate, and opens it in Xcode
-Organizer without uploading it. The target is sandboxed, has no network
+Organizer without uploading it. The release owner verifies Distribution Summary
+and, only after separate authorization, uploads manually from that same Mac.
+After upload, wait for the exact build to complete processing before authorized
+App Store Connect build selection, review submission, and release-mode-aware
+public release actions. The target is sandboxed, has no network
 entitlement, grants read/write access only to locations the user explicitly
 selects for Audience PNG export, and bundles the privacy manifest, English/Japanese usage strings,
 `AppIcon.icns`, help, privacy policy, license, notices, trademark policy, and
 brand-asset license. Xcode uses automatic signing for Team `94HVVWXLK3` and the
 canonical `com.hinoshiba.stagepane` bundle identifier. See `RELEASE.md` for
-tag/version/build gates, archive verification, and Organizer handoff steps.
+tag/version/build gates, archive verification, Organizer upload handoff, and
+App Store Connect submission steps.
 
 The submitted Mac App Store binary includes Arrange, Crop, and Draw and contains no
 cross-application input or Accessibility permission/action path. No

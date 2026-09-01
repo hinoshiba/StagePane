@@ -103,11 +103,15 @@ swift test
 
 A checked-in `StagePane.xcodeproj` and shared `StagePane-AppStore` scheme provide
 the Mac App Store archive path. XcodeGen is needed only when changing
-`project.yml`, not to build the checked-in project. From a reviewed, signed, and
-tagged `main` commit, `Scripts/archive-app-store.sh` runs the fixed
+`project.yml`, not to build the checked-in project. From a reviewed `main`
+commit carrying an annotated signed release tag,
+`Scripts/archive-app-store.sh` runs the fixed
 `StagePane-AppStore` Release archive with automatic signing, verifies the local
-candidate, and opens it in Xcode Organizer. Upload remains a separate explicit
-Organizer action. See the [release instructions](docs/RELEASE.md).
+candidate, and opens it in Xcode Organizer. The release owner verifies
+Distribution Summary and, only after separate authorization, uploads manually;
+App Store Connect build selection, review submission, and release remain
+explicit, release-mode-aware actions. See the [release
+instructions](docs/RELEASE.md).
 
 ## How to use it
 
