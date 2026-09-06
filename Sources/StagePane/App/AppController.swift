@@ -1188,8 +1188,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @objc func openPrivacyPolicy() {
         openExternalPage(
             URL(string: L10n.text(
-                "https://stagepane.hinoshiba.com/privacy/",
-                "https://stagepane.hinoshiba.com/en/privacy/"
+                "https://stagepane.hinoshiba.com/#privacy",
+                "https://stagepane.hinoshiba.com/?lang=en#privacy"
             )),
             fallbackResource: "PRIVACY",
             fallbackExtension: "md"
@@ -1200,7 +1200,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         openExternalPage(
             URL(string: L10n.text(
                 "https://stagepane.hinoshiba.com/#support",
-                "https://stagepane.hinoshiba.com/en/#support"
+                "https://stagepane.hinoshiba.com/?lang=en#support"
             )),
             fallbackResource: "HELP",
             fallbackExtension: "md"

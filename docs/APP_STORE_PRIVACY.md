@@ -1,74 +1,54 @@
-# StagePane Privacy Policy / StagePane プライバシーポリシー
+# StagePane Privacy Policy / プライバシーポリシー
 
-Effective date / 発効日: 2026-09-01
-Product / 製品: StagePane for macOS (Mac App Store edition / Mac App Store版)
+Updated / 更新日: 2026-09-06
 
-## Summary / 概要
+## Data and purpose / データと利用目的
 
-StagePane does not collect personal data, create accounts, show advertising, run analytics, or send telemetry. It has no third-party SDKs or publisher-operated server. Apple StoreKit handles the optional StagePane Pro product, purchase, entitlement, and restore flow.
+StagePane displays the screen content selected through Apple’s sharing picker
+and your drawings on the Stage and Workspace on your Mac. The developer does
+not collect personal data from the app. Your meeting app handles screen sharing
+under that provider’s policy.
 
-StagePaneは、個人データの収集、アカウント作成、広告表示、解析、テレメトリ送信を行いません。第三者SDKや発行者運用サーバーはなく、任意のStagePane Pro商品・購入・購入状態・復元はAppleのStoreKitが処理します。
+StagePaneは、Appleの共有ピッカーで選んだ画面と手書きをMac上のStageとWorkspaceへ表示します。
+開発者はアプリから個人データを収集しません。画面共有は会議アプリとその提供元のポリシーに従います。
 
-Every StagePane build provides Arrange, Crop, and Draw, requests no Accessibility or Input Monitoring permission, and does not forward input to other applications.
+## Storage and control / 保存と管理
 
-StagePaneのすべてのビルドは配置、切り抜き、手書きを提供し、アクセシビリティや入力監視の許可を求めず、他のアプリへ入力を転送しません。
+Preferences, including the Curtain message, are saved on your Mac. Screen content,
+source details, crop positions, and drawings remain in memory during use; Stop All
+or quitting discards them. Cropping changes the displayed area while the selected
+source is still captured in full. The Curtain covers the Stage; it does not stop
+capture. Select the Stage window in your meeting app, because sharing the whole
+app or display can also reveal the Workspace.
 
-## Screen content / 画面内容
+設定（カーテンの文言を含む）はMacに保存します。画面、ソース情報、切り抜き位置、手書きは作業中の
+メモリで扱い、「すべて停止」または終了で破棄します。切り抜きは表示範囲を変えますが、取得対象は選択した
+ソース全体です。カーテンは表示を覆う機能で、取得は停止しません。会議アプリでアプリ全体や画面全体を
+共有するとWorkspaceも見えるため、Stageウインドウを選んでください。
 
-StagePane accesses screen content only after you open Apple's system content-sharing picker and explicitly choose a window, application, or display. Choosing an application can include multiple windows owned by it; choose one window for the narrowest scope. Free supports four independently pausable and removable sources. StagePane Pro removes StagePane's source-count limit; the number that can run in practice depends on Mac performance and operating-system constraints. Each choice authorizes only the selected content for that capture session. Canceling grants no source access; removing a source or stopping all sources ends the corresponding streams.
+Copy Image places a PNG on the system clipboard, where other apps may access it.
+Save PNG writes to your selected location. You can delete saved images and clear
+local app data using macOS controls. Revoke a source’s session access by removing
+it or choosing Stop All.
 
-StagePaneは、Appleの共有ピッカーを開き、ウインドウ、アプリ、または画面を明示的に選んだ後にだけ画面内容へアクセスします。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。最も狭い範囲にする場合は1つのウインドウを選んでください。無料版は4件まで個別に一時停止・解除できます。StagePane Proにはアプリ側の件数制限がなく、実際に利用できる件数はMacの性能とOSの制約に依存します。各選択は、その取得セッション中の選択対象だけを許可します。キャンセルした場合は取得せず、解除またはすべて停止すると対応するストリームを終了します。
+「画像をコピー」は他のアプリからも参照できるシステムのクリップボードへPNGを置きます。
+「PNGを保存」は選んだ場所へ書き込みます。保存画像とアプリのローカルデータはmacOSの機能で削除できます。
+ソースの解除または「すべて停止」で、その取得セッションを終了できます。
 
-Selected frames are rendered locally in parallel in the clean Stage window and the private Workspace. StagePane does not record or encode video, capture system or microphone audio, perform OCR or AI processing, transmit frames, or save them automatically.
+## Apple and the website / Appleとウェブサイト
 
-選択したフレームは、クリーンなStageウインドウと手元用Workspaceへローカルで並列に表示します。動画の録画・エンコード、システム音声やマイク音声の取得、OCRやAI処理、フレーム送信、自動保存は行いません。
+Apple processes Pro purchases and restores under [Apple’s privacy policy](https://www.apple.com/legal/privacy/).
+The website is hosted by GitHub Pages, whose connection logs are governed by
+[GitHub’s privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
 
-Crop changes only the part included in the local Stage composition and Audience PNG. It does not narrow Apple's picker approval or the stream: whenever that stream runs, ScreenCaptureKit handles the complete selected source. Pause stops the stream and makes that layer transparent in the Stage, private Workspace, and Audience PNG output. Resume reveals it only after a new complete frame arrives; placement, crop, and z-order remain unchanged. Remove or Stop All ends its capture session, discards its pixels, and deletes its retained layer state. The complete source appears in the private Workspace while its crop is edited. Crop rectangles remain only in app memory, including while a disconnected layer waits for Select Again, until you Remove that layer, choose Stop All, or quit StagePane.
+Proの購入・復元はAppleが処理します。ウェブサイトはGitHub Pagesで配信され、接続情報は上記の
+提供元ポリシーに従って処理されます。
 
-切り抜きで変わるのはローカルのStage合成とAudience PNGに含める範囲だけです。Appleのピッカー許可やストリームの範囲は狭まらず、ストリームの動作中、ScreenCaptureKitは選択したソース全体を扱います。一時停止はストリームを止め、Stage、手元用Workspace、Audience PNGでそのレイヤーを透明にします。再開後は新しい完全なフレームが届いてから再表示し、配置・切り抜き・重なり順は保持します。解除またはすべて停止は取得セッションを終了し、映像と保持中のレイヤー状態を削除します。切り抜き編集中はソース全体を手元用Workspaceに表示します。切り抜き枠は、共有終了後に「選び直す」を待つレイヤーを含めてアプリ内メモリだけに保持し、そのレイヤーを解除するか、すべて停止するか、StagePaneを終了すると破棄します。
+## Contact / 連絡先
 
-## One-shot Audience PNG / 1枚のAudience PNG
+Purchase, billing, or refund requests / 購入・請求・返金: [Apple Support](https://support.apple.com/billing).
+Product and privacy inquiries / 製品・プライバシーの問い合わせ: support@hinoshiba.com.
 
-Only your explicit **Copy Audience Image** or **Save Audience Image…** action creates one lossless PNG of the audience Stage. It includes the currently visible composition, Curtain, ink, watermark, safe-area guide when enabled, and pointer when visible, while excluding Workspace navigation and controls and unrelated windows.
-
-明示的に **Audience画像をコピー** または **Audience画像を保存…** を選んだ場合だけ、観客向けStageのPNGを1枚作成します。現在の合成結果、カーテン、手書き、ウォーターマーク、有効な場合はセーフエリア、表示中の場合はポインターを含み、Workspaceのナビゲーションや操作UI、無関係なウインドウは含みません。
-
-Copy places the PNG on the macOS general pasteboard, where other local apps or clipboard managers may access it. Save opens the macOS save panel and writes only to the location you choose. Canceling Save writes nothing. StagePane keeps no separate screenshot history or hidden copy.
-
-コピーはmacOSの一般ペーストボードへ置くため、他のローカルアプリやクリップボード管理アプリがアクセスする場合があります。保存はmacOSの保存パネルを開き、選んだ場所だけへ書き込みます。キャンセル時は書き込みません。StagePaneはスクリーンショット履歴や隠しコピーを保持しません。
-
-## Pointer and drawings / ポインターと手書き
-
-Laser pointer mode reads only the current pointer position needed to draw one dot over the frontmost Stage source. It does not retain pointer history. Draw mode hides the audience pointer and stops pointer-location sampling until Arrange or Crop resumes. Draw keeps a bounded vector document in memory. Ink is cleared when the final source is removed or all sources stop, unless it has already been included in a user-created Audience PNG.
-
-レーザーポインターは、Stageの最前面ソースへ点を描くために必要な現在位置だけを読み、履歴を保持しません。手書き中は観客側のポインターを隠し、配置または切り抜きへ戻るまで位置の読み取りも停止します。手書きは上限付きのベクターデータとしてメモリ内に保持します。最後のソースを解除またはすべて停止すると消去されます（利用者が作成済みのAudience PNGに含まれたものを除きます）。
-
-## Settings stored on this Mac / このMacに保存する設定
-
-StagePane stores interface preferences such as Stage preset, theme, pointer appearance, drawing tool/color/ink width/eraser size, watermark and safe-area visibility, Curtain message, and window behavior in the app's sandboxed preferences. It does not persist selected source content, source titles, application names, screenshot history, screenshot destinations, or meeting information.
-
-StagePaneは、Stageプリセット、テーマ、ポインター表示、手書きツール・色・インクの太さ・消しゴムの大きさ、ウォーターマークとセーフエリアの表示、カーテン文言、ウインドウ動作などのUI設定をサンドボックス内に保存します。選択したソース内容、ソース名、アプリ名、スクリーンショット履歴、保存先、会議情報は保存しません。
-
-## Permissions / アクセス許可
-
-Screen access is granted per selection and per capture session through Apple's picker. Removing a source or choosing Stop All ends that session-scoped access.
-
-画面アクセスはAppleのピッカーで選択ごと・取得セッションごとに許可されます。ソースの解除または「すべて停止」で、そのセッションのアクセスを終了します。
-
-## Network, retention, sale, and tracking / 通信・保持・販売・トラッキング
-
-StagePane does not upload screen content or screenshots. It has no server-side retention, disclosure, sale, cross-context behavioral advertising, or tracking. The privacy manifest declares tracking false and collected data types empty. A meeting app that transmits the Stage is separate software governed by that provider's terms and privacy information.
-
-StagePaneは画面内容やスクリーンショットをアップロードしません。サーバー側の保持、開示、販売、行動ターゲティング広告、トラッキングはありません。プライバシーマニフェストではトラッキングなし、収集データなしを宣言します。Stageを送信する会議アプリは別製品であり、その提供者の規約とプライバシー情報が適用されます。
-
-For optional StagePane Pro commerce, StoreKit may contact Apple's App Store to load localized product information, complete a purchase, verify current entitlement, listen for transaction changes, or restore a purchase. Apple handles Apple Account credentials. StagePane receives product and verified transaction status needed to unlock Pro; it does not send screen content, source names, screenshots, pointer data, drawings, or usage analytics through StoreKit and has no commerce server of its own.
-
-任意のStagePane Pro購入では、StoreKitがローカライズ済み商品情報の取得、購入、現在の購入状態の検証、取引変更の反映、購入の復元のためAppleのApp Storeへ接続する場合があります。Apple Accountの認証情報はAppleが処理します。StagePaneはPro開放に必要な商品・検証済み取引状態を受け取りますが、画面内容、ソース名、スクリーンショット、ポインターデータ、手書き、利用解析をStoreKitへ送らず、独自の課金サーバーも持ちません。
-
-## Changes and contact / 変更と連絡先
-
-Any future network service, analytics, recording, account, cloud sync, or support-upload feature requires updated disclosures and this policy before release.
-
-将来、ネットワークサービス、解析、録画、アカウント、クラウド同期、サポートへのアップロードを追加する場合は、リリース前に開示と本ポリシーを更新します。
-
-Contact / 連絡先: [support@hinoshiba.com](mailto:support@hinoshiba.com)
+If you email support, your address and message are used to respond, retained only
+as needed to handle the inquiry, and can be deleted on request.
+問い合わせメールのアドレスと本文は対応のために必要な期間だけ保管し、削除依頼を受け付けます。

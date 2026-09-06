@@ -2473,3 +2473,11 @@ footer nav a:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Policy text and navigation remain readable at intermediate widths. */
+.policy-copy { max-width: 850px; }
+.policy-copy p { color: var(--muted); }
+.site-header nav { gap: 12px; }
+footer nav { flex-wrap: wrap; }
+@media (max-width: 1180px) { .site-header .site-nav { display: none; } .mobile-menu { display: block; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

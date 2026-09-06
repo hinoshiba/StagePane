@@ -62,7 +62,7 @@ Contributions use the Developer Certificate of Origin 1.1. Add this line to each
 commit message:
 
 ```text
-Signed-off-by: Your Name <your-email@example.com>
+Signed-off-by: CONTRIBUTOR_NAME <CONTRIBUTOR_EMAIL>
 ```
 
 By signing off, you certify that you wrote the contribution or otherwise have
@@ -81,3 +81,19 @@ terms.
   such code and preserve all required notices.
 - Do not change signing, release, license, privacy, or trademark policy without
   explicit maintainer and appropriate professional review.
+
+## Repository workflow / リポジトリ運用
+
+Start from an up-to-date `main` (`git switch main` then `git pull --ff-only`).
+Use local Xcode for development and release preparation. Pull-request checks
+use unsigned builds (or an ad-hoc signature for local bundle checks), with no
+maintainer Apple Account, signing identity, or private credentials.
+
+Commit and push completed changes on a focused branch, then open a pull request
+using the shared template. For repository maintenance use
+`improve/repository-<message>`. Check website changes in Japanese and English
+at mobile, tablet, and desktop widths.
+
+Use `support@hinoshiba.com` for project contact information. Before publishing,
+check author/committer metadata and changed files for personal contact details,
+secrets, and generated artifacts. Preserve legally required third-party notices.
