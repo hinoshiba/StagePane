@@ -312,11 +312,11 @@ struct PrivacyPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 SectionHeading(
-                    eyebrow: L10n.text("PRIVACY BY DESIGN", "PRIVACY BY DESIGN"),
-                    title: L10n.text("StagePaneの画面処理は、Macの中だけ。", "StagePane processes your screen locally."),
+                    eyebrow: L10n.text("PRIVACY", "PRIVACY"),
+                    title: L10n.text("画面の扱いと保存。", "Screen content and storage."),
                     detail: L10n.text(
-                        "StagePane自身には録画・アップロード・解析・広告の経路がありません。共有時の送信は、会議アプリ側の機能とポリシーに従います。",
-                        "StagePane itself has no recorder, upload path, analytics, or ads. When you share the Stage, transmission is handled by your meeting app."
+                        "選択した画面をMac上でStageに表示します。画面共有は会議アプリから操作してください。",
+                        "Selected screen content is displayed on the Stage on your Mac. Control screen sharing from your meeting app."
                     )
                 )
 
@@ -377,23 +377,18 @@ struct PrivacyPanel: View {
                 }
                 .cardSurface()
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.text("StagePaneがしないこと", "What StagePane never does"))
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L10n.text("保存した画像について", "Saved images"))
                         .font(.headline)
-                        .padding(.bottom, 9)
-                    PrivacyPromise(
-                        symbol: "externaldrive.badge.xmark",
-                        title: L10n.text(
-                            "画面を自動保存しません（明示したAudience PNGを除く）",
-                            "Never saves your screen automatically; only an explicit Audience PNG"
-                        )
-                    )
-                    Divider().padding(.leading, 42)
-                    PrivacyPromise(symbol: "network.slash", title: L10n.text("画面や利用状況をネットワーク送信しません", "Never sends your screen or usage over the network"))
-                    Divider().padding(.leading, 42)
-                    PrivacyPromise(symbol: "waveform.badge.exclamationmark", title: L10n.text("音声・マイクを取得しません", "Never captures audio or microphone input"))
-                    Divider().padding(.leading, 42)
-                    PrivacyPromise(symbol: "person.crop.circle.badge.xmark", title: L10n.text("アカウントや追跡IDを作りません", "Never creates an account or tracking ID"))
+                    Text(L10n.text(
+                        "「画像をコピー」はクリップボードへ、「PNGを保存」は選択した場所へ画像を作成します。不要な保存画像はご自身で削除してください。",
+                        "Copy Image places an image on the clipboard. Save PNG creates a file at your chosen location. Delete saved images when you no longer need them."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    Button(L10n.text("プライバシーポリシー", "Privacy policy")) {
+                        controller.openPrivacyPolicy()
+                    }
                 }
                 .cardSurface()
 
@@ -406,8 +401,8 @@ struct PrivacyPanel: View {
                         Text(L10n.text("StagePane Proの購入", "StagePane Pro purchases"))
                             .font(.subheadline.weight(.semibold))
                         Text(L10n.text(
-                            "Mac App Store版では、商品情報・購入・復元・購入状態の確認だけをAppleのStoreKitが処理します。画面内容や利用状況は購入処理へ渡しません。",
-                            "In the Mac App Store build, Apple StoreKit handles only product information, purchase, restore, and purchase status. Screen content and usage are never provided to the purchase flow."
+                            "Proの商品情報・購入・復元はAppleのStoreKitが処理します。購入や請求についてはAppleのサポートをご確認ください。",
+                            "Apple StoreKit handles Pro product information, purchases, and restores. For purchase and billing questions, see Apple Support."
                         ))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -605,10 +600,10 @@ struct AboutPanel: View {
                     Divider().padding(.leading, 42)
                     AboutFact(
                         symbol: "shippingbox.fill",
-                        title: L10n.text("第三者ランタイム依存なし", "No third-party runtime dependencies"),
+                        title: L10n.text("対応環境", "Compatibility"),
                         detail: L10n.text(
-                            "解析SDK、広告SDK、自動更新フレームワークを同梱していません。",
-                            "Ships without analytics, advertising, or self-update frameworks."
+                            "macOS 14以降のApple SiliconとIntel Macに対応しています。",
+                            "Supports Apple Silicon and Intel Macs running macOS 14 or later."
                         )
                     )
                 }

@@ -9,6 +9,13 @@ automatic signing, verifies the archive, and opens it in Xcode Organizer.
 Upload, TestFlight distribution, App Review submission, and public release are
 separate explicit actions.
 
+## One-time migration from a previous hosted workflow
+
+If a previous Xcode Cloud workflow exists in Xcode or App Store Connect,
+deactivate it and confirm its branch/tag triggers and automatic distribution
+are disabled before creating release tags. Removing repository hooks does not
+change those server-side settings. Preserve existing build history.
+
 ## Canonical end-to-end sequence
 
 Use this order for every official release:

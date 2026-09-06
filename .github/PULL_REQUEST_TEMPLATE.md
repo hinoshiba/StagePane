@@ -1,29 +1,18 @@
-## Why
+## Summary
 
-Describe the user problem and why this scope is appropriate.
+Describe the problem and the resulting behavior. Link related issues if applicable.
 
-## What changed
+## Validation
 
--
+Describe the checks you ran and their results. For UI changes, include the languages and screen sizes checked, with screenshots when useful. Note any checks that could not be run.
 
-## Safety and compliance
+## Release notes
 
-- [ ] Public Apple APIs only; no private display API or raw event injection
-- [ ] Local and Mac App Store targets keep the same sandboxed Arrange/Draw
-      feature set and contain no cross-application input, Accessibility
-      implementation, or Accessibility/Input Monitoring permission path
-- [ ] Capture/privacy data flow unchanged, or a reviewed threat model is linked
-- [ ] Dependency/license/SBOM/notices unchanged, or all are updated
-- [ ] Japanese and English copy updated together
-- [ ] Accessibility and non-color state cues checked
+Describe user-facing changes, compatibility or migration needs, and any remaining limitations. Write “None” if not applicable.
 
-## Verification
+## Checklist
 
-- [ ] `./Scripts/release-check.sh`
-- [ ] `swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors`
-- [ ] Synthetic screenshots attached for visual changes
-- [ ] Manual macOS/meeting-app matrix listed below where relevant
-
-## DCO
-
-- [ ] Every commit has a `Signed-off-by:` line
+- [ ] The change is focused, and relevant documentation is updated.
+- [ ] Relevant local checks pass; builds for review require no maintainer credentials.
+- [ ] No secrets, personal contact details, or generated build artifacts are included. Use support@hinoshiba.com for project contact information.
+- [ ] Third-party code and assets retain their required license notices.

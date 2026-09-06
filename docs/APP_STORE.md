@@ -19,10 +19,10 @@
   sometimes revealing pixels outside the selected region when a Stage tile's
   aspect ratio creates horizontal or vertical margins.
 - **What's New 0.3.2 (JA):** 無料版で同時に4つのソースを使えるようになりました。StagePane Proではアプリ側のソース件数制限がなくなります（実際に利用できる件数はMacの性能とmacOSの制約に依存します）。また、Stageタイルの縦横比によって左右または上下に余白が生じる場合に、切り抜き範囲外の映像が表示されることがある不具合を修正しました。
-- **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/privacy/
-- **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
+- **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
+- **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/?lang=en#privacy
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
-- **Support URL (EN):** https://stagepane.hinoshiba.com/en/#support
+- **Support URL (EN):** https://stagepane.hinoshiba.com/?lang=en#support
 
 - **Keywords (EN draft):** `presentation,meeting,window,privacy,demo,teaching,webinar,laser,canvas,annotate,training,remote`
 - **キーワード（JA案）:** `プレゼン,会議,ウインドウ,発表,デモ,講義,プライバシー,ポインター,注釈`
@@ -59,8 +59,7 @@ creates a normal shareable window, not an `NSScreen`.
 > Proは買い切りで、サブスクリプションではありません。価格はApp Storeが
 > 購入前に表示します。復元が必要な場合はPro画面の「購入を復元」を利用できます。
 >
-> StagePaneは録画、音声取得、StagePaneアカウント、広告、利用解析を行いません。
-> 画面はMac上で処理し、自動保存や発行者サーバーへの送信はしません。
+> 画面の扱いと保存は、アプリ内からプライバシーポリシーを確認できます。
 
 ### Description draft — English (U.S.)
 
@@ -88,9 +87,7 @@ creates a normal shareable window, not an `NSScreen`.
 > before purchase. When restoration is needed, use Restore Purchases on the
 > Pro screen.
 >
-> StagePane has no recording, audio capture, StagePane account, ads, or usage analytics.
-> It processes screen content on your Mac, never saves it automatically, and
-> never sends it to a publisher-operated server.
+> Read the privacy policy from the app for how screen content is handled and saved.
 
 ## Shipping build route
 
