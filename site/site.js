@@ -691,6 +691,24 @@ const translations = {
       "en": "Apple purchase support"
     }
   },
+  "sales-disclosure": {
+    "html": {
+      "ja": "販売事業者の氏名、住所および電話番号については、「特定商取引法に基づく表記」の開示請求をいただいた場合、法令に基づき遅滞なく電子メールにて提供いたします。",
+      "en": "Upon request for a disclosure under Japan’s Act on Specified Commercial Transactions, the seller’s name, address, and telephone number will be provided by email without delay in accordance with applicable law."
+    }
+  },
+  "sales-disclosure-contact": {
+    "html": {
+      "ja": "購入判断前に確認できるよう、<a class=\"contact-link\" href=\"mailto:support@hinoshiba.com\">support@hinoshiba.com</a>へご請求ください。購入済みである必要はありません。",
+      "en": "To review this information before deciding to purchase, contact <a class=\"contact-link\" href=\"mailto:support@hinoshiba.com\">support@hinoshiba.com</a>. A prior purchase is not required."
+    }
+  },
+  "sales-reference": {
+    "html": {
+      "ja": "参考: 特定商取引法ガイド",
+      "en": "Reference: Guide to the Act on Specified Commercial Transactions (Japanese)"
+    }
+  },
   "t105": {
     "html": {
       "ja": "困ったときの、<br/>確認ポイント。",
