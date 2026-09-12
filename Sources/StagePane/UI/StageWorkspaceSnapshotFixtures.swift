@@ -10,27 +10,16 @@ enum StageWorkspaceSnapshotFixture: Sendable {
 
     var sourceCount: Int { 3 }
 
-    var hasCanvasComposition: Bool {
-        self == .arrange || self == .draw
-    }
+    // The legacy sources export now shows the same combined workspace.
+    var hasCanvasComposition: Bool { true }
 }
+
 private struct SnapshotSourcePresentation: Identifiable {
     let id: Int
     let title: String
     let symbol: String
-    let isPaused: Bool
-    let isFrontmost: Bool
-
-    var statusTitle: String {
-        if isPaused {
-            return L10n.text("一時停止・映像は非表示", "Paused · Video hidden")
-        }
-        return L10n.text("画面取得中", "Capture active")
-    }
-
-    var statusColor: Color {
-        isPaused ? Color.secondary : StagePanePalette.mintReadable
-    }
+    let isHidden: Bool
+    let isSelected: Bool
 
     static var fixtures: [SnapshotSourcePresentation] {
         [
@@ -38,22 +27,22 @@ private struct SnapshotSourcePresentation: Identifiable {
                 id: 1,
                 title: L10n.text("プレゼン資料", "Presentation"),
                 symbol: "macwindow",
-                isPaused: false,
-                isFrontmost: true
+                isHidden: false,
+                isSelected: true
             ),
             SnapshotSourcePresentation(
                 id: 2,
                 title: L10n.text("デモアプリ", "Demo App"),
                 symbol: "app.fill",
-                isPaused: true,
-                isFrontmost: false
+                isHidden: true,
+                isSelected: false
             ),
             SnapshotSourcePresentation(
                 id: 3,
                 title: L10n.text("参考画面", "Reference Screen"),
                 symbol: "display",
-                isPaused: false,
-                isFrontmost: false
+                isHidden: false,
+                isSelected: false
             )
         ]
     }
@@ -63,46 +52,7 @@ struct SnapshotSourceRailList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             ForEach(SnapshotSourcePresentation.fixtures) { source in
-                HStack(spacing: 8) {
-                    Image(systemName: source.symbol)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                        .frame(width: 27, height: 27)
-                        .background(
-                            (source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                                .opacity(0.11),
-                            in: RoundedRectangle(cornerRadius: 7)
-                        )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(source.title)
-                            .font(.caption2.weight(.semibold))
-                            .lineLimit(1)
-                        Text(source.isPaused
-                            ? L10n.text("一時停止・非表示", "Paused · Hidden")
-                            : L10n.text("取得中", "Active"))
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(source.statusColor)
-                    }
-
-                    Spacer(minLength: 2)
-
-                    Image(systemName: "crop")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(source.isPaused ? Color.secondary : Color.primary)
-                        .frame(width: 24, height: 24)
-                        .background(
-                            (source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                                .opacity(source.isPaused ? 0.08 : 0.18),
-                            in: RoundedRectangle(cornerRadius: 6)
-                        )
-
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 9, weight: .bold))
-                        .frame(width: 18, height: 24)
-                }
-                .padding(8)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+                SnapshotLayerRow(source: source)
             }
 
             Spacer(minLength: 8)
@@ -123,144 +73,67 @@ struct SnapshotSourceRailList: View {
     }
 }
 
-struct WorkspaceSourcesSnapshotPanel: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 18) {
-                SectionHeading(
-                    eyebrow: L10n.text("SOURCES", "SOURCES"),
-                    title: L10n.text("共有する内容を管理", "Manage what you share"),
-                    detail: L10n.text(
-                        "Appleの選択画面から1件ずつ追加し、一時停止・選び直し・解除をここで行います。",
-                        "Add one item at a time with Apple’s picker, then pause, replace, or remove it here."
-                    )
-                )
-
-                Spacer(minLength: 12)
-
-                HStack(spacing: 7) {
-                    Circle()
-                        .fill(StagePanePalette.mintReadable)
-                        .frame(width: 7, height: 7)
-                    Text(L10n.text("PRO・3ソース・1件一時停止", "PRO · 3 sources · 1 paused"))
-                        .lineLimit(1)
-                }
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(StagePanePalette.mintReadable)
-                .padding(.horizontal, 10)
-                .frame(minHeight: 29)
-                .background(StagePanePalette.mintReadable.opacity(0.10), in: Capsule())
-                .overlay(Capsule().stroke(StagePanePalette.mintReadable.opacity(0.22)))
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(L10n.text("ソース", "Sources"))
-                        .font(.headline)
-                    Spacer()
-                    Text("3 / ∞")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-
-                ForEach(SnapshotSourcePresentation.fixtures) { source in
-                    SnapshotSourceManagementRow(source: source)
-                }
-
-                Button(action: {}) {
-                    Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(PrimaryActionButtonStyle())
-
-                Button(action: {}) {
-                    Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-            }
-            .cardSurface()
-
-            HStack(spacing: 10) {
-                Button(action: {}) {
-                    Label(
-                        L10n.text("共有先をStageへ切替", "Switch Active Share"),
-                        systemImage: "arrow.up.forward.app"
-                    )
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-
-                Button(action: {}) {
-                    Label(
-                        L10n.stopAllAndRemoveLayersTitle,
-                        systemImage: "stop.fill"
-                    )
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
-            }
-        }
-        .padding(.top, 30)
-        .padding(.horizontal, 30)
-        .padding(.bottom, 26)
-        .frame(maxWidth: 960, maxHeight: .infinity, alignment: .topLeading)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct SnapshotSourceManagementRow: View {
+private struct SnapshotLayerRow: View {
     let source: SnapshotSourcePresentation
 
     var body: some View {
-        HStack(spacing: 11) {
-            Image(systemName: source.symbol)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                .frame(width: 32, height: 32)
-                .background(
-                    (source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                        .opacity(0.11),
-                    in: RoundedRectangle(cornerRadius: 9)
-                )
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: source.symbol)
+                    .foregroundStyle(StagePanePalette.aquaReadable)
+                    .frame(width: 22)
 
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(source.title)
                         .font(.caption.weight(.semibold))
-                    if source.isFrontmost {
-                        Text(L10n.text("最前面", "Frontmost"))
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(StagePanePalette.aquaReadable)
-                            .padding(.horizontal, 6)
-                            .frame(minHeight: 17)
-                            .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
-                    }
+                        .lineLimit(1)
+                    Text(source.isHidden
+                        ? L10n.text("非表示・取得停止中", "Hidden · Capture paused")
+                        : L10n.text("表示中", "Visible on Stage"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                Text(source.statusTitle)
-                    .font(.caption2)
-                    .foregroundStyle(source.statusColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: source.isHidden ? "eye.slash" : "eye")
+                    .foregroundStyle(source.isHidden ? Color.secondary : StagePanePalette.aquaReadable)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+
+                Image(systemName: "ellipsis")
+                    .frame(width: 22, height: 28)
             }
 
-            Spacer(minLength: 12)
-
-            Image(systemName: "crop")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(source.isPaused ? Color.secondary : Color.primary)
-                .frame(width: 27, height: 27)
-                .background(
-                    (source.isPaused ? Color.secondary : StagePanePalette.indigo)
-                        .opacity(source.isPaused ? 0.08 : 0.18),
-                    in: RoundedRectangle(cornerRadius: 7)
-                )
-            Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .bold))
-                .frame(width: 25, height: 27)
+            if source.isSelected {
+                HStack(spacing: 6) {
+                    Button(action: {}) {
+                        Image(systemName: "arrow.up").frame(width: 28, height: 25)
+                    }
+                    .disabled(true)
+                    Button(action: {}) {
+                        Image(systemName: "arrow.down").frame(width: 28, height: 25)
+                    }
+                    Spacer(minLength: 0)
+                    Button(action: {}) {
+                        Label(L10n.cropEditActionTitle(isCropped: false), systemImage: "crop")
+                            .font(.caption2)
+                            .lineLimit(1)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
         }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .padding(.horizontal, 11)
-        .frame(minHeight: 58)
-        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 11))
+        .padding(9)
+        .background(
+            source.isSelected ? StagePanePalette.aqua.opacity(0.10) : Color.white.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 10)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(source.isSelected ? StagePanePalette.aquaReadable.opacity(0.65) : Color.white.opacity(0.07))
+        }
     }
 }
 
@@ -275,20 +148,20 @@ struct SnapshotStageComposition: View {
                 StageBackground(theme: theme)
 
                 SnapshotStageTile(
-                    title: L10n.text("プレゼン資料", "Presentation"),
-                    symbol: "macwindow",
-                    style: .presentation,
+                    title: L10n.text("参考画面", "Reference Screen"),
+                    symbol: "display",
+                    style: .reference,
                     showsEditingChrome: !showsDrawing,
                     isPaused: false,
-                    isFrontmost: true
+                    isSelected: false
                 )
                 .frame(
-                    width: proxy.size.width * 0.55,
-                    height: proxy.size.height * 0.78
+                    width: proxy.size.width * 0.36,
+                    height: proxy.size.height * 0.34
                 )
                 .position(
-                    x: proxy.size.width * 0.335,
-                    y: proxy.size.height * 0.48
+                    x: proxy.size.width * 0.76,
+                    y: proxy.size.height * 0.70
                 )
 
                 SnapshotStageTile(
@@ -297,7 +170,7 @@ struct SnapshotStageComposition: View {
                     style: .demo,
                     showsEditingChrome: !showsDrawing,
                     isPaused: true,
-                    isFrontmost: false
+                    isSelected: false
                 )
                 .frame(
                     width: proxy.size.width * 0.32,
@@ -309,20 +182,20 @@ struct SnapshotStageComposition: View {
                 )
 
                 SnapshotStageTile(
-                    title: L10n.text("参考画面", "Reference Screen"),
-                    symbol: "display",
-                    style: .reference,
+                    title: L10n.text("プレゼン資料", "Presentation"),
+                    symbol: "macwindow",
+                    style: .presentation,
                     showsEditingChrome: !showsDrawing,
                     isPaused: false,
-                    isFrontmost: false
+                    isSelected: true
                 )
                 .frame(
-                    width: proxy.size.width * 0.32,
-                    height: proxy.size.height * 0.34
+                    width: proxy.size.width * 0.60,
+                    height: proxy.size.height * 0.78
                 )
                 .position(
-                    x: proxy.size.width * 0.79,
-                    y: proxy.size.height * 0.70
+                    x: proxy.size.width * 0.36,
+                    y: proxy.size.height * 0.48
                 )
 
                 if showsDrawing {
@@ -365,7 +238,7 @@ private struct SnapshotStageTile: View {
     let style: SnapshotStageTileStyle
     let showsEditingChrome: Bool
     let isPaused: Bool
-    let isFrontmost: Bool
+    let isSelected: Bool
 
     var body: some View {
         GeometryReader { proxy in
@@ -376,15 +249,15 @@ private struct SnapshotStageTile: View {
                     tileContent(size: proxy.size)
                 }
 
-                if showsEditingChrome {
+                if showsEditingChrome && isSelected {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
                             isPaused
                                 ? Color.white.opacity(0.30)
-                                : (isFrontmost ? StagePanePalette.aquaReadable : Color.white.opacity(0.42)),
+                                : (isSelected ? StagePanePalette.aquaReadable : Color.white.opacity(0.42)),
                             style: StrokeStyle(
-                                lineWidth: isFrontmost ? 2 : 1,
-                                dash: isFrontmost ? [] : [5, 4]
+                                lineWidth: isSelected ? 2 : 1,
+                                dash: isSelected ? [] : [5, 4]
                             )
                         )
 
@@ -412,7 +285,7 @@ private struct SnapshotStageTile: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     }
 
-                    if isFrontmost {
+                    if isSelected {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
@@ -577,8 +450,8 @@ private struct SnapshotInkTraces: View {
 
             let circle = Path(
                 ellipseIn: CGRect(
-                    x: size.width * 0.67,
-                    y: size.height * 0.12,
+                    x: size.width * 0.69,
+                    y: size.height * 0.55,
                     width: size.width * 0.22,
                     height: size.height * 0.24
                 )

@@ -3,6 +3,90 @@ import XCTest
 @testable import StagePaneCore
 
 final class SourceCropProjectionTests: XCTestCase {
+    func testVisibleContentFrameExcludesSquareSourceLetterboxing() throws {
+        let frame = try XCTUnwrap(SourceCropProjection.visibleContentFrame(
+            sourceSize: CGSize(width: 900, height: 900),
+            sourceCrop: .fullSource,
+            destinationSize: CGSize(width: 1_600, height: 900)
+        ))
+
+        assertRect(frame, x: 350, y: 0, width: 900, height: 900)
+    }
+
+    func testVisibleContentFrameExcludesCropMarginsAndIgnoresCropOffset() throws {
+        let sourceSize = CGSize(width: 1_600, height: 900)
+        let destinationSize = CGSize(width: 1_600, height: 900)
+        let left = try XCTUnwrap(SourceCropProjection.visibleContentFrame(
+            sourceSize: sourceSize,
+            sourceCrop: NormalizedSourceRect(x: 0, y: 0, width: 0.25, height: 1),
+            destinationSize: destinationSize
+        ))
+        let right = try XCTUnwrap(SourceCropProjection.visibleContentFrame(
+            sourceSize: sourceSize,
+            sourceCrop: NormalizedSourceRect(x: 0.75, y: 0, width: 0.25, height: 1),
+            destinationSize: destinationSize
+        ))
+
+        assertRect(left, x: 600, y: 0, width: 400, height: 900)
+        XCTAssertEqual(left, right)
+    }
+
+    func testVisibleContentMatchesAcceptedPaddedSurfaceProjection() throws {
+        let presentation = try XCTUnwrap(SourcePresentationGeometry(
+            surfaceSize: CGSize(width: 960, height: 540),
+            contentRect: CGRect(x: 120, y: 45, width: 720, height: 450)
+        ))
+        let crops: [NormalizedSourceRect] = [
+            .fullSource,
+            NormalizedSourceRect(x: 0.25, y: 0.2, width: 0.5, height: 0.6),
+            NormalizedSourceRect(x: 0.75, y: 0, width: 0.25, height: 1),
+            NormalizedSourceRect(x: 0, y: 0.75, width: 1, height: 0.25)
+        ]
+
+        for destinationSize in [
+            CGSize(width: 800, height: 450),
+            CGSize(width: 450, height: 800)
+        ] {
+            for crop in crops {
+                let expected = try projectedVisibleFrame(
+                    presentation: presentation,
+                    sourceCrop: crop,
+                    destinationSize: destinationSize
+                )
+                let actual = try XCTUnwrap(SourceCropProjection.visibleContentFrame(
+                    sourceSize: presentation.contentRect.size,
+                    sourceCrop: crop,
+                    destinationSize: destinationSize
+                ))
+                assertRect(
+                    actual,
+                    x: expected.minX,
+                    y: expected.minY,
+                    width: expected.width,
+                    height: expected.height
+                )
+            }
+        }
+    }
+
+    func testVisibleContentRejectsInvalidGeometry() {
+        XCTAssertNil(SourceCropProjection.visibleContentFrame(
+            sourceSize: .zero,
+            sourceCrop: .fullSource,
+            destinationSize: CGSize(width: 800, height: 450)
+        ))
+        XCTAssertNil(SourceCropProjection.visibleContentFrame(
+            sourceSize: CGSize(width: 800, height: 450),
+            sourceCrop: .fullSource,
+            destinationSize: CGSize(width: CGFloat.infinity, height: 450)
+        ))
+        XCTAssertNil(SourceCropProjection.visibleContentFrame(
+            sourceSize: CGSize(width: CGFloat.nan, height: 450),
+            sourceCrop: .fullSource,
+            destinationSize: CGSize(width: 800, height: 450)
+        ))
+    }
+
     func testCenteredCropFillsMatchingDestinationAspect() throws {
         let crop = NormalizedSourceRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)
         let frame = try XCTUnwrap(SourceCropProjection.sourceFrame(

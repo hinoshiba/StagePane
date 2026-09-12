@@ -308,7 +308,7 @@ struct ProUpgradePanel: View {
                 Button {
                     controller.selectWorkspaceSection(.canvas)
                 } label: {
-                    Text(L10n.text("キャンバスへ戻る", "Return to Canvas"))
+                    Text(L10n.text("ワークスペースへ戻る", "Return to Workspace"))
                 }
                 .buttonStyle(SecondaryActionButtonStyle())
             }

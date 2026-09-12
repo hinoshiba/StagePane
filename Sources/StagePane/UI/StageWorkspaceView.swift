@@ -4,8 +4,7 @@ import SwiftUI
 private extension WorkspaceSection {
     var title: String {
         switch self {
-        case .canvas: L10n.text("キャンバス", "Canvas")
-        case .sources: L10n.text("ソース", "Sources")
+        case .canvas, .sources: L10n.text("ワークスペース", "Workspace")
         case .stage: L10n.text("Stage設定", "Stage Settings")
         case .appearance: L10n.text("見た目と動作", "Appearance")
         case .pro: "StagePane Pro"
@@ -17,8 +16,7 @@ private extension WorkspaceSection {
 
     var symbol: String {
         switch self {
-        case .canvas: "rectangle.inset.filled"
-        case .sources: "square.stack.3d.up.fill"
+        case .canvas, .sources: "rectangle.inset.filled"
         case .stage: "slider.horizontal.3"
         case .appearance: "paintpalette.fill"
         case .pro: "sparkles"
@@ -41,7 +39,6 @@ struct StageWorkspaceView: View {
     private let focusesAppearanceForSnapshot: Bool
     private let snapshotFixture: StageWorkspaceSnapshotFixture?
 
-    @State private var isSourceRailVisible = true
     @State private var isClearInkConfirmationPresented = false
 
     init(
@@ -58,7 +55,7 @@ struct StageWorkspaceView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let usesCompactNavigation = geometry.size.width < 1_100
+            let usesCompactNavigation = geometry.size.width < 1_200
 
             HStack(spacing: 0) {
                 workspaceNavigation(compact: usesCompactNavigation)
@@ -69,16 +66,6 @@ struct StageWorkspaceView: View {
                 workspaceContent
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .onAppear {
-                if usesCompactNavigation {
-                    isSourceRailVisible = false
-                }
-            }
-            .onChange(of: usesCompactNavigation) { _, isCompact in
-                if isCompact {
-                    isSourceRailVisible = false
-                }
-            }
         }
         .frame(minWidth: 900, minHeight: 620)
         .background(workspaceBackground.ignoresSafeArea())
@@ -142,17 +129,8 @@ struct StageWorkspaceView: View {
     @ViewBuilder
     private var workspaceDetail: some View {
         switch controller.workspaceSection {
-        case .canvas:
-            ViewThatFits(in: .horizontal) {
-                wideWorkspace
-                compactWorkspace
-            }
-        case .sources:
-            if snapshotFixture == .sources {
-                WorkspaceSourcesSnapshotPanel()
-            } else {
-                WorkspaceSourcesPanel(controller: controller, capture: capture)
-            }
+        case .canvas, .sources:
+            compositionWorkspace
         case .stage:
             StageSettingsPanel(controller: controller, capture: capture)
         case .appearance:
@@ -188,7 +166,7 @@ struct StageWorkspaceView: View {
 
             navigationGroup(
                 title: L10n.text("ワークスペース", "WORKSPACE"),
-                sections: [.canvas, .sources],
+                sections: [.canvas],
                 compact: compact
             )
 
@@ -258,7 +236,8 @@ struct StageWorkspaceView: View {
         _ section: WorkspaceSection,
         compact: Bool
     ) -> some View {
-        let isSelected = controller.workspaceSection == section
+        let isSelected = controller.workspaceSection == section ||
+            (section == .canvas && controller.workspaceSection == .sources)
 
         return Button {
             controller.selectWorkspaceSection(section)
@@ -269,7 +248,7 @@ struct StageWorkspaceView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .frame(width: 23, height: 23)
 
-                    if compact, section == .sources, displayedSourceCount > 0 {
+                    if compact, section == .canvas, displayedSourceCount > 0 {
                         Text("\(displayedSourceCount)")
                             .font(.system(size: 8, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
@@ -286,11 +265,7 @@ struct StageWorkspaceView: View {
 
                     Spacer(minLength: 4)
 
-                    if section == .sources {
-                        Text("\(displayedSourceCount) / \(controller.activeSourceLimitDescription)")
-                            .font(.caption2.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(Color.white.opacity(0.48))
-                    } else if section == .pro {
+                    if section == .pro {
                         Text(controller.hasProAccess ? L10n.text("有効", "ACTIVE") : "PRO")
                             .font(.system(size: 8, weight: .black, design: .rounded))
                             .tracking(0.4)
@@ -334,10 +309,11 @@ struct StageWorkspaceView: View {
 
     private func navigationAccessibilityValue(for section: WorkspaceSection) -> String {
         var values: [String] = []
-        if controller.workspaceSection == section {
+        if controller.workspaceSection == section ||
+            (section == .canvas && controller.workspaceSection == .sources) {
             values.append(L10n.text("選択中", "Selected"))
         }
-        if section == .sources {
+        if section == .canvas {
             values.append(
                 controller.sourceCountAccessibilityDescription(displayedSourceCount)
             )
@@ -367,40 +343,16 @@ struct StageWorkspaceView: View {
 
     private func workspaceToolbarContent(compact: Bool) -> some View {
         HStack(spacing: 11) {
-            if controller.workspaceSection == .canvas {
-                Button {
-                    isSourceRailVisible.toggle()
-                } label: {
-                    if compact {
-                        Image(systemName: "sidebar.left")
-                    } else {
-                        Label(
-                            isSourceRailVisible
-                                ? L10n.text("ソースを隠す", "Hide Sources")
-                                : L10n.text("ソースを表示", "Show Sources"),
-                            systemImage: "sidebar.left"
-                        )
-                    }
-                }
-                .buttonStyle(WorkspaceToolbarButtonStyle())
-                .accessibilityLabel(isSourceRailVisible
-                    ? L10n.text("ソース一覧を隠す", "Hide source list")
-                    : L10n.text("ソース一覧を表示", "Show source list"))
-                .help(isSourceRailVisible
-                    ? L10n.text("ソース一覧を隠します", "Hide the source list")
-                    : L10n.text("ソース一覧を表示します", "Show the source list"))
+            if compact {
+                Image(systemName: controller.workspaceSection.symbol)
+                    .frame(width: 29, height: 29)
+                    .accessibilityLabel(controller.workspaceSection.title)
             } else {
-                if compact {
-                    Image(systemName: controller.workspaceSection.symbol)
-                        .frame(width: 29, height: 29)
-                } else {
-                    Label(
-                        controller.workspaceSection.title,
-                        systemImage: controller.workspaceSection.symbol
-                    )
-                    .font(.caption.weight(.semibold))
-                }
-
+                Label(
+                    controller.workspaceSection.title,
+                    systemImage: controller.workspaceSection.symbol
+                )
+                .font(.caption.weight(.semibold))
             }
 
             WorkspaceOutputStatus(
@@ -412,7 +364,7 @@ struct StageWorkspaceView: View {
 
             Spacer(minLength: 8)
 
-            if controller.workspaceSection == .canvas {
+            if isCompositionWorkspace {
                 if controller.stageInteractionMode == .crop {
                     cropToolbarIdentity(compact: compact)
                 } else {
@@ -545,34 +497,19 @@ struct StageWorkspaceView: View {
         ))
     }
 
-    private var wideWorkspace: some View {
+    private var isCompositionWorkspace: Bool {
+        controller.workspaceSection == .canvas || controller.workspaceSection == .sources
+    }
+
+    private var compositionWorkspace: some View {
         HStack(spacing: 0) {
-            if isSourceRailVisible {
-                sourceRail
-                    .frame(width: 240)
-            }
+            sourceRail
+                .frame(width: 260)
 
             Divider().overlay(Color.white.opacity(0.10))
             stageWorkspace
-                .frame(minWidth: 650)
+                .frame(minWidth: 0, maxWidth: .infinity)
         }
-        .frame(minWidth: isSourceRailVisible ? 910 : 680)
-    }
-
-    private var compactWorkspace: some View {
-        stageWorkspace
-            .overlay(alignment: .leading) {
-                if isSourceRailVisible {
-                    sourceRail
-                        .frame(width: 240)
-                        .background(.ultraThinMaterial)
-                        .overlay(alignment: .trailing) {
-                            Divider().overlay(Color.white.opacity(0.14))
-                        }
-                        .shadow(color: .black.opacity(0.42), radius: 24, x: 10)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-            }
     }
 
     private var sourceRail: some View {
@@ -581,7 +518,7 @@ struct StageWorkspaceView: View {
                 Image(systemName: "square.stack.3d.up.fill")
                     .foregroundStyle(StagePanePalette.aqua)
                     .accessibilityHidden(true)
-                Text(L10n.text("ステージのソース", "Stage Sources"))
+                Text(L10n.text("レイヤー", "Layers"))
                     .font(.caption.weight(.bold))
                 Spacer()
                 if controller.hasProAccess {
@@ -599,9 +536,17 @@ struct StageWorkspaceView: View {
                     .accessibilityLabel(
                         controller.sourceCountAccessibilityDescription(displayedSourceCount)
                     )
+                layerActionsMenu
             }
             .padding(.horizontal, 15)
             .frame(minHeight: 42)
+
+            Text(L10n.text("上のレイヤーほど手前に表示", "Top layers appear in front"))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 15)
+                .padding(.bottom, 10)
 
             Divider().overlay(Color.white.opacity(0.09))
 
@@ -625,9 +570,49 @@ struct StageWorkspaceView: View {
         .background(Color.black.opacity(0.16))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text(
-            "ステージのソース一覧",
-            "Stage source list"
+            "ステージのレイヤー一覧",
+            "Stage layer list"
         ))
+    }
+
+    private var layerActionsMenu: some View {
+        Menu {
+            Button(action: controller.chooseSource) {
+                Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+            }
+            .disabled(!controller.canRequestSourceAddition)
+
+            Button(action: capture.arrangeSourcesAutomatically) {
+                Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
+            }
+            .disabled(capture.sources.isEmpty || capture.isPickerPresented)
+
+            Divider()
+
+            Button(role: .destructive, action: controller.stopPreview) {
+                Label(
+                    capture.hasResettableFailure
+                        ? L10n.text("画面取得をリセット", "Reset Capture")
+                        : L10n.stopAllAndRemoveLayersTitle,
+                    systemImage: capture.hasResettableFailure
+                        ? "arrow.counterclockwise"
+                        : "stop.fill"
+                )
+            }
+            .disabled(
+                (!capture.hasLayers && !capture.isCaptureActive && !capture.hasResettableFailure) ||
+                    capture.isPickerPresented
+            )
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 24, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel(L10n.text("レイヤーの操作", "Layer actions"))
+        .help(L10n.text("レイヤーの追加・自動配置・すべて停止", "Add, arrange, or stop all layers"))
     }
 
     private var stageWorkspace: some View {
@@ -651,7 +636,7 @@ struct StageWorkspaceView: View {
                 Text(canvasDetail)
                     .font(.caption)
                     .foregroundStyle(Color.white.opacity(0.62))
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer()
@@ -729,145 +714,141 @@ struct StageWorkspaceView: View {
     @ViewBuilder
     private var contextualDock: some View {
         HStack(spacing: 10) {
-            modeIdentity
-            Divider().frame(height: 25)
+            ScrollView(.horizontal) {
+                HStack(spacing: 10) {
+                    modeIdentity
+                    Divider().frame(height: 25)
 
-            switch controller.stageInteractionMode {
-            case .arrange:
-                Menu {
-                    layoutPresetButton(
-                        .grid,
-                        title: L10n.text("グリッド", "Grid"),
-                        symbol: "square.grid.2x2"
-                    )
-                    layoutPresetButton(
-                        .sideBySide,
-                        title: L10n.text("横に並べる", "Side by Side"),
-                        symbol: "rectangle.split.2x1"
-                    )
-                    layoutPresetButton(
-                        .stacked,
-                        title: L10n.text("縦に並べる", "Stacked"),
-                        symbol: "rectangle.split.1x2"
-                    )
-                    layoutPresetButton(
-                        .pictureInPicture,
-                        title: L10n.text("ピクチャーインピクチャ", "Picture in Picture"),
-                        symbol: "rectangle.inset.filled"
-                    )
-                } label: {
-                    Label(
-                        L10n.text("クイック配置", "Quick Layout"),
-                        systemImage: "square.grid.2x2"
-                    )
-                }
-                .disabled(
-                    (capture.sources.isEmpty && snapshotFixture?.hasCanvasComposition != true) ||
-                        capture.isPickerPresented
-                )
-                .help(L10n.text(
-                    "ソースをグリッド、横並び、縦並び、ピクチャーインピクチャに配置します",
-                    "Arrange sources as a grid, side by side, stacked, or picture in picture"
-                ))
+                    switch controller.stageInteractionMode {
+                    case .arrange:
+                        Menu {
+                            layoutPresetButton(
+                                .grid,
+                                title: L10n.text("グリッド", "Grid"),
+                                symbol: "square.grid.2x2"
+                            )
+                            layoutPresetButton(
+                                .sideBySide,
+                                title: L10n.text("横に並べる", "Side by Side"),
+                                symbol: "rectangle.split.2x1"
+                            )
+                            layoutPresetButton(
+                                .stacked,
+                                title: L10n.text("縦に並べる", "Stacked"),
+                                symbol: "rectangle.split.1x2"
+                            )
+                            layoutPresetButton(
+                                .pictureInPicture,
+                                title: L10n.text("ピクチャーインピクチャ", "Picture in Picture"),
+                                symbol: "rectangle.inset.filled"
+                            )
+                        } label: {
+                            Label(
+                                L10n.text("クイック配置", "Quick Layout"),
+                                systemImage: "square.grid.2x2"
+                            )
+                        }
+                        .disabled(
+                            (capture.sources.isEmpty && snapshotFixture?.hasCanvasComposition != true) ||
+                                capture.isPickerPresented
+                        )
+                        .help(L10n.text(
+                            "ソースをグリッド、横並び、縦並び、ピクチャーインピクチャに配置します",
+                            "Arrange sources as a grid, side by side, stacked, or picture in picture"
+                        ))
 
-            case .crop:
-                HStack(spacing: 7) {
-                    Image(systemName: "viewfinder")
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(cropEditingLayerTitle)
-                            .lineLimit(1)
-                        Text(L10n.cropDraftStatusTitle)
-                            .font(.caption2.weight(.regular))
-                            .foregroundStyle(Color.white.opacity(0.60))
+                    case .crop:
+                        HStack(spacing: 7) {
+                            Image(systemName: "viewfinder")
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(cropEditingLayerTitle)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: 180, alignment: .leading)
+                                Text(L10n.cropDraftStatusTitle)
+                                    .font(.caption2.weight(.regular))
+                                    .foregroundStyle(Color.white.opacity(0.60))
+                            }
+                        }
+                        .foregroundStyle(Color.white.opacity(0.82))
+                        .accessibilityElement(children: .combine)
+
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(Color.white.opacity(0.55))
+                            .help("\(L10n.cropCaptureScopeCompact) \(L10n.cropCaptureScopeDetail)")
+                            .accessibilityLabel(L10n.cropCaptureScopeCompact)
+                            .accessibilityHint(L10n.cropCaptureScopeDetail)
+
+                        Button {
+                            controller.resetCropDraft()
+                        } label: {
+                            Label(
+                                L10n.cropResetDraftTitle,
+                                systemImage: "arrow.counterclockwise"
+                            )
+                        }
+                        .disabled(
+                            controller.cropDraft == nil ||
+                                controller.cropDraft == .fullSource
+                        )
+                        .help(L10n.cropResetDraftHint)
+
+                    case .annotate:
+                        StageInkToolShelf(store: controller.annotations)
+
+                        Button {
+                            controller.annotations.undo()
+                        } label: {
+                            Label(
+                                L10n.text("取り消す", "Undo"),
+                                systemImage: "arrow.uturn.backward"
+                            )
+                        }
+                        .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
+                        .keyboardShortcut("z", modifiers: [.command])
+
+                        Button(role: .destructive) {
+                            isClearInkConfirmationPresented = true
+                        } label: {
+                            Label(
+                                L10n.text("すべて消す", "Clear All"),
+                                systemImage: "trash"
+                            )
+                        }
+                        .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    if capture.hasResettableFailure {
+                        Button(action: controller.stopPreview) {
+                            Label(
+                                L10n.text("画面取得をリセット", "Reset Capture"),
+                                systemImage: "arrow.counterclockwise"
+                            )
+                        }
+                        .tint(.orange)
+                        .help(L10n.text(
+                            "エラー状態を消して、ソースを選び直せる状態へ戻します",
+                            "Clear the error so you can choose the source again"
+                        ))
                     }
                 }
-                .foregroundStyle(Color.white.opacity(0.82))
-                .accessibilityElement(children: .combine)
-
-                Image(systemName: "info.circle")
-                    .foregroundStyle(Color.white.opacity(0.55))
-                    .help("\(L10n.cropCaptureScopeCompact) \(L10n.cropCaptureScopeDetail)")
-                    .accessibilityLabel(L10n.cropCaptureScopeCompact)
-                    .accessibilityHint(L10n.cropCaptureScopeDetail)
-
-                Button {
-                    controller.resetCropDraft()
-                } label: {
-                    Label(
-                        L10n.cropResetDraftTitle,
-                        systemImage: "arrow.counterclockwise"
-                    )
-                }
-                .disabled(
-                    controller.cropDraft == nil ||
-                        controller.cropDraft == .fullSource
-                )
-                .help(L10n.cropResetDraftHint)
-
-                Button(role: .cancel) {
-                    controller.cancelCropEditing()
-                } label: {
-                    Text(L10n.cropCancelTitle)
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button {
-                    controller.applyCropEditing()
-                } label: {
-                    Label(L10n.cropApplyTitle, systemImage: "checkmark")
-                }
-                .keyboardShortcut(.defaultAction)
-                .tint(StagePanePalette.indigo)
-                .disabled(!controller.canApplyCropEditing)
-
-            case .annotate:
-                StageInkToolShelf(store: controller.annotations)
-
-                Button {
-                    controller.annotations.undo()
-                } label: {
-                    Label(
-                        L10n.text("取り消す", "Undo"),
-                        systemImage: "arrow.uturn.backward"
-                    )
-                }
-                .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
-                .keyboardShortcut("z", modifiers: [.command])
-
-                Button(role: .destructive) {
-                    isClearInkConfirmationPresented = true
-                } label: {
-                    Label(
-                        L10n.text("すべて消す", "Clear All"),
-                        systemImage: "trash"
-                    )
-                }
-                .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 13)
+                .frame(minHeight: 50)
+                .fixedSize(horizontal: true, vertical: false)
             }
-
-            Spacer(minLength: 0)
-
-            if capture.hasResettableFailure {
-                Button(action: controller.stopPreview) {
-                    Label(
-                        L10n.text("画面取得をリセット", "Reset Capture"),
-                        systemImage: "arrow.counterclockwise"
-                    )
-                }
-                .tint(.orange)
-                .help(L10n.text(
-                    "エラー状態を消して、ソースを選び直せる状態へ戻します",
-                    "Clear the error so you can choose the source again"
-                ))
+            .scrollIndicators(.visible)
+            if controller.stageInteractionMode == .crop {
+                cropCompletionActions
+                    .padding(.trailing, 13)
             }
         }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.white)
-        .padding(.horizontal, 13)
-        .frame(minHeight: 50)
+        .frame(height: 58)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -878,6 +859,30 @@ struct StageWorkspaceView: View {
             "現在のモードのツール",
             "Current mode tools"
         ))
+    }
+
+    private var cropCompletionActions: some View {
+        HStack(spacing: 8) {
+            Button(role: .cancel) {
+                controller.cancelCropEditing()
+            } label: {
+                Text(L10n.cropCancelTitle)
+            }
+            .keyboardShortcut(.cancelAction)
+
+            Button {
+                controller.applyCropEditing()
+            } label: {
+                Label(L10n.cropApplyTitle, systemImage: "checkmark")
+            }
+            .keyboardShortcut(.defaultAction)
+            .tint(StagePanePalette.indigo)
+            .disabled(!controller.canApplyCropEditing)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .font(.caption.weight(.semibold))
+        .fixedSize()
     }
 
     private var modeIdentity: some View {
@@ -1056,7 +1061,10 @@ struct StageWorkspaceView: View {
             annotationTool: controller.annotationTool
         )
         guard controller.stageInteractionMode == .arrange else { return detail }
-        return "\(detail) \(L10n.perLayerCropEntryHint)"
+        return L10n.text(
+            "レイヤーを選んで移動。重なった画面も左の一覧から選べます。",
+            "Select a layer to move it. Use the layer list to reach overlapping content."
+        )
     }
 
     private var curtainButtonTitle: String {

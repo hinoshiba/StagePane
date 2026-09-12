@@ -194,6 +194,110 @@ final class StageLayoutTests: XCTestCase {
         XCTAssertFalse(layout.removeSource(sourceC))
     }
 
+    func testBringForwardSwapsOnlyTheNextLayerAndStopsAtFront() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.bringSourceForward(sourceB))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[1], layers[3]])
+        XCTAssertTrue(layout.bringSourceForward(sourceB))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[3], layers[1]])
+        XCTAssertFalse(layout.bringSourceForward(sourceB))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[3], layers[1]])
+    }
+
+    func testSendBackwardSwapsOnlyThePreviousLayerAndStopsAtBack() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.sendSourceBackward(sourceC))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[1], layers[3]])
+        XCTAssertTrue(layout.sendSourceBackward(sourceC))
+        XCTAssertEqual(layout.sources, [layers[2], layers[0], layers[1], layers[3]])
+        XCTAssertFalse(layout.sendSourceBackward(sourceC))
+        XCTAssertEqual(layout.sources, [layers[2], layers[0], layers[1], layers[3]])
+    }
+
+    func testBringToFrontPreservesGeometryAndTheOtherLayersOrder() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.bringSourceToFront(sourceB))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[3], layers[1]])
+        XCTAssertFalse(layout.bringSourceToFront(sourceB))
+        XCTAssertEqual(layout.sources, [layers[0], layers[2], layers[3], layers[1]])
+        XCTAssertTrue(layout.bringSourceToFront(sourceA))
+        XCTAssertEqual(layout.sources, [layers[2], layers[3], layers[1], layers[0]])
+    }
+
+    func testSendToBackPreservesGeometryAndTheOtherLayersOrder() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.sendSourceToBack(sourceC))
+        XCTAssertEqual(layout.sources, [layers[2], layers[0], layers[1], layers[3]])
+        XCTAssertFalse(layout.sendSourceToBack(sourceC))
+        XCTAssertEqual(layout.sources, [layers[2], layers[0], layers[1], layers[3]])
+        XCTAssertTrue(layout.sendSourceToBack(sourceD))
+        XCTAssertEqual(layout.sources, [layers[3], layers[2], layers[0], layers[1]])
+    }
+
+    func testReorderingUnknownEmptyAndSingleLayersIsANoOp() {
+        let missing = StageSourceID(rawValue: "missing")
+        for original in [
+            StageLayout(),
+            StageLayout(sources: [overlappingLayers[0]]),
+            StageLayout(sources: overlappingLayers)
+        ] {
+            var layout = original
+            XCTAssertFalse(layout.bringSourceForward(missing))
+            XCTAssertFalse(layout.sendSourceBackward(missing))
+            XCTAssertFalse(layout.bringSourceToFront(missing))
+            XCTAssertFalse(layout.sendSourceToBack(missing))
+            XCTAssertEqual(layout, original)
+        }
+
+        let original = StageLayout(sources: [overlappingLayers[0]])
+        var single = original
+        XCTAssertFalse(single.bringSourceForward(sourceA))
+        XCTAssertFalse(single.sendSourceBackward(sourceA))
+        XCTAssertFalse(single.bringSourceToFront(sourceA))
+        XCTAssertFalse(single.sendSourceToBack(sourceA))
+        XCTAssertEqual(single, original)
+    }
+
+    func testMovingAndResizingCoveredLayerPreservesStackingAndCrop() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.moveSource(sourceA, byX: 0.1, y: 0.15))
+        XCTAssertEqual(layout.sources.map(\.id), layers.map(\.id))
+        XCTAssertEqual(layout[sourceID: sourceA]?.sourceCrop, layers[0].sourceCrop)
+        XCTAssertEqual(Array(layout.sources.dropFirst()), Array(layers.dropFirst()))
+
+        XCTAssertTrue(layout.resizeSource(
+            sourceA, x: 0.1, y: 0.15, width: 0.65, height: 0.55
+        ))
+        XCTAssertEqual(layout.sources.map(\.id), layers.map(\.id))
+        XCTAssertEqual(layout[sourceID: sourceA]?.sourceCrop, layers[0].sourceCrop)
+        XCTAssertEqual(Array(layout.sources.dropFirst()), Array(layers.dropFirst()))
+    }
+
+    private var overlappingLayers: [StageSourceLayout] {
+        [sourceA, sourceB, sourceC, sourceD].enumerated().map { index, sourceID in
+            let offset = Double(index) * 0.05
+            return StageSourceLayout(
+                id: sourceID,
+                frame: NormalizedStageRect(
+                    x: offset, y: offset, width: 0.7 - offset, height: 0.6 - offset
+                ),
+                sourceCrop: NormalizedSourceRect(
+                    x: offset, y: offset, width: 0.8 - offset, height: 0.9 - offset
+                )
+            )
+        }
+    }
+
     func testCodableRoundTripRetainsIDsOrderAndFrames() throws {
         let layout = StageLayout(automaticallyArranging: [sourceA, sourceB, sourceC])
 

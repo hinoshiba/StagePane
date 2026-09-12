@@ -45,10 +45,10 @@ creates a normal shareable window, not an `NSScreen`.
 >
 > 無料版で使える機能：
 > ・同時に4つのソースを配置
-> ・自由配置とクイック配置
+> ・キャンバス横のレイヤー一覧、自由配置とクイック配置
 > ・選択した1ソースを手元で下書きし、「適用」で反映する切り抜き
 > ・ペン、蛍光ペン、部分消しゴム
-> ・Privacy Curtain、一時停止、選び直し、すべて停止
+> ・Privacy Curtain、レイヤーの非表示・再表示、選び直し、すべて停止
 > ・レーザーポインターと4種類のStage形状
 > ・Audience Stage画像のコピー／PNG保存（StagePaneロゴ入り）
 >
@@ -71,10 +71,10 @@ creates a normal shareable window, not an `NSScreen`.
 >
 > Included free:
 > • Compose four simultaneous sources
-> • Freeform and quick layouts
+> • A layer list beside the Canvas, freeform and quick layouts
 > • Per-source Crop with a private one-source draft and explicit Apply or Cancel
 > • Pen, highlighter, and partial eraser
-> • Privacy Curtain, pause, replace, and Stop All
+> • Privacy Curtain, layer Hide/Show, replace, and Stop All
 > • Laser pointer and four Stage shapes
 > • Copy or save an Audience Stage PNG with the StagePane mark
 >
@@ -119,7 +119,7 @@ direct-distribution build currently ships.
 
 1. **見せたいものだけ、このステージへ。** — the clean Share Stage beside the
    private Stage Workspace, making the share/private boundary unmistakable.
-2. **無料で4つ。Proならアプリ側の件数制限なし。** — Workspace → Sources,
+2. **無料で4つ。Proならアプリ側の件数制限なし。** — the Workspace layer list beside the Canvas,
    the clear Pro label, the Mac/OS resource qualification, and its removal caution.
 3. **配置・切り抜き・手書き・Audience画像を、大きな画面で。** — the private Workspace with the
    Mac App Store build's Arrange and Draw modes, per-layer Crop actions, bounded in-memory ink, and
@@ -133,9 +133,9 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.3.2 App Review notes
+## Next-release App Review notes draft
 
-Use this concise block in App Store Connect:
+Use this concise block for the next candidate after its acceptance checks:
 
 > No sign-in is required.
 >
@@ -157,8 +157,19 @@ Use this concise block in App Store Connect:
 > operating-system constraints. Canceling does not change or stop the current
 > Stage.
 >
-> Arrange changes only StagePane’s local composition. Each tile and source row
-> has a Crop action that opens that exact source as a private draft. Drag or
+> The Workspace keeps a front-to-back layer list beside the Canvas. Select a
+> covered or hidden layer in the list; selection, movement, and resize preserve
+> its stacking order. Move Forward, Move Backward, Bring to Front, and Send to
+> Back change the stack explicitly. Hide pauses one source and clears its
+> pixels while retaining placement, crop, and order; Show resumes it and waits
+> for a new complete frame before revealing it.
+>
+> Arrange changes only StagePane’s local composition. Only the selected tile
+> shows editing controls. To move a selected rear or hidden layer, drag its
+> private title badge or use arrow keys; the selected resize handle stays
+> accessible above overlapping layers. Clicking visible foreground content
+> selects that foreground layer without changing the stack. The selected tile
+> and each layer row have a Crop action that opens that exact source as a private draft. Drag or
 > resize the frame, or choose Reset to Full Source; only Apply Crop changes the
 > public Stage, while Cancel discards the draft. Crop is a local composition
 > mask and does not narrow the full source approved in Apple’s picker. If macOS
@@ -178,9 +189,10 @@ Use this concise block in App Store Connect:
 
 > StagePane is a focused screen-sharing utility with two normal macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
-> private live Canvas for arranging, cropping, drawing, and taking an Audience Stage PNG.
-> Its Docker-style sidebar also contains Sources, Stage Settings, Appearance,
-> Permissions, Privacy, and About. It
+> private live Canvas for arranging, cropping, drawing, and taking an Audience
+> Stage PNG. A persistent layer list stays beside the Canvas, including at the
+> minimum 900×620-point Workspace size. Navigation also provides Stage Settings,
+> Appearance, Permissions, Privacy, and About. It
 > does not add a display, replace or imitate the macOS desktop, provide an app
 > launcher, modify Finder or the Dock, install a driver, use private APIs, or
 > continue running after the user quits.
@@ -194,19 +206,28 @@ Use this concise block in App Store Connect:
 > To verify entitlement loss, first keep more than four sources active with Pro,
 > then revoke or refund the test entitlement: the existing session remains
 > intact, the StagePane mark returns, and only new source additions are blocked.
-> Each source appears in the private source list,
-> where “Pause” stops only that stream and makes its layer transparent in the
+> Each source appears in the private layer list from front to back,
+> where “Hide” pauses only that stream and makes its layer transparent in the
 > Stage, private Workspace, and Audience PNG output while preserving placement,
-> crop, and z-order. “Resume” starts it again and reveals it only after a new
-> complete frame arrives. “Replace” reopens the picker for only that item, and
+> crop, and z-order. The hidden layer remains selectable in the list. “Show”
+> resumes it and reveals it only after a new complete frame arrives.
+> “Replace” reopens the picker for only that item, and
 > “Remove” asks for confirmation, ends only its stream, and deletes its layer.
 > If macOS ends sharing outside StagePane, the old frame is immediately removed
 > while that layer's placement, crop, and stacking order remain. “Select Again”
 > reconnects a new picker choice to the same layer; Remove or Stop All explicitly
 > deletes retained layers.
-> In Stage Workspace, drag or resize tiles in Arrange mode, or use “Auto
-> Arrange." These gestures change only StagePane's composition. Each tile and
-> source row has a crop button; it shows that exact layer in full in the private Workspace and lets the reviewer move
+> Select an overlapping rear or hidden layer in the list and drag its private
+> title badge or use arrow keys to move it. Its resize handle remains reachable
+> above overlapping layers. Only the selected layer has editing chrome, and
+> its transparent interior lets a click on visible foreground content select
+> that foreground layer naturally. Selecting, dragging, resizing, or opening
+> Crop does not change z-order. “Move Forward,” “Move Backward,” “Bring to Front,”
+> and “Send to Back” update the audience stack and list explicitly while
+> preserving placement and crop. Commands at the stack boundaries have no effect.
+> “Auto Arrange” and the other Quick Layout presets also remain available.
+> These actions change only StagePane's composition. The selected tile and each
+> layer row have a crop button; it shows that exact layer in full in the private Workspace and lets the reviewer move
 > or resize a draft frame. The public Stage retains the previously applied crop
 > until “Apply Crop”; Cancel, a mode change, or source loss discards the draft.
 > Reset to Full Source also changes only the draft. Cropping is a local
@@ -260,8 +281,10 @@ Use this concise block in App Store Connect:
 
 Attach a short reviewer video showing both window titles and roles, adding
 four Free sources, the fifth-source Pro entry point, the normal Pro screen and
-Restore Purchases, per-source pause/resume, replace, removal confirmation, drag,
-resize, all four Quick Layout presets, the Arrange/Draw switch, each layer's
+Restore Purchases, the persistent front-to-back layer list, covered/hidden layer
+selection, title-badge/keyboard movement and resize without implicit reordering,
+all four explicit ordering actions, Hide/Show with fresh-frame return,
+replace, removal confirmation, all four Quick Layout presets, the Arrange/Draw switch, each layer's
 Crop action and target label, crop draft, Reset to
 Full Source, Apply, and Cancel (including an unchanged Stage before Apply),
 unchanged physical pointer,

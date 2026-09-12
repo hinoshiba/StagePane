@@ -10,9 +10,10 @@ Tagline: **見せたいものだけ、ひとつのステージへ。**<br>
 English: **A clean stage for everything you share.**
 
 The mental model is **Audience Stage + private Stage Workspace**, never a
-replacement desktop. The Stage is a chrome-free output. The Workspace combines
-the large WYSIWYG Canvas, Sources, Stage Settings, Appearance, Permissions,
-Privacy, and About behind a Docker-style sidebar.
+replacement desktop. The Stage is a chrome-free output. The Workspace places
+the large WYSIWYG Canvas beside a persistent layer list, ordered from front to
+back. Stage Settings, Appearance, Permissions, Privacy, and About remain in its
+navigation. Composition and source lifecycle controls share one working view.
 Ink `#0C1018`, Stage Indigo `#5B5CF0`, and Beam Aqua `#48D8E8` form the core
 palette. Status uses macOS semantic colors plus icons/text; the brand gradient
 is reserved for the mark and empty states.
@@ -39,13 +40,22 @@ and end capture with no retained frame or orphaned state.
   video sources in Free; the one-time StagePane Pro purchase removes the app's
   source-count limit, while the practical total depends on Mac performance and
   operating-system constraints;
-  pause stops the stream and makes its layer transparent in the Stage, private
-  Workspace, and Audience PNG while retaining placement, crop, and z-order;
-  resume reveals it only after a new complete frame arrives
+  the direct Hide action pauses the stream and makes its layer transparent in
+  the Stage, private Workspace, and Audience PNG while retaining placement,
+  crop, and z-order;
+  Show resumes the stream and reveals it only after a new complete frame arrives
 - large private Workspace hosting the global Arrange and Draw modes plus a crop
-  action on every layer, with move, free resize, per-source source-space
-  cropping, z-order, and auto arrange; source management and settings live in
-  its sidebar
+  action on every layer, with move, proportional resize, per-source source-space
+  cropping, z-order, and auto arrange; its persistent layer list supports
+  selecting obscured or hidden layers without leaving the Canvas
+- private selection shared by Canvas and layer list, with editing chrome only
+  on the selected tile; selection, drag, and resize never change stacking order
+- Arrange outlines, hit targets, movement bounds, and resize handles follow the
+  aspect-fitted source or applied crop, excluding empty margins; proportional
+  resizing fixes the visible upper-left corner, and empty margins allow selection
+  of lower layers; keyboard and VoiceOver use the same geometry
+- explicit Move Forward, Move Backward, Bring to Front, and Send to Back actions;
+  the layer list always reflects the resulting audience stack from front to back
 - explicit per-source removal confirmation and stop-all capture teardown
 - fail-closed capture-session detachment: an externally ended share clears its
   renderer and old frame while retaining the logical layer's placement, crop,
@@ -58,7 +68,7 @@ and end capture with no retained frame or orphaned state.
 - translucent lower-right StagePane mark on audience-facing Stage states,
   including content and Curtain; always shown in Free and optional in Pro
 - global Arrange and Draw modes in every build, with a layer-owned Crop editor
-  entered from each tile or source row; Arrange edits placement; Crop privately
+  entered from the selected tile or each layer row; Arrange edits placement; Crop privately
   drafts one selected layer at a time, Apply commits it, Cancel discards it, and
   applied crop geometry remains in memory for the current StagePane run and
   survives a source-sharing disconnect on the retained layer while every running

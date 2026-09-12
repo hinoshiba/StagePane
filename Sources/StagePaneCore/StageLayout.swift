@@ -377,6 +377,45 @@ public struct StageLayout: Codable, Equatable, Sendable {
         return true
     }
 
+    /// Moves a layer one position toward the audience without changing its
+    /// placement or crop. Returns false at the front boundary or for an unknown ID.
+    @discardableResult
+    public mutating func bringSourceForward(_ sourceID: StageSourceID) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }),
+              index + 1 < sources.count else { return false }
+        sources.swapAt(index, index + 1)
+        return true
+    }
+
+    /// Moves a layer one position behind its neighbor, retaining its geometry.
+    @discardableResult
+    public mutating func sendSourceBackward(_ sourceID: StageSourceID) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }),
+              index > 0 else { return false }
+        sources.swapAt(index, index - 1)
+        return true
+    }
+
+    /// Makes a layer frontmost while preserving every other layer's order.
+    @discardableResult
+    public mutating func bringSourceToFront(_ sourceID: StageSourceID) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }),
+              index + 1 < sources.count else { return false }
+        let source = sources.remove(at: index)
+        sources.append(source)
+        return true
+    }
+
+    /// Makes a layer backmost while preserving every other layer's order.
+    @discardableResult
+    public mutating func sendSourceToBack(_ sourceID: StageSourceID) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }),
+              index > 0 else { return false }
+        let source = sources.remove(at: index)
+        sources.insert(source, at: 0)
+        return true
+    }
+
     /// Replaces current positions with the deterministic automatic grid while
     /// retaining source IDs and their order.
     public mutating func arrangeAutomatically(gap: Double = StageLayout.defaultGap) {
