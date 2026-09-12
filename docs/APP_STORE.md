@@ -13,12 +13,13 @@
   includes four sources; Pro removes the app's source-count limit and mark.
   Source count depends on your Mac and OS.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
-- **What's New 0.3.2 (EN):** Free now supports up to four simultaneous
-  sources. StagePane Pro removes StagePane's source-count limit; the practical
-  number depends on your Mac and macOS. This update also fixes cropped layers
-  sometimes revealing pixels outside the selected region when a Stage tile's
-  aspect ratio creates horizontal or vertical margins.
-- **What's New 0.3.2 (JA):** 無料版で同時に4つのソースを使えるようになりました。StagePane Proではアプリ側のソース件数制限がなくなります（実際に利用できる件数はMacの性能とmacOSの制約に依存します）。また、Stageタイルの縦横比によって左右または上下に余白が生じる場合に、切り抜き範囲外の映像が表示されることがある不具合を修正しました。
+- **What's New 0.4.0 (EN):** Arrange and manage sources in one Workspace,
+  with a layer list beside the Canvas. Select and move overlapping layers
+  without changing their order, and hide or show a layer directly from the
+  list. Editing outlines and movement bounds now follow the visible source,
+  including after cropping. Resize while preserving proportions, and move
+  layers with one selection outline that follows their position.
+- **What's New 0.4.0 (JA):** 配置とソース管理をひとつのワークスペースにまとめ、キャンバス横にレイヤー一覧を常時表示しました。重なったレイヤーも順序を変えずに選択・移動でき、一覧から直接非表示・再表示できます。操作枠と移動範囲は、トリミング後も実際に見えている範囲に一致します。縦横比を保ったサイズ変更に対応し、移動時に余分な選択枠が残る問題も修正しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/?lang=en#privacy
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
@@ -133,9 +134,9 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## Next-release App Review notes draft
+## 0.4.0 App Review notes draft
 
-Use this concise block for the next candidate after its acceptance checks:
+Use this concise block for the 0.4.0 candidate after its acceptance checks:
 
 > No sign-in is required.
 >
@@ -165,7 +166,8 @@ Use this concise block for the next candidate after its acceptance checks:
 > for a new complete frame before revealing it.
 >
 > Arrange changes only StagePane’s local composition. Only the selected tile
-> shows editing controls. To move a selected rear or hidden layer, drag its
+> shows editing controls, fitted to the visible source or applied crop; resizing
+> preserves its proportions. To move a selected rear or hidden layer, drag its
 > private title badge or use arrow keys; the selected resize handle stays
 > accessible above overlapping layers. Clicking visible foreground content
 > selects that foreground layer without changing the stack. The selected tile

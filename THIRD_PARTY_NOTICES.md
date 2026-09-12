@@ -1,11 +1,12 @@
 # Third-party notices
 
-StagePane 0.3.2 has no third-party runtime code, SDK, font, model, media, or
+StagePane 0.4.0 has no third-party runtime code, SDK, font, model, media, or
 binary dependency.
 
 It uses only Apple system frameworks supplied by macOS, including Accessibility,
 AppKit, AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreImage,
-CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, and SwiftUI.
+CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, StoreKit,
+SwiftUI, and UniformTypeIdentifiers.
 Those frameworks are not redistributed in the StagePane application bundle and
 remain governed by Apple's applicable terms. The Accessibility framework is
 used for the app's own VoiceOver announcements, not cross-application control.
@@ -30,6 +31,9 @@ neither its executable nor source is bundled in StagePane, and it is not
 required to build the checked-in project. Its license and non-runtime status
 are recorded in `docs/LICENSE_AUDIT.md`.
 
-CI uses the MIT-licensed `actions/checkout` action at the exact commit recorded
-in `.github/workflows/ci.yml`. It runs only on the CI host and is not included
-in any StagePane application or distribution artifact.
+CI uses the MIT-licensed `actions/checkout` action; website deployment also uses
+the MIT-licensed `actions/configure-pages`, `actions/upload-pages-artifact`, and
+`actions/deploy-pages` actions. Their exact commits are recorded in
+`.github/workflows/ci.yml` and `.github/workflows/pages.yml`, with license links
+in `docs/LICENSE_AUDIT.md`. These tools run only on GitHub workflow hosts and
+are not included in any StagePane application or distribution artifact.

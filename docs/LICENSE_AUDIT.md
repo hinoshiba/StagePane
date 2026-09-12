@@ -1,9 +1,15 @@
 # License and distribution audit
 
-Audit date: 2026-09-01<br>
-Scope: StagePane 0.3.2 source tree and macOS application bundle
+Audit date: 2026-09-12<br>
+Scope: StagePane 0.4.0 release source, declared dependencies, and pinned CI tools
 
 This is an engineering compliance record, not a formal legal opinion.
+
+This refresh checks tracked package/project declarations, source imports, the
+existing local development binary's framework linkage, and the pinned workflow
+actions' upstream license files. Final App Store archive contents and signing
+remain subject to the release gates in `RELEASE.md`. It does not certify a
+finished 0.4.0 archive or repeat external legal or trademark review.
 
 ## Conclusion
 
@@ -13,7 +19,7 @@ preserved and every pre-release legal, trademark, Apple, consumer-law, and
 signing gate below is completed. No current default `dist/StagePane.app`
 development artifact is approved for public distribution.
 
-There is no third-party runtime dependency in 0.3.2. The application dynamically
+There is no third-party runtime dependency in 0.4.0. The application dynamically
 links Apple frameworks already present on macOS and bundles only original
 StagePane code/artwork plus project legal/help documents. This substantially
 reduces license, supply-chain, and privacy risk.
@@ -42,14 +48,31 @@ identified rights owner are required before public launch.
 | Item | Status | Distribution consequence |
 |---|---|---|
 | Swift standard/runtime libraries | Apple toolchain/system | Governed by Apple toolchain terms; embedded components, if any, are produced by Apple's linker |
-| Accessibility, AppKit, AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreImage, CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, SwiftUI | Apple system frameworks | Dynamically linked by the Mac App Store build; not copied into the app bundle. Accessibility supports StagePane's own VoiceOver announcements and is not a cross-application permission path |
+| Accessibility, AppKit, AVFoundation, Combine, CoreFoundation, CoreGraphics, CoreImage, CoreMedia, CoreVideo, Foundation, QuartzCore, ScreenCaptureKit, StoreKit, SwiftUI, UniformTypeIdentifiers | Apple system frameworks found in source declarations/imports or local development linkage | Supplied by macOS, not copied into the app bundle. Accessibility supports StagePane's own VoiceOver announcements and is not a cross-application permission path; StoreKit handles optional Pro commerce |
 | SF Symbols | Requested from macOS at runtime | No symbol artwork files are bundled |
 | StagePane icon/mark | Original project artwork | Apache-2.0 covers copyright permission; `TRADEMARKS.md` separately reserves official brand identity |
 | Local Swift package product | `StagePaneCore` from this repository | Project-authored code; linked into the Xcode App Store target, not an external dependency |
 | External package dependencies | None | No third-party license notice required for runtime code |
 | Analytics/ads/updater | None | No SDK or transitive notice inventory |
 | XcodeGen 2.45.4 | SHA-256-pinned GitHub CI drift generator and development tool, MIT | No executable or source is bundled; not required to build the checked-in Xcode project |
-| `actions/checkout` at `11bd71901bbe5b1630ceea73d27597364c9af683` | CI-only GitHub Action, MIT | Commit-pinned workflow tool; executes on the CI runner and is not included in the app |
+| `actions/checkout` 7.0.1 at `3d3c42e5aac5ba805825da76410c181273ba90b1` | CI-only GitHub Action, MIT | Commit-pinned source checkout for app CI and website deployment; not included in the app |
+| `actions/configure-pages` 6.0.0 at `45bfe0192ca1faeb007ade9deae92b16b8254a0d` | Website workflow GitHub Action, MIT | Configures GitHub Pages on the workflow host; not included in the app |
+| `actions/upload-pages-artifact` 5.0.0 at `fc324d3547104276b827a68afc52ff2a11cc49c9` | Website workflow GitHub Action, MIT | Prepares the website artifact on the workflow host; not included in the app |
+| `actions/deploy-pages` 5.0.0 at `cd2ce8fcbc39b97be8ca5fce6e763baed58fa128` | Website workflow GitHub Action, MIT | Deploys the website through GitHub Pages; not included in the app |
+
+`Package.swift` declares no external packages; its only executable dependency
+is the repository's own `StagePaneCore`. `project.yml` resolves that package
+from `path: .` and lists only Apple framework dependencies. Source imports add
+no third-party modules. The framework inventory above includes
+UniformTypeIdentifiers from source imports and Accessibility/CoreFoundation
+from the existing local development binary; the exact final archive linkage
+must still be verified during release.
+
+The local inspection used macOS 26.5.2 on arm64, Xcode 26.6 (17F113), Apple Swift
+6.3.3, and XcodeGen 2.45.4. The checked-in app CI targets `macos-14` and
+`macos-15`, selects Xcode 16.2 on `macos-14`, and verifies the XcodeGen 2.45.4
+download against its recorded SHA-256. These are source/toolchain observations,
+not a substitute for exact-candidate App Store acceptance.
 
 The machine-readable inventory is `docs/sbom.spdx.json`. Every release must
 compare `Package.swift`, linked frameworks, bundle contents, generated SBOM, and
@@ -61,8 +84,13 @@ The App Store bundle includes `LICENSE.txt`, `NOTICE.txt`,
 byte-identical to repository sources. XcodeGen is used
 only to regenerate project metadata; its upstream MIT license is recorded at
 <https://github.com/yonaskolb/XcodeGen/blob/2.45.4/LICENSE>.
-The CI-only checkout action's MIT license is recorded at
-<https://github.com/actions/checkout/blob/11bd71901bbe5b1630ceea73d27597364c9af683/LICENSE>.
+The workflow actions' MIT licenses were checked at their pinned revisions:
+[checkout](https://github.com/actions/checkout/blob/3d3c42e5aac5ba805825da76410c181273ba90b1/LICENSE),
+[configure-pages](https://github.com/actions/configure-pages/blob/45bfe0192ca1faeb007ade9deae92b16b8254a0d/LICENSE),
+[upload-pages-artifact](https://github.com/actions/upload-pages-artifact/blob/fc324d3547104276b827a68afc52ff2a11cc49c9/LICENSE),
+and [deploy-pages](https://github.com/actions/deploy-pages/blob/cd2ce8fcbc39b97be8ca5fce6e763baed58fa128/LICENSE).
+This source inventory does not claim a full transitive audit of GitHub's
+workflow execution environment.
 
 ## Reference repository review
 

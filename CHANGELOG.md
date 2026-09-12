@@ -5,6 +5,8 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-12
+
 ### Changed
 
 - Unified composition and source management in one Workspace with a persistent
