@@ -67,6 +67,11 @@ bounds. This keeps free destination rectangles for Quick Layout while making
 direct manipulation match the content the user sees. Crop remains a private
 draft; only Apply changes the bounds used when returning to Arrange.
 
+Use the content-sized selection outline as the Arrange keyboard focus indicator.
+Disable the positioned overlay's additional native focus effect, whose host
+bounds can leave a second ring at the previous location during movement. Keep
+keyboard focus and the normal focus feedback of list rows and buttons.
+
 Provide direct Hide/Show controls in the layer list and selected-layer tools.
 Hide uses the existing Pause transition: suppress presented pixels and stop
 that stream while retaining placement, crop, and order. Show uses Resume and

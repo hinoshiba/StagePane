@@ -19,6 +19,8 @@ Versioning once 1.0.0 is released.
   source or applied crop instead of including empty margins. Empty margins allow
   selecting a layer underneath, and resizing preserves content proportions with
   the visible upper-left corner fixed. Keyboard and VoiceOver use the same bounds.
+- Arrange uses its moving selection outline for keyboard focus feedback,
+  without a second native focus ring that can remain at the previous position.
 - Documented the canonical signed release-PR, merge, tag, local Organizer
   archive, release-owner upload, App Store Connect processing, build-selection,
   review-submission, and public-release handoffs.

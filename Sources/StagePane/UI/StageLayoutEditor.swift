@@ -1029,6 +1029,10 @@ private struct StageSourceEditingOverlay: View {
             .accessibilityValue("\(L10n.text("選択中", "Selected")), \(sourcePhaseText)")
             .accessibilityHint(keyboardAccessibilityHint)
             .focusable(showsSelectionControls)
+            // The content-sized aqua outline is also the keyboard focus
+            // indicator. AppKit's additional focus effect can retain the
+            // positioned SwiftUI host's old bounds during a drag.
+            .focusEffectDisabled()
             .onExitCommand { controller.selectSource(nil) }
             .onMoveCommand(perform: handleKeyboardMove)
             .onKeyPress(.space) {
