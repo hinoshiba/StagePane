@@ -183,8 +183,15 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   (with cancel preserving the old item), per-source removal while other streams
   remain live, and Stop All deleting pixels and logical state for every source;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
-  free resize/minimum tile size, matching Workspace/Stage
+  proportional resize/minimum content size, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
+- square and portrait sources in wide layout tiles, plus applied crops of
+  different proportions: the selection outline, title, hit targets, and resize
+  handle must follow the visible content rather than empty margins; margins
+  must permit selecting lower layers; the first drag or keyboard move must not
+  jump or change scale, and visible edges must reach the Stage boundary;
+  mouse, keyboard, and VoiceOver resize must preserve proportions and the visible
+  upper-left position, including after Quick Layout or a live source resize;
 - persistent front-to-back layer list beside the Canvas, including at the
   minimum Workspace size; select fully covered and hidden layers through the
   list; Canvas/list selection, mouse/keyboard drag and resize, and opening Crop
@@ -241,6 +248,9 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   StagePane run and survives source-sharing disconnects on retained layers; Crop never
   narrows the complete picker-approved source handled by a running
   ScreenCaptureKit stream;
+- crop draft edits and Cancel must leave Arrange bounds unchanged; Apply must
+  align them to the newly visible crop; Hide/Show must retain these bounds while
+  hidden and update from the fresh source geometry when capture resumes;
 - Draw-mode Stage/Workspace alignment, single-point and long strokes, Pen and
   Highlighter opacity, partial Eraser sizing and cursor, erase-over-crossing-lines,
   draw-after-erase ordering, exact Undo restoration, memory bounds, Clear

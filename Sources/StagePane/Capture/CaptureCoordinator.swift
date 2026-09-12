@@ -901,10 +901,45 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         return true
     }
 
+    /// The visible, cropped image inside its placement tile. Retained content
+    /// dimensions also keep hidden layers editable without retaining pixels.
+    func sourceContentFrame(
+        _ sourceID: StageSourceID,
+        canvasSize: CGSize? = nil
+    ) -> NormalizedStageRect? {
+        guard let source = source(for: sourceID),
+              let item = layout[sourceID: sourceID] else { return nil }
+        return StageContentGeometry.frame(
+            sourceSize: source.contentSize,
+            sourceCrop: item.sourceCrop,
+            layoutFrame: item.frame,
+            canvasSize: canvasSize ?? CGSize(width: outputWidth, height: outputHeight)
+        )
+    }
+
     func moveSource(_ sourceID: StageSourceID, byX deltaX: Double, y deltaY: Double) {
-        var updated = layout
-        guard updated.moveSource(sourceID, byX: deltaX, y: deltaY) else { return }
-        layout = updated
+        guard let frame = sourceContentFrame(sourceID) else { return }
+        setSourceFrame(
+            sourceID,
+            frame: frame.moved(byX: deltaX, y: deltaY),
+            minimumWidth: 0,
+            minimumHeight: 0
+        )
+    }
+
+    func resizeSourceContent(_ sourceID: StageSourceID, byX deltaX: Double, y deltaY: Double) {
+        let canvasSize = CGSize(width: outputWidth, height: outputHeight)
+        guard let frame = sourceContentFrame(sourceID),
+              let resizedFrame = StageContentGeometry.resizedFrame(
+                frame,
+                translation: CGSize(
+                    width: deltaX * canvasSize.width,
+                    height: deltaY * canvasSize.height
+                ),
+                canvasSize: canvasSize
+              ) else { return }
+        setSourceFrame(sourceID, frame: resizedFrame, minimumWidth: 0, minimumHeight: 0)
+        commitSourceLayout(sourceID)
     }
 
     func setSourceFrame(

@@ -33,6 +33,37 @@ public struct SourcePresentationGeometry: Equatable, Sendable {
 /// Returned rectangles use a top-left origin. The caller performs the one Y
 /// flip required at an AppKit layer boundary.
 public enum SourceCropProjection {
+    /// Returns the visible content inside an aspect-fit destination, excluding
+    /// both the source crop and the empty margins around its selected pixels.
+    /// Use the accepted presentation's content size, rather than its potentially
+    /// padded IOSurface size, when positioning editing controls.
+    public static func visibleContentFrame(
+        sourceSize: CGSize,
+        sourceCrop: NormalizedSourceRect,
+        destinationSize: CGSize
+    ) -> CGRect? {
+        guard let sourceFrame = sourceFrame(
+            sourceSize: sourceSize,
+            sourceCrop: sourceCrop,
+            destinationSize: destinationSize
+        ), let visibleFrame = visibleSurfaceFrame(
+            surfaceCrop: CGRect(
+                x: sourceCrop.x,
+                y: sourceCrop.y,
+                width: sourceCrop.width,
+                height: sourceCrop.height
+            ),
+            surfaceSize: sourceFrame.size
+        ) else { return nil }
+
+        let frame = visibleFrame.offsetBy(
+            dx: sourceFrame.minX,
+            dy: sourceFrame.minY
+        )
+        guard frame.isFiniteAndNonEmpty else { return nil }
+        return frame
+    }
+
     /// Returns the frame for the complete source image after its selected crop
     /// is aspect-fitted into `destinationSize`. The returned frame can extend
     /// beyond the destination; clipping it reveals exactly `sourceCrop`.

@@ -15,6 +15,10 @@ Versioning once 1.0.0 is released.
 - Direct Hide and Show actions pause and resume individual sources while
   retaining placement, crop, and stacking order. A shown layer waits for a new
   complete frame before its pixels return to the Stage, Workspace, or Audience PNG.
+- Arrange outlines, movement bounds, and resize handles now follow the visible
+  source or applied crop instead of including empty margins. Empty margins allow
+  selecting a layer underneath, and resizing preserves content proportions with
+  the visible upper-left corner fixed. Keyboard and VoiceOver use the same bounds.
 - Documented the canonical signed release-PR, merge, tag, local Organizer
   archive, release-owner upload, App Store Connect processing, build-selection,
   review-submission, and public-release handoffs.

@@ -42,6 +42,8 @@ access.
   hidden layer stays easy to select. Selection, dragging, and resizing preserve
   stacking order; use Move Forward, Move Backward, Bring to Front, or Send to
   Back to change it explicitly. Only the selected tile shows editing controls.
+  Its outline and handles follow the visible source or applied crop, excluding
+  empty margins. Resize preserves that content's proportions.
   Choose Grid, Side by Side, Stacked, or Picture in Picture from Quick Layout.
   If macOS ends one source's sharing session, its
   layer remains in place without an old frame and offers Select Again; its crop,
@@ -133,6 +135,9 @@ instructions](docs/RELEASE.md).
    bring it forward. Use its ordering actions to change its position in the
    stack. For a covered or hidden layer, drag its selected title badge or use
    arrow keys; its resize handle remains reachable above the other layers.
+   Move using the visible content edges, including after cropping; empty margins
+   do not block selecting a layer behind them. Drag the resize handle to scale
+   the content proportionally from its upper-left corner.
    Choose the crop button on the layer you want to edit, adjust its frame or four
    corner handles, then choose **Apply Crop**. The Stage keeps that layer's
    previously applied region until then. Use **Quick Layout** for Grid, Side by

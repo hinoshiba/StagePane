@@ -36,6 +36,12 @@ keys to move it. Its resize handle remains accessible above overlapping layers.
 Clicking visible foreground content selects that foreground layer; the empty
 interior of the selected editing outline does not block that click.
 
+The outline and handles follow the visible source or applied crop, without the
+empty margins around it. Move the visible content up to the Stage edges; click
+through its empty margins to select content underneath. Resizing keeps its
+proportions and holds its visible upper-left corner in place. Keyboard and
+VoiceOver actions use the same bounds. A hidden layer keeps its last bounds.
+
 レイヤー一覧はキャンバスの横に常設され、最前面のレイヤーが上に並びます。
 重なって見えないレイヤーや非表示のレイヤーも一覧から選べます。選択・移動・サイズ変更では
 重なり順は変わりません。キャンバスの編集枠と操作ボタンは、選択中のレイヤーだけに表示します。
@@ -43,6 +49,11 @@ interior of the selected editing outline does not block that click.
 背面や非表示のレイヤーを選んだら、手元のタイトル表示をドラッグするか、矢印キーで移動します。
 サイズ変更ハンドルは重なりの上から操作できます。前面に見えている映像をクリックすると
 そのレイヤーを選べるため、選択枠の内側が前面の映像へのクリックを遮ることはありません。
+
+編集枠とハンドルは、余白を除いた映像や適用済みの切り抜き範囲に沿って表示されます。
+見えている端をStageの端まで移動でき、余白の部分からは下のレイヤーを選べます。
+サイズ変更では左上の位置と縦横比を保ちます。キーボードやVoiceOverでも同じ範囲を
+操作でき、非表示中は最後の範囲を保ちます。
 
 Use **Move Forward / ひとつ前へ** or **Move Backward / ひとつ後ろへ** to move
 one position in the stack, and **Bring to Front / 最前面へ** or
@@ -170,7 +181,7 @@ Monitoring permission.
 StagePaneではStage全体の **配置** と **手書き** モードに加え、各レイヤーに **切り抜き** 操作があります。いずれも共有元アプリへ入力を
 送らず、macOSのアクセシビリティ許可や入力監視許可も必要としません。
 
-- **Arrange / 配置** moves and resizes the selected Stage tile while preserving
+- **Arrange / 配置** moves and proportionally resizes the selected content while preserving
   its order; explicit ordering actions change the stack. It never sends those
   editing gestures to a source app.
 - **Crop / 切り抜き** starts from the crop button on the selected Canvas tile or layer
@@ -189,7 +200,7 @@ StagePaneではStage全体の **配置** と **手書き** モードに加え、
   by the Curtain, and is cleared by **Stop All** or removal of the final source.
   Use **Undo / 取り消す** or **Clear / すべて消す** to edit it.
 
-- **配置** は選択中のタイルの重なり順を保って移動・サイズ変更します。重なり順は
+- **配置** は選択中の映像の重なり順を保って移動し、縦横比を保ってサイズ変更します。重なり順は
   前面・背面への操作で明示的に変更し、編集ジェスチャーは取得元アプリへ送りません。
 - **切り抜き** は選択したソース1件だけを手元用WorkspaceのCanvas全面に表示します。
   明るい枠内をドラッグして移動し、四隅のハンドルで範囲を変えます。編集中もStageは

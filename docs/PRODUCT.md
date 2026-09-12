@@ -45,11 +45,15 @@ and end capture with no retained frame or orphaned state.
   crop, and z-order;
   Show resumes the stream and reveals it only after a new complete frame arrives
 - large private Workspace hosting the global Arrange and Draw modes plus a crop
-  action on every layer, with move, free resize, per-source source-space
+  action on every layer, with move, proportional resize, per-source source-space
   cropping, z-order, and auto arrange; its persistent layer list supports
   selecting obscured or hidden layers without leaving the Canvas
 - private selection shared by Canvas and layer list, with editing chrome only
   on the selected tile; selection, drag, and resize never change stacking order
+- Arrange outlines, hit targets, movement bounds, and resize handles follow the
+  aspect-fitted source or applied crop, excluding empty margins; proportional
+  resizing fixes the visible upper-left corner, and empty margins allow selection
+  of lower layers; keyboard and VoiceOver use the same geometry
 - explicit Move Forward, Move Backward, Bring to Front, and Send to Back actions;
   the layer list always reflects the resulting audience stack from front to back
 - explicit per-source removal confirmation and stop-all capture teardown

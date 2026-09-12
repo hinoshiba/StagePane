@@ -24,6 +24,11 @@ The baseline source at `e9d4903` explains the friction:
 These are code-review findings and the user's reported experience. They are
 not a claim that baseline installation or manual acceptance has been completed.
 
+The follow-up report identifies a second source of friction: square sources and
+applied crops still inherit a larger placement rectangle's editing outline and
+movement limits. Letterbox margins then behave like part of the source, making
+visible edges harder to position and blocking access to content underneath.
+
 ## Alternatives considered
 
 | Option | Benefit | Cost |
@@ -50,6 +55,17 @@ the overlap. The selected overlay's transparent interior passes clicks through
 to visible foreground content so selecting another layer stays natural.
 Move Forward, Move Backward, Bring to Front, and Send to Back
 are explicit ordering actions; commands at the stack boundary have no effect.
+
+Arrange controls follow the visible aspect-fitted source or applied crop.
+Selection outlines, hit targets, title badges, and resize handles exclude empty
+letterbox margins, which pass clicks through to lower layers. At the start of a
+move, compact the placement rectangle to the visible content without changing
+its displayed position or scale, then clamp movement by those visible edges.
+Resize proportionally from the fixed visible upper-left corner. Keyboard and
+VoiceOver actions use the same geometry, and hidden layers retain their last
+bounds. This keeps free destination rectangles for Quick Layout while making
+direct manipulation match the content the user sees. Crop remains a private
+draft; only Apply changes the bounds used when returning to Arrange.
 
 Provide direct Hide/Show controls in the layer list and selected-layer tools.
 Hide uses the existing Pause transition: suppress presented pixels and stop
@@ -81,12 +97,27 @@ review guidance, and synthetic website screenshots must match before release.
 4. Update Japanese/English help and review materials. Refresh synthetic UI
    fixtures after the implementation stabilizes; keep private source titles and
    real meeting content out of public evidence.
+5. Share the visible-content projection between Arrange hit testing and editing
+   geometry. Normalize the destination on the first move without a visual jump,
+   use proportional resize, and retain geometry across temporary hiding. Cover
+   both source-aspect changes and applied crops without changing draft semantics.
 
 ## Acceptance plan
 
 Record results against the exact candidate commit. The following checks are
 planned; this document does not mark them as passed.
 
+- Place square and portrait synthetic sources in wide tiles, then apply a crop
+  with a different aspect ratio. Verify outlines, titles, and handles follow
+  the visible content; click through each empty margin to a lower layer. Move
+  by mouse and keyboard to every Stage edge with no first-gesture position or
+  scale jump. Resize by mouse, keyboard, and VoiceOver and verify proportions,
+  the fixed visible upper-left corner, and minimum size. Repeat after Quick
+  Layout, a live source-window resize, and Hide/Show. Compare Canvas, Stage,
+  and an explicit Audience PNG.
+- Edit a crop draft, cancel it, then edit and apply it. Arrange bounds must
+  reflect only the applied crop. Hide a cropped source and check that its last
+  bounds remain usable without revealing old pixels while capture resumes.
 - Use synthetic content in at least three overlapping sources. Select the
   fully covered bottom source through the list, drag its title badge, move it
   with arrow keys, and resize it. Click visible foreground content inside the

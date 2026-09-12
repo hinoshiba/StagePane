@@ -37,6 +37,12 @@ arrow keys. Its resize handle stays accessible above overlapping layers.
 Click visible foreground content to select that layer; the selected outline's
 transparent interior does not block it.
 
+The editing outline and handles fit the visible source or applied crop,
+excluding empty margins. Movement uses those visible edges, and resizing
+preserves proportions with the upper-left corner fixed. Empty margins let you
+select content underneath. Keyboard and VoiceOver use the same bounds; hidden
+layers retain their last bounds.
+
 レイヤー一覧は、最小サイズでもキャンバスの横に表示され、最前面のレイヤーが上に並びます。
 重なって見えないレイヤーや非表示のレイヤーも一覧から選べます。選択・移動・サイズ変更では
 重なり順は変わらず、編集ボタンは選択中のタイルだけに表示します。順番を変えるときは
@@ -45,6 +51,11 @@ transparent interior does not block it.
 背面や非表示のレイヤーを移動するときは、一覧で選んでから手元のタイトル表示をドラッグするか、
 矢印キーを使います。サイズ変更ハンドルは重なりの上から操作できます。前面の映像を
 クリックすればそのレイヤーを選べ、選択枠の透明な内側はクリックを遮りません。
+
+編集枠とハンドルは余白を除いた映像や適用済みの切り抜き範囲に沿い、見えている端を
+基準に移動できます。サイズ変更では左上の位置と縦横比を保ちます。余白の部分からは
+下のレイヤーを選べます。キーボードやVoiceOverでも同じ範囲を操作でき、非表示中は
+最後の範囲を保ちます。
 
 - **Hide / 非表示** pauses that source's stream and makes its layer transparent in the Stage, private Workspace, and Audience PNG output while preserving placement, crop, and z-order. Its row remains in the list.
 - **Show / 再表示** resumes it and reveals the layer only after a new complete frame arrives.

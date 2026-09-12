@@ -86,6 +86,16 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    The selected title badge and resize handle provide editing hit targets for
    covered or hidden layers. The selected overlay's transparent interior passes
    clicks through to visible foreground layers, preserving natural selection.
+   `StageContentGeometry` derives the visible aspect-fitted source or applied
+   crop rectangle inside each destination. Arrange uses that rectangle for
+   selection, source hit targets, title placement, and resize handles; empty
+   letterbox margins pass through to lower layers. The first move compacts the
+   destination to this visible extent without changing displayed position or
+   scale, then translates and clamps its visible edges. User resizing preserves
+   the displayed aspect ratio and fixes the visible upper-left corner; keyboard
+   and accessibility actions use the same geometry. Layout presets can still
+   assign arbitrary destination rectangles. Hidden layers retain their last
+   presentation geometry without retaining source pixels.
    `AppController` separately owns one layer-scoped Crop editing source ID and
    one draft. The Crop editor, entered only from that layer's action, shows only
    that source uncropped in the private Workspace while
@@ -274,7 +284,10 @@ and hidden layers, selection/drag/resize preserving z-order, all four explicit
 ordering commands including boundary no-ops, selected-only editing chrome, and
 title-badge/keyboard movement of a rear layer while its transparent selected
 interior permits foreground selection. Hide/Show must preserve geometry while
-waiting for a fresh frame. Screenshot acceptance covers
+waiting for a fresh frame. Square, portrait, and cropped sources must have
+content-sized editing bounds, pass-through empty margins, movement without a
+first-gesture jump, and proportional resize anchored at the visible upper-left.
+Crop drafts must not enter Arrange geometry until Apply. Screenshot acceptance covers
 every preset's exact dimensions, clean-Stage-only content, Curtain/content,
 ink, watermark and effective pointer visibility parity, Copy, Save, and cancel,
 without another screen permission or any automatic/network path.

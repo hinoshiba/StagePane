@@ -11,20 +11,13 @@ private func moveLayerWithKeyboard(
     capture: CaptureCoordinator
 ) {
     if NSEvent.modifierFlags.contains(.option) {
-        guard let frame = capture.layout[sourceID: sourceID]?.frame else { return }
         let delta: Double
         switch direction {
         case .left, .down: delta = -0.03
         case .right, .up: delta = 0.03
         @unknown default: return
         }
-        capture.setSourceFrame(sourceID, frame: .resized(
-            x: frame.x, y: frame.y,
-            width: frame.width + delta, height: frame.height + delta,
-            minimumWidth: StageLayout.defaultMinimumDimension,
-            minimumHeight: StageLayout.defaultMinimumDimension
-        ))
-        capture.commitSourceLayout(sourceID)
+        capture.resizeSourceContent(sourceID, byX: delta, y: delta)
         return
     }
     let step = NSEvent.modifierFlags.contains(.shift) ? 0.05 : 0.01
@@ -1268,8 +1261,8 @@ private struct StageSourceEditingOverlay: View {
 
     private var resizeAccessibilityLabel: String {
         L10n.text(
-            "\(source.title)の大きさを変更",
-            "Resize \(source.title)"
+            "\(source.title)の縦横比を保って大きさを変更",
+            "Resize \(source.title) proportionally"
         )
     }
 
@@ -1280,7 +1273,7 @@ private struct StageSourceEditingOverlay: View {
         )
             .onChanged { value in
                 if moveStart == nil {
-                    moveStart = frame
+                    moveStart = contentFrame
                     controller.selectSource(source.id)
                 }
                 guard let moveStart,
@@ -1288,12 +1281,12 @@ private struct StageSourceEditingOverlay: View {
                       canvasSize.height > 0 else { return }
                 capture.setSourceFrame(
                     source.id,
-                    frame: NormalizedStageRect(
-                        x: moveStart.x + Double(value.translation.width / canvasSize.width),
-                        y: moveStart.y + Double(value.translation.height / canvasSize.height),
-                        width: moveStart.width,
-                        height: moveStart.height
-                    )
+                    frame: moveStart.moved(
+                        byX: Double(value.translation.width / canvasSize.width),
+                        y: Double(value.translation.height / canvasSize.height)
+                    ),
+                    minimumWidth: 0,
+                    minimumHeight: 0
                 )
             }
             .onEnded { _ in moveStart = nil }
@@ -1306,26 +1299,22 @@ private struct StageSourceEditingOverlay: View {
         )
             .onChanged { value in
                 if resizeStart == nil {
-                    resizeStart = frame
+                    resizeStart = contentFrame
                     controller.selectSource(source.id)
                 }
                 guard let resizeStart,
                       canvasSize.width > 0,
                       canvasSize.height > 0 else { return }
-                let minimumWidth = StageLayout.defaultMinimumDimension
-                let minimumHeight = StageLayout.defaultMinimumDimension
+                guard let resizedFrame = StageContentGeometry.resizedFrame(
+                    resizeStart,
+                    translation: value.translation,
+                    canvasSize: canvasSize
+                ) else { return }
                 capture.setSourceFrame(
                     source.id,
-                    frame: .resized(
-                        x: resizeStart.x,
-                        y: resizeStart.y,
-                        width: resizeStart.width + Double(value.translation.width / canvasSize.width),
-                        height: resizeStart.height + Double(value.translation.height / canvasSize.height),
-                        minimumWidth: minimumWidth,
-                        minimumHeight: minimumHeight
-                    ),
-                    minimumWidth: minimumWidth,
-                    minimumHeight: minimumHeight
+                    frame: resizedFrame,
+                    minimumWidth: 0,
+                    minimumHeight: 0
                 )
             }
             .onEnded { _ in
@@ -1335,36 +1324,27 @@ private struct StageSourceEditingOverlay: View {
     }
 
     private func resizeBy(_ delta: Double) {
-        capture.setSourceFrame(
-            source.id,
-            frame: .resized(
-                x: frame.x,
-                y: frame.y,
-                width: frame.width + delta,
-                height: frame.height + delta,
-                minimumWidth: StageLayout.defaultMinimumDimension,
-                minimumHeight: StageLayout.defaultMinimumDimension
-            ),
-            minimumWidth: StageLayout.defaultMinimumDimension,
-            minimumHeight: StageLayout.defaultMinimumDimension
-        )
-        capture.commitSourceLayout(source.id)
+        capture.resizeSourceContent(source.id, byX: delta, y: delta)
+    }
+
+    private var contentFrame: NormalizedStageRect {
+        capture.sourceContentFrame(source.id, canvasSize: canvasSize) ?? frame
     }
 
     private var tileWidth: CGFloat {
-        canvasSize.width * CGFloat(frame.width)
+        canvasSize.width * CGFloat(contentFrame.width)
     }
 
     private var tileHeight: CGFloat {
-        canvasSize.height * CGFloat(frame.height)
+        canvasSize.height * CGFloat(contentFrame.height)
     }
 
     private var tileMidX: CGFloat {
-        canvasSize.width * CGFloat(frame.x + frame.width / 2)
+        canvasSize.width * CGFloat(contentFrame.x + contentFrame.width / 2)
     }
 
     private var tileMidY: CGFloat {
-        canvasSize.height * CGFloat(frame.y + frame.height / 2)
+        canvasSize.height * CGFloat(contentFrame.y + contentFrame.height / 2)
     }
 
     private var sourcePhaseText: String {
