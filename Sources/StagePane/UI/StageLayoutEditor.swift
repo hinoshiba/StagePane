@@ -1023,16 +1023,24 @@ private struct StageSourceEditingOverlay: View {
     var body: some View {
         tileContent
             .frame(width: tileWidth, height: tileHeight)
+            .focusable(showsSelectionControls)
+            // The moving outline provides focus feedback for this backing.
+            // Keep the controls outside this modifier's subtree so buttons
+            // retain their own native keyboard focus effects.
+            .focusEffectDisabled()
+            .overlay(alignment: .topLeading) {
+                if showsSelectionControls {
+                    ZStack(alignment: .topLeading) {
+                        layerHeader
+                        resizeHandle
+                    }
+                }
+            }
             .position(x: tileMidX, y: tileMidY)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(source.title)
             .accessibilityValue("\(L10n.text("選択中", "Selected")), \(sourcePhaseText)")
             .accessibilityHint(keyboardAccessibilityHint)
-            .focusable(showsSelectionControls)
-            // The content-sized aqua outline is also the keyboard focus
-            // indicator. AppKit's additional focus effect can retain the
-            // positioned SwiftUI host's old bounds during a drag.
-            .focusEffectDisabled()
             .onExitCommand { controller.selectSource(nil) }
             .onMoveCommand(perform: handleKeyboardMove)
             .onKeyPress(.space) {
@@ -1096,9 +1104,6 @@ private struct StageSourceEditingOverlay: View {
                         )
                     )
                     .allowsHitTesting(false)
-
-                layerHeader
-                resizeHandle
             } else {
                 movementSurface
             }

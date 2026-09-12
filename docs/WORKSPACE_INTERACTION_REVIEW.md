@@ -139,7 +139,10 @@ planned; this document does not mark them as passed.
 - Verify only selected-layer editing chrome appears; test small overlapping
   tiles and the 900×620-point Workspace. Check both languages, light/dark,
   keyboard navigation, VoiceOver labels/actions, Increase Contrast, and Reduce
-  Motion. Layer buttons must remain independently reachable.
+  Motion. During continuous dragging, the single selection outline must follow
+  the source without a second ring remaining at its previous position. Verify
+  arrow-key movement and visible keyboard focus on the crop button. Layer
+  buttons must remain independently reachable.
 - Recheck Crop draft/apply/cancel, Quick Layout, Draw/Undo/Clear, Curtain,
   Workspace/Stage close and reopen, selected-source removal cancellation,
   Stop All, and source-count limits. Public Stage/PNG must contain no private
