@@ -30,8 +30,8 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
         window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
         // This is the app's sole private main window. Below the wide-canvas
-        // threshold its global navigation becomes an icon rail and the canvas
-        // source list becomes an overlay, preserving a useful editing area.
+        // threshold its global navigation becomes an icon rail; the layer list
+        // stays beside the canvas so overlap controls are always available.
         window.contentMinSize = NSSize(width: 900, height: 620)
         window.setFrameAutosaveName("StagePane.Workspace")
         window.tabbingMode = .disallowed

@@ -251,8 +251,8 @@ const translations = {
   },
   "t36": {
     "html": {
-      "ja": "大きなライブキャンバス",
-      "en": "Large live canvas"
+      "ja": "キャンバスとレイヤーを並べて",
+      "en": "Canvas and layers side by side"
     }
   },
   "t37": {
@@ -281,8 +281,8 @@ const translations = {
   },
   "t41": {
     "html": {
-      "ja": "大きなライブ編集画面と、ソース・設定をまとめたサイドバー",
-      "en": "A large live editor with Sources and settings together in one sidebar."
+      "ja": "キャンバスの横で、レイヤーの選択・順序・表示を管理",
+      "en": "Select, reorder, and hide layers beside the live Canvas."
     }
   },
   "t42": {
@@ -305,20 +305,20 @@ const translations = {
   },
   "t45": {
     "html": {
-      "ja": "3つのソースを、ひとつの構図へ。",
-      "en": "Compose three sources into one clear Stage."
+      "ja": "重なった画面も、選んで動かす。",
+      "en": "Reach every layer, even when covered."
     }
   },
   "t46": {
     "html": {
-      "ja": "移動、自由なサイズ変更、重なり順、クイック配置をキャンバス上で確認。レーザーポインターは最前面のソースだけに表示します。",
-      "en": "Move, freely resize, reorder, or apply a Quick Layout directly on the Canvas. The laser pointer appears only over the frontmost source."
+      "ja": "一覧から重なったレイヤーを選び、移動しても順序はそのまま。前後の順番は矢印で、非表示・再表示は目のボタンで切り替えます。",
+      "en": "Select covered layers from the list and move them without changing their order. Use arrows to reorder and the eye button to hide or show each layer."
     }
   },
   "t47": {
     "alt": {
-      "ja": "配置モードで、3つの合成ソース、選択中ソースの編集枠とリサイズハンドル、最前面ソース上のレーザーポインターを表示するStage Workspace",
-      "en": "StagePane Workspace in Arrange mode with three synthetic sources, the selected source's editing outline and resize handle, and one laser pointer over the frontmost source"
+      "ja": "キャンバスの横に3つの合成レイヤーが並ぶ配置モード。1つは非表示で、選択中レイヤーだけに編集枠・切り抜き・サイズ変更の操作を表示するStage Workspace",
+      "en": "StagePane Workspace in Arrange mode with three synthetic layers beside the Canvas, one hidden layer, and editing, crop, and resize controls on the selected layer only"
     },
     "src": {
       "ja": "assets/screenshots/ja/arrange.webp",
@@ -345,8 +345,8 @@ const translations = {
   },
   "t51": {
     "alt": {
-      "ja": "手書きモードで、3つの合成ソース、ペンと蛍光ペンの線、部分消去の跡、選択中の消しゴムを表示し、観客側ポインターを表示していないStage Workspace",
-      "en": "StagePane Workspace in Draw mode with three synthetic sources, pen and highlighter strokes, a partially erased area, the Eraser selected, and no audience pointer visible"
+      "ja": "キャンバス横の3つの合成レイヤーのうち1つを非表示にした手書きモード。ペン・蛍光ペン・部分消去の跡と消しゴムの操作を表示し、観客側ポインターを隠したStage Workspace",
+      "en": "StagePane Workspace in Draw mode with three synthetic layers beside the Canvas, one hidden layer, pen and highlighter strokes, a partially erased area, Eraser controls, and no audience pointer"
     },
     "src": {
       "ja": "assets/screenshots/ja/draw.webp",
@@ -457,14 +457,14 @@ const translations = {
   },
   "t69": {
     "html": {
-      "ja": "<span class=\"label-private\">3ソース · 無料範囲</span> Workspace ソース",
-      "en": "<span class=\"label-private\">3 SOURCES · INCLUDED FREE</span> Workspace Sources"
+      "ja": "<span class=\"label-private\">3ソース · 無料範囲</span> Workspace レイヤー",
+      "en": "<span class=\"label-private\">3 SOURCES · INCLUDED FREE</span> Workspace Layers"
     }
   },
   "t70": {
     "alt": {
-      "ja": "3つの合成ソースのうち2つが取得中、1つが一時停止中で、レイヤーごとの切り抜きとその他の操作を表示するWorkspaceのソース画面",
-      "en": "StagePane Workspace Sources view with three synthetic sources, two active and one paused, plus per-layer Crop and more-actions controls"
+      "ja": "キャンバス横の常設一覧で、3つの合成レイヤーの表示切替と選択中レイヤーの順序・切り抜きを操作するWorkspace。観客側Stageはカーテン中",
+      "en": "Synthetic StagePane Workspace with a persistent layer list beside the Canvas, direct visibility controls and ordering and crop controls for the selected layer; the audience Curtain is on"
     },
     "src": {
       "ja": "assets/screenshots/ja/sources.webp",
@@ -473,8 +473,8 @@ const translations = {
   },
   "t71": {
     "html": {
-      "ja": "<strong>無料版でも4件まで、個別に管理。</strong> 止める・戻す・選び直す・解除を、Workspaceの「ソース」画面から操作できます。",
-      "en": "<strong>Manage up to four sources in Free.</strong> Pause, resume, replace, or remove each item from the Workspace’s Sources view."
+      "ja": "<strong>無料版でも4件まで、個別に管理。</strong> 目のボタンで一時的に非表示にしても、位置・切り抜き・重なり順を保持。再表示すると取得が再開し、新しい映像が届いてから同じ場所へ戻ります。",
+      "en": "<strong>Manage up to four sources in Free.</strong> The eye button temporarily hides a layer while preserving its position, crop, and order. Show resumes capture and restores the layer in place once a fresh frame arrives."
     }
   },
   "t72": {
@@ -597,8 +597,8 @@ const translations = {
   },
   "t89": {
     "html": {
-      "ja": "StagePaneは、きれいな共有Stageと、キャンバス・ソース・設定をサイドバーにまとめた手元用Workspaceの2画面です。",
-      "en": "StagePane opens two windows: the clean Share Stage and one private Workspace with Canvas, Sources, and settings in its sidebar."
+      "ja": "StagePaneは、共有するStageと、キャンバスの横に常設レイヤー一覧を備えた手元用Workspaceの2画面です。設定はWorkspaceのサイドバーから開けます。",
+      "en": "StagePane opens two windows: the clean Share Stage and your private Workspace, with a persistent layer list beside the Canvas. Open settings from the Workspace sidebar."
     }
   },
   "t90": {

@@ -7,6 +7,14 @@ Versioning once 1.0.0 is released.
 
 ### Changed
 
+- Unified composition and source management in one Workspace with a persistent
+  layer list ordered from front to back, including at the minimum window size.
+- Selecting, moving, or resizing a layer now preserves its stacking order.
+  Move Forward, Move Backward, Bring to Front, and Send to Back change the order
+  explicitly, and only the selected Canvas tile shows editing controls.
+- Direct Hide and Show actions pause and resume individual sources while
+  retaining placement, crop, and stacking order. A shown layer waits for a new
+  complete frame before its pixels return to the Stage, Workspace, or Audience PNG.
 - Documented the canonical signed release-PR, merge, tag, local Organizer
   archive, release-owner upload, App Store Connect processing, build-selection,
   review-submission, and public-release handoffs.

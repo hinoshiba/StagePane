@@ -4,8 +4,9 @@
 > A clean stage for everything you share.
 
 StagePane is an open-source macOS app that creates a dedicated, ordinary
-window for screen sharing. Use the private **Stage Workspace** for the live
-Canvas, Sources, Stage Settings, Appearance, Permissions, Privacy, and About,
+window for screen sharing. Use the private **Stage Workspace** with its live
+Canvas and persistent layer list, plus Stage Settings, Appearance, Permissions,
+Privacy, and About,
 then share only the chrome-free **StagePane Stage** in Zoom, Microsoft Teams,
 Google Meet, Webex, Slack Huddles, Discord, OBS, or another app that can share a
 window.
@@ -24,8 +25,8 @@ access.
 ## Why StagePane
 
 - **A clean share target** — the audience Stage contains no editing chrome.
-  The private Stage Workspace has an unmistakable title and keeps every editing
-  and settings surface behind one Docker-style sidebar.
+  The private Stage Workspace has an unmistakable title and keeps editing
+  controls beside the live Canvas, with settings available from its sidebar.
 - **Privacy Curtain** — cover the Stage instantly with `Shift-Command-H`.
 - **Exact shapes** — switch between 16:9, 4:3, 9:16, and 1:1 while preserving
   the Stage window identity used by meeting apps.
@@ -36,13 +37,19 @@ access.
 - **A persistent permission guide** — Workspace's Permissions view explains
   how Add Source opens Apple's picker for session-scoped sharing, without
   prompting at launch.
-- **A source list and free layout** — add, pause or resume, replace, or remove
-  each source independently in Workspace → Sources; drag and resize tiles on
-  the large private Canvas or choose Grid, Side by Side, Stacked, or Picture in
-  Picture from Quick Layout. If macOS ends one source's sharing session, its
+- **Layers beside the Canvas** — manage every source without leaving the
+  composition. The persistent list runs from front to back, so a covered or
+  hidden layer stays easy to select. Selection, dragging, and resizing preserve
+  stacking order; use Move Forward, Move Backward, Bring to Front, or Send to
+  Back to change it explicitly. Only the selected tile shows editing controls.
+  Choose Grid, Side by Side, Stacked, or Picture in Picture from Quick Layout.
+  If macOS ends one source's sharing session, its
   layer remains in place without an old frame and offers Select Again; its crop,
   placement, and stacking order survive the reconnection.
-- **Per-layer cropping** — use the crop button on a Canvas tile or source row to
+- **Hide and show one layer** — the direct Hide action pauses that source and
+  clears its visible pixels while keeping its placement, crop, and stacking
+  order. Show resumes it and waits for a new complete frame before revealing it.
+- **Per-layer cropping** — use the crop button on the selected Canvas tile or layer row to
   open that layer alone in the private Workspace and draft its framed region.
   The audience Stage does not change until you choose Apply Crop; Cancel
   discards the draft. Each layer keeps its own applied crop in memory for the
@@ -121,14 +128,18 @@ instructions](docs/RELEASE.md).
    session; repeat for up to four sources in Free. StagePane Pro removes the
    app's source-count limit; the practical total depends on Mac performance and
    operating-system constraints.
-3. In **Workspace → Canvas**, use **Arrange** to move and resize tiles. Choose
-   the crop button on the layer you want to edit, adjust its frame or four
+3. In **Workspace**, select a layer on the Canvas or in the list beside it and
+   use **Arrange** to move and resize it. Selecting or moving a layer does not
+   bring it forward. Use its ordering actions to change its position in the
+   stack. For a covered or hidden layer, drag its selected title badge or use
+   arrow keys; its resize handle remains reachable above the other layers.
+   Choose the crop button on the layer you want to edit, adjust its frame or four
    corner handles, then choose **Apply Crop**. The Stage keeps that layer's
    previously applied region until then. Use **Quick Layout** for Grid, Side by
    Side, Stacked, or Picture in Picture.
-4. Switch to **Draw** when you want to place session-only ink over the Stage.
-   Use **Workspace → Sources** to pause or resume, crop, replace, or remove one
-   item.
+4. Use **Hide** or **Show** beside a layer to temporarily remove or restore it.
+   The same list provides crop, replace, and remove actions. Switch to **Draw**
+   when you want to place session-only ink over the Stage.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
 6. Use `Shift-Command-H` whenever you need the Privacy Curtain.
 7. Select **Stop All** to end every ScreenCaptureKit stream and remove all
@@ -139,9 +150,10 @@ window instead when you need the narrowest sharing scope.
 
 Cropping changes only the local composition shown on the Stage and in an
 Audience PNG. Whenever a source stream is running, ScreenCaptureKit handles the
-complete window, app, or display approved in Apple's picker. Pause stops that
-stream and makes its layer transparent in the Stage, private Workspace, and
-Audience PNG output. Resume reveals it only after a new complete frame arrives;
+complete window, app, or display approved in Apple's picker. **Hide** pauses
+that stream and makes its layer transparent in the Stage, private Workspace,
+and Audience PNG output. **Show** resumes capture and reveals the layer only
+after a new complete frame arrives;
 placement, crop, and z-order remain unchanged. Remove or Stop All ends its
 capture session. The private Workspace deliberately shows the complete source
 while Crop is active; only the selected source is shown there, and draft changes
@@ -158,11 +170,9 @@ in the lower-right of the holding screen, shared content, and Curtain by default
 is mirrored in the private Workspace. StagePane Pro can disable it in
 Appearance, including for the Curtain and explicit Audience PNG output.
 
-Pausing a source stops its ScreenCaptureKit stream and makes that layer
-transparent in the Stage, private Workspace, and Audience PNG output. Resume
-restarts the source but keeps it transparent until a new complete frame arrives.
-Its placement, crop, and z-order are preserved. Remove discards the source's
-pixels and deletes that layer; Stop All does so for every layer.
+Hidden layers remain in the layer list so you can select and restore the exact
+layer without changing the stack. Remove discards the source's pixels and
+deletes that layer; Stop All does so for every layer.
 
 Toggling the Privacy Curtain updates the Stage without bringing its window to
 the front, so the Workspace or source app you are using keeps its place.
@@ -183,8 +193,9 @@ virtual-display dependency. Use PowerPoint itself for all presenter-view
 controls. StagePane captures and composes the selected
 Presenter View window but does not forward clicks, keys, or drags to PowerPoint.
 
-The Stage Workspace contains the live Canvas plus Sources, Stage Settings,
-Appearance, Permissions, Privacy, and About in one sidebar. It is intended to
+The Stage Workspace keeps the Canvas and layer list together, including at the
+minimum window size. Stage Settings, Appearance, Permissions, Privacy, and
+About remain available from its navigation. It is intended to
 stay private. This is workflow guidance, not a technical capture boundary:
 sharing the whole display or the StagePane application can expose the
 Workspace. In your meeting app, choose the exact **StagePane Stage — Share This
@@ -215,7 +226,7 @@ User-approved windows / apps / displays
               ├────► StagePane Stage ───► meeting app shares this exact window
               │                 └───────► explicit local PNG copy/save only
               └────► private Stage Workspace
-                     Canvas + Sources + settings in one sidebar
+                     Canvas + persistent layer list; settings in sidebar
 ```
 
 The project is a Swift Package with a testable framework-free core and a native
@@ -273,8 +284,12 @@ Certificate of Origin, and follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 StagePaneは、画面共有で選択するための専用ウインドウを作るmacOSアプリです。
 本物の仮想ディスプレイや別デスクトップではなく、Appleの公開APIだけを使った
-プレゼンテーション・キャンバスです。手元のStage Workspaceには、キャンバス、ソース、
-Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてをまとめ、
+プレゼンテーション・キャンバスです。手元のStage Workspaceでは、キャンバスの横に
+前面から背面の順でレイヤー一覧を常設し、重なったソースも一覧から選べます。
+選択・移動・サイズ変更では重なり順は変わらず、前面・背面への操作で明示的に変えます。
+各レイヤーの「非表示」は取得を一時停止し、配置と切り抜きを保ちます。「再表示」は取得を
+再開し、新しい完全なフレームが届いてから映像を戻します。
+Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてもまとめ、
 相手にはクロームのないStageだけを見せます。共有対象は
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
 求めません。明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。

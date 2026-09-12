@@ -9,11 +9,10 @@
    the one-time StagePane Pro purchase removes StagePane's source-count limit.
    The number that can run in practice depends on Mac performance and
    operating-system constraints.
-3. Open **Canvas / キャンバス** in the private Stage Workspace to arrange,
-   crop, or draw. Drag and resize sources there. Use **Pause / 一時停止**,
-   **Resume / 再開**, **Replace / 選び直す**,
-   or **Remove / 解除** in **Sources / ソース**, or **Auto Arrange / 自動配置**
-   for an even grid.
+3. Use the Canvas and the persistent layer list together in the private
+   **Workspace / ワークスペース**. Select a layer, then move, resize, or crop it;
+   use **Hide / 非表示**, **Show / 再表示**, **Replace / 選び直す**, or
+   **Remove / 解除** beside that layer. **Auto Arrange / 自動配置** makes an even grid.
    In Arrange mode, **Quick Layout / クイック配置** also offers Side by
    Side, Stacked, and Picture in Picture without changing source order.
 4. In your meeting app, share **StagePane Stage — Share This Window / このウインドウを共有**.
@@ -24,6 +23,41 @@ window when you want to limit the source more narrowly.
 
 アプリを選ぶと、そのアプリが持つすべてのウインドウが含まれる場合があります。
 共有範囲を狭くしたい場合は、アプリではなく1つのウインドウを選んでください。
+
+## Work with overlapping layers / 重なったレイヤーを編集する
+
+The layer list stays beside the Canvas, with the frontmost layer at the top.
+Select a covered or hidden layer from this list. Selecting, dragging, or
+resizing it preserves its stacking order. Only the selected Canvas tile shows
+its editing outline and controls.
+
+For a selected rear or hidden layer, drag its private title badge or use arrow
+keys to move it. Its resize handle remains accessible above overlapping layers.
+Clicking visible foreground content selects that foreground layer; the empty
+interior of the selected editing outline does not block that click.
+
+レイヤー一覧はキャンバスの横に常設され、最前面のレイヤーが上に並びます。
+重なって見えないレイヤーや非表示のレイヤーも一覧から選べます。選択・移動・サイズ変更では
+重なり順は変わりません。キャンバスの編集枠と操作ボタンは、選択中のレイヤーだけに表示します。
+
+背面や非表示のレイヤーを選んだら、手元のタイトル表示をドラッグするか、矢印キーで移動します。
+サイズ変更ハンドルは重なりの上から操作できます。前面に見えている映像をクリックすると
+そのレイヤーを選べるため、選択枠の内側が前面の映像へのクリックを遮ることはありません。
+
+Use **Move Forward / ひとつ前へ** or **Move Backward / ひとつ後ろへ** to move
+one position in the stack, and **Bring to Front / 最前面へ** or
+**Send to Back / 最背面へ** to move to an end. The list updates to match the
+Stage. These actions preserve placement and crop.
+
+**ひとつ前へ**・**ひとつ後ろへ** は重なり順を1段変え、**最前面へ**・**最背面へ** は
+一番手前・一番奥へ移します。一覧はStageの順番に合わせて更新され、配置と切り抜きは保ちます。
+
+Use the direct **Hide / 非表示** control when a layer should disappear
+temporarily. Its row remains available; **Show / 再表示** brings it back after a
+fresh frame arrives, with the same placement, crop, and order.
+
+一時的に消したいレイヤーは **非表示** を選びます。一覧には残り、**再表示** を選ぶと
+新しい完全なフレームが届いてから、同じ配置・切り抜き・重なり順で映像が戻ります。
 
 ## Permissions / アクセス権限
 
@@ -58,21 +92,21 @@ Workspace. It is always shown in Free and can be disabled with StagePane Pro.
 半透明の **StagePaneロゴ** は待機画面、共有内容、カーテンの右下に表示され、手元の
 Workspaceにも反映されます。無料版では常に表示され、StagePane Proでは無効にできます。
 
-**Pause / 一時停止** stops only that source's ScreenCaptureKit stream and
+**Hide / 非表示** pauses only that source's ScreenCaptureKit stream and
 makes its layer transparent in the Stage, private Workspace, and Audience PNG
-output. **Resume / 再開** restarts the same source and reveals it only after a
+output. **Show / 再表示** resumes the same source and reveals it only after a
 new complete frame arrives. Placement, crop, and z-order remain unchanged.
 
-**一時停止** はそのソースのScreenCaptureKitストリームだけを停止し、Stage、手元用
-Workspace、Audience PNGでレイヤーを透明にします。**再開** で同じソースの取得を再開し、
+**非表示** はそのソースのScreenCaptureKitストリームだけを一時停止し、Stage、手元用
+Workspace、Audience PNGでレイヤーを透明にします。**再表示** で同じソースの取得を再開し、
 新しい完全なフレームが届いた時点で再表示します。配置・切り抜き・重なり順は保持します。
 
 **Remove / 解除** always asks for confirmation because it stops that source and
-discards its pixels and retained layer state. Pause and Replace do not show
+discards its pixels and retained layer state. Hide and Replace do not show
 this warning.
 
 **解除** は、そのソースを停止して映像と保持中のレイヤー状態を破棄するため、
-必ず確認を表示します。一時停止と選び直しではこの警告は表示しません。
+必ず確認を表示します。非表示と選び直しではこの警告は表示しません。
 
 When switching a completely static source from System to Laser pointer, StagePane
 waits for macOS to deliver a complete cursorless frame before drawing the dot,
@@ -89,8 +123,8 @@ the Stage composition while **Arrange / 配置** mode is selected. **Crop / 切�
 starts from the button on an individual layer, shows only that layer at full
 Canvas size, and drafts the framed part sent to the Stage. The Stage does not
 change until Apply Crop; Cancel discards the draft.
-Its sidebar contains Canvas, Sources, Stage Settings, Appearance, Permissions,
-Privacy, and About.
+The Canvas and layer list stay together, including at the minimum window size.
+Its navigation provides Stage Settings, Appearance, Permissions, Privacy, and About.
 Toggling the Curtain does not bring the Stage window to the front.
 “Keep Private” is guidance, not a technical capture boundary. Application or
 full-display sharing can expose the Workspace, and a meeting app may still list
@@ -101,8 +135,8 @@ This Window** window.
 **配置** モードでのタイルのドラッグや大きさ変更は、Stage内の配置だけを変えます。
 **切り抜き** は各レイヤーのボタンから開始し、そのレイヤーだけを手元に全面表示して、Stageへ出す範囲を下書きします。
 「切り抜きを適用」を選ぶまでStageは変わらず、キャンセルすると下書きを破棄します。
-Workspaceのサイドバーに、キャンバス、ソース、Stage設定、見た目と動作、アクセス権限、
-プライバシー、このアプリについてをまとめています。
+キャンバスとレイヤー一覧は、最小ウインドウサイズでも並べて表示します。ナビゲーションには
+Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてをまとめています。
 カーテンを切り替えてもStageウインドウは前面へ移動しません。
 「共有しない」は使い方の案内であり、技術的な共有防止境界ではありません。アプリ全体や
 ディスプレイ全体を共有するとWorkspaceが映る可能性があります。会議アプリでは
@@ -136,9 +170,10 @@ Monitoring permission.
 StagePaneではStage全体の **配置** と **手書き** モードに加え、各レイヤーに **切り抜き** 操作があります。いずれも共有元アプリへ入力を
 送らず、macOSのアクセシビリティ許可や入力監視許可も必要としません。
 
-- **Arrange / 配置** moves, resizes, and reorders Stage tiles. It never sends
-  those editing gestures to a source app.
-- **Crop / 切り抜き** starts from the crop button on a Canvas tile or source
+- **Arrange / 配置** moves and resizes the selected Stage tile while preserving
+  its order; explicit ordering actions change the stack. It never sends those
+  editing gestures to a source app.
+- **Crop / 切り抜き** starts from the crop button on the selected Canvas tile or layer
   row, then displays only that layer at full Canvas size in the private
   Workspace. Drag inside the bright frame to move it or use its four
   corner handles to resize it. The Stage keeps the previously applied crop while
@@ -154,8 +189,8 @@ StagePaneではStage全体の **配置** と **手書き** モードに加え、
   by the Curtain, and is cleared by **Stop All** or removal of the final source.
   Use **Undo / 取り消す** or **Clear / すべて消す** to edit it.
 
-- **配置** はStage内のタイルを移動・サイズ変更・並べ替えします。編集ジェスチャーは
-  取得元アプリへ送りません。
+- **配置** は選択中のタイルの重なり順を保って移動・サイズ変更します。重なり順は
+  前面・背面への操作で明示的に変更し、編集ジェスチャーは取得元アプリへ送りません。
 - **切り抜き** は選択したソース1件だけを手元用WorkspaceのCanvas全面に表示します。
   明るい枠内をドラッグして移動し、四隅のハンドルで範囲を変えます。編集中もStageは
   適用済みの範囲を保ち、**切り抜きを適用** で下書きを反映、**キャンセル** で破棄します。
@@ -169,18 +204,18 @@ StagePaneではStage全体の **配置** と **手書き** モードに加え、
 
 Cropping is a local composition mask, not a narrower macOS capture permission.
 Whenever the source stream runs, ScreenCaptureKit handles the complete window,
-app, or display approved in Apple's picker. Pause stops that stream; Remove or
-Stop All ends its capture session. While paused, that layer is transparent in
-the Stage, private Workspace, and Audience PNG output; Resume shows it only
-after a new complete frame arrives, without changing placement, crop, or
+app, or display approved in Apple's picker. Hide pauses that stream; Remove or
+Stop All ends its capture session. While hidden, that layer is transparent in
+the Stage, private Workspace, and Audience PNG output; Show resumes capture and
+reveals it only after a new complete frame arrives, without changing placement, crop, or
 z-order. Keep the Curtain on while
 preparing content that is not ready for the audience. Crop edits remain a
 private draft until Apply Crop.
 
 切り抜きはStage内の表示マスクであり、macOSの取得許可範囲を狭めるものではありません。
 ソースのストリーム動作中、ScreenCaptureKitはAppleのピッカーで許可したウインドウ、
-アプリ、または画面全体を扱います。一時停止はストリームを止め、Stage、手元用Workspace、
-Audience PNGでそのレイヤーを透明にします。再開後は新しい完全なフレームが届いてから再表示し、
+アプリ、または画面全体を扱います。非表示はストリームを一時停止し、Stage、手元用Workspace、
+Audience PNGでそのレイヤーを透明にします。再表示を選ぶと取得を再開し、新しい完全なフレームが届いてから映像を戻し、
 配置・切り抜き・重なり順は保持します。解除またはすべて停止は取得セッションを終了します。
 観客へ見せる準備ができていない内容を調整するときはカーテンを
 有効にしてください。切り抜きの変更は「切り抜きを適用」まで手元の下書きです。

@@ -1012,10 +1012,27 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     func bringSourceToFront(_ sourceID: StageSourceID) {
-        guard let selected = layout[sourceID: sourceID],
-              layout.sources.last?.id != sourceID else { return }
-        let reordered = layout.sources.filter { $0.id != sourceID } + [selected]
-        layout = StageLayout(sources: reordered)
+        var updated = layout
+        guard updated.bringSourceToFront(sourceID) else { return }
+        layout = updated
+    }
+
+    func bringSourceForward(_ sourceID: StageSourceID) {
+        var updated = layout
+        guard updated.bringSourceForward(sourceID) else { return }
+        layout = updated
+    }
+
+    func sendSourceBackward(_ sourceID: StageSourceID) {
+        var updated = layout
+        guard updated.sendSourceBackward(sourceID) else { return }
+        layout = updated
+    }
+
+    func sendSourceToBack(_ sourceID: StageSourceID) {
+        var updated = layout
+        guard updated.sendSourceToBack(sourceID) else { return }
+        layout = updated
     }
 
     private func beginCapture(

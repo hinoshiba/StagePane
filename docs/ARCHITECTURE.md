@@ -24,7 +24,7 @@ StagePaneApplication
         ├── StageWorkspaceWindowController
         │   └── StageWorkspaceView    private unified working window
         │       ├── StageLayoutEditor Arrange / per-layer Crop / Draw
-        │       ├── Sources           per-source lifecycle controls
+        │       ├── Layer list        persistent, front-to-back lifecycle controls
         │       ├── Stage Settings / Appearance
         │       └── Permissions / Privacy / About
         ├── StageWindowController
@@ -75,7 +75,17 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    a static slide to black.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
    destination rectangle, an applied normalized source crop, and an ordered
-   z-position. Arrange-mode drag and resize update destination placement.
+   z-position. Arrange-mode drag and resize update destination placement without
+   changing z-order. `AppController` owns a private selected source ID shared by
+   the Canvas and persistent layer list; selecting a layer does not mutate
+   `StageLayout`. Only explicit Move Forward, Move Backward, Bring to Front, and
+   Send to Back commands change the stack. The list presents that stack from
+   front to back, including retained hidden and disconnected layers. Only the
+   selected tile displays private editing chrome; lifting that chrome for access
+   does not lift its source pixels in the Workspace or audience composition.
+   The selected title badge and resize handle provide editing hit targets for
+   covered or hidden layers. The selected overlay's transparent interior passes
+   clicks through to visible foreground layers, preserving natural selection.
    `AppController` separately owns one layer-scoped Crop editing source ID and
    one draft. The Crop editor, entered only from that layer's action, shows only
    that source uncropped in the private Workspace while
@@ -103,10 +113,12 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    and ownership does not fall through to a lower source. Draw mode removes the
    overlay, stops pointer-location sampling, and configures streams without a
    captured system cursor. Video frames remain on the zero-copy display path.
-8. Per-source **Pause** stops that source's `SCStream`, clears its presented
+8. The direct per-layer **Hide** action uses **Pause** to stop that source's
+   `SCStream` and clear its presented
    pixels from both renderers, and keeps its tile, crop, and z-order in
    `StageLayout`. The layer is transparent in the Stage, private Workspace, and
-   Audience PNG output. **Resume** restarts the same stream, but visibility
+   Audience PNG output. The layer remains selectable in the persistent list.
+   **Show** uses **Resume** to restart the same stream, but visibility
    reopens only after a new complete frame for that presentation generation.
 9. A screenshot is created only after a person explicitly chooses **Copy
     Audience Image** or **Save Audience Image…** in the private Workspace.
@@ -160,8 +172,12 @@ Accessibility nor Input Monitoring permission.
   warning, not an unsupported `sharingType = .none` capture-exclusion hint, are
   the boundary. Application sharing, full-display sharing, or a meeting app may
   include the private window.
-- Stage Workspace enforces a 900×620-point minimum for its Canvas, Docker-style
-  navigation, source management, and settings.
+- Stage Workspace enforces a 900×620-point minimum for its Canvas, navigation,
+  source management, and settings. The layer list remains beside the Canvas at
+  that minimum; source controls do not require switching away from the composition.
+- Canvas and layer-list selection have no audience-side effect. An obscured
+  layer can be selected in the list without reordering it. Selection is private,
+  session-only state and is cleared when its layer is removed or all sources stop.
 - The user-facing workflow always instructs people to select the exact Stage
   window by name, never the StagePane application or full display when the
   Workspace must remain private.
@@ -252,8 +268,13 @@ requests no Accessibility permission on any supported OS.
 Its persistent Permissions view must explain picker-scoped screen-sharing
 access without requesting separate broad Screen Recording access. Arrange and
 Draw must remain available.
-The private Workspace must host those modes while the public Stage stays
-chrome-free. Screenshot acceptance covers
+The private Workspace must host those modes with a persistent layer list while
+the public Stage stays chrome-free. Acceptance includes selecting fully covered
+and hidden layers, selection/drag/resize preserving z-order, all four explicit
+ordering commands including boundary no-ops, selected-only editing chrome, and
+title-badge/keyboard movement of a rear layer while its transparent selected
+interior permits foreground selection. Hide/Show must preserve geometry while
+waiting for a fresh frame. Screenshot acceptance covers
 every preset's exact dimensions, clean-Stage-only content, Curtain/content,
 ink, watermark and effective pointer visibility parity, Copy, Save, and cancel,
 without another screen permission or any automatic/network path.

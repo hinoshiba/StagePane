@@ -174,18 +174,33 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
   Pro mixed-source addition at source five and beyond while Mac performance and
   operating-system constraints permit; no app-imposed Pro source-count ceiling;
-- per-source pause and resume (stop the stream, make the layer transparent in
-  Stage, Workspace, and Audience PNG while preserving placement/crop/z-order,
-  then reveal it only after Resume receives a new complete frame), replace
+- direct per-layer Hide and Show backed by pause and resume (stop the stream,
+  make the layer transparent in Stage, Workspace, and Audience PNG while
+  preserving placement/crop/z-order,
+  then reveal it only after Show/Resume receives a new complete frame); the
+  hidden layer remains selectable in the list; rapid repeated actions and
+  resume failure must not reveal stale pixels; replace
   (with cancel preserving the old item), per-source removal while other streams
   remain live, and Stop All deleting pixels and logical state for every source;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
-  free resize/minimum tile size, front ordering, matching Workspace/Stage
+  free resize/minimum tile size, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
+- persistent front-to-back layer list beside the Canvas, including at the
+  minimum Workspace size; select fully covered and hidden layers through the
+  list; Canvas/list selection, mouse/keyboard drag and resize, and opening Crop
+  must preserve z-order and audience pointer ownership; explicit Move Forward,
+  Move Backward, Bring to Front, and Send to Back must update the list and
+  audience stack together while preserving geometry/crop, with boundary no-ops;
+- selected rear/hidden layers movable through their private title badge and
+  arrow keys, with the selected resize handle reachable above other layers;
+  the transparent selected interior must permit clicking visible foreground
+  content to select that foreground layer without reordering;
 - strict two-window separation: the private Workspace contains the Canvas and
-  Docker-style sidebar for Sources, Stage Settings, Appearance, Permissions,
-  Privacy, and About; its Canvas has Arrange and Draw global modes plus a Crop
-  action on each layer; the public Stage has no private toolbar, mode control,
+  persistent layer list, with navigation for Stage Settings, Appearance,
+  Permissions, Privacy, and About; its Canvas has Arrange and Draw global modes
+  plus a Crop action on the selected tile and each layer row; only the selected
+  tile displays editing chrome, with no promotion of its source pixels;
+  the public Stage has no private toolbar, mode control,
   selection outline, resize handle, notice, or other editing chrome;
 - exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
@@ -216,8 +231,8 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   Store candidate on every supported OS; confirm the persistent Permissions view
   describes only picker-scoped screen-sharing session access and neither build
   contains a cross-application input-forwarding or Accessibility permission path;
-- each tile and source row opening Crop for that exact layer at full Canvas size
-  in the private Workspace; verify the target layer name, drag, four-corner
+- the selected tile and each layer row opening Crop for that exact layer at
+  full Canvas size in the private Workspace; verify the target layer name, drag, four-corner
   resize, keyboard and VoiceOver actions;
   Reset to Full Source changes only the draft; Apply Crop is the only commit;
   Cancel, a mode change, or source loss discards the draft; the public Stage,

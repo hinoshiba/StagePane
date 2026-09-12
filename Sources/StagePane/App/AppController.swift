@@ -41,6 +41,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var privacyCurtain = true
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
+    /// Private editing focus; selecting a layer never changes audience stacking.
+    @Published private(set) var selectedSourceID: StageSourceID?
     @Published private(set) var cropEditingSourceID: StageSourceID?
     @Published private(set) var cropDraft: NormalizedSourceRect?
     @Published private(set) var workspaceSection: WorkspaceSection = .canvas
@@ -267,8 +269,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             .removeDuplicates()
             .receive(on: RunLoop.main)
             .sink { [weak self] sourceIDs in
-                guard let self,
-                      let cropEditingSourceID,
+                guard let self else { return }
+                if let selectedSourceID,
+                   !sourceIDs.contains(selectedSourceID),
+                   capture.source(for: selectedSourceID) == nil {
+                    self.selectedSourceID = nil
+                }
+                guard let cropEditingSourceID,
                       !sourceIDs.contains(cropEditingSourceID) else { return }
                 discardCropEditing(announce: false)
                 setStageInteractionMode(.arrange)
@@ -350,6 +357,16 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             .store(in: &cancellables)
     }
 
+    func selectSource(_ sourceID: StageSourceID?) {
+        if let sourceID {
+            guard let source = capture.source(for: sourceID),
+                  source.phase != .stopping,
+                  capture.layout[sourceID: sourceID] != nil else { return }
+        }
+        guard selectedSourceID != sourceID else { return }
+        selectedSourceID = sourceID
+    }
+
     func setStageInteractionMode(_ mode: StageInteractionMode) {
         if mode == .crop, cropEditingSourceID == nil {
             guard let sourceID = defaultCropEditingSourceID,
@@ -365,6 +382,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func editCrop(of sourceID: StageSourceID) {
         if cropEditingSourceID == sourceID, cropDraft != nil {
+            selectSource(sourceID)
             workspaceSection = .canvas
             setStageInteractionMode(.crop)
             return
@@ -379,6 +397,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func resetCrop(of sourceID: StageSourceID) {
         if cropEditingSourceID == sourceID, cropDraft != nil {
+            selectSource(sourceID)
             workspaceSection = .canvas
             cropDraft = .fullSource
             setStageInteractionMode(.crop)
@@ -474,6 +493,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
               source.isPresentationVisible,
               source.phase != .stopping,
               let sourceLayout = capture.layout[sourceID: sourceID] else { return false }
+        selectSource(sourceID)
         cropEditingSourceID = sourceID
         cropDraft = draft ?? sourceLayout.sourceCrop
         workspaceSection = .canvas
@@ -493,6 +513,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         _ sourceID: StageSourceID,
         completion: ((String?) -> Void)? = nil
     ) {
+        if selectedSourceID == sourceID {
+            selectedSourceID = nil
+        }
         if cropEditingSourceID == sourceID {
             discardCropEditing(announce: false)
             setStageInteractionMode(.arrange)
@@ -1080,6 +1103,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func performStopAllAndRemoveLayers() {
+        selectedSourceID = nil
         privacyCurtain = true
         transientNotice = L10n.text(
             "すべてのソースを停止し、レイヤーを削除しています…",
