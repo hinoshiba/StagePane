@@ -40,10 +40,15 @@ public struct CaptureSourceGeometry: Equatable, Sendable {
 
 /// Pixel dimensions for one source's IOSurface-backed capture output.
 ///
-/// The result retains the source aspect ratio, never upscales past the source's
-/// native pixel size, and fits inside the tile's pixel budget. Letterboxing is
-/// therefore applied exactly once by the presentation layer, not baked into an
-/// intermediate Stage-shaped capture surface.
+/// Every fit this type returns retains the source aspect ratio, never upscales
+/// past the source's native pixel size, and fits inside the tile's pixel
+/// budget, so no intermediate Stage-shaped capture surface is ever allocated.
+///
+/// That is a statement about a fit, not about the surface a running stream
+/// holds: ``CaptureSurfaceStability`` deliberately keeps a previous fit while a
+/// fresh one stays inside its deadband, so a live surface can sit a little off
+/// the current source aspect. The padding that leaves inside the IOSurface is
+/// masked out by the crop projection and is never presented.
 public struct CaptureSurfaceSize: Equatable, Sendable {
     public static let defaultMaximumPixelCount = 3_840 * 2_160
 

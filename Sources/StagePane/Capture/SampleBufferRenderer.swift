@@ -66,9 +66,19 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// when the user asks for a screenshot.
     private let snapshotFrameLock = NSLock()
     private var snapshotPixelBuffer: CVPixelBuffer?
-    /// Geometry for the same accepted frame as `snapshotPixelBuffer`. Keeping
-    /// the pair under one lock prevents a crop view from combining a new
-    /// IOSurface layout with pixels retained from an older presentation.
+    /// The geometry AppKit has been told to lay out, which describes
+    /// `snapshotPixelBuffer` exactly or, on the layout-equivalent path, to
+    /// within the bound `PresentationGeometryEquivalence` documents: under
+    /// half a point on the largest Stage destination and under one point at
+    /// the Audience export ceiling, for a pair that spends every admitted
+    /// tolerance at once.
+    /// Keeping the pair under one lock prevents a crop view from combining a
+    /// new IOSurface layout with pixels retained from an older presentation.
+    /// The committed layout, rather than the frame's own geometry, is also the
+    /// right value for the Audience PNG: `synchronizeSnapshotGeometry`
+    /// (StageCompositeDisplayView.swift:181-184) then re-applies the layout
+    /// that is already committed for the live tile instead of a slightly
+    /// different one, so the export cannot disagree with what is on screen.
     private var snapshotPresentationGeometry: SourcePresentationGeometry?
     /// False between geometry publication and the MainActor crop-layout
     /// acknowledgement. Audience PNG must not use or reveal that frame early.
@@ -719,11 +729,22 @@ final class SampleBufferRenderer: @unchecked Sendable {
             pendingVideoFrame = frame
             return
         }
-        guard presentationGeometry() == frame.presentationGeometry else {
+        let published = presentationGeometry()
+        switch PresentationGeometryEquivalence.relation(
+            published: published,
+            incoming: frame.presentationGeometry
+        ) {
+        case .identical:
+            enqueueReadyFrame(frame)
+        case .layoutEquivalent:
+            // Absolute surface size cancels out of SourceCropProjection, so the
+            // committed sourceView frame, display-layer bounds and surface mask
+            // already describe this IOSurface. Keep publishing the acknowledged
+            // geometry so the comparison baseline cannot drift frame to frame.
+            enqueueReadyFrame(frame, publishingGeometry: published)
+        case .requiresTransition:
             beginGeometryTransition(with: frame)
-            return
         }
-        enqueueReadyFrame(frame)
     }
 
     private func beginGeometryTransition(with frame: PendingVideoFrame) {
@@ -861,9 +882,14 @@ final class SampleBufferRenderer: @unchecked Sendable {
         return mayAcknowledge
     }
 
+    /// `publishingGeometry` is non-nil only when the caller has established
+    /// that the already published geometry describes this frame's IOSurface as
+    /// well, so the frame may be presented through the layout AppKit has
+    /// already committed for it.
     private func enqueueReadyFrame(
         _ frame: PendingVideoFrame,
-        geometryTransitionContext: GeometryTransitionContext? = nil
+        geometryTransitionContext: GeometryTransitionContext? = nil,
+        publishingGeometry: SourcePresentationGeometry? = nil
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard activeToken == frame.token,
@@ -877,6 +903,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         let geometryUpdate = publishSnapshotFrame(
             from: frame.sampleBuffer,
             geometry: frame.presentationGeometry,
+            reusingPublishedGeometry: publishingGeometry,
             token: frame.token,
             presentationGeneration: frame.presentationGeneration,
             forceGeometryNotification: geometryTransitionContext != nil
@@ -1008,9 +1035,17 @@ final class SampleBufferRenderer: @unchecked Sendable {
         return Self.snapshotImageContext.createCGImage(image, from: image.extent)
     }
 
+    /// `reusingPublishedGeometry` is the geometry AppKit has already laid out,
+    /// passed back in when the caller has established that it also describes
+    /// this frame. Storing it instead of the frame's own geometry keeps the
+    /// comparison baseline anchored to the acknowledged layout, so the admitted
+    /// error can never accumulate across frames, and it leaves `geometryChanged`
+    /// false so no revision, no observer notification and therefore no
+    /// main-actor work is produced for a frame that changes no layout.
     private func publishSnapshotFrame(
         from sampleBuffer: CMSampleBuffer,
         geometry: SourcePresentationGeometry?,
+        reusingPublishedGeometry: SourcePresentationGeometry? = nil,
         token: UUID,
         presentationGeneration: UUID,
         forceGeometryNotification: Bool
@@ -1022,8 +1057,20 @@ final class SampleBufferRenderer: @unchecked Sendable {
         if snapshotToken == token,
            snapshotPresentationGeneration == presentationGeneration {
             snapshotPixelBuffer = pixelBuffer
-            let geometryChanged = snapshotPresentationGeometry != geometry
-            snapshotPresentationGeometry = geometry
+            // Fail-safe for the window between the render-queue read of the
+            // published geometry and this write. If anything nulled or replaced
+            // it meanwhile, publish the frame's own geometry with its normal
+            // notification, which is a nil-to-non-nil reveal carrying the
+            // correct layout, rather than reviving a geometry that is gone.
+            let publishedGeometry: SourcePresentationGeometry?
+            if let reusingPublishedGeometry,
+               snapshotPresentationGeometry == reusingPublishedGeometry {
+                publishedGeometry = reusingPublishedGeometry
+            } else {
+                publishedGeometry = geometry
+            }
+            let geometryChanged = snapshotPresentationGeometry != publishedGeometry
+            snapshotPresentationGeometry = publishedGeometry
             if forceGeometryNotification {
                 snapshotPresentationIsAcknowledged = false
             }
@@ -1031,7 +1078,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 snapshotPresentationRevision &+= 1
                 update = PresentationGeometryUpdate(
                     revision: snapshotPresentationRevision,
-                    geometry: geometry
+                    geometry: publishedGeometry
                 )
             }
         }

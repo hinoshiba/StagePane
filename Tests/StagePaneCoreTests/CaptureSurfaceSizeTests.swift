@@ -214,4 +214,70 @@ final class CaptureSurfaceSizeTests: XCTestCase {
         XCTAssertTrue(size.width.isMultiple(of: 2))
         XCTAssertTrue(size.height.isMultiple(of: 2))
     }
+
+    /// Pins the rounding granularity `CaptureSurfaceStability`'s deadband is
+    /// calibrated against. Each axis is rounded to an even pixel independently
+    /// and with no hysteresis, so half a point of reported source jitter moves
+    /// the fit by two pixels. If a future change adds hysteresis to the fit
+    /// itself, this test is where the maintainer learns the deadband
+    /// constants must be revisited.
+    func testFittedFlipsOnSubPointSourceJitter() {
+        XCTAssertEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_440,
+                sourcePointHeight: 900,
+                pointPixelScale: 2,
+                maximumWidth: 1_920,
+                maximumHeight: 1_080
+            ),
+            CaptureSurfaceSize(width: 1_728, height: 1_080)
+        )
+        XCTAssertEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_440.5,
+                sourcePointHeight: 900,
+                pointPixelScale: 2,
+                maximumWidth: 1_920,
+                maximumHeight: 1_080
+            ),
+            CaptureSurfaceSize(width: 1_730, height: 1_080)
+        )
+        XCTAssertNotEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_440,
+                sourcePointHeight: 900,
+                pointPixelScale: 2,
+                maximumWidth: 1_920,
+                maximumHeight: 1_080
+            ),
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_440.5,
+                sourcePointHeight: 900,
+                pointPixelScale: 2,
+                maximumWidth: 1_920,
+                maximumHeight: 1_080
+            )
+        )
+
+        XCTAssertEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_023,
+                sourcePointHeight: 767,
+                pointPixelScale: 1,
+                maximumWidth: 900,
+                maximumHeight: 900
+            ),
+            CaptureSurfaceSize(width: 900, height: 676)
+        )
+        XCTAssertEqual(
+            CaptureSurfaceSize.fitted(
+                sourcePointWidth: 1_023.5,
+                sourcePointHeight: 767,
+                pointPixelScale: 1,
+                maximumWidth: 900,
+                maximumHeight: 900
+            ),
+            CaptureSurfaceSize(width: 900, height: 674)
+        )
+    }
 }

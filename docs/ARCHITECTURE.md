@@ -66,13 +66,25 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    `AVSampleBufferVideoRenderer` surfaces: one in the public Stage composition
    and one in the private Stage Workspace editor. Both consume the same
    ScreenCaptureKit buffer; there is no pixel copy or encoded preview path.
-   Each stream uses a source-aspect IOSurface capped to its tile's pixel budget,
-   so the display layer performs the only letterbox fit and each source avoids
-   allocating a full-Stage surface. Complete-frame `contentRect`,
+   Each stream uses an IOSurface capped to its tile's pixel budget that tracks
+   the source aspect to within the reconfiguration deadband below, so each
+   source avoids allocating a full-Stage surface. The display layer performs
+   the letterbox fit that positions the tile; any residual padding the deadband
+   leaves inside the IOSurface is masked out by `surfaceCropRect` and never
+   reaches a viewer. Complete-frame `contentRect`,
    `contentScale`, and display-scale metadata are debounced to follow live
    source-window aspect changes. A dimension-only reconfiguration keeps the
    last valid frame visible until its replacement arrives instead of flushing
-   a static slide to black.
+   a static slide to black. Reconfiguration is decided against the surface
+   actually requested from the stream, inside a relative deadband, so
+   frame-metadata rounding cannot drive a repeating resize loop and an
+   unrelated configuration change never re-fits the surface as a side effect.
+   A complete frame whose presentation geometry is projection-equivalent to the
+   published one — the same surface aspect and the same normalized
+   `contentRect` — is enqueued through the layout already committed for it,
+   because absolute surface size cancels out of the crop projection. Any other
+   geometry change still suppresses the tile until AppKit acknowledges the new
+   layout.
 5. `StageLayout` maps each stable source ID to a top-left-origin normalized
    destination rectangle, an applied normalized source crop, and an ordered
    z-position. Arrange-mode drag and resize update destination placement without
@@ -216,7 +228,13 @@ Content-filter and configuration updates are serialized per source. A later
 system-picker update replaces any pending filter, and output-size changes keep
 the last valid image visible until a frame from the new surface arrives. Removal
 sets a durable output-suppressed state before asking ScreenCaptureKit to stop,
-so no late completion can reveal a source after a failed stop.
+so no late completion can reveal a source after a failed stop. Surface size is
+chosen from the size the stream was last asked for rather than from a value
+recomputed on each observation, so repeated even-pixel rounding cannot alternate
+between two configurations. While a frame is accepted through an already
+committed layout the published presentation geometry is held at its
+acknowledged value, so the comparison baseline cannot drift and no main-actor
+work is added to the video path.
 
 Pause and resume use explicit transition states. A Pause request advances the
 presentation generation, immediately suppresses output, and flushes both

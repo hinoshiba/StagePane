@@ -5,6 +5,16 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Fixed
+
+- The public Stage and the private Workspace preview no longer blank a source
+  tile repeatedly while a source is shared. Capture surfaces are no longer
+  resized for frame-metadata rounding, and an unrelated setting change no
+  longer resizes them; a crop or output-size change that genuinely needs more
+  pixels still does. A frame whose presentation geometry differs only by a
+  proportional surface-size change now reuses the layout already committed
+  for it.
+
 ## [0.4.0] - 2026-09-12
 
 ### Changed
