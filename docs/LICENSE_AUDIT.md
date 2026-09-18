@@ -1,15 +1,24 @@
 # License and distribution audit
 
 Audit date: 2026-09-12<br>
-Scope: StagePane 0.4.0 release source, declared dependencies, and pinned CI tools
+Scope: StagePane 0.4.1 release source, declared dependencies, and pinned CI tools
 
 This is an engineering compliance record, not a formal legal opinion.
+
+The 2026-09-12 audit is carried forward to the 0.4.1 release source rather than
+repeated. Between the 0.4.0 and 0.4.1 release commits `Package.swift` is
+unchanged, `project.yml` changes only the marketing version, build number, and
+uploaded-build floor, the pinned CI actions and the pinned XcodeGen 2.45.4 are
+unchanged, and the only added source imports are the Apple frameworks
+CoreGraphics and Foundation, both already in the inventory below. No dependency,
+framework, or pinned tool entered or left the graph, so the inventory and its
+license conclusions carry over unchanged.
 
 This refresh checks tracked package/project declarations, source imports, the
 existing local development binary's framework linkage, and the pinned workflow
 actions' upstream license files. Final App Store archive contents and signing
 remain subject to the release gates in `RELEASE.md`. It does not certify a
-finished 0.4.0 archive or repeat external legal or trademark review.
+finished 0.4.1 archive or repeat external legal or trademark review.
 
 ## Conclusion
 
@@ -19,7 +28,7 @@ preserved and every pre-release legal, trademark, Apple, consumer-law, and
 signing gate below is completed. No current default `dist/StagePane.app`
 development artifact is approved for public distribution.
 
-There is no third-party runtime dependency in 0.4.0. The application dynamically
+There is no third-party runtime dependency in 0.4.1. The application dynamically
 links Apple frameworks already present on macOS and bundles only original
 StagePane code/artwork plus project legal/help documents. This substantially
 reduces license, supply-chain, and privacy risk.

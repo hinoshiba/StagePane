@@ -5,6 +5,27 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-18
+
+### Changed
+
+- The privacy policy now states plainly that StagePane transmits screen
+  content, drawings, and any other data neither to the developer nor to any
+  third party, and how long screen content is kept: only in memory while a
+  source is live, released when that source is hidden or removed, on Stop All,
+  or on quit. The only screen-derived data that persists is an image the user
+  creates with Copy Image or Save PNG. The policy now also itemizes what is
+  stored on the Mac — including the position and size of the Workspace and
+  Stage windows, which AppKit autosaves, and the three local values the Mac App
+  Store build uses only to time the App Store rating prompt — and states that
+  screen content, source names, the Stage layout of sources, and drawings are
+  not stored. The published website policy now carries the same clipboard
+  warning as the bundled copy.
+- The English privacy policy is published as a static page at
+  `https://stagepane.hinoshiba.com/en/privacy/`, so its text is in the HTTP
+  response body and can be read without JavaScript. The root page still renders
+  the same English text client-side, and the Japanese policy is unchanged.
+
 ### Fixed
 
 - The public Stage and the private Workspace preview no longer blank a source
