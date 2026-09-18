@@ -1003,7 +1003,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     /// resized once the user releases the handle.
     func commitSourceLayout(_ sourceID: StageSourceID) {
         guard let session = sessions[sourceID], !session.outputSuppressed else { return }
-        let sourceLayout = layout[sourceID: sourceID]
+        recordRequestedSourceConfiguration(for: session)
+        updateConfigurationIfNeeded(for: session)
+    }
+
+    /// Recomputes the stream configuration this session should be running and
+    /// records it as the requested one, bumping the source configuration
+    /// revision only when that is an actual change.
+    ///
+    /// Every accepted change costs one `SCStream.updateConfiguration`, which
+    /// resizes the IOSurface and therefore costs one hide/reveal cycle on the
+    /// public Stage. Both callers share this one decision so that a layout or
+    /// crop commit landing on the surface already running, and a content
+    /// replacement landing on the same shape, are equally free.
+    private func recordRequestedSourceConfiguration(for session: CaptureSession) {
+        let sourceLayout = layout[sourceID: session.source.id]
         let frame = sourceLayout?.frame ?? .fullCanvas
         let sourceCrop = sourceLayout?.sourceCrop ?? .fullSource
         let configuration = makeConfiguration(
@@ -1017,15 +1031,21 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 sourceCrop: sourceCrop
             )
         )
-        if configuration.width != session.requestedSurfaceWidth ||
-            configuration.height != session.requestedSurfaceHeight ||
-            configuration.showsCursor != session.requestedShowsCursor {
-            session.requestedSurfaceWidth = configuration.width
-            session.requestedSurfaceHeight = configuration.height
-            session.requestedShowsCursor = configuration.showsCursor
-            session.requestedSourceConfigurationRevision &+= 1
-        }
-        updateConfigurationIfNeeded(for: session)
+        let requested = CaptureStreamConfigurationRequest(
+            surfaceWidth: session.requestedSurfaceWidth,
+            surfaceHeight: session.requestedSurfaceHeight,
+            showsCursor: session.requestedShowsCursor
+        )
+        let target = CaptureStreamConfigurationRequest(
+            surfaceWidth: configuration.width,
+            surfaceHeight: configuration.height,
+            showsCursor: configuration.showsCursor
+        )
+        guard requested.requiresReconfiguration(to: target) else { return }
+        session.requestedSurfaceWidth = target.surfaceWidth
+        session.requestedSurfaceHeight = target.surfaceHeight
+        session.requestedShowsCursor = target.showsCursor
+        session.requestedSourceConfigurationRevision &+= 1
     }
 
     func commitSourceCrop(_ sourceID: StageSourceID) {
@@ -1594,9 +1614,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
 
         session.filter = filter
+        // The stored geometry is frame-derived truth about the content that was
+        // just replaced, so it cannot describe the new content and has to be
+        // dropped; `resolvedSurfaceSize` then treats the filter-derived fit as
+        // authoritative until the first real frame of the new content arrives.
+        // What does not follow is that the stream must be reconfigured. Making
+        // that decision with the same comparison `commitSourceLayout` makes
+        // means a replacement that lands on the configuration the stream is
+        // already running costs nothing, instead of paying one reconfiguration
+        // back to the filter-derived size and a second one from the first
+        // frame — two hide/reveal cycles on the shared Stage for a source that
+        // never changed shape.
         session.sourceGeometry = nil
         if startPendingContentUpdateIfNeeded(for: session) { return }
-        session.requestedSourceConfigurationRevision &+= 1
+        recordRequestedSourceConfiguration(for: session)
         let metadata = sourceMetadata(for: filter, ordinal: session.source.ordinal)
         session.source.title = metadata.title
         session.source.kind = metadata.kind

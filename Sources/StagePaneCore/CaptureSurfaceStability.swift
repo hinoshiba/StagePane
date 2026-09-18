@@ -146,3 +146,39 @@ public enum CaptureSourceGeometryChange {
         return abs(dimension - previous) >= threshold
     }
 }
+
+/// The part of a running stream's configuration that a live session is allowed
+/// to change, and the decision of whether a freshly computed configuration is
+/// actually different from the one the stream was last asked for.
+///
+/// Every accepted difference costs one `SCStream.updateConfiguration`, which
+/// resizes the IOSurface and therefore costs one hide/reveal cycle on the
+/// public Stage. A request that lands on the configuration the stream is
+/// already running must therefore cost nothing: replacing a picker source with
+/// content of the same shape, or committing a layout edit that rounds to the
+/// same even surface, is not something an audience should be able to see.
+public struct CaptureStreamConfigurationRequest: Equatable, Sendable {
+    public let surfaceWidth: Int
+    public let surfaceHeight: Int
+    public let showsCursor: Bool
+
+    public init(surfaceWidth: Int, surfaceHeight: Int, showsCursor: Bool) {
+        self.surfaceWidth = surfaceWidth
+        self.surfaceHeight = surfaceHeight
+        self.showsCursor = showsCursor
+    }
+
+    /// Whether moving from this configuration to `target` is worth a
+    /// reconfiguration.
+    ///
+    /// These three values are the whole comparison on purpose. The surface
+    /// dimensions are what change the IOSurface, and `showsCursor` is what
+    /// changes the cursor-safety boundary; everything else in the configuration
+    /// this app builds is a constant, so comparing anything more would report
+    /// differences that no stream update could resolve.
+    public func requiresReconfiguration(
+        to target: CaptureStreamConfigurationRequest
+    ) -> Bool {
+        self != target
+    }
+}

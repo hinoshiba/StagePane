@@ -422,3 +422,71 @@ final class CaptureSurfaceStabilityTests: XCTestCase {
         ))
     }
 }
+
+final class CaptureStreamConfigurationRequestTests: XCTestCase {
+    private let running = CaptureStreamConfigurationRequest(
+        surfaceWidth: 1_728,
+        surfaceHeight: 1_080,
+        showsCursor: false
+    )
+
+    func testLandingOnTheRunningConfigurationCostsNoReconfiguration() {
+        // A picker content replacement that resolves to the shape the stream is
+        // already running used to pay one reconfiguration back to the
+        // filter-derived size and a second from the first real frame. Both were
+        // visible on the shared Stage as a hide/reveal cycle.
+        XCTAssertFalse(
+            running.requiresReconfiguration(
+                to: CaptureStreamConfigurationRequest(
+                    surfaceWidth: 1_728,
+                    surfaceHeight: 1_080,
+                    showsCursor: false
+                )
+            )
+        )
+    }
+
+    func testEachConfiguredValueIsEnoughOnItsOwn() {
+        XCTAssertTrue(
+            running.requiresReconfiguration(
+                to: CaptureStreamConfigurationRequest(
+                    surfaceWidth: 1_730,
+                    surfaceHeight: 1_080,
+                    showsCursor: false
+                )
+            )
+        )
+        XCTAssertTrue(
+            running.requiresReconfiguration(
+                to: CaptureStreamConfigurationRequest(
+                    surfaceWidth: 1_728,
+                    surfaceHeight: 1_082,
+                    showsCursor: false
+                )
+            )
+        )
+        XCTAssertTrue(
+            running.requiresReconfiguration(
+                to: CaptureStreamConfigurationRequest(
+                    surfaceWidth: 1_728,
+                    surfaceHeight: 1_080,
+                    showsCursor: true
+                )
+            )
+        )
+    }
+
+    func testTheDecisionIsSymmetricAndRepeatable() {
+        let target = CaptureStreamConfigurationRequest(
+            surfaceWidth: 1_280,
+            surfaceHeight: 720,
+            showsCursor: true
+        )
+        XCTAssertTrue(running.requiresReconfiguration(to: target))
+        XCTAssertTrue(target.requiresReconfiguration(to: running))
+        // Once the target is adopted as the requested configuration, repeating
+        // the same commit must be free, which is what stops a commit loop from
+        // reconfiguring forever.
+        XCTAssertFalse(target.requiresReconfiguration(to: target))
+    }
+}

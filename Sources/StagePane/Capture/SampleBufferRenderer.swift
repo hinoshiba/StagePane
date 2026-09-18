@@ -21,6 +21,86 @@ typealias PresentationGeometryHandler = @MainActor @Sendable (
     PresentationGeometryUpdate
 ) -> Void
 
+/// Core Animation's default implicit actions must never run on a Stage layer.
+///
+/// Every Stage view assigns its own backing layer (`wantsLayer = true` followed
+/// by `layer = CALayer()`), which makes the view layer-*hosting*: AppKit does
+/// not install itself as that layer's delegate, so nothing answers
+/// `actionForLayer:forKey:` with `NSNull` and Core Animation falls back to its
+/// default actions. The renderer's display layer, the visible-surface mask and
+/// the pointer dot are manually created sublayers with no delegate either, so
+/// the same fallback applies to them.
+///
+/// The consequence is audience-visible. A plain `isHidden` write installs a
+/// quarter-second cross-fade in *both* directions, so every legitimate
+/// hide/reveal — Pause/Resume, a content or source replacement, a genuine
+/// source aspect change, a stream restart — dissolves the tile through the
+/// Stage background instead of swapping it in a single frame. A direct
+/// `layer.frame` write installs a quarter-second `position`/`bounds` pair, so
+/// the video glides towards its new frame while its hard mask snaps, exposing a
+/// moving band of Stage background along the tile edges. To an audience both
+/// read as a flash, and the fail-closed hides in `CroppedSampleBufferNSView`
+/// keep pixels the app has already decided to stop showing partly visible for
+/// the length of the dissolve.
+///
+/// Suppression is installed once, at layer construction, rather than by
+/// wrapping every write. An implicit animation that is already attached is not
+/// removed by a later disabled-actions transaction, so suppression has to be in
+/// place *before* the write; and several of the writes have no call site to
+/// wrap at all, because AppKit performs them (`removeFromSuperview`,
+/// `insertSublayer`, an ancestor's layout pass). An `actions` dictionary
+/// survives `addSubview`, every commit and a move to another window, so the
+/// invariant holds for the layer's whole lifetime. The existing
+/// `CATransaction.setDisableActions(true)` blocks stay as they are: they are
+/// cheap, and they cover properties this dictionary deliberately does not name,
+/// such as the `CAShapeLayer` paint keys the pointer dot rewrites.
+extension CALayer {
+    /// Keys whose default action would animate a Stage presentation change.
+    ///
+    /// `hidden`, `bounds`, `position` and `sublayers` are the load-bearing
+    /// ones: `hidden` is the only key that suppresses the hide/reveal fade,
+    /// `bounds` *and* `position` are both required to suppress a `frame` write,
+    /// and `sublayers` on the parent is the only key that suppresses the
+    /// cross-fade an added or removed sublayer installs on its host.
+    /// `contentsScale` and `contents` are the two keys that are rewritten
+    /// after their layer's first commit: the pointer dot rescales when the
+    /// window changes display, and the Audience PNG export substitutes a bitmap
+    /// into a live tile's backing layer and restores it again. That export
+    /// already wraps the whole substitute-and-restore sequence in one outer
+    /// disabled-actions transaction, so naming them here is belt-and-braces for
+    /// a path that is covered, not a fix for one that is not. The remaining
+    /// keys name properties that are only written before a layer's first commit
+    /// today — where Core Animation attaches no action at all — and are listed
+    /// so the dictionary stays complete by construction rather than complete
+    /// only for the current call sites. `frame` has no default action of its
+    /// own and is kept purely as documentation of intent.
+    static let stagePresentationActionKeys = [
+        "hidden",
+        "bounds",
+        "position",
+        "frame",
+        "contents",
+        "contentsScale",
+        "opacity",
+        "mask",
+        "masksToBounds",
+        "backgroundColor",
+        "sublayers",
+        "onOrderIn",
+        "onOrderOut"
+    ]
+
+    /// Answers every presentation key with `NSNull`, which Core Animation
+    /// treats as "no action", for the lifetime of this layer.
+    func suppressImplicitPresentationActions() {
+        var suppressed: [String: any CAAction] = [:]
+        for key in Self.stagePresentationActionKeys {
+            suppressed[key] = NSNull()
+        }
+        actions = suppressed
+    }
+}
+
 /// Owns the zero-copy display layer used by the public share stage.
 ///
 /// `AVSampleBufferVideoRenderer` is the macOS 14 API intended for safely
@@ -144,6 +224,11 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
     init(renderQueue: DispatchQueue) {
         let layer = AVSampleBufferDisplayLayer()
+        // This layer is created here and never acquires a delegate, so Core
+        // Animation would animate its geometry and its hidden state. Suppress
+        // before any other configuration so the invariant is visibly the first
+        // property of the shared display layer.
+        layer.suppressImplicitPresentationActions()
         layer.videoGravity = .resizeAspect
         layer.backgroundColor = NSColor.clear.cgColor
         layer.isOpaque = false
@@ -1402,10 +1487,22 @@ final class SampleBufferNSView: NSView {
         self.renderer = renderer
         super.init(frame: .zero)
         wantsLayer = true
-        layer = CALayer()
+        // Assigning the layer makes this view layer-hosting; suppress the
+        // default actions before the layer is adopted. Without this, hiding or
+        // revealing this view dissolves it, and re-hosting the shared display
+        // layer in `viewDidMoveToWindow` cross-fades the whole tile.
+        let backingLayer = CALayer()
+        backingLayer.suppressImplicitPresentationActions()
+        layer = backingLayer
         layer?.backgroundColor = NSColor.clear.cgColor
         layer?.isOpaque = false
         layer?.masksToBounds = true
+        // The mask and the pointer dot are manually created sublayers and are
+        // delegate-less for the same reason. Their own writes are already made
+        // inside disabled-actions transactions; suppressing here keeps that
+        // true even if a future write forgets the transaction.
+        visibleSurfaceMaskLayer.suppressImplicitPresentationActions()
+        pointerDotLayer.suppressImplicitPresentationActions()
         visibleSurfaceMaskLayer.backgroundColor = NSColor.black.cgColor
         visibleSurfaceMaskLayer.isOpaque = true
         layer?.mask = visibleSurfaceMaskLayer
@@ -1422,7 +1519,15 @@ final class SampleBufferNSView: NSView {
         super.layout()
         updateVisibleSurfaceMask()
         if renderer.displayLayer.superlayer === layer {
+            // The mask above is committed with actions disabled. Commit the
+            // media layer the same way, as
+            // `synchronizePresentationLayoutBeforeReveal()` already does: a
+            // gliding video behind a snapping mask exposes a moving band of
+            // Stage background along the tile edges for the whole animation.
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
             renderer.displayLayer.frame = bounds
+            CATransaction.commit()
         }
         updatePointerOverlay()
     }
@@ -1449,7 +1554,13 @@ final class SampleBufferNSView: NSView {
             applyPointerAppearance(renderer.pointerAppearance())
             updatePointerTimerState()
         }
+        // Same contract as `layout()`: the shared display layer may already
+        // have been committed in this host, in which case an unguarded frame
+        // write would glide it into place instead of placing it.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         renderer.displayLayer.frame = bounds
+        CATransaction.commit()
         updatePointerTimerState()
     }
 

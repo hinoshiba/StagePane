@@ -127,6 +127,22 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         var frame = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height))
         frame.origin.x = window.frame.midX - frame.width / 2
         frame.origin.y = window.frame.midY - frame.height / 2
+        // Resizing the window to the frame it already occupies is the one case
+        // where this call has nothing to do. The arithmetic above preserves the
+        // window's own centre and changes only its size, so a window that is
+        // already at `preset.suggestedPointSize` reproduces its current frame
+        // exactly; `setFrame(_:display:animate:)` would then animate a zero
+        // size delta, which is a live mutation of the shared window on the
+        // presentation path for no change an audience could see. Guarding here
+        // rather than at the caller is deliberate: this is the *only* call that
+        // resizes the Stage window, and the resize is a real affordance. The
+        // window is `.resizable` with only its aspect ratio pinned and its
+        // frame autosaved, so it genuinely drifts off the preset size when it
+        // is dragged, and re-selecting the highlighted preset tile is the only
+        // gesture that snaps it back. A guard on the caller's assignment would
+        // take that gesture away; this one keeps it and suppresses only the
+        // case that was already a visual no-op.
+        guard frame != window.frame else { return }
         window.setFrame(frame, display: true, animate: !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
     }
 

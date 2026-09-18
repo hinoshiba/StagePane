@@ -14,6 +14,12 @@ Versioning once 1.0.0 is released.
   pixels still does. A frame whose presentation geometry differs only by a
   proportional surface-size change now reuses the layout already committed
   for it.
+- Hiding and showing a source on the Stage is now an immediate swap instead of
+  a quarter-second dissolve through the Stage background, and the video no
+  longer slides towards its new position while its edges snap. Pause, Resume,
+  replacing a source, and changing the Stage size therefore read as one clean
+  change to an audience. Replacing a source with content of the same shape no
+  longer resizes its capture surface.
 
 ## [0.4.0] - 2026-09-12
 
