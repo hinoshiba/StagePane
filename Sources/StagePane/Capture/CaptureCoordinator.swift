@@ -201,7 +201,10 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
             if explicitPauseState == .resuming {
                 explicitPauseState = .none
             }
-            if geometryDiffersMeaningfully(geometry, from: lastGeometry) {
+            if CaptureSourceGeometryChange.isMeaningful(
+                geometry,
+                comparedTo: lastGeometry
+            ) {
                 lastGeometry = geometry
                 geometryHandler(token, geometryGeneration, geometry)
             }
@@ -380,16 +383,6 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
             contentScale: contentScale,
             pointPixelScale: pointPixelScale
         )
-    }
-
-    private func geometryDiffersMeaningfully(
-        _ geometry: CaptureSourceGeometry,
-        from previous: CaptureSourceGeometry?
-    ) -> Bool {
-        guard let previous else { return true }
-        return abs(geometry.pointWidth - previous.pointWidth) >= 0.5 ||
-            abs(geometry.pointHeight - previous.pointHeight) >= 0.5 ||
-            abs(geometry.pointPixelScale - previous.pointPixelScale) >= 0.01
     }
 }
 
@@ -1010,22 +1003,49 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     /// resized once the user releases the handle.
     func commitSourceLayout(_ sourceID: StageSourceID) {
         guard let session = sessions[sourceID], !session.outputSuppressed else { return }
-        let sourceLayout = layout[sourceID: sourceID]
+        recordRequestedSourceConfiguration(for: session)
+        updateConfigurationIfNeeded(for: session)
+    }
+
+    /// Recomputes the stream configuration this session should be running and
+    /// records it as the requested one, bumping the source configuration
+    /// revision only when that is an actual change.
+    ///
+    /// Every accepted change costs one `SCStream.updateConfiguration`, which
+    /// resizes the IOSurface and therefore costs one hide/reveal cycle on the
+    /// public Stage. Both callers share this one decision so that a layout or
+    /// crop commit landing on the surface already running, and a content
+    /// replacement landing on the same shape, are equally free.
+    private func recordRequestedSourceConfiguration(for session: CaptureSession) {
+        let sourceLayout = layout[sourceID: session.source.id]
+        let frame = sourceLayout?.frame ?? .fullCanvas
+        let sourceCrop = sourceLayout?.sourceCrop ?? .fullSource
         let configuration = makeConfiguration(
             for: session.filter,
             sourceGeometry: session.sourceGeometry,
-            frame: sourceLayout?.frame ?? .fullCanvas,
-            sourceCrop: sourceLayout?.sourceCrop ?? .fullSource
+            frame: frame,
+            sourceCrop: sourceCrop,
+            surfaceSize: resolvedSurfaceSize(
+                for: session,
+                frame: frame,
+                sourceCrop: sourceCrop
+            )
         )
-        if configuration.width != session.requestedSurfaceWidth ||
-            configuration.height != session.requestedSurfaceHeight ||
-            configuration.showsCursor != session.requestedShowsCursor {
-            session.requestedSurfaceWidth = configuration.width
-            session.requestedSurfaceHeight = configuration.height
-            session.requestedShowsCursor = configuration.showsCursor
-            session.requestedSourceConfigurationRevision &+= 1
-        }
-        updateConfigurationIfNeeded(for: session)
+        let requested = CaptureStreamConfigurationRequest(
+            surfaceWidth: session.requestedSurfaceWidth,
+            surfaceHeight: session.requestedSurfaceHeight,
+            showsCursor: session.requestedShowsCursor
+        )
+        let target = CaptureStreamConfigurationRequest(
+            surfaceWidth: configuration.width,
+            surfaceHeight: configuration.height,
+            showsCursor: configuration.showsCursor
+        )
+        guard requested.requiresReconfiguration(to: target) else { return }
+        session.requestedSurfaceWidth = target.surfaceWidth
+        session.requestedSurfaceHeight = target.surfaceHeight
+        session.requestedShowsCursor = target.showsCursor
+        session.requestedSourceConfigurationRevision &+= 1
     }
 
     func commitSourceCrop(_ sourceID: StageSourceID) {
@@ -1594,9 +1614,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
 
         session.filter = filter
+        // The stored geometry is frame-derived truth about the content that was
+        // just replaced, so it cannot describe the new content and has to be
+        // dropped; `resolvedSurfaceSize` then treats the filter-derived fit as
+        // authoritative until the first real frame of the new content arrives.
+        // What does not follow is that the stream must be reconfigured. Making
+        // that decision with the same comparison `commitSourceLayout` makes
+        // means a replacement that lands on the configuration the stream is
+        // already running costs nothing, instead of paying one reconfiguration
+        // back to the filter-derived size and a second one from the first
+        // frame — two hide/reveal cycles on the shared Stage for a source that
+        // never changed shape.
         session.sourceGeometry = nil
         if startPendingContentUpdateIfNeeded(for: session) { return }
-        session.requestedSourceConfigurationRevision &+= 1
+        recordRequestedSourceConfiguration(for: session)
         let metadata = sourceMetadata(for: filter, ordinal: session.source.ordinal)
         session.source.title = metadata.title
         session.source.kind = metadata.kind
@@ -1649,20 +1680,26 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             let sourceLayout = self.layout[sourceID: sourceID]
             let frame = sourceLayout?.frame ?? .fullCanvas
             let sourceCrop = sourceLayout?.sourceCrop ?? .fullSource
-            let previousSize = self.captureSurfaceSize(
-                for: current.filter,
-                sourceGeometry: current.sourceGeometry,
-                frame: frame,
-                sourceCrop: sourceCrop
-            )
+            // Record the newest metadata unconditionally so a later
+            // configuration change fits against the truth, but decide whether
+            // to reconfigure against the surface the stream is actually
+            // running. Comparing two freshly recomputed fits instead would see
+            // a difference at every even-pixel rounding flip and reconfigure
+            // forever without the surface ever settling.
             current.sourceGeometry = geometry
-            let observedSize = self.captureSurfaceSize(
+            let target = self.captureSurfaceSize(
                 for: current.filter,
                 sourceGeometry: geometry,
                 frame: frame,
                 sourceCrop: sourceCrop
             )
-            guard observedSize != previousSize else { return }
+            guard CaptureSurfaceStability.exceedsReconfigurationDeadband(
+                applied: CaptureSurfaceSize(
+                    width: current.requestedSurfaceWidth,
+                    height: current.requestedSurfaceHeight
+                ),
+                target: target
+            ) else { return }
 
             current.requestedSourceConfigurationRevision &+= 1
             self.updateConfigurationIfNeeded(for: current)
@@ -1698,7 +1735,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             for: session.filter,
             sourceGeometry: session.sourceGeometry,
             frame: frame,
-            sourceCrop: sourceCrop
+            sourceCrop: sourceCrop,
+            surfaceSize: resolvedSurfaceSize(
+                for: session,
+                frame: frame,
+                sourceCrop: sourceCrop
+            )
         )
         let targetShowsCursor = configuration.showsCursor
         let targetSurfaceWidth = configuration.width
@@ -2209,14 +2251,20 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         return size
     }
 
+    /// `surfaceSize` lets a caller that already has an applied surface hand in
+    /// the deadband-resolved size. Recomputing the fit here instead would let
+    /// an unrelated configuration bump — a pointer-style change or an output
+    /// size change — silently re-fit the IOSurface from newer frame metadata
+    /// and flash every tile as a side effect.
     private func makeConfiguration(
         for filter: SCContentFilter,
         sourceGeometry: CaptureSourceGeometry? = nil,
         frame: NormalizedStageRect,
-        sourceCrop: NormalizedSourceRect = .fullSource
+        sourceCrop: NormalizedSourceRect = .fullSource,
+        surfaceSize: CaptureSurfaceSize? = nil
     ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
-        let surfaceSize = captureSurfaceSize(
+        let surfaceSize = surfaceSize ?? captureSurfaceSize(
             for: filter,
             sourceGeometry: sourceGeometry,
             frame: frame,
@@ -2272,6 +2320,45 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             visibleRegion: sourceCrop,
             maximumVisibleWidth: maximumWidth,
             maximumVisibleHeight: maximumHeight
+        )
+    }
+
+    /// The surface size a running session should actually request.
+    ///
+    /// The ideal fit is recomputed from current metadata, then held inside a
+    /// deadband around the size the stream was last asked for. Anchoring to the
+    /// requested surface, rather than to another freshly recomputed fit, is
+    /// what stops sub-point source-metadata wobble from alternating between two
+    /// even-rounded surfaces forever, because each even-pixel flip is measured
+    /// against a size that does not move.
+    ///
+    /// A session with no `sourceGeometry` has no frame-derived truth yet —
+    /// session start and content replacement both clear it — so there is
+    /// nothing to stay anchored to and the filter-derived fit is authoritative.
+    /// `requestedSurfaceWidth`/`requestedSurfaceHeight` is the right anchor for
+    /// every other case: it is seeded from the started configuration and
+    /// rewritten before each `SCStream.updateConfiguration`, so an in-flight
+    /// update is never re-proposed.
+    private func resolvedSurfaceSize(
+        for session: CaptureSession,
+        frame: NormalizedStageRect,
+        sourceCrop: NormalizedSourceRect
+    ) -> CaptureSurfaceSize {
+        let target = captureSurfaceSize(
+            for: session.filter,
+            sourceGeometry: session.sourceGeometry,
+            frame: frame,
+            sourceCrop: sourceCrop
+        )
+        let applied: CaptureSurfaceSize? = session.sourceGeometry == nil
+            ? nil
+            : CaptureSurfaceSize(
+                width: session.requestedSurfaceWidth,
+                height: session.requestedSurfaceHeight
+            )
+        return CaptureSurfaceStability.resolvedSurfaceSize(
+            applied: applied,
+            target: target
         )
     }
 

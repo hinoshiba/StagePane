@@ -35,7 +35,13 @@ final class StageCompositeNSView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer = CALayer()
+        // Layer-hosting, therefore delegate-less: see
+        // `suppressImplicitPresentationActions()`. Without it, removing one
+        // source view cross-fades the entire Stage picture, and hiding a child
+        // fades this composite as well as the child.
+        let backingLayer = CALayer()
+        backingLayer.suppressImplicitPresentationActions()
+        layer = backingLayer
         layer?.masksToBounds = true
         layer?.backgroundColor = NSColor.clear.cgColor
     }
@@ -123,7 +129,15 @@ final class CroppedSampleBufferNSView: NSView {
         self.sourceView = SampleBufferNSView(renderer: renderer)
         super.init(frame: .zero)
         wantsLayer = true
-        layer = CALayer()
+        // Layer-hosting, therefore delegate-less: see
+        // `suppressImplicitPresentationActions()`. This is the parent of every
+        // fail-closed hide and of the reveal that follows
+        // `synchronizePresentationLayoutBeforeReveal()`, so an implicit
+        // cross-fade here is exactly the flash the reveal path is built to
+        // avoid.
+        let backingLayer = CALayer()
+        backingLayer.suppressImplicitPresentationActions()
+        layer = backingLayer
         layer?.backgroundColor = NSColor.clear.cgColor
         layer?.masksToBounds = true
         addSubview(sourceView)
