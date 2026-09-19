@@ -657,8 +657,8 @@ const translations = {
   },
   "t99": {
     "html": {
-      "ja": "設定はMacに保存します。画面と手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」「PNGを保存」で作成した画像は、クリップボードまたは選択した場所に残ります。不要な画像は利用者が削除できます。",
-      "en": "Preferences are stored on your Mac. Screen content and drawings are held in memory during use and discarded when you choose Stop All or quit. Copy Image and Save PNG create an image on the clipboard or at your chosen location; you can delete saved images when no longer needed."
+      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言、手書きツールの設定、WorkspaceとStageウインドウの位置と大きさです。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
+      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message, drawing tool settings, and the position and size of the Workspace and Stage windows. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
     }
   },
   "t100": {
@@ -671,6 +671,18 @@ const translations = {
     "html": {
       "ja": "画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。",
       "en": "Use Apple’s sharing picker to change the selected content. Cropping changes the displayed area, while the complete selected source is still captured. The Curtain covers the Stage; use Stop All to end capture."
+    }
+  },
+  "privacy-sharing": {
+    "html": {
+      "ja": "StagePaneは、画面、手書き、その他のデータを開発者や第三者へ送信しません。このアプリはネットワークのエンタイトルメントを持たずに配布されており、アプリ自身がネットワーク接続を開くことはできません。画面はソースが動作している間だけメモリで保持し、そのソースを非表示または解除したとき、「すべて停止」を選んだとき、終了したときに解放します。画面に由来するデータで残るのは、利用者自身が「画像をコピー」「PNGを保存」で作成した画像だけで、クリップボードまたは選択した場所に残ります。Proの購入・復元はAppleが処理し、その処理に画面は一切含まれません。",
+      "en": "StagePane does not transmit screen content, drawings, or any other data to the developer or to any third party. The app ships without a network entitlement and cannot open network connections of its own. Screen content is held only in memory while a source is live and is released when you hide or remove that source, choose Stop All, or quit. The only screen-derived data that persists is an image you create yourself with Copy Image or Save PNG, on your clipboard or at the location you chose. Apple processes Pro purchases and restores; no screen content is part of that flow."
+    }
+  },
+  "privacy-static-en": {
+    "html": {
+      "ja": "英語版のプライバシーポリシーは、JavaScriptなしで読める<a class=\"contact-link\" href=\"en/privacy/\" hreflang=\"en\" lang=\"en\">静的ページ</a>でも公開しています。",
+      "en": "The English policy is also published as a <a class=\"contact-link\" href=\"en/privacy/\" hreflang=\"en\" lang=\"en\">static page</a> that can be read without JavaScript."
     }
   },
   "t102": {

@@ -240,14 +240,20 @@ AppKit/SwiftUI executable. Details and constraints are in
 
 ## Privacy and security
 
-StagePane collects no data. Source frames are displayed from memory and are not
-automatically saved or sent by StagePane. Only an explicit screenshot action
-copies one clean Stage PNG to the macOS clipboard or saves it to a location the
-user chooses. The app has no network entitlement or publisher-operated network
-service. In the Mac App Store build, Apple StoreKit retrieves Pro product and
-verified transaction information; screen content is never part of that flow.
-Settings such as theme, pointer appearance, watermark visibility, and window
-behavior are stored in the app's sandboxed `UserDefaults`.
+StagePane sends no data to the developer or any third party. Source frames are
+displayed from memory and are not automatically saved or sent by StagePane. Only
+an explicit screenshot action copies one clean Stage PNG to the macOS clipboard
+or saves it to a location the user chooses. The app has no network entitlement or
+publisher-operated network service. In the Mac App Store build, Apple StoreKit
+retrieves Pro product and verified transaction information; screen content is
+never part of that flow. On the user's Mac the app stores only local settings in
+its sandboxed `UserDefaults`: the Stage preset and theme, window behavior, the
+safe-area guide and StagePane mark visibility, pointer appearance, the Curtain
+message, drawing tool settings, and the position and size of the Workspace and
+Stage windows. The Mac App Store build additionally stores three values used only
+to time the App Store rating prompt: a count of successful sessions, the date of
+the first one, and the app version in which the prompt was last shown. Screen
+content, source names, the Stage layout of sources, and drawings are not stored.
 
 - Privacy details: [`docs/PRIVACY.md`](docs/PRIVACY.md)
 - Security reporting: [`SECURITY.md`](SECURITY.md)

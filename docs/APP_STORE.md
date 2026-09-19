@@ -13,15 +13,21 @@
   includes four sources; Pro removes the app's source-count limit and mark.
   Source count depends on your Mac and OS.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
-- **What's New 0.4.0 (EN):** Arrange and manage sources in one Workspace,
-  with a layer list beside the Canvas. Select and move overlapping layers
-  without changing their order, and hide or show a layer directly from the
-  list. Editing outlines and movement bounds now follow the visible source,
-  including after cropping. Resize while preserving proportions, and move
-  layers with one selection outline that follows their position.
-- **What's New 0.4.0 (JA):** 配置とソース管理をひとつのワークスペースにまとめ、キャンバス横にレイヤー一覧を常時表示しました。重なったレイヤーも順序を変えずに選択・移動でき、一覧から直接非表示・再表示できます。操作枠と移動範囲は、トリミング後も実際に見えている範囲に一致します。縦横比を保ったサイズ変更に対応し、移動時に余分な選択枠が残る問題も修正しました。
+- **What's New 0.4.1 (EN):** A shared source no longer blanks its tile on the
+  Stage while you present. Hiding and showing a source is now an immediate
+  swap instead of a quarter-second dissolve through the Stage background, so
+  pausing, resuming, replacing a source, and changing the Stage size read as
+  one clean change to your audience. The privacy policy now states plainly what
+  StagePane never transmits, how long screen content is kept, and exactly what
+  is stored on your Mac.
+- **What's New 0.4.1 (JA):** 共有中のソースのタイルが、Stage上でくり返し黒くなることがなくなりました。ソースの非表示・再表示は、Stageの背景を通した0.25秒のディゾルブではなく即座の切り替えになり、一時停止・再開・ソースの差し替え・Stageのサイズ変更が、観客には一度のきれいな変化として見えます。プライバシーポリシーには、StagePaneが送信しないもの、画面を保持する期間、Macに保存する項目を明記しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
-- **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/?lang=en#privacy
+- **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
+
+  The English URL is a static page whose policy text is in the HTTP response
+  body, so it can be read without JavaScript. The Japanese policy is static in
+  the root document; `https://stagepane.hinoshiba.com/?lang=en#privacy` still
+  renders the same English text, but only with JavaScript enabled.
 - **Support URL (JA):** https://stagepane.hinoshiba.com/#support
 - **Support URL (EN):** https://stagepane.hinoshiba.com/?lang=en#support
 
@@ -134,9 +140,9 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.4.0 App Review notes draft
+## 0.4.1 App Review notes draft
 
-Use this concise block for the 0.4.0 candidate after its acceptance checks:
+Use this concise block for the 0.4.1 candidate after its acceptance checks:
 
 > No sign-in is required.
 >
@@ -182,10 +188,24 @@ Use this concise block for the 0.4.0 candidate after its acceptance checks:
 > Audience Image create a PNG only after the reviewer explicitly chooses the
 > action.
 >
-> StagePane is sandboxed. It does not record, capture audio or microphone
+> StagePane is sandboxed. It does not record movies, capture audio or microphone
 > input, create an account, use analytics or ads, upload frames, or operate a
-> publisher server. Screen content stays on the Mac; StoreKit receives only
-> product and verified transaction information.
+> publisher server. StagePane itself does not transmit captured content.
+> The user's meeting app and user-enabled clipboard or file synchronization
+> may transmit user-directed outputs. Apple handles Pro purchases and restores
+> through StoreKit; captured content is never included.
+>
+> This build addresses App Review’s Guideline 2.1 information request for
+> 0.4.0 (7), submission 90569aa7-c006-4848-8d52-4ec9aaaf46c5. The Japanese
+> and English policies at https://stagepane.hinoshiba.com/#privacy and
+> https://stagepane.hinoshiba.com/en/privacy/, plus bundled
+> Contents/Resources/PRIVACY.md, explain disclosure, sharing and retention.
+> StagePane has no network entitlement and transmits no screen content or
+> drawings. Live frames remain in memory and are released on Hide, removal,
+> Stop All or quit. Only explicitly copied or saved PNGs persist. Local
+> preferences include window geometry and three App Store rating-prompt
+> timing values. Apple handles Pro commerce separately; screen content is
+> never included. The English policy is static HTML.
 
 ## Detailed reviewer walkthrough reference
 
