@@ -5,7 +5,7 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
-## [0.4.2] - 2026-10-03
+## [0.4.2] - 2026-10-04
 
 ### Added
 
