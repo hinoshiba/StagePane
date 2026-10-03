@@ -35,7 +35,10 @@ struct StageView: View {
                 )
             }
         }
-        .frame(minWidth: 480, minHeight: 270)
+        .frame(
+            minWidth: StageWindowSizing.minimumContentSize(for: controller.preset).width,
+            minHeight: StageWindowSizing.minimumContentSize(for: controller.preset).height
+        )
         .ignoresSafeArea()
         .clipped()
         .accessibilityElement(children: .contain)

@@ -40,6 +40,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @Published var privacyCurtain = true
+    @Published private(set) var stageRenderingSize: CGSize?
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
     /// Private editing focus; selecting a layer never changes audience stacking.
     @Published private(set) var selectedSourceID: StageSourceID?
@@ -874,6 +875,23 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @objc func showStage() {
         presentStage(makeKey: true)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc func enlargeStageForSharing() {
+        let workspaceWasKey = workspaceWindowController?.window?.isKeyWindow == true
+        presentStage(makeKey: false)
+        stageWindowController?.enlargeForSharing()
+        if workspaceWasKey {
+            workspaceWindowController?.window?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    func updateStageRenderingSize(_ size: CGSize) {
+        guard size.width.isFinite, size.height.isFinite,
+              size.width > 0, size.height > 0 else { return }
+        let pixels = CGSize(width: size.width.rounded(), height: size.height.rounded())
+        guard pixels != stageRenderingSize else { return }
+        stageRenderingSize = pixels
     }
 
     private func presentStage(makeKey: Bool) {

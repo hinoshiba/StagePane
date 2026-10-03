@@ -10,6 +10,29 @@ private final class StageShareWindow: NSWindow {
     // commands such as Close Window target the surface they can see.
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    override func sendEvent(_ event: NSEvent) {
+        // Stage contains audience artwork only. Start a native window drag
+        // explicitly so movement does not depend on SwiftUI's background
+        // mouse-event forwarding. Leave the resize perimeter and sheets to
+        // AppKit, and never try to move a full-screen window.
+        if event.type == .leftMouseDown,
+           event.window === self,
+           isMovable,
+           attachedSheet == nil,
+           !styleMask.contains(.fullScreen),
+           let contentView,
+           contentView.bounds.insetBy(dx: 8, dy: 8).contains(
+               contentView.convert(event.locationInWindow, from: nil)
+           ) {
+            if !NSApp.isActive { NSApp.activate() }
+            makeKeyAndOrderFront(nil)
+            performDrag(with: event)
+            // Window Server owns the drag; a mouse-up need not be delivered.
+            return
+        }
+        super.sendEvent(event)
+    }
 }
 
 @MainActor
@@ -75,7 +98,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     init(controller: AppController, capture: CaptureCoordinator) {
         self.controller = controller
-        let suggested = controller.preset.suggestedPointSize
+        let suggested = StageWindowSizing.suggestedContentSize(for: controller.preset)
         let window = StageShareWindow(
             contentRect: NSRect(
                 x: 0,
@@ -87,7 +110,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
             // still captured with a titlebar band even when its title and
             // traffic-light controls are hidden, so keep the audience surface
             // genuinely chrome-free. The Window menu remains the keyboard
-            // route for Close, and the background stays draggable.
+            // route for Close; StageShareWindow handles dragging its content.
             styleMask: [.borderless, .resizable],
             backing: .buffered,
             defer: false
@@ -97,20 +120,28 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.isOpaque = true
         window.alphaValue = 1
         window.backgroundColor = .black
-        window.minSize = NSSize(width: 480, height: 270)
+        window.contentMinSize = StageWindowSizing.minimumContentSize(for: controller.preset)
         window.tabbingMode = .disallowed
         window.sharingType = .readOnly
-        window.setFrameAutosaveName("StagePane.ShareStage")
+        let initialFrame = window.frame
         window.contentViewController = NSHostingController(
             rootView: StageView(controller: controller, capture: capture)
         )
-        window.isMovableByWindowBackground = true
+        window.isMovableByWindowBackground = false
 
         super.init(window: window)
         window.delegate = self
         applyPreset(controller.preset, resize: false)
+        // Assigning contentViewController resizes the window to the hosting
+        // view's current size. Restore the intended frame only afterward, and
+        // register autosaving last so that temporary minimum size is not saved.
+        if !window.setFrameUsingName("StagePane.ShareStage") {
+            window.setFrame(initialFrame, display: false)
+            window.center()
+        }
+        window.setFrameAutosaveName("StagePane.ShareStage")
         applyWindowBehavior()
-        if window.frame.origin == .zero { window.center() }
+        updateRenderingSize()
     }
 
     @available(*, unavailable)
@@ -120,30 +151,76 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     func applyPreset(_ preset: StagePreset, resize: Bool) {
         guard let window else { return }
+        window.contentMinSize = StageWindowSizing.minimumContentSize(for: preset)
         window.contentAspectRatio = NSSize(width: preset.pixelWidth, height: preset.pixelHeight)
         guard resize else { return }
 
-        let size = preset.suggestedPointSize
+        let size = StageWindowSizing.suggestedContentSize(for: preset)
         var frame = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height))
         frame.origin.x = window.frame.midX - frame.width / 2
         frame.origin.y = window.frame.midY - frame.height / 2
-        // Resizing the window to the frame it already occupies is the one case
-        // where this call has nothing to do. The arithmetic above preserves the
-        // window's own centre and changes only its size, so a window that is
-        // already at `preset.suggestedPointSize` reproduces its current frame
-        // exactly; `setFrame(_:display:animate:)` would then animate a zero
-        // size delta, which is a live mutation of the shared window on the
-        // presentation path for no change an audience could see. Guarding here
-        // rather than at the caller is deliberate: this is the *only* call that
-        // resizes the Stage window, and the resize is a real affordance. The
-        // window is `.resizable` with only its aspect ratio pinned and its
-        // frame autosaved, so it genuinely drifts off the preset size when it
-        // is dragged, and re-selecting the highlighted preset tile is the only
-        // gesture that snaps it back. A guard on the caller's assignment would
-        // take that gesture away; this one keeps it and suppresses only the
-        // case that was already a visual no-op.
+        // Reselecting a preset restores its suggested size after a user resize.
+        // Skip only an identical frame, avoiding a no-op animation on the
+        // audience window without taking away that reset gesture.
         guard frame != window.frame else { return }
         window.setFrame(frame, display: true, animate: !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+        updateRenderingSize()
+    }
+
+    func enlargeForSharing() {
+        guard let controller, let window, let contentView = window.contentView,
+              let screen = window.screen ?? NSScreen.main else { return }
+        let preset = controller.preset
+        let target = contentView.convertFromBacking(NSRect(
+            x: 0, y: 0, width: preset.pixelWidth, height: preset.pixelHeight
+        )).size
+        let available = window.contentRect(forFrameRect: screen.visibleFrame).size
+        guard let size = StageWindowSizing.enlargedContentSize(
+            current: contentView.bounds.size,
+            target: target,
+            available: available,
+            aspectRatio: preset.aspectRatio
+        ) else {
+            updateRenderingSize()
+            controller.transientNotice = L10n.text(
+                "Stageは基準サイズに達しているか、この画面ではこれ以上拡大できません。",
+                "Stage has reached the reference size, or cannot grow further on this display."
+            )
+            return
+        }
+
+        var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: size))
+        frame.origin = NSPoint(
+            x: min(max(window.frame.midX - frame.width / 2, screen.visibleFrame.minX),
+                   screen.visibleFrame.maxX - frame.width),
+            y: min(max(window.frame.midY - frame.height / 2, screen.visibleFrame.minY),
+                   screen.visibleFrame.maxY - frame.height)
+        )
+        // Keep this exact share window and its capture identity. An immediate
+        // resize also avoids sending intermediate animation sizes to a meeting.
+        window.setFrame(frame, display: true)
+        updateRenderingSize()
+        controller.transientNotice = L10n.text(
+            "Stageを共有向けに拡大しました。送信解像度は会議アプリの設定にも依存します。",
+            "Enlarged Stage for sharing. Sent resolution also depends on your meeting app."
+        )
+    }
+
+    private func updateRenderingSize() {
+        guard let contentView = window?.contentView else { return }
+        controller?.updateStageRenderingSize(contentView.convertToBacking(contentView.bounds).size)
+    }
+
+    func windowDidResize(_ notification: Notification) {
+        updateRenderingSize()
+    }
+
+    func windowDidChangeScreen(_ notification: Notification) {
+        updateRenderingSize()
+    }
+
+    func windowDidChangeBackingProperties(_ notification: Notification) {
+        updateRenderingSize()
     }
 
     func applyWindowBehavior() {

@@ -654,12 +654,12 @@ struct StageWorkspaceView: View {
                 .overlay(Capsule().stroke(StagePanePalette.coral.opacity(0.22)))
             }
 
-            Text("\(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
+            Text("PNG · \(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(Color.white.opacity(0.55))
                 .accessibilityLabel(L10n.text(
-                    "出力サイズ、\(controller.preset.pixelWidth)かける\(controller.preset.pixelHeight)",
-                    "Output size, \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight)"
+                    "Audience PNGのサイズ、\(controller.preset.pixelWidth)かける\(controller.preset.pixelHeight)ピクセル",
+                    "Audience PNG size, \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight) pixels"
                 ))
         }
         .frame(minHeight: 32)

@@ -24,6 +24,37 @@ window when you want to limit the source more narrowly.
 アプリを選ぶと、そのアプリが持つすべてのウインドウが含まれる場合があります。
 共有範囲を狭くしたい場合は、アプリではなく1つのウインドウを選んでください。
 
+## Stage size and sharing quality / Stageサイズと共有画質
+
+The Stage has no title bar. Drag its displayed content to move the window;
+composition editing stays in the private Workspace. The intended initial size
+or saved window size is preserved when the Stage opens.
+
+In **Stage Settings**, **Audience PNG** shows the preset dimensions used for
+image export. **Current Stage Rendering Size** shows the actual Stage window's
+pixel dimensions and updates when its size or display changes. A small Stage
+can reduce sharing quality. Choose **Enlarge Stage for Sharing** to grow it
+toward a sharing size that fits the current screen, keeping its shape. An
+already larger Stage is not reduced. This keeps the same Stage window, so it
+does not replace the share target. You can keep the
+Stage large and use the smaller Workspace Canvas as your editing preview.
+Your meeting app controls the resolution it captures and transmits; the
+Stage size and PNG dimensions do not guarantee the resolution your audience receives.
+
+Stageにはタイトルバーがありません。表示内容をドラッグするとウインドウを移動できます。
+構図の編集は手元用のWorkspaceで行います。Stageを開く際は、初期サイズまたは保存済みの
+ウインドウサイズを保持します。
+
+**Stage設定** の **Audience PNG** は、画像の書き出しに使うプリセットのサイズです。
+**現在のStage描画サイズ** はStageウインドウの実際のピクセル数で、大きさや表示先の画面が
+変わると更新されます。Stageが小さいと、共有画質が低下することがあります。
+**共有向けにStageを拡大** を選ぶと、形を保ちながら現在の画面に収まる共有向けサイズへ
+近づけます。すでに大きいStageを縮小することはありません。
+同じStageウインドウを使うため、共有対象を別のウインドウへ置き換えません。
+Stageは大きく保ち、手元の編集にはWorkspace内の小さなキャンバスを使えます。
+取得・送信する解像度は会議アプリが決めます。StageやPNGのサイズは、相手に届く解像度を
+保証するものではありません。
+
 ## Work with overlapping layers / 重なったレイヤーを編集する
 
 The layer list stays beside the Canvas, with the frontmost layer at the top.
@@ -236,14 +267,15 @@ Audience PNGでそのレイヤーを透明にします。再表示を選ぶと�
 Use **Copy Audience Image / Audience画像をコピー** or **Save Audience Image… /
 Audience画像を保存…** in Stage Workspace only when you want a one-shot image
 of the clean audience Stage. The
-PNG uses the selected Stage dimensions and includes the exact audience state:
+PNG uses the selected preset's Audience PNG dimensions regardless of the Stage
+window size and includes the exact audience state:
 shared content or Curtain, ink, watermark, the safe-area guide when enabled, and
 the pointer when visible. It does not include Workspace navigation or controls,
 window title-bar chrome, or other app windows.
 
 観客側のきれいなStageを1枚だけ画像にしたいときは、Stage Workspaceの
 **Audience画像をコピー** または **Audience画像を保存…** を明示的に選びます。PNGは
-選択中のStageサイズで作成され、共有内容
+Stageウインドウの大きさにかかわらず、選択中のプリセットのAudience PNGサイズで作成され、共有内容
 またはカーテン、手書き、ウォーターマーク、有効な場合はセーフエリア、表示中の場合は
 ポインターを含みます。Workspaceのナビゲーションや操作UI、ウインドウのタイトルバー、
 他アプリのウインドウは含みません。

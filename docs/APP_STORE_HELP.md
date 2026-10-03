@@ -23,6 +23,27 @@ Workspace is a private working window, but macOS does not guarantee that it is h
 
 Workspaceは手元用ですが、画面全体やアプリ全体の共有から必ず隠れるとは限りません。観客向け出力だけを見せる場合は、正確にStageウインドウを共有してください。
 
+## Stage size and sharing quality / Stageサイズと共有画質
+
+Drag the Stage's displayed content to move its titleless window. Use the
+Workspace to edit the composition. In **Stage Settings**, **Audience PNG** is
+the preset image-export size; **Current Stage Rendering Size** is the Stage
+window's actual pixel size. A small Stage can reduce sharing quality. Choose
+**Enlarge Stage for Sharing** to grow the same window toward a sharing size
+that fits the current screen, keeping its shape. An already larger Stage is
+not reduced. Keep the Stage large and edit using the smaller Workspace Canvas.
+Your meeting app determines the resolution it captures and transmits; neither
+the PNG size nor Stage rendering size guarantees the resolution received.
+
+タイトルバーのないStageは、表示内容をドラッグすると移動できます。構図の編集はWorkspaceで
+行います。**Stage設定** の **Audience PNG** は画像を書き出すプリセットのサイズ、
+**現在のStage描画サイズ** はStageウインドウの実際のピクセル数です。Stageが小さいと、
+共有画質が低下することがあります。**共有向けにStageを拡大** を選ぶと、同じウインドウの
+形を保ちながら、現在の画面に収まる共有向けサイズへ近づけます。すでに大きいStageは
+縮小しません。Stageは大きく保ち、編集にはWorkspace内の小さなキャンバスを使えます。
+取得・送信する解像度は会議アプリが決めます。PNGやStageの描画サイズは、相手に届く
+解像度を保証するものではありません。
+
 ## Arrange layers and manage sources / レイヤーを配置しソースを管理する
 
 The layer list stays beside the Canvas, even at the minimum Workspace size.
@@ -104,9 +125,13 @@ Applying a crop changes only what appears on the Stage and in an Audience PNG. W
 - **Audience画像をコピー** はStageのPNGをペーストボードへ置きます。
 - **Audience画像を保存…** は選んだ場所だけへStageのPNGを1枚書き込みます。
 
-Screenshots contain the clean audience composition, not Workspace navigation or controls. StagePane does not record video and never saves images automatically.
+Screenshots use the preset's Audience PNG dimensions regardless of the Stage
+window size and contain the clean audience composition, not Workspace
+navigation or controls. StagePane does not record video and never saves images automatically.
 
-スクリーンショットには観客向けの合成結果だけが入り、Workspaceのナビゲーションや操作UIは入りません。動画は録画せず、画像を自動保存することもありません。
+スクリーンショットはStageウインドウの大きさにかかわらず、プリセットのAudience PNGサイズで
+作成します。観客向けの合成結果だけが入り、Workspaceのナビゲーションや操作UIは入りません。
+動画は録画せず、画像を自動保存することもありません。
 
 ## Access and privacy / アクセスとプライバシー
 

@@ -28,11 +28,35 @@ struct StageSettingsPanel: View {
                         Text(L10n.text("ステージの形", "Stage shape"))
                             .font(.headline)
                         Spacer()
-                        Text("\(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
+                        Text("Audience PNG · \(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(L10n.text(
+                                "Audience PNGのサイズ、\(controller.preset.pixelWidth)かける\(controller.preset.pixelHeight)ピクセル",
+                                "Audience PNG size, \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight) pixels"
+                            ))
+                    }
+                    PresetPicker(controller: controller)
+
+                    Divider()
+
+                    HStack {
+                        Text(L10n.text("現在のStage描画サイズ", "Current Stage Rendering Size"))
+                            .font(.caption)
+                        Spacer()
+                        Text(stageRenderingSizeText)
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
-                    PresetPicker(controller: controller)
+                    .accessibilityElement(children: .combine)
+
+                    Text(L10n.text(
+                        "Stageが小さいと、共有画質が低下することがあります。Stageを拡大し、手元の操作はWorkspaceで行ってください。実際の共有解像度は会議アプリが決めます。",
+                        "A small Stage can reduce sharing quality. Enlarge the Stage and use the Workspace to edit. Your meeting app determines the resolution it shares."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
                 .cardSurface()
 
@@ -60,6 +84,14 @@ struct StageSettingsPanel: View {
                         symbol: "macwindow.on.rectangle",
                         tint: StagePanePalette.indigo,
                         action: controller.showStage
+                    )
+
+                    StageSettingAction(
+                        title: L10n.text("共有向けにStageを拡大", "Enlarge Stage for Sharing"),
+                        detail: L10n.text("画面に収まる共有向けサイズへ", "Fit a sharing size to your screen"),
+                        symbol: "arrow.up.left.and.arrow.down.right",
+                        tint: StagePanePalette.indigo,
+                        action: controller.enlargeStageForSharing
                     )
 
                     StageSettingAction(
@@ -115,6 +147,13 @@ struct StageSettingsPanel: View {
             .frame(maxWidth: 960, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .top)
         }
+    }
+
+    private var stageRenderingSizeText: String {
+        guard let size = controller.stageRenderingSize else {
+            return L10n.text("未取得", "Not Available")
+        }
+        return "\(Int(size.width.rounded())) × \(Int(size.height.rounded())) px"
     }
 
     private var conferenceShareTitle: String {
@@ -255,8 +294,8 @@ struct PresetPicker: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(L10n.text(
-                    "\(L10n.presetName(preset))、\(preset.pixelWidth)×\(preset.pixelHeight)",
-                    "\(L10n.presetName(preset)), \(preset.pixelWidth) by \(preset.pixelHeight)"
+                    "\(L10n.presetName(preset))、Audience PNGは\(preset.pixelWidth)かける\(preset.pixelHeight)ピクセル",
+                    "\(L10n.presetName(preset)), Audience PNG is \(preset.pixelWidth) by \(preset.pixelHeight) pixels"
                 ))
                 .accessibilityValue(
                     controller.preset == preset ? L10n.text("選択中", "Selected") : ""
