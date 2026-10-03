@@ -593,6 +593,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalCurtain = privacyCurtain
         let originalWorkspaceSection = workspaceSection
         let originalInteractionMode = stageInteractionMode
+        let originalStageRenderingSize = stageRenderingSize
         let originalInkPreferences = annotations.preferences
         defer {
             annotations.selectTool(originalInkPreferences.tool)
@@ -612,6 +613,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             privacyMessage = originalPrivacyMessage
             privacyCurtain = originalCurtain
             workspaceSection = originalWorkspaceSection
+            stageRenderingSize = originalStageRenderingSize
         }
 
         // Public assets must never depend on the developer's local defaults.
@@ -630,6 +632,16 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         setStageInteractionMode(.arrange)
+        // A public fixture illustrates a 1080p local Stage; it is not evidence
+        // of any meeting app's transmitted resolution or this Mac's display.
+        stageRenderingSize = CGSize(width: 1_920, height: 1_080)
+        workspaceSection = .stage
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("stage-settings.png")
+        )
         workspaceSection = .canvas
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)

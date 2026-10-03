@@ -133,7 +133,7 @@ Update and review these values in one pull request:
   ```
 
   `workspace.png`, `arrange.png`, `draw.png`, `sources.png`, `permissions.png`,
-  `privacy.png`, `appearance.png`, and source-build `pro.png` must be opaque
+  `privacy.png`, `appearance.png`, `stage-settings.png`, and source-build `pro.png` must be opaque
   2880×1800 images. The
   1920×1080 Stage-only snapshots are website and QA assets, not valid Mac App
   Store upload dimensions. Do not use an arbitrary `/tmp` or repository

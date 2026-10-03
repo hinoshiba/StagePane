@@ -13,14 +13,13 @@
   includes four sources; Pro removes the app's source-count limit and mark.
   Source count depends on your Mac and OS.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
-- **What's New 0.4.1 (EN):** A shared source no longer blanks its tile on the
-  Stage while you present. Hiding and showing a source is now an immediate
-  swap instead of a quarter-second dissolve through the Stage background, so
-  pausing, resuming, replacing a source, and changing the Stage size read as
-  one clean change to your audience. The privacy policy now states plainly what
-  StagePane never transmits, how long screen content is kept, and exactly what
-  is stored on your Mac.
-- **What's New 0.4.1 (JA):** 共有中のソースのタイルが、Stage上でくり返し黒くなることがなくなりました。ソースの非表示・再表示は、Stageの背景を通した0.25秒のディゾルブではなく即座の切り替えになり、一時停止・再開・ソースの差し替え・Stageのサイズ変更が、観客には一度のきれいな変化として見えます。プライバシーポリシーには、StagePaneが送信しないもの、画面を保持する期間、Macに保存する項目を明記しました。
+- **What's New 0.4.2 (EN):** Fixed Stage window dragging and startup sizing.
+  Drag the Stage's content to move it; each shape now keeps its correct minimum
+  proportions. Stage Settings shows the actual rendering size separately from
+  Audience PNG dimensions and adds Enlarge Stage for Sharing. Enlargement keeps
+  the same share window and never shrinks an already larger Stage. The meeting
+  app still controls the resolution it sends.
+- **What's New 0.4.2 (JA):** Stageウインドウのドラッグ移動と起動時サイズを修正しました。表示内容をドラッグして移動でき、縦長を含む各形状の最小サイズも縦横比を保ちます。Stage設定ではAudience PNGサイズと実際の描画サイズを分けて表示し、「共有向けにStageを拡大」を追加しました。拡大時も共有対象のウインドウを保ち、すでに大きいStageを縮小することはありません。送信解像度は会議アプリが決めます。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 
@@ -140,9 +139,10 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.4.1 App Review notes draft
+## 0.4.2 App Review notes draft
 
-Use this concise block for the 0.4.1 candidate after its acceptance checks:
+Exact-candidate manual acceptance is pending. Use this concise block for the
+0.4.2 candidate only after its acceptance checks have been recorded:
 
 > No sign-in is required.
 >
@@ -152,6 +152,16 @@ Use this concise block for the 0.4.1 candidate after its acceptance checks:
 > window, app, or display in Apple’s ScreenCaptureKit picker. Free supports four
 > simultaneous sources. With four sources active, choose Add Source again to
 > open StagePane Pro.
+>
+> To check this update, drag the Stage's displayed content to move its titleless
+> window, including when StagePane is inactive. Its perimeter remains available
+> for resizing. Open Stage Settings to compare Audience PNG dimensions with
+> Current Stage Rendering Size, then shrink the Stage and choose Enlarge Stage
+> for Sharing. This grows the same Stage window toward the preset size within
+> the current screen's available space, without reducing an already larger
+> Stage. The private Workspace Canvas remains available as the editing preview.
+> The meeting app controls capture and transmitted resolution; neither Stage
+> rendering dimensions nor Audience PNG dimensions guarantee received resolution.
 >
 > StagePane Pro is a one-time non-consumable In-App Purchase
 > (`com.hinoshiba.stagepane.pro`). It is also available from the Workspace
@@ -195,8 +205,9 @@ Use this concise block for the 0.4.1 candidate after its acceptance checks:
 > may transmit user-directed outputs. Apple handles Pro purchases and restores
 > through StoreKit; captured content is never included.
 >
-> This build addresses App Review’s Guideline 2.1 information request for
-> 0.4.0 (7), submission 90569aa7-c006-4848-8d52-4ec9aaaf46c5. The Japanese
+> The privacy information supplied in response to App Review’s Guideline 2.1
+> request for 0.4.0 (7), submission 90569aa7-c006-4848-8d52-4ec9aaaf46c5,
+> remains available. The Japanese
 > and English policies at https://stagepane.hinoshiba.com/#privacy and
 > https://stagepane.hinoshiba.com/en/privacy/, plus bundled
 > Contents/Resources/PRIVACY.md, explain disclosure, sharing and retention.

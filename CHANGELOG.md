@@ -5,12 +5,15 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-03
+
 ### Added
 
 - Stage Settings shows the Stage window's current rendering size separately
   from Audience PNG dimensions and offers Enlarge Stage for Sharing. Enlargement
-  preserves the share window, fits the current display, and never shrinks an
-  already larger Stage; the meeting app still controls sent resolution.
+  preserves the share window, uses the current display to bound enlargement,
+  and never shrinks an already larger Stage; the meeting app still controls
+  sent resolution.
 
 ### Fixed
 
