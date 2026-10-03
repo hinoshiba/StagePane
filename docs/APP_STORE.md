@@ -144,79 +144,60 @@ Japanese and English.
 Exact-candidate manual acceptance is pending. Use this concise block for the
 0.4.2 candidate only after its acceptance checks have been recorded:
 
+Keep the copied Notes text within Apple's [4,000-byte limit](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
+Measure its UTF-8 size after removing the Markdown quote prefixes.
+
 > No sign-in is required.
 >
-> StagePane has two normal macOS windows: “StagePane Stage” is the
-> audience-facing window to share; “StagePane Workspace — Keep Private” is the
-> private editor. In Workspace, choose Add Source and approve a harmless
-> window, app, or display in Apple’s ScreenCaptureKit picker. Free supports four
-> simultaneous sources. With four sources active, choose Add Source again to
-> open StagePane Pro.
+> Share the normal "StagePane Stage" window in your meeting app; keep
+> "StagePane Workspace — Keep Private" private. In Workspace, choose Add Source
+> and approve a harmless window, app, or display in Apple's ScreenCaptureKit
+> picker. Each selection authorizes only that content for its capture session.
+> StagePane requests no broad Screen Recording or Accessibility permission.
+> Free supports four simultaneous sources; a fifth Add Source attempt opens Pro.
 >
-> To check this update, drag the Stage's displayed content to move its titleless
-> window, including when StagePane is inactive. Its perimeter remains available
-> for resizing. Open Stage Settings to compare Audience PNG dimensions with
-> Current Stage Rendering Size, then shrink the Stage and choose Enlarge Stage
-> for Sharing. This grows the same Stage window toward the preset size within
-> the current screen's available space, without reducing an already larger
-> Stage. The private Workspace Canvas remains available as the editing preview.
-> The meeting app controls capture and transmitted resolution; neither Stage
-> rendering dimensions nor Audience PNG dimensions guarantee received resolution.
+> For this update, drag Stage content to move its titleless window, including
+> while StagePane is inactive; the perimeter remains resizable. In Stage
+> Settings, compare Current Stage Rendering Size with Audience PNG dimensions.
+> Shrink Stage, then choose Enlarge Stage for Sharing: it grows the same window
+> toward the preset size within the current screen, preserving its identity
+> without shrinking an already larger Stage. Edit in the private Workspace.
+> The meeting app chooses capture/transmission resolution; neither size readout
+> guarantees received resolution.
 >
-> StagePane Pro is a one-time non-consumable In-App Purchase
-> (`com.hinoshiba.stagepane.pro`). It is also available from the Workspace
-> sidebar, the app menu, and by trying to turn off the StagePane mark under
-> Appearance. The Pro screen shows StoreKit’s localized price, states that it
-> is not a subscription, and includes Restore Purchases and Continue Free. Pro
-> removes StagePane's source-count limit and makes the StagePane mark optional
-> on the Stage, Privacy Curtain, and explicitly copied/saved Audience PNG. The
-> number of sources that can run in practice depends on Mac performance and
-> operating-system constraints. Canceling does not change or stop the current
-> Stage.
+> StagePane Pro (com.hinoshiba.stagepane.pro) is a one-time non-consumable In-App
+> Purchase, not a subscription. It removes the app's source-count limit and
+> makes the Stage/Curtain/Audience PNG mark optional. Practical source count
+> depends on the Mac and OS. Open Pro from the sidebar or fifth-source attempt;
+> verify StoreKit's localized price, Restore Purchases and Continue Free.
+> Canceling does not change or stop Stage. For IAP review screenshots, use the
+> real Pro screen under StoreKit Configuration, Sandbox or TestFlight, showing
+> price, one-time wording and both actions. Source-build fixtures are not
+> purchase evidence.
 >
-> The Workspace keeps a front-to-back layer list beside the Canvas. Select a
-> covered or hidden layer in the list; selection, movement, and resize preserve
-> its stacking order. Move Forward, Move Backward, Bring to Front, and Send to
-> Back change the stack explicitly. Hide pauses one source and clears its
-> pixels while retaining placement, crop, and order; Show resumes it and waits
-> for a new complete frame before revealing it.
+> Arrange/Crop/Draw change only StagePane's composition and never forward input
+> to source apps. Crop is a private draft until Apply and does not narrow the
+> source approved in the picker. Draw stores bounded ink in memory. Hide pauses
+> a source and clears its pixels while retaining placement/crop/order; Show
+> waits for a fresh complete frame. Curtain covers only audience output without
+> stopping capture. Stop All ends every stream and removes all layers.
+> Copy/Save Audience Image creates one clean local PNG only when chosen.
 >
-> Arrange changes only StagePane’s local composition. Only the selected tile
-> shows editing controls, fitted to the visible source or applied crop; resizing
-> preserves its proportions. To move a selected rear or hidden layer, drag its
-> private title badge or use arrow keys; the selected resize handle stays
-> accessible above overlapping layers. Clicking visible foreground content
-> selects that foreground layer without changing the stack. The selected tile
-> and each layer row have a Crop action that opens that exact source as a private draft. Drag or
-> resize the frame, or choose Reset to Full Source; only Apply Crop changes the
-> public Stage, while Cancel discards the draft. Crop is a local composition
-> mask and does not narrow the full source approved in Apple’s picker. If macOS
-> ends sharing, StagePane clears the old frame but retains that layer’s
-> placement, crop, and order for Select Again. Draw adds bounded in-memory ink
-> to the Workspace and Stage. Privacy Curtain hides only the public Stage; Stop
-> All ends every stream and removes every layer. Copy Audience Image and Save
-> Audience Image create a PNG only after the reviewer explicitly chooses the
-> action.
+> StagePane is sandboxed, has no network entitlement, and sends no screen
+> content, drawings or other data to the developer or third parties. It does
+> not record video, capture audio/microphone, use analytics/ads or operate a
+> publisher server. Live frames remain only in memory and are released on Hide,
+> removal, Stop All or quit. Only explicitly copied/saved PNGs persist. Meeting
+> apps transmit shared Stage content; enabled clipboard/file synchronization
+> may transmit user-created PNGs. Local preferences include window geometry and three
+> rating-prompt timing values. Apple handles Pro commerce; no screen content is
+> included.
 >
-> StagePane is sandboxed. It does not record movies, capture audio or microphone
-> input, create an account, use analytics or ads, upload frames, or operate a
-> publisher server. StagePane itself does not transmit captured content.
-> The user's meeting app and user-enabled clipboard or file synchronization
-> may transmit user-directed outputs. Apple handles Pro purchases and restores
-> through StoreKit; captured content is never included.
->
-> The privacy information supplied in response to App Review’s Guideline 2.1
-> request for 0.4.0 (7), submission 90569aa7-c006-4848-8d52-4ec9aaaf46c5,
-> remains available. The Japanese
-> and English policies at https://stagepane.hinoshiba.com/#privacy and
-> https://stagepane.hinoshiba.com/en/privacy/, plus bundled
-> Contents/Resources/PRIVACY.md, explain disclosure, sharing and retention.
-> StagePane has no network entitlement and transmits no screen content or
-> drawings. Live frames remain in memory and are released on Hide, removal,
-> Stop All or quit. Only explicitly copied or saved PNGs persist. Local
-> preferences include window geometry and three App Store rating-prompt
-> timing values. Apple handles Pro commerce separately; screen content is
-> never included. The English policy is static HTML.
+> The Guideline 2.1 privacy reply for 0.4.0 (7), submission
+> 90569aa7-c006-4848-8d52-4ec9aaaf46c5, is historical. Its disclosure/sharing/
+> retention details remain in https://stagepane.hinoshiba.com/#privacy (JA),
+> https://stagepane.hinoshiba.com/en/privacy/ (static EN), and bundled
+> Contents/Resources/PRIVACY.md.
 
 ## Detailed reviewer walkthrough reference
 
