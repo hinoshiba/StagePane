@@ -185,6 +185,26 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   proportional resize/minimum content size, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
+- Stage-only native full-screen entry/exit through Workspace, the Stage menu,
+  Control-Command-F, and the menu-bar recovery path, including when Workspace is
+  key and Presentation Lock is on; Workspace must remain separate and private.
+  Verify Command-1/Command-2 navigation, no repeated toggle during transitions,
+  attached-sheet handling, failed-entry/exit cleanup, and restoration of the
+  windowed frame, sizing constraints, level, and latest all-Spaces setting;
+  confirm Stage keeps the same window identity, always-on-top/all-Spaces behavior
+  is suspended during full screen, and display attachment/detachment and backing
+  changes do not corrupt state;
+- every Stage preset in full screen on a display with a different aspect ratio:
+  sources, applied crop, ink, pointer, safe area, watermark, and Curtain must fit
+  the same canvas without distortion, with black outer margins. The rendering
+  size must measure the canvas; each Audience PNG must retain preset dimensions
+  and composition without those margins. Change preset or display, then exit,
+  resize, and re-enter full screen without geometry or privacy regressions;
+- enter Stage full screen before meeting sharing, select the exact Stage window,
+  then navigate to the private Workspace. Verify capture continues, the selected
+  share target remains correct, and receiver output stays clean across tested
+  Space transitions. Record meeting-app version/settings and received dimensions;
+  local full-screen size is not proof of transmitted resolution;
 - square and portrait sources in wide layout tiles, plus applied crops of
   different proportions: the selection outline, title, hit targets, and resize
   handle must follow the visible content rather than empty margins; margins

@@ -36,6 +36,7 @@
 		A55525D15EB806273F8038DB /* StageCompositeDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 213F0F8A0487711E00EA24DC /* StageCompositeDisplayView.swift */; };
 		A564414A335FFA018B1CCBCB /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5817048408BEEE4EAC86CEEB /* StatusItemController.swift */; };
 		AA9953A964DB915B729A642D /* CaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4193F05A5DCA7EBFA49832 /* CaptureCoordinator.swift */; };
+		ABDEFB69A1355E03172C4C19 /* StageCanvasHostViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74B4C7D06DA892995E1444A /* StageCanvasHostViewController.swift */; };
 		B77832DF9B25AC9917DC08F0 /* StageWindowSnapshotter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B83E1C9BE6E441CECF9A6B8 /* StageWindowSnapshotter.swift */; };
 		B7C437AD3E54DCB7B80362FF /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6DBE494CA8AAD4C2C890B65 /* CoreMedia.framework */; };
 		D9BBBE6D123BC48F370EBAF0 /* StageAnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93D4E0545042D6A53D741A26 /* StageAnnotationStore.swift */; };
@@ -81,6 +82,7 @@
 		DE0BBB1CAA8F1E8661717128 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		E10F2BEB81C9C02BBC4869A0 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		E414EC615F36272D6183D7B6 /* StagePane */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StagePane; path = .; sourceTree = SOURCE_ROOT; };
+		E74B4C7D06DA892995E1444A /* StageCanvasHostViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageCanvasHostViewController.swift; sourceTree = "<group>"; };
 		EC69B33FC3962E2F201CE2A9 /* SampleBufferRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferRenderer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -194,6 +196,7 @@
 			isa = PBXGroup;
 			children = (
 				35A39A84342B480FDE7C1A37 /* StageBackground.swift */,
+				E74B4C7D06DA892995E1444A /* StageCanvasHostViewController.swift */,
 				213F0F8A0487711E00EA24DC /* StageCompositeDisplayView.swift */,
 				81367F4215FA9164C376C053 /* StageView.swift */,
 				80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */,
@@ -447,6 +450,7 @@
 				74DE0C6A5F3D7568A216DFB3 /* SettingsPanels.swift in Sources */,
 				D9BBBE6D123BC48F370EBAF0 /* StageAnnotationStore.swift in Sources */,
 				230962093574C81A6DC842E5 /* StageBackground.swift in Sources */,
+				ABDEFB69A1355E03172C4C19 /* StageCanvasHostViewController.swift in Sources */,
 				A55525D15EB806273F8038DB /* StageCompositeDisplayView.swift in Sources */,
 				108AE50A313BD77F4A8E4B9F /* StageLayoutEditor.swift in Sources */,
 				5304C588F87BE9C20116E65D /* StagePaneApp.swift in Sources */,

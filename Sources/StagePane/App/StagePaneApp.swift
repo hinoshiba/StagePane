@@ -201,6 +201,15 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             target: controller
         ))
         stageMenu.addItem(menuItem(
+            controller.stageIsFullScreen
+                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
+            action: #selector(AppController.toggleStageFullScreen),
+            key: "f",
+            modifiers: [.control, .command],
+            target: controller
+        ))
+        stageMenu.addItem(menuItem(
             L10n.text("ソースを追加…", "Add Source…"),
             action: #selector(AppController.chooseSource),
             key: "p",

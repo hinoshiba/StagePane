@@ -42,6 +42,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             #selector(AppController.showStage),
             target: controller
         ))
+        menu.addItem(item(
+            controller.stageIsFullScreen
+                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
+            #selector(AppController.toggleStageFullScreen),
+            target: controller
+        ))
         menu.addItem(.separator())
         menu.addItem(item(
             L10n.text("ソースを追加…", "Add Source…"),

@@ -4,12 +4,21 @@ import SwiftUI
 
 @MainActor
 private final class StageShareWindow: NSWindow {
+    var exitFullScreen: (() -> Void)?
     // Borderless NSWindow instances are not key or main by default. The Stage
     // deliberately stays chrome-free, but it must still become the front
     // window when the user clicks it or chooses Show Share Stage so standard
     // commands such as Close Window target the surface they can see.
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    override func cancelOperation(_ sender: Any?) {
+        if styleMask.contains(.fullScreen) {
+            exitFullScreen?()
+        } else {
+            super.cancelOperation(sender)
+        }
+    }
 
     override func sendEvent(_ event: NSEvent) {
         // Stage contains audience artwork only. Start a native window drag
@@ -95,9 +104,29 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
 @MainActor
 final class StageWindowController: NSWindowController, NSWindowDelegate {
     private weak var controller: AppController?
+    private let canvasHost: StageCanvasHostViewController
+    private enum FullScreenPhase {
+        case windowed, entering, fullScreen, exiting
+
+        var isTransitioning: Bool { self == .entering || self == .exiting }
+    }
+    private var fullScreenPhase: FullScreenPhase = .windowed
+    private var pendingPresetResize = false
+    private var frameAutosaveIsSuspended = false
+    private var failureRecovery: Task<Void, Never>?
+
+    var stageCanvasView: NSView {
+        canvasHost.view.layoutSubtreeIfNeeded()
+        return canvasHost.canvasView
+    }
+
+    private var allowsWindowGeometryChanges: Bool {
+        fullScreenPhase == .windowed && window?.styleMask.contains(.fullScreen) == false
+    }
 
     init(controller: AppController, capture: CaptureCoordinator) {
         self.controller = controller
+        canvasHost = StageCanvasHostViewController(controller: controller, capture: capture)
         let suggested = StageWindowSizing.suggestedContentSize(for: controller.preset)
         let window = StageShareWindow(
             contentRect: NSRect(
@@ -124,13 +153,13 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.tabbingMode = .disallowed
         window.sharingType = .readOnly
         let initialFrame = window.frame
-        window.contentViewController = NSHostingController(
-            rootView: StageView(controller: controller, capture: capture)
-        )
+        window.contentViewController = canvasHost
         window.isMovableByWindowBackground = false
 
         super.init(window: window)
         window.delegate = self
+        window.exitFullScreen = { [weak self] in self?.toggleFullScreen() }
+        canvasHost.onCanvasLayout = { [weak self] in self?.updateRenderingSize() }
         applyPreset(controller.preset, resize: false)
         // Assigning contentViewController resizes the window to the hosting
         // view's current size. Restore the intended frame only afterward, and
@@ -151,9 +180,17 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     func applyPreset(_ preset: StagePreset, resize: Bool) {
         guard let window else { return }
+        canvasHost.setPreset(preset)
         window.contentMinSize = StageWindowSizing.minimumContentSize(for: preset)
         window.contentAspectRatio = NSSize(width: preset.pixelWidth, height: preset.pixelHeight)
         guard resize else { return }
+        guard allowsWindowGeometryChanges else {
+            // Update the fitted canvas now; restore the newly selected shape
+            // only after AppKit finishes returning to an ordinary window.
+            pendingPresetResize = true
+            updateRenderingSize()
+            return
+        }
 
         let size = StageWindowSizing.suggestedContentSize(for: preset)
         var frame = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height))
@@ -168,6 +205,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func enlargeForSharing() {
+        guard allowsWindowGeometryChanges else { return }
         guard let controller, let window, let contentView = window.contentView,
               let screen = window.screen ?? NSScreen.main else { return }
         let preset = controller.preset
@@ -207,8 +245,111 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func updateRenderingSize() {
-        guard let contentView = window?.contentView else { return }
+        let contentView = stageCanvasView
         controller?.updateStageRenderingSize(contentView.convertToBacking(contentView.bounds).size)
+    }
+
+    func toggleFullScreen() {
+        guard let window, !fullScreenPhase.isTransitioning else { return }
+        failureRecovery?.cancel()
+        fullScreenPhase = window.styleMask.contains(.fullScreen) ? .exiting : .entering
+        suspendFrameAutosave()
+        applyWindowBehavior()
+        publishFullScreenState()
+        showWindow(nil)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        // AppKit owns the Space transition. Making an off-Space window key
+        // does not always switch Spaces, so waiting for isOnActiveSpace would
+        // prevent exiting from Workspace. Reconcile native completion below.
+        window.toggleFullScreen(nil)
+    }
+
+    private func suspendFrameAutosave() {
+        guard !frameAutosaveIsSuspended, let window else { return }
+        // Full-screen and intermediate frames must not become the next
+        // launch's ordinary Stage dimensions.
+        window.setFrameAutosaveName("")
+        frameAutosaveIsSuspended = true
+    }
+
+    private func publishFullScreenState() {
+        controller?.updateStageFullScreenState(
+            isFullScreen: window?.styleMask.contains(.fullScreen) == true,
+            isTransitioning: fullScreenPhase.isTransitioning
+        )
+    }
+
+    private func settleFullScreenState() {
+        guard let window else { return }
+        failureRecovery?.cancel()
+        failureRecovery = nil
+        fullScreenPhase = window.styleMask.contains(.fullScreen) ? .fullScreen : .windowed
+        if fullScreenPhase == .windowed {
+            if frameAutosaveIsSuspended {
+                window.setFrameAutosaveName("StagePane.ShareStage")
+                frameAutosaveIsSuspended = false
+            }
+            if pendingPresetResize, let controller {
+                pendingPresetResize = false
+                applyPreset(controller.preset, resize: true)
+            }
+        }
+        applyWindowBehavior()
+        publishFullScreenState()
+        updateRenderingSize()
+    }
+
+    private func recoverFromFullScreenFailure() {
+        // AppKit can report a failed off-Space exit immediately before its
+        // did-exit notification. Let that success win; never force a frame
+        // restoration from a failure callback while the Space is settling.
+        failureRecovery?.cancel()
+        let expectedFullScreen = fullScreenPhase == .entering
+        failureRecovery = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, let self else { return }
+            self.settleFullScreenState()
+            if self.window?.styleMask.contains(.fullScreen) != expectedFullScreen {
+                self.reportFullScreenFailure()
+            }
+        }
+    }
+
+    private func reportFullScreenFailure() {
+        controller?.transientNotice = L10n.text(
+            "Stageのフルスクリーン切替を完了できませんでした。Stageを表示して、もう一度お試しください。",
+            "Stage could not complete the full-screen switch. Show the Stage and try again."
+        )
+    }
+
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        fullScreenPhase = .entering
+        suspendFrameAutosave()
+        applyWindowBehavior()
+        publishFullScreenState()
+    }
+
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        settleFullScreenState()
+    }
+
+    func windowWillExitFullScreen(_ notification: Notification) {
+        fullScreenPhase = .exiting
+        applyWindowBehavior()
+        publishFullScreenState()
+    }
+
+    func windowDidExitFullScreen(_ notification: Notification) {
+        settleFullScreenState()
+    }
+
+    func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+        recoverFromFullScreenFailure()
+    }
+
+    func windowDidFailToExitFullScreen(_ window: NSWindow) {
+        recoverFromFullScreenFailure()
     }
 
     func windowDidResize(_ notification: Notification) {
@@ -225,8 +366,10 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     func applyWindowBehavior() {
         guard let controller, let window else { return }
-        window.level = controller.isAlwaysOnTop ? .floating : .normal
-        window.collectionBehavior = controller.followsAllSpaces
+        let usesIndependentSpace = fullScreenPhase != .windowed || window.styleMask.contains(.fullScreen)
+        window.isMovable = !usesIndependentSpace
+        window.level = !usesIndependentSpace && controller.isAlwaysOnTop ? .floating : .normal
+        window.collectionBehavior = !usesIndependentSpace && controller.followsAllSpaces
             ? [.canJoinAllSpaces, .fullScreenAuxiliary]
             : [.managed, .fullScreenPrimary]
         window.standardWindowButton(.closeButton)?.isEnabled = !controller.presentationLock
@@ -239,6 +382,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard !fullScreenPhase.isTransitioning else { return false }
         guard controller?.presentationLock == true else { return true }
         NSSound.beep()
         controller?.transientNotice = L10n.text(
@@ -249,6 +393,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        failureRecovery?.cancel()
         controller?.stageDidClose()
     }
 

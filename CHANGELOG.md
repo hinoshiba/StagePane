@@ -9,6 +9,9 @@ Versioning once 1.0.0 is released.
 
 ### Added
 
+- Stage can use native full screen in a separate macOS Space while the private
+  Workspace stays available with Command-1. The canvas retains its preset
+  shape, and Audience PNG exports exclude the surrounding black matte.
 - Stage Settings shows the Stage window's current rendering size separately
   from Audience PNG dimensions and offers Enlarge Stage for Sharing. Enlargement
   preserves the share window, uses the current display to bound enlargement,

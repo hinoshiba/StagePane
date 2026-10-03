@@ -15,11 +15,15 @@
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
 - **What's New 0.4.2 (EN):** Fixed Stage window dragging and startup sizing.
   Drag the Stage's content to move it; each shape now keeps its correct minimum
-  proportions. Stage Settings shows the actual rendering size separately from
-  Audience PNG dimensions and adds Enlarge Stage for Sharing. Enlargement keeps
-  the same share window and never shrinks an already larger Stage. The meeting
-  app still controls the resolution it sends.
-- **What's New 0.4.2 (JA):** Stageウインドウのドラッグ移動と起動時サイズを修正しました。表示内容をドラッグして移動でき、縦長を含む各形状の最小サイズも縦横比を保ちます。Stage設定ではAudience PNGサイズと実際の描画サイズを分けて表示し、「共有向けにStageを拡大」を追加しました。拡大時も共有対象のウインドウを保ち、すでに大きいStageを縮小することはありません。送信解像度は会議アプリが決めます。
+  proportions. Stage can now enter native full screen in its own macOS Space
+  while Workspace remains available for private editing. The complete Stage
+  canvas keeps its shape, and Audience PNGs retain their preset dimensions
+  without full-screen margins. Stage Settings shows the actual rendering size
+  separately from Audience PNG dimensions and adds Enlarge Stage for Sharing
+  in windowed mode. Enlargement keeps the same share window and never shrinks
+  an already larger Stage. Share only the Stage window; the meeting app still
+  controls the resolution it sends.
+- **What's New 0.4.2 (JA):** Stageウインドウのドラッグ移動と起動時サイズを修正しました。表示内容をドラッグして移動でき、縦長を含む各形状の最小サイズも縦横比を保ちます。Stageだけを専用のmacOS Spaceでフルスクリーン表示し、手元のWorkspaceで編集できるようになりました。Stage全体の形状を保ち、Audience PNGはフルスクリーンの余白を含めず、プリセットの寸法で出力します。Stage設定ではPNGサイズと実際の描画サイズを分けて表示し、通常ウインドウ向けの「共有向けにStageを拡大」を追加しました。拡大時も共有対象のウインドウを保ち、すでに大きいStageを縮小することはありません。会議アプリではStageだけを共有してください。送信解像度は会議アプリが決めます。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 
@@ -149,7 +153,7 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 
 > No sign-in is required.
 >
-> Share the normal "StagePane Stage" window in your meeting app; keep
+> Share only the "StagePane Stage" window in your meeting app; keep
 > "StagePane Workspace — Keep Private" private. In Workspace, choose Add Source
 > and approve a harmless window, app, or display in Apple's ScreenCaptureKit
 > picker. Each selection authorizes only that content for its capture session.
@@ -161,9 +165,14 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 > Settings, compare Current Stage Rendering Size with Audience PNG dimensions.
 > Shrink Stage, then choose Enlarge Stage for Sharing: it grows the same window
 > toward the preset size within the current screen, preserving its identity
-> without shrinking an already larger Stage. Edit in the private Workspace.
-> The meeting app chooses capture/transmission resolution; neither size readout
-> guarantees received resolution.
+> without shrinking an already larger Stage. For a separate macOS Space, choose
+> Enter Stage Full Screen before starting your meeting share. Command-1 returns
+> to the private Workspace; Control-Command-F toggles Stage full screen. The
+> complete canvas keeps its preset proportions; PNGs exclude full-screen
+> margins. Select only the Stage window and keep it open, not minimized. Check
+> on a receiving device that Stage keeps updating while you edit in Workspace.
+> Enlarge is available in windowed mode. The meeting app chooses capture and
+> transmission resolution; neither size readout guarantees received resolution.
 >
 > StagePane Pro (com.hinoshiba.stagepane.pro) is a one-time non-consumable In-App
 > Purchase, not a subscription. It removes the app's source-count limit and

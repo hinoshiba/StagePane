@@ -37,6 +37,7 @@ struct StageSettingsPanel: View {
                             ))
                     }
                     PresetPicker(controller: controller)
+                        .disabled(controller.stageFullScreenTransitionInProgress)
 
                     Divider()
 
@@ -87,11 +88,28 @@ struct StageSettingsPanel: View {
                     )
 
                     StageSettingAction(
+                        title: controller.stageIsFullScreen
+                            ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                            : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
+                        detail: controller.stageIsFullScreen
+                            ? L10n.text("通常のウインドウへ戻す", "Return to a regular window")
+                            : L10n.text("専用Spaceで表示・Workspaceは手元用", "Use a separate Space; keep Workspace private"),
+                        symbol: controller.stageIsFullScreen
+                            ? "arrow.down.right.and.arrow.up.left"
+                            : "arrow.up.left.and.arrow.down.right",
+                        tint: StagePanePalette.indigo,
+                        action: controller.toggleStageFullScreen,
+                        isDisabled: controller.stageFullScreenTransitionInProgress
+                    )
+
+                    StageSettingAction(
                         title: L10n.text("共有向けにStageを拡大", "Enlarge Stage for Sharing"),
                         detail: L10n.text("画面に収まる共有向けサイズへ", "Fit a sharing size to your screen"),
                         symbol: "arrow.up.left.and.arrow.down.right",
                         tint: StagePanePalette.indigo,
-                        action: controller.enlargeStageForSharing
+                        action: controller.enlargeStageForSharing,
+                        isDisabled: controller.stageIsFullScreen ||
+                            controller.stageFullScreenTransitionInProgress
                     )
 
                     StageSettingAction(
@@ -132,8 +150,8 @@ struct StageSettingsPanel: View {
                         .foregroundStyle(StagePanePalette.aquaReadable)
                         .accessibilityHidden(true)
                     Text(L10n.text(
-                        "Workspaceは手元用です。会議アプリでは「StagePane Stage」をウインドウ単位で共有してください。",
-                        "The Workspace is private. In your meeting app, share the exact “StagePane Stage” window."
+                        "フルスクリーンを使う場合は共有前に切り替え、⌘1でWorkspaceに戻ります。会議アプリでは「StagePane Stage」だけを共有してください。⌃⌘FでStageのフルスクリーンを切り替えます。",
+                        "Enter full screen before sharing, then press ⌘1 to return to the private Workspace. In your meeting app, share only “StagePane Stage”. Use ⌃⌘F to toggle Stage full screen."
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)

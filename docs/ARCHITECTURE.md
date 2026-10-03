@@ -227,7 +227,22 @@ Accessibility nor Input Monitoring permission.
   and transmitted resolution; Stage rendering size does not guarantee either.
 - Always-on-top and all-Spaces behaviors are opt-in. Defaults match a normal
   document window.
+- Stage-only native full screen uses the existing share window in a dedicated
+  macOS Space; Workspace remains a separate private window. Workspace and the
+  Stage menu expose Enter/Exit, with Control-Command-F targeting Stage even when
+  Workspace is key. Command-1 returns to Workspace. Enter full screen before
+  selecting the exact Stage in a meeting app; window recreation is unnecessary,
+  but meeting-app sharing continuity and transmitted resolution are not guaranteed.
+- Full-screen artwork uses one preset-aspect canvas for sources, crop, ink,
+  pointer, background, safe area, watermark, and Curtain, with black outer
+  margins when needed. The drawing-size readout measures that canvas, while
+  Audience PNG export retains preset dimensions without the outer margins.
+  Native entry/exit and failure callbacks own transition state. Repeated toggle
+  and ordinary frame changes are suppressed during transitions; full screen
+  temporarily suspends always-on-top and all-Spaces behavior, then restores the
+  latest normal window settings. Windowed enlargement is unavailable in full screen.
 - Presentation Lock prevents accidental close/minimize; it never traps input.
+  It does not prevent exiting Stage full screen.
 
 ## Threading
 

@@ -41,6 +41,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var privacyCurtain = true
     @Published private(set) var stageRenderingSize: CGSize?
+    @Published private(set) var stageIsFullScreen = false
+    @Published private(set) var stageFullScreenTransitionInProgress = false
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
     /// Private editing focus; selecting a layer never changes audience stacking.
     @Published private(set) var selectedSourceID: StageSourceID?
@@ -898,6 +900,17 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
+    @objc func toggleStageFullScreen() {
+        stageWindowController?.toggleFullScreen()
+    }
+
+    func updateStageFullScreenState(isFullScreen: Bool, isTransitioning: Bool) {
+        if stageIsFullScreen != isFullScreen { stageIsFullScreen = isFullScreen }
+        if stageFullScreenTransitionInProgress != isTransitioning {
+            stageFullScreenTransitionInProgress = isTransitioning
+        }
+    }
+
     func updateStageRenderingSize(_ size: CGSize) {
         guard size.width.isFinite, size.height.isFinite,
               size.width > 0, size.height > 0 else { return }
@@ -907,6 +920,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func presentStage(makeKey: Bool) {
+        // Preparing a source or changing a preset must keep the private
+        // Workspace's Space active while Stage occupies its own Space.
+        if !makeKey, stageIsFullScreen || stageFullScreenTransitionInProgress {
+            return
+        }
         if stageWindowController?.window?.isMiniaturized == true {
             stageWindowController?.window?.deminiaturize(nil)
         }
@@ -993,7 +1011,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStageScreenshot), #selector(saveStageScreenshot):
-            return !isStageScreenshotInProgress
+            return !isStageScreenshotInProgress && !stageFullScreenTransitionInProgress
+        case #selector(toggleStageFullScreen):
+            menuItem.title = stageIsFullScreen
+                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen")
+            return !stageFullScreenTransitionInProgress
         case #selector(chooseSource):
             return canRequestSourceAddition
         case #selector(stopPreview):
@@ -1012,7 +1035,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     private func makeStageScreenshot() -> StageSnapshot? {
         guard !isStageScreenshotInProgress else { return nil }
-        guard let window = stageWindowController?.window else {
+        guard !stageFullScreenTransitionInProgress else {
+            transientNotice = L10n.text(
+                "Stageのフルスクリーン切り替えが完了するまでお待ちください。",
+                "Wait for Stage to finish switching full screen."
+            )
+            return nil
+        }
+        guard let canvasView = stageWindowController?.stageCanvasView else {
             transientNotice = L10n.text(
                 "共有Stageを準備できませんでした。",
                 "The Share Stage is not available."
@@ -1023,7 +1053,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         isStageScreenshotInProgress = true
         do {
             return try StageWindowSnapshotter.capture(
-                window: window,
+                contentView: canvasView,
                 outputSize: StageSnapshotSize(preset: preset)
             )
         } catch {

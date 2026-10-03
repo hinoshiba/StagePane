@@ -1,8 +1,103 @@
+import CoreGraphics
 import Foundation
 import XCTest
 @testable import StagePaneCore
 
 final class StageWindowSizingTests: XCTestCase {
+    func testWideCanvasAddsOnlyVerticalMatteOnSixteenByTenScreen() throws {
+        let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+            in: CGRect(x: 0, y: 0, width: 1440, height: 900),
+            aspectRatio: StagePreset.widescreen.aspectRatio
+        ))
+
+        XCTAssertEqual(frame, CGRect(x: 0, y: 45, width: 1440, height: 810))
+    }
+
+    func testPortraitCanvasFitsEntireHeightWithoutStretching() throws {
+        let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+            in: CGRect(x: 0, y: 0, width: 1440, height: 900),
+            aspectRatio: StagePreset.portrait.aspectRatio
+        ))
+
+        XCTAssertEqual(frame, CGRect(x: 466.875, y: 0, width: 506.25, height: 900))
+    }
+
+    func testSquareCanvasCentersVerticallyOnPortraitScreen() throws {
+        let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+            in: CGRect(x: 0, y: 0, width: 900, height: 1440),
+            aspectRatio: StagePreset.square.aspectRatio
+        ))
+
+        XCTAssertEqual(frame, CGRect(x: 0, y: 270, width: 900, height: 900))
+    }
+
+    func testCanvasAlreadyMatchingPresetHasNoMatte() throws {
+        let bounds = CGRect(x: 10, y: 20, width: 960, height: 540)
+        let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+            in: bounds,
+            aspectRatio: StagePreset.widescreen.aspectRatio
+        ))
+
+        XCTAssertEqual(frame, bounds)
+    }
+
+    func testCanvasFitHonorsNonzeroOriginAndAllowsSmallerThanWindowMinimum() throws {
+        let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+            in: CGRect(x: 100, y: -50, width: 12, height: 12),
+            aspectRatio: StagePreset.widescreen.aspectRatio
+        ))
+
+        XCTAssertEqual(frame, CGRect(x: 100, y: -47.375, width: 12, height: 6.75))
+    }
+
+    func testEveryPresetFitsAndCentersWithinDifferentScreenShapes() throws {
+        for size in [
+            CGSize(width: 1440, height: 900),
+            CGSize(width: 900, height: 1440),
+            CGSize(width: 960, height: 960),
+            CGSize(width: 320, height: 200)
+        ] {
+            let bounds = CGRect(origin: CGPoint(x: -120, y: 80), size: size)
+            for preset in StagePreset.allCases {
+                let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
+                    in: bounds,
+                    aspectRatio: preset.aspectRatio
+                ))
+
+                XCTAssertEqual(frame.width / frame.height, preset.aspectRatio, accuracy: 0.000_001)
+                XCTAssertEqual(frame.midX, bounds.midX, accuracy: 0.000_001)
+                XCTAssertEqual(frame.midY, bounds.midY, accuracy: 0.000_001)
+                XCTAssertGreaterThanOrEqual(frame.minX, bounds.minX)
+                XCTAssertGreaterThanOrEqual(frame.minY, bounds.minY)
+                XCTAssertLessThanOrEqual(frame.maxX, bounds.maxX)
+                XCTAssertLessThanOrEqual(frame.maxY, bounds.maxY)
+                XCTAssertTrue(frame.width == bounds.width || frame.height == bounds.height)
+            }
+        }
+    }
+
+    func testCanvasFitRejectsInvalidHostGeometryAndAspectRatios() {
+        for bounds in [
+            CGRect.zero,
+            CGRect(x: 0, y: 0, width: -1, height: 540),
+            CGRect(x: 0, y: 0, width: 960, height: CGFloat.infinity),
+            CGRect(x: CGFloat.nan, y: 0, width: 960, height: 540),
+            CGRect(x: CGFloat.greatestFiniteMagnitude, y: 0,
+                   width: CGFloat.greatestFiniteMagnitude, height: 540)
+        ] {
+            XCTAssertNil(StageWindowSizing.fittedCanvasRect(
+                in: bounds,
+                aspectRatio: StagePreset.widescreen.aspectRatio
+            ))
+        }
+        for aspectRatio in [0.0, -1, .nan, .infinity] {
+            XCTAssertNil(StageWindowSizing.fittedCanvasRect(
+                in: CGRect(x: 0, y: 0, width: 960, height: 540),
+                aspectRatio: aspectRatio
+            ))
+        }
+    }
+
     func testMinimumContentSizeKeepsEveryPresetShape() {
         let expected: [StagePreset: CGSize] = [
             .widescreen: CGSize(width: 480, height: 270),
