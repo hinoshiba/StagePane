@@ -187,9 +187,12 @@ Accessibility nor Input Monitoring permission.
 
 ## Window invariants
 
-- Stage is an opaque, titled, resizable normal window with a stable instance and
-  title. It contains no editing toolbar or private controls. `sharingType =
-  .readOnly` communicates shareability to compatible APIs.
+- Stage is an opaque, borderless, resizable window with a stable instance and
+  share-picker title. Its title bar is absent; dragging its content explicitly
+  moves the window, including over captured source content, without depending
+  on SwiftUI background-drag hit testing. It contains no editing toolbar or
+  private controls. `sharingType = .readOnly` communicates shareability to
+  compatible APIs.
 - Stage Workspace has an explicit “Keep Private” title. Its name and in-product
   warning, not an unsupported `sharingType = .none` capture-exclusion hint, are
   the boundary. Application sharing, full-display sharing, or a meeting app may
@@ -209,10 +212,37 @@ Accessibility nor Input Monitoring permission.
   capture bindings, layout, and crop in the private Workspace. **Stop All** is
   the explicit action that ends every binding and clears every session layer.
 - Aspect presets use `contentAspectRatio`; changing shape does not recreate the
-  window or change its `CGWindowID`.
+  window or change its `CGWindowID`. Stage content minima follow the selected
+  aspect ratio. Hosting and sizing constraints are installed before restoring
+  the saved frame, preserving the intended initial or restored size.
+- Preset pixel dimensions are the source-capture budget and exact Audience PNG
+  export size. Live Stage artwork is fitted to the current window bounds;
+  Stage Settings reports its measured backing pixel dimensions separately and
+  refreshes them after resizing or changing displays/backing properties.
+  **Enlarge Stage for Sharing** grows the same window toward the preset pixel
+  size with its target limited to the current screen's visible frame, preserves
+  its aspect ratio, and never reduces an already larger Stage. A large Stage
+  can coexist with the smaller
+  private Workspace preview. The meeting app independently chooses its capture
+  and transmitted resolution; Stage rendering size does not guarantee either.
 - Always-on-top and all-Spaces behaviors are opt-in. Defaults match a normal
   document window.
+- Stage-only native full screen uses the existing share window in a dedicated
+  macOS Space; Workspace remains a separate private window. Workspace and the
+  Stage menu expose Enter/Exit, with Control-Command-F targeting Stage even when
+  Workspace is key. Command-1 returns to Workspace. Enter full screen before
+  selecting the exact Stage in a meeting app; window recreation is unnecessary,
+  but meeting-app sharing continuity and transmitted resolution are not guaranteed.
+- Full-screen artwork uses one preset-aspect canvas for sources, crop, ink,
+  pointer, background, safe area, watermark, and Curtain, with black outer
+  margins when needed. The drawing-size readout measures that canvas, while
+  Audience PNG export retains preset dimensions without the outer margins.
+  Native entry/exit and failure callbacks own transition state. Repeated toggle
+  and ordinary frame changes are suppressed during transitions; full screen
+  temporarily suspends always-on-top and all-Spaces behavior, then restores the
+  latest normal window settings. Windowed enlargement is unavailable in full screen.
 - Presentation Lock prevents accidental close/minimize; it never traps input.
+  It does not prevent exiting Stage full screen.
 
 ## Threading
 

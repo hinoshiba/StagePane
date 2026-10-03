@@ -2,10 +2,10 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "StagePane-0.4.1-SBOM",
-  "documentNamespace": "https://spdx.org/spdxdocs/stagepane-0.4.1-20260918",
+  "name": "StagePane-0.4.2-SBOM",
+  "documentNamespace": "https://spdx.org/spdxdocs/stagepane-0.4.2-63641923-42dc-4d55-b2a5-7fff5c609ce5",
   "creationInfo": {
-    "created": "2026-09-18T00:54:43Z",
+    "created": "2026-10-03T12:56:12Z",
     "creators": [
       "Organization: StagePane contributors",
       "Tool: manually-audited-SPDX-2.3"
@@ -15,7 +15,7 @@
     {
       "name": "StagePane",
       "SPDXID": "SPDXRef-Package-StagePane",
-      "versionInfo": "0.4.1",
+      "versionInfo": "0.4.2",
       "downloadLocation": "NOASSERTION",
       "filesAnalyzed": false,
       "licenseConcluded": "Apache-2.0",

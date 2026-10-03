@@ -5,6 +5,28 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-04
+
+### Added
+
+- Stage can use native full screen in a separate macOS Space while the private
+  Workspace stays available with Command-1. The canvas retains its preset
+  shape, and Audience PNG exports exclude the surrounding black matte.
+- Stage Settings shows the Stage window's current rendering size separately
+  from Audience PNG dimensions and offers Enlarge Stage for Sharing. Enlargement
+  preserves the share window, uses the current display to bound enlargement,
+  and never shrinks an already larger Stage; the meeting app still controls
+  sent resolution.
+
+### Fixed
+
+- The chrome-free Stage explicitly starts native window dragging from its
+  content, including when the app is inactive, while preserving edge resizing.
+- Stage initialization restores the intended initial or saved window frame
+  after installing its SwiftUI content, avoiding an unintended minimum-size
+  window. Minimum sizes now preserve each preset's aspect ratio, including
+  portrait stages.
+
 ## [0.4.1] - 2026-09-18
 
 ### Changed

@@ -40,6 +40,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @Published var privacyCurtain = true
+    @Published private(set) var stageRenderingSize: CGSize?
+    @Published private(set) var stageIsFullScreen = false
+    @Published private(set) var stageFullScreenTransitionInProgress = false
     @Published private(set) var stageInteractionMode: StageInteractionMode = .arrange
     /// Private editing focus; selecting a layer never changes audience stacking.
     @Published private(set) var selectedSourceID: StageSourceID?
@@ -592,6 +595,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalCurtain = privacyCurtain
         let originalWorkspaceSection = workspaceSection
         let originalInteractionMode = stageInteractionMode
+        let originalStageRenderingSize = stageRenderingSize
         let originalInkPreferences = annotations.preferences
         defer {
             annotations.selectTool(originalInkPreferences.tool)
@@ -611,6 +615,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             privacyMessage = originalPrivacyMessage
             privacyCurtain = originalCurtain
             workspaceSection = originalWorkspaceSection
+            stageRenderingSize = originalStageRenderingSize
         }
 
         // Public assets must never depend on the developer's local defaults.
@@ -629,6 +634,16 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         setStageInteractionMode(.arrange)
+        // A public fixture illustrates a 1080p local Stage; it is not evidence
+        // of any meeting app's transmitted resolution or this Mac's display.
+        stageRenderingSize = CGSize(width: 1_920, height: 1_080)
+        workspaceSection = .stage
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture)
+                .frame(width: 1_440, height: 900),
+            pointSize: CGSize(width: 1_440, height: 900),
+            to: directory.appendingPathComponent("stage-settings.png")
+        )
         workspaceSection = .canvas
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
@@ -876,7 +891,40 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    @objc func enlargeStageForSharing() {
+        let workspaceWasKey = workspaceWindowController?.window?.isKeyWindow == true
+        presentStage(makeKey: false)
+        stageWindowController?.enlargeForSharing()
+        if workspaceWasKey {
+            workspaceWindowController?.window?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    @objc func toggleStageFullScreen() {
+        stageWindowController?.toggleFullScreen()
+    }
+
+    func updateStageFullScreenState(isFullScreen: Bool, isTransitioning: Bool) {
+        if stageIsFullScreen != isFullScreen { stageIsFullScreen = isFullScreen }
+        if stageFullScreenTransitionInProgress != isTransitioning {
+            stageFullScreenTransitionInProgress = isTransitioning
+        }
+    }
+
+    func updateStageRenderingSize(_ size: CGSize) {
+        guard size.width.isFinite, size.height.isFinite,
+              size.width > 0, size.height > 0 else { return }
+        let pixels = CGSize(width: size.width.rounded(), height: size.height.rounded())
+        guard pixels != stageRenderingSize else { return }
+        stageRenderingSize = pixels
+    }
+
     private func presentStage(makeKey: Bool) {
+        // Preparing a source or changing a preset must keep the private
+        // Workspace's Space active while Stage occupies its own Space.
+        if !makeKey, stageIsFullScreen || stageFullScreenTransitionInProgress {
+            return
+        }
         if stageWindowController?.window?.isMiniaturized == true {
             stageWindowController?.window?.deminiaturize(nil)
         }
@@ -963,7 +1011,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
         case #selector(copyStageScreenshot), #selector(saveStageScreenshot):
-            return !isStageScreenshotInProgress
+            return !isStageScreenshotInProgress && !stageFullScreenTransitionInProgress
+        case #selector(toggleStageFullScreen):
+            menuItem.title = stageIsFullScreen
+                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen")
+            return !stageFullScreenTransitionInProgress
         case #selector(chooseSource):
             return canRequestSourceAddition
         case #selector(stopPreview):
@@ -982,7 +1035,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     private func makeStageScreenshot() -> StageSnapshot? {
         guard !isStageScreenshotInProgress else { return nil }
-        guard let window = stageWindowController?.window else {
+        guard !stageFullScreenTransitionInProgress else {
+            transientNotice = L10n.text(
+                "Stageのフルスクリーン切り替えが完了するまでお待ちください。",
+                "Wait for Stage to finish switching full screen."
+            )
+            return nil
+        }
+        guard let canvasView = stageWindowController?.stageCanvasView else {
             transientNotice = L10n.text(
                 "共有Stageを準備できませんでした。",
                 "The Share Stage is not available."
@@ -993,7 +1053,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         isStageScreenshotInProgress = true
         do {
             return try StageWindowSnapshotter.capture(
-                window: window,
+                contentView: canvasView,
                 outputSize: StageSnapshotSize(preset: preset)
             )
         } catch {

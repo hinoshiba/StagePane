@@ -10,18 +10,63 @@ This help describes StagePane's sandboxed Arrange/Crop/Draw workflow.
 1. In **StagePane Workspace — Keep Private**, choose **Add Source / ソースを追加**.
 2. In Apple's picker, choose one window, app, or display. Free supports four simultaneous sources. StagePane Pro removes StagePane's source-count limit; the number that can run in practice depends on Mac performance and operating-system constraints.
 3. Keep the Canvas and its layer list together in **Workspace / ワークスペース**. Select a layer and use **Arrange / 配置** to move or resize it, its crop button to choose its framed Stage area, or **Draw / 手書き** to annotate the Stage.
-4. In your meeting app, share the exact window named **StagePane Stage — Share This Window / このウインドウを共有**.
-5. Check the target, then choose **Reveal Stage / カーテンを開く**.
+4. To use a separate full-screen Space, choose **Enter Stage Full Screen** in Stage Settings before starting your meeting share, then press **Command-1** to return to the private Workspace.
+5. In your meeting app, share only the exact **StagePane Stage** window.
+6. Check the target, then choose **Reveal Stage / カーテンを開く**.
 
 1. **StagePane Workspace — 共有しない編集画面** で **ソースを追加** を選びます。
 2. Appleのピッカーで、ウインドウ、アプリ、または画面を1件選びます。無料版は同時に4件まで追加できます。StagePane Proにはアプリ側の件数制限がなく、実際に利用できる件数はMacの性能とOSの制約に依存します。
 3. **ワークスペース** のキャンバスとレイヤー一覧を見ながらレイヤーを選びます。**配置** で移動・サイズ変更し、切り抜きボタンでStageへ見せる枠内を選び、**手書き** でStageへ注釈を加えます。
-4. 会議アプリでは、正確に **StagePane Stage — このウインドウを共有** を選びます。
-5. 共有対象を確認してから **カーテンを開く** を選びます。
+4. 専用Spaceで使う場合は、会議での共有前にStage設定の **Stageをフルスクリーンにする** を選び、**Command-1** で手元用のWorkspaceへ戻ります。
+5. 会議アプリでは、正確に **StagePane Stage** だけを選びます。
+6. 共有対象を確認してから **カーテンを開く** を選びます。
 
 Workspace is a private working window, but macOS does not guarantee that it is hidden from full-display or whole-application sharing. Share the exact Stage window when you want only the clean audience output.
 
 Workspaceは手元用ですが、画面全体やアプリ全体の共有から必ず隠れるとは限りません。観客向け出力だけを見せる場合は、正確にStageウインドウを共有してください。
+
+## Stage size and sharing quality / Stageサイズと共有画質
+
+In windowed mode, drag the Stage's displayed content to move its titleless window. Use the
+Workspace to edit the composition. In **Stage Settings**, **Audience PNG** is
+the preset image-export size; **Current Stage Rendering Size** is the Stage
+canvas's drawing pixel size. A small Stage can reduce sharing quality. Choose
+**Enlarge Stage for Sharing** to grow the same window toward a sharing size
+that fits the current screen, keeping its shape. An already larger Stage is
+not reduced. Keep the Stage large and edit using the smaller Workspace Canvas.
+Your meeting app determines the resolution it captures and transmits; neither
+the PNG size nor Stage rendering size guarantees the resolution received.
+
+通常表示では、タイトルバーのないStageの表示内容をドラッグすると移動できます。構図の編集はWorkspaceで
+行います。**Stage設定** の **Audience PNG** は画像を書き出すプリセットのサイズ、
+**現在のStage描画サイズ** はStageキャンバスの描画ピクセル数です。Stageが小さいと、
+共有画質が低下することがあります。**共有向けにStageを拡大** を選ぶと、同じウインドウの
+形を保ちながら、現在の画面に収まる共有向けサイズへ近づけます。すでに大きいStageは
+縮小しません。Stageは大きく保ち、編集にはWorkspace内の小さなキャンバスを使えます。
+取得・送信する解像度は会議アプリが決めます。PNGやStageの描画サイズは、相手に届く
+解像度を保証するものではありません。
+
+## Full-screen Stage / Stageのフルスクリーン
+
+**Enter Stage Full Screen** places only Stage in its own macOS Space; Workspace
+stays separate and private. The selected shape is preserved, with black margins
+when the display has a different aspect ratio. Enter full screen before sharing,
+press **Command-1** to return to Workspace, then share only **StagePane Stage**
+in your meeting app. Use **Control-Command-F** or **Exit Stage Full Screen** in
+the Stage menu to return to a regular window, even with Presentation Lock on.
+Enlarge Stage for Sharing is available in windowed mode. Audience PNG keeps its
+preset dimensions and clean composition without full-screen margins. Confirm
+the meeting app's selected target; full screen does not guarantee transmitted
+resolution or sharing continuity through a Space change.
+
+**Stageをフルスクリーンにする** を選ぶとStageだけを専用Spaceに表示し、Workspaceは
+別の手元用ウインドウに保ちます。選択した形を保ち、画面の縦横比が異なる場合は黒い余白が
+入ります。共有前に切り替え、**Command-1** でWorkspaceへ戻ってから、会議アプリでは
+**StagePane Stage** だけを選びます。**Control-Command-F** またはステージメニューの
+**Stageのフルスクリーンを終了** で通常表示へ戻り、プレゼンテーションロック中も終了できます。
+共有向けの拡大は通常表示用です。Audience PNGはプリセットのサイズを保ち、フルスクリーンの
+余白を含めずに構図だけを書き出します。送信解像度やSpace切替後の共有継続は保証されないため、
+会議アプリで選択した共有対象を確認してください。
 
 ## Arrange layers and manage sources / レイヤーを配置しソースを管理する
 
@@ -104,9 +149,13 @@ Applying a crop changes only what appears on the Stage and in an Audience PNG. W
 - **Audience画像をコピー** はStageのPNGをペーストボードへ置きます。
 - **Audience画像を保存…** は選んだ場所だけへStageのPNGを1枚書き込みます。
 
-Screenshots contain the clean audience composition, not Workspace navigation or controls. StagePane does not record video and never saves images automatically.
+Screenshots use the preset's Audience PNG dimensions regardless of the Stage
+window size and contain the clean audience composition, not Workspace
+navigation or controls. StagePane does not record video and never saves images automatically.
 
-スクリーンショットには観客向けの合成結果だけが入り、Workspaceのナビゲーションや操作UIは入りません。動画は録画せず、画像を自動保存することもありません。
+スクリーンショットはStageウインドウの大きさにかかわらず、プリセットのAudience PNGサイズで
+作成します。観客向けの合成結果だけが入り、Workspaceのナビゲーションや操作UIは入りません。
+動画は録画せず、画像を自動保存することもありません。
 
 ## Access and privacy / アクセスとプライバシー
 

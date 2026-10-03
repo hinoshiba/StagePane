@@ -35,7 +35,6 @@ struct StageView: View {
                 )
             }
         }
-        .frame(minWidth: 480, minHeight: 270)
         .ignoresSafeArea()
         .clipped()
         .accessibilityElement(children: .contain)
