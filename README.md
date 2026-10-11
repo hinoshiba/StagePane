@@ -262,6 +262,16 @@ content, source names, the Stage layout of sources, and drawings are not stored.
 Your meeting app is a separate product with its own capture, transmission,
 recording, and privacy behavior.
 
+## 免責事項
+
+本サイトならびに本サイトで紹介・公開しているアプリケーション、コンテンツ、成果物およびソースコード等は、制作者が個人(hinoshiba)として制作・提供しているものです。
+
+これらは制作者が所属する組織・団体とは関係なく、所属組織・団体の公式な見解、製品、サービスまたは活動を示すものではありません。
+
+本サイトおよび本アプリケーション等に関するお問い合わせ、サポートその他の責任は制作者個人が負うものであり、所属組織・団体はこれらの提供・運営には関与しておりません。
+
+本サイトまたは本アプリケーション等の利用により生じた損害については、法令上認められる範囲において、制作者は責任を負わないものとします。
+
 ## Open source and commercial distribution
 
 Source code is available under the [Apache License 2.0](LICENSE), which permits
