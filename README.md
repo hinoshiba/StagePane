@@ -30,6 +30,9 @@ access.
 - **Privacy Curtain** — cover the Stage instantly with `Shift-Command-H`.
 - **Exact shapes** — switch between 16:9, 4:3, 9:16, and 1:1 while preserving
   the Stage window identity used by meeting apps.
+- **Double-click to maximize** — double-click the Stage's displayed content to
+  fit its shape within the current screen, then double-click again to restore
+  its previous size and position.
 - **Consent-preserving source picker** — StagePane uses the macOS system picker,
   not a hand-built list of private window names. Each picker choice authorizes
   only that source for its capture session, without a separate broad Screen
@@ -59,7 +62,9 @@ access.
 - **Focused private Workspace tools** — Arrange composes the audience Stage,
   each layer owns its crop, and Draw adds session-only pen,
   highlighter, and erasable ink while automatically hiding the audience
-  pointer. Returning to Arrange restores the selected pointer style.
+  pointer. Magnify follows your cursor with a circular 2×, 3×, or 4× lens in
+  both the private Canvas and shared Stage, without changing layout or crop.
+  Returning to Arrange restores the selected pointer style.
   StagePane never forwards input to a source app and does not request
   Accessibility or Input Monitoring permission.
 - **One-shot audience screenshots** — explicitly copy a clean Stage image or
@@ -97,7 +102,7 @@ open dist/StagePane.app
 ```
 
 The default command creates a current-Mac development build. It uses the same
-App Sandbox entitlements and Arrange/Crop/Draw feature set as the Store target, is
+App Sandbox entitlements and Arrange/Crop/Draw/Magnify feature set as the Store target, is
 ad-hoc signed, and is intended only for local testing. Developers may set
 `STAGEPANE_LOCAL_SIGNING_IDENTITY` to an existing, caller-managed signing
 identity in their Keychain before running `./build.sh`. The script does not
@@ -144,7 +149,8 @@ instructions](docs/RELEASE.md).
    Side, Stacked, or Picture in Picture.
 4. Use **Hide** or **Show** beside a layer to temporarily remove or restore it.
    The same list provides crop, replace, and remove actions. Switch to **Draw**
-   when you want to place session-only ink over the Stage.
+   when you want to place session-only ink over the Stage, or **Magnify** to
+   show a detail through a circular lens.
 5. In your meeting app, share **StagePane Stage — Share This Window**.
 6. Use `Shift-Command-H` whenever you need the Privacy Curtain.
 7. Select **Stop All** to end every ScreenCaptureKit stream and remove all
@@ -152,6 +158,11 @@ instructions](docs/RELEASE.md).
 
 Selecting an app can include all windows owned by that app. Select a single
 window instead when you need the narrowest sharing scope.
+
+In windowed mode, double-click the Stage's displayed content to maximize it
+within the current screen while preserving its aspect ratio and leaving the
+menu bar and Dock available. Double-click again to restore its previous size
+and position. Drag the content to move the window.
 
 Cropping changes only the local composition shown on the Stage and in an
 Audience PNG. Whenever a source stream is running, ScreenCaptureKit handles the
@@ -187,9 +198,16 @@ drafts only that layer's visible region privately, then changes the Stage
 composition only when you apply it. **Draw** adds bounded vector ink with a pen or translucent
 highlighter, plus a size-adjustable partial eraser
 whose gestures can be undone exactly. The document stays in memory, is hidden
-by the Curtain, and is cleared by Stop All or removal of the final source. All
-three tools remain available in every build. None requires Accessibility or
-Input Monitoring permission.
+by the Curtain, and is cleared by Stop All or removal of the final source.
+
+Choose **Magnify**, beside Arrange and Draw, then move the cursor over the
+private Canvas to show a circular lens in both the preview and shared Stage.
+Select **2×**, **3×**, or **4×** magnification; layout and crop stay unchanged.
+The lens disappears when the cursor leaves the Canvas. With the Canvas focused,
+arrow keys move the lens. Press **Escape** or choose **Exit Magnify** to return
+to Arrange. The Curtain hides the audience lens, and returning to Arrange
+restores your pointer preference. All tools remain available in every build
+and require no Accessibility or Input Monitoring permission.
 
 For PowerPoint Presenter View on one monitor, start the slide show, choose
 **Show Presenter View** from PowerPoint's lower-left presentation controls,
@@ -310,6 +328,13 @@ StagePaneは、画面共有で選択するための専用ウインドウを作�
 選択・移動・サイズ変更では重なり順は変わらず、前面・背面への操作で明示的に変えます。
 各レイヤーの「非表示」は取得を一時停止し、配置と切り抜きを保ちます。「再表示」は取得を
 再開し、新しい完全なフレームが届いてから映像を戻します。
+通常表示のStageは、表示内容をダブルクリックすると縦横比を保ったまま画面内で最大化し、
+もう一度ダブルクリックすると元の大きさと位置へ戻ります。メニューバーとDockは利用できます。
+**配置**・**手書き** の隣にある **虫眼鏡** では、手元のキャンバス上でカーソルを動かすと、
+プレビューと共有Stageの両方に円形レンズを表示します。倍率は **2×**・**3×**・**4×** から選べ、
+配置と切り抜きは変わりません。カーソルをキャンバスの外へ移すとレンズは消えます。
+キャンバスにフォーカスがある間は矢印キーでも動かせます。**Escape** または **虫眼鏡を終了** で
+配置へ戻り、選択中のポインター設定を復元します。カーテン中は観客側のレンズを隠します。
 Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてもまとめ、
 相手にはクロームのないStageだけを見せます。共有対象は
 Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は

@@ -142,8 +142,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// Retains the exact complete frame most recently accepted by the live
     /// renderer. AppKit view caching does not rasterize
     /// `AVSampleBufferDisplayLayer`, so the Stage screenshot path converts
-    /// this already-authorized source frame to an immutable `CGImage` only
-    /// when the user asks for a screenshot.
+    /// this already-authorized source frame to an immutable `CGImage` when
+    /// the user asks for a screenshot. The active magnifier copies only its
+    /// inspected region at a bounded output resolution.
     private let snapshotFrameLock = NSLock()
     private var snapshotPixelBuffer: CVPixelBuffer?
     /// The geometry AppKit has been told to lay out, which describes
@@ -1118,6 +1119,76 @@ final class SampleBufferRenderer: @unchecked Sendable {
               image.extent.width.isFinite,
               image.extent.height.isFinite else { return nil }
         return Self.snapshotImageContext.createCGImage(image, from: image.extent)
+    }
+
+    /// Copies just the visible portion under the magnifier, at its display
+    /// resolution. The image and crop are derived from one acknowledged
+    /// buffer/geometry pair without borrowing the live display layer.
+    @MainActor
+    func makeMagnifierSnapshot(
+        sourceCrop: NormalizedSourceRect,
+        destinationFrame: CGRect,
+        magnifier: StageMagnifierGeometry,
+        backingScale: CGFloat
+    ) -> (image: CGImage, frame: CGRect)? {
+        snapshotFrameLock.lock()
+        let pixelBuffer = snapshotPixelBuffer
+        let geometry = snapshotPresentationGeometry
+        let revision = snapshotPresentationRevision
+        let isAcknowledged = snapshotPresentationIsAcknowledged
+        snapshotFrameLock.unlock()
+        guard isAcknowledged, let pixelBuffer, let geometry,
+              let projection = magnifier.sourceProjection(
+                presentation: geometry,
+                sourceCrop: sourceCrop,
+                destinationFrame: destinationFrame
+              ) else { return nil }
+
+        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        let crop = projection.normalizedSurfaceRect
+        // Core Image's crop uses a bottom-left origin; composition geometry
+        // and the accepted surface crop both use a top-left origin.
+        let pixelRect = CGRect(
+            x: image.extent.minX + crop.minX * image.extent.width,
+            y: image.extent.minY + (1 - crop.maxY) * image.extent.height,
+            width: crop.width * image.extent.width,
+            height: crop.height * image.extent.height
+        ).intersection(image.extent)
+        guard !pixelRect.isNull, !pixelRect.isEmpty else { return nil }
+
+        // Bound each patch even on a very large Audience display. Crop and
+        // resample inside Core Image before making any CPU-backed CGImage.
+        let requestedScale = backingScale.isFinite ? max(1, backingScale) : 1
+        let scale = min(requestedScale, 1_024 / max(
+            projection.lensRect.width,
+            projection.lensRect.height
+        ))
+        let outputSize = CGSize(
+            width: max(1, ceil(projection.lensRect.width * scale)),
+            height: max(1, ceil(projection.lensRect.height * scale))
+        )
+        let patch = image.cropped(to: pixelRect)
+            .transformed(by: CGAffineTransform(
+                translationX: -pixelRect.minX,
+                y: -pixelRect.minY
+            ))
+            .transformed(by: CGAffineTransform(
+                scaleX: outputSize.width / pixelRect.width,
+                y: outputSize.height / pixelRect.height
+            ))
+        guard let bitmap = Self.snapshotImageContext.createCGImage(
+            patch,
+            from: CGRect(origin: .zero, size: outputSize)
+        ) else { return nil }
+
+        // A stop, pause, or geometry boundary can occur during conversion.
+        // Do not return pixels whose presentation was revoked in the meantime.
+        snapshotFrameLock.lock()
+        let stillAuthorized = snapshotPresentationRevision == revision &&
+            snapshotPresentationIsAcknowledged && snapshotPixelBuffer != nil
+        snapshotFrameLock.unlock()
+        guard stillAuthorized else { return nil }
+        return (bitmap, projection.lensRect)
     }
 
     /// `reusingPublishedGeometry` is the geometry AppKit has already laid out,

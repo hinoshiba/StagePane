@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 private final class StageShareWindow: NSWindow {
     var exitFullScreen: (() -> Void)?
+    var toggleMaximized: (() -> Void)?
     // Borderless NSWindow instances are not key or main by default. The Stage
     // deliberately stays chrome-free, but it must still become the front
     // window when the user clicks it or chooses Show Share Stage so standard
@@ -21,10 +22,10 @@ private final class StageShareWindow: NSWindow {
     }
 
     override func sendEvent(_ event: NSEvent) {
-        // Stage contains audience artwork only. Start a native window drag
-        // explicitly so movement does not depend on SwiftUI's background
-        // mouse-event forwarding. Leave the resize perimeter and sheets to
-        // AppKit, and never try to move a full-screen window.
+        // Stage contains audience artwork only. Handle double-click zoom and
+        // native dragging explicitly so neither depends on SwiftUI forwarding
+        // background mouse events. Leave the resize perimeter and sheets to
+        // AppKit, and never change a full-screen window's frame.
         if event.type == .leftMouseDown,
            event.window === self,
            isMovable,
@@ -36,6 +37,10 @@ private final class StageShareWindow: NSWindow {
            ) {
             if !NSApp.isActive { NSApp.activate() }
             makeKeyAndOrderFront(nil)
+            if event.clickCount == 2 {
+                toggleMaximized?()
+                return
+            }
             performDrag(with: event)
             // Window Server owns the drag; a mouse-up need not be delivered.
             return
@@ -114,6 +119,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     private var pendingPresetResize = false
     private var frameAutosaveIsSuspended = false
     private var failureRecovery: Task<Void, Never>?
+    private var contentRectBeforeMaximize: NSRect?
 
     var stageCanvasView: NSView {
         canvasHost.view.layoutSubtreeIfNeeded()
@@ -159,6 +165,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
         window.delegate = self
         window.exitFullScreen = { [weak self] in self?.toggleFullScreen() }
+        window.toggleMaximized = { [weak self] in self?.toggleMaximized() }
         canvasHost.onCanvasLayout = { [weak self] in self?.updateRenderingSize() }
         applyPreset(controller.preset, resize: false)
         // Assigning contentViewController resizes the window to the hosting
@@ -192,6 +199,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
             return
         }
 
+        contentRectBeforeMaximize = nil
         let size = StageWindowSizing.suggestedContentSize(for: preset)
         var frame = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height))
         frame.origin.x = window.frame.midX - frame.width / 2
@@ -201,6 +209,30 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         // audience window without taking away that reset gesture.
         guard frame != window.frame else { return }
         window.setFrame(frame, display: true, animate: !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+        updateRenderingSize()
+    }
+
+    private func toggleMaximized() {
+        guard allowsWindowGeometryChanges,
+              let controller, let window,
+              let screen = window.screen ?? NSScreen.main else { return }
+        let available = window.contentRect(forFrameRect: screen.visibleFrame)
+        let contentRect: NSRect
+        if let previous = contentRectBeforeMaximize {
+            guard let restored = StageWindowSizing.restoredContentRect(previous, in: available) else { return }
+            contentRect = restored
+            contentRectBeforeMaximize = nil
+        } else {
+            guard let maximized = StageWindowSizing.fittedCanvasRect(
+                in: available,
+                aspectRatio: controller.preset.aspectRatio
+            ) else { return }
+            contentRectBeforeMaximize = window.contentRect(forFrameRect: window.frame)
+            contentRect = maximized
+        }
+        // Keep the preset shape and the exact window being shared. The menu
+        // bar and Dock remain available; native full screen is a separate action.
+        window.setFrame(window.frameRect(forContentRect: contentRect), display: true)
         updateRenderingSize()
     }
 
@@ -236,6 +268,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         )
         // Keep this exact share window and its capture identity. An immediate
         // resize also avoids sending intermediate animation sizes to a meeting.
+        contentRectBeforeMaximize = nil
         window.setFrame(frame, display: true)
         updateRenderingSize()
         controller.transientNotice = L10n.text(
@@ -354,6 +387,10 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidResize(_ notification: Notification) {
         updateRenderingSize()
+    }
+
+    func windowWillStartLiveResize(_ notification: Notification) {
+        contentRectBeforeMaximize = nil
     }
 
     func windowDidChangeScreen(_ notification: Notification) {

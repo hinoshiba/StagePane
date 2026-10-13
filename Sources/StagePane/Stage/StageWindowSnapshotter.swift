@@ -96,6 +96,7 @@ enum StageWindowSnapshotter {
             }
             return image
         }
+        refreshMagnifierFrames(in: contentView)
 
         let bitmap: NSBitmapImageRep
         do {
@@ -134,6 +135,16 @@ enum StageWindowSnapshotter {
             throw StageWindowSnapshotError.imageEncodingFailed
         }
         return StageSnapshot(image: image, pngData: pngData)
+    }
+
+    private static func refreshMagnifierFrames(in view: NSView) {
+        guard !view.isHidden else { return }
+        if let magnifier = view as? StageMagnifierSourcesNSView {
+            magnifier.refreshFrames()
+        }
+        for child in view.subviews {
+            refreshMagnifierFrames(in: child)
+        }
     }
 
     private static func makeBitmap(

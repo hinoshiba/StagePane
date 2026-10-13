@@ -383,9 +383,9 @@ struct StageWorkspaceView: View {
                     .labelsHidden()
                     .pickerStyle(.segmented)
                     .frame(
-                        minWidth: compact ? 190 : 220,
-                        idealWidth: compact ? 210 : 250,
-                        maxWidth: compact ? 230 : 280
+                        minWidth: compact ? 230 : 280,
+                        idealWidth: compact ? 260 : 300,
+                        maxWidth: compact ? 280 : 320
                     )
                     .accessibilityLabel(L10n.text(
                         "ワークスペースのモード",
@@ -395,8 +395,8 @@ struct StageWorkspaceView: View {
                         controller.stageInteractionMode
                     ))
                     .accessibilityHint(L10n.text(
-                        "配置または手書きを選びます。\(L10n.perLayerCropEntryHint)",
-                        "Choose Arrange or Draw. \(L10n.perLayerCropEntryHint)"
+                        "配置・手書き・虫眼鏡を選びます。\(L10n.perLayerCropEntryHint)",
+                        "Choose Arrange, Draw, or Magnify. \(L10n.perLayerCropEntryHint)"
                     ))
                 }
 
@@ -793,6 +793,17 @@ struct StageWorkspaceView: View {
                         )
                         .help(L10n.cropResetDraftHint)
 
+                    case .magnify:
+                        StageMagnifierToolShelf(store: controller.magnifier)
+                            .disabled(!capture.isCaptureActive)
+
+                        Button {
+                            controller.setStageInteractionMode(.arrange)
+                        } label: {
+                            Label(L10n.text("虫眼鏡を終了", "Exit Magnify"), systemImage: "xmark")
+                        }
+                        .keyboardShortcut(.cancelAction)
+
                     case .annotate:
                         StageInkToolShelf(store: controller.annotations)
 
@@ -1082,6 +1093,7 @@ struct StageWorkspaceView: View {
         case .arrange: "rectangle.3.group"
         case .crop: "crop"
         case .annotate: "pencil.tip"
+        case .magnify: "plus.magnifyingglass"
         }
     }
 
@@ -1133,6 +1145,35 @@ struct StageWorkspaceView: View {
 
     private var displayedSourceCount: Int {
         snapshotFixture?.sourceCount ?? capture.sources.count
+    }
+}
+
+private struct StageMagnifierToolShelf: View {
+    @ObservedObject var store: StageMagnifierStore
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Picker(L10n.text("拡大倍率", "Magnification"), selection: $store.magnification) {
+                Text("2×").tag(2.0)
+                Text("3×").tag(3.0)
+                Text("4×").tag(4.0)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 160)
+            .accessibilityLabel(L10n.text("拡大倍率", "Magnification"))
+            .help(L10n.text("虫眼鏡の拡大倍率", "Magnifier zoom level"))
+
+            Button {
+                store.center()
+            } label: {
+                Label(L10n.text("中央に表示", "Show at Center"), systemImage: "scope")
+            }
+            .help(L10n.text(
+                "キャンバスにカーソルを置くと追従します。矢印キーでも移動できます。",
+                "The lens follows the pointer over the canvas. Arrow keys also move it."
+            ))
+        }
     }
 }
 

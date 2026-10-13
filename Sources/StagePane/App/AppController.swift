@@ -127,9 +127,10 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     let capture: CaptureCoordinator
     let purchases: ProPurchaseStore
     let annotations = StageAnnotationStore()
+    let magnifier = StageMagnifierStore()
 
     var annotationTool: StageInkTool { annotations.preferences.tool }
-    var isAudiencePointerSuppressedByDrawMode: Bool {
+    var isAudiencePointerSuppressedByInteractionMode: Bool {
         stageInteractionMode.suppressesAudiencePointer
     }
 
@@ -379,6 +380,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
         guard stageInteractionMode != mode else { return }
         annotations.endStroke()
+        magnifier.hide()
         stageInteractionMode = mode
         capture.setPointerStyle(effectivePointerStyle)
     }
@@ -1207,6 +1209,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func workspaceDidBecomeHidden() {
         workspaceIsVisible = false
         annotations.endStroke()
+        magnifier.hide()
     }
 
     func workspaceDidBecomeVisible() {
@@ -1302,6 +1305,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
         discardCropEditingIfSourceUnavailable()
+        if !isActive { magnifier.hide() }
         let previousPhase = previousCapturePhase
         let wasActive = previousCaptureWasActive
         guard phase != previousPhase || isActive != wasActive else { return }

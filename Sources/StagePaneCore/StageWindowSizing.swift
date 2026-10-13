@@ -14,11 +14,7 @@ public enum StageWindowSizing {
         in bounds: CGRect,
         aspectRatio: Double
     ) -> CGRect? {
-        guard isValid(bounds.size),
-              bounds.origin.x.isFinite,
-              bounds.origin.y.isFinite,
-              bounds.maxX.isFinite,
-              bounds.maxY.isFinite,
+        guard isValid(bounds),
               aspectRatio.isFinite,
               aspectRatio > 0 else { return nil }
 
@@ -28,6 +24,22 @@ public enum StageWindowSizing {
         return CGRect(
             x: bounds.minX + (bounds.width - size.width) / 2,
             y: bounds.minY + (bounds.height - size.height) / 2,
+            width: size.width,
+            height: size.height
+        )
+    }
+
+    /// Restores a saved window content rect, keeping it visible if the user
+    /// moved the maximized window to a smaller or differently placed display.
+    /// Shrinking preserves its shape; an already visible rect stays unchanged.
+    public static func restoredContentRect(_ saved: CGRect, in available: CGRect) -> CGRect? {
+        guard isValid(saved), isValid(available) else { return nil }
+        let scale = min(1, available.width / saved.width, available.height / saved.height)
+        let size = CGSize(width: saved.width * scale, height: saved.height * scale)
+        guard isValid(size) else { return nil }
+        return CGRect(
+            x: min(max(saved.minX, available.minX), available.maxX - size.width),
+            y: min(max(saved.minY, available.minY), available.maxY - size.height),
             width: size.width,
             height: size.height
         )
@@ -93,5 +105,10 @@ public enum StageWindowSizing {
 
     private static func isValid(_ size: CGSize) -> Bool {
         size.width.isFinite && size.height.isFinite && size.width > 0 && size.height > 0
+    }
+
+    private static func isValid(_ rect: CGRect) -> Bool {
+        isValid(rect.size) && rect.origin.x.isFinite && rect.origin.y.isFinite
+            && rect.maxX.isFinite && rect.maxY.isFinite
     }
 }

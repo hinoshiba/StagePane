@@ -118,7 +118,7 @@ struct AppearancePanel: View {
             PointerStylePicker(
                 selection: $controller.pointerStyle,
                 appearance: $controller.pointerAppearance,
-                isSuppressedByDrawMode: controller.isAudiencePointerSuppressedByDrawMode
+                isSuppressedByInteractionMode: controller.isAudiencePointerSuppressedByInteractionMode
             )
             Divider().padding(.leading, 42)
             PreferenceToggle(
@@ -691,7 +691,7 @@ private struct PreferenceToggle: View {
 private struct PointerStylePicker: View {
     @Binding var selection: StagePaneCore.PointerStyle
     @Binding var appearance: PointerAppearance
-    let isSuppressedByDrawMode: Bool
+    let isSuppressedByInteractionMode: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -729,11 +729,11 @@ private struct PointerStylePicker: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(true)
 
-                if isSuppressedByDrawMode {
+                if isSuppressedByInteractionMode {
                     Label {
                         Text(L10n.text(
-                            "手書き中は共有Stageのポインターを自動的に隠します。配置へ戻すと、この設定を復元します。",
-                            "Draw automatically hides the pointer on the shared Stage. Returning to Arrange restores this setting."
+                            "手書き・虫眼鏡モードでは共有Stageのポインターを自動的に隠します。配置へ戻すと、この設定を復元します。",
+                            "Draw and Magnify automatically hide the pointer on the shared Stage. Returning to Arrange restores this setting."
                         ))
                     } icon: {
                         Image(systemName: "pencil.tip")
@@ -754,10 +754,10 @@ private struct PointerStylePicker: View {
 
     private var pointerAccessibilityHint: String {
         let detail = L10n.pointerStyleDetail(selection)
-        guard isSuppressedByDrawMode else { return detail }
+        guard isSuppressedByInteractionMode else { return detail }
         return detail + " " + L10n.text(
-            "手書き中は自動的に非表示になり、配置へ戻すと復元されます。",
-            "It is hidden automatically while drawing and restored when you return to Arrange."
+            "手書き・虫眼鏡モードでは自動的に非表示になり、配置へ戻すと復元されます。",
+            "It is hidden automatically in Draw and Magnify and restored when you return to Arrange."
         )
     }
 }

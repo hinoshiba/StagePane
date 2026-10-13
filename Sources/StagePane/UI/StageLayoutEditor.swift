@@ -124,6 +124,18 @@ struct StageLayoutEditor: View {
                                 store: controller.annotations
                             )
                         }
+                    case .magnify:
+                        if capture.isCaptureActive {
+                            StageMagnifierPresentation(
+                                store: controller.magnifier,
+                                entries: previewEntries,
+                                theme: controller.theme,
+                                annotations: controller.annotations
+                            )
+                            StageMagnifierInputOverlay(store: controller.magnifier) {
+                                controller.setStageInteractionMode(.arrange)
+                            }
+                        }
                     }
                 }
 
@@ -305,6 +317,7 @@ struct StageLayoutEditor: View {
         case .arrange: L10n.text("ステージ配置エディタ", "Stage layout editor")
         case .crop: L10n.text("ソース切り抜きエディタ", "Source crop editor")
         case .annotate: L10n.text("ステージ手書きキャンバス", "Stage drawing canvas")
+        case .magnify: L10n.text("ステージ虫眼鏡キャンバス", "Stage magnifier canvas")
         }
     }
 
@@ -317,6 +330,8 @@ struct StageLayoutEditor: View {
             )
         case .crop:
             L10n.cropEditorAccessibilityHint
+        case .magnify:
+            L10n.stageInteractionModeDetail(.magnify)
         case .annotate:
             if controller.annotationTool == .eraser {
                 L10n.text(

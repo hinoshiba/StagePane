@@ -359,6 +359,7 @@ enum L10n {
         case .arrange: text("配置", "Arrange")
         case .crop: text("切り抜き", "Crop")
         case .annotate: text("手書き", "Draw")
+        case .magnify: text("虫眼鏡", "Magnify")
         }
     }
 
@@ -376,6 +377,11 @@ enum L10n {
             text(
                 "対象レイヤーの表示範囲を下書きします。Stageは適用まで変わりません。",
                 "Draft the target layer's visible area. The Stage changes only when you apply it."
+            )
+        case .magnify:
+            text(
+                "キャンバス上のカーソル周辺を拡大し、共有Stageにも表示します。Escで配置に戻ります。",
+                "Move over the canvas to magnify the same area on the shared Stage. Press Esc to return to Arrange."
             )
         case .annotate:
             if annotationTool == .eraser {
