@@ -1,8 +1,8 @@
 # StagePane Help / StagePane の使い方
 
-This help describes StagePane's sandboxed Arrange/Crop/Draw workflow.
+This help describes StagePane's sandboxed Arrange/Crop/Draw/Magnify workflow.
 
-このヘルプでは、サンドボックス内で動くStagePaneの配置・切り抜き・手書きワークフローを
+このヘルプでは、サンドボックス内で動くStagePaneの配置・切り抜き・手書き・虫眼鏡ワークフローを
 説明します。
 
 ## Create and share a Stage / Stageを作って共有する
@@ -27,7 +27,10 @@ Workspaceは手元用ですが、画面全体やアプリ全体の共有から�
 
 ## Stage size and sharing quality / Stageサイズと共有画質
 
-In windowed mode, drag the Stage's displayed content to move its titleless window. Use the
+In windowed mode, drag the Stage's displayed content to move its titleless window.
+Double-click the content to maximize the window within the current screen while
+preserving its aspect ratio and leaving the menu bar and Dock available.
+Double-click again to restore its previous size and position. Use the
 Workspace to edit the composition. In **Stage Settings**, **Audience PNG** is
 the preset image-export size; **Current Stage Rendering Size** is the Stage
 canvas's drawing pixel size. A small Stage can reduce sharing quality. Choose
@@ -37,8 +40,10 @@ not reduced. Keep the Stage large and edit using the smaller Workspace Canvas.
 Your meeting app determines the resolution it captures and transmits; neither
 the PNG size nor Stage rendering size guarantees the resolution received.
 
-通常表示では、タイトルバーのないStageの表示内容をドラッグすると移動できます。構図の編集はWorkspaceで
-行います。**Stage設定** の **Audience PNG** は画像を書き出すプリセットのサイズ、
+通常表示では、タイトルバーのないStageの表示内容をドラッグすると移動できます。
+表示内容をダブルクリックすると、縦横比を保ったまま現在の画面内で最大化し、
+もう一度ダブルクリックすると元の大きさと位置へ戻ります。メニューバーとDockは利用できます。
+構図の編集はWorkspaceで行います。**Stage設定** の **Audience PNG** は画像を書き出すプリセットのサイズ、
 **現在のStage描画サイズ** はStageキャンバスの描画ピクセル数です。Stageが小さいと、
 共有画質が低下することがあります。**共有向けにStageを拡大** を選ぶと、同じウインドウの
 形を保ちながら、現在の画面に収まる共有向けサイズへ近づけます。すでに大きいStageは
@@ -135,6 +140,14 @@ Applying a crop changes only what appears on the Stage and in an Audience PNG. W
   partial Eraser. Draw automatically hides the audience pointer; returning to
   Arrange or opening a layer crop restores the selected pointer style. Ink and
   erase actions stay in memory; Undo restores erased areas.
+- **Magnify / 虫眼鏡**, beside Arrange and Draw, follows the cursor over the
+  private Canvas with a circular lens in both the preview and shared Stage.
+  Choose **2×**, **3×**, or **4×** magnification; layout and crop stay unchanged.
+  The lens disappears when the cursor leaves the Canvas, and arrow keys move
+  it when the Canvas has focus. Press **Escape** or choose **Exit Magnify /
+  虫眼鏡を終了** to return to Arrange and restore your pointer preference.
+  Magnify hides the audience pointer while active; the Curtain hides the
+  audience lens.
 - **Laser pointer / レーザーポインター** can be customized in Appearance.
 - The StagePane mark is shown in Free and can be turned off with StagePane Pro.
 - **Copy Audience Image** places one Stage PNG on the pasteboard.
@@ -144,6 +157,12 @@ Applying a crop changes only what appears on the Stage and in an Audience PNG. W
 - **手書き** ではペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムを使えます。
   手書き中は観客側のポインターを自動で隠し、配置へ戻るかレイヤーの切り抜きを開くと選択中の設定を復元します。
   インクと消去操作はメモリ内だけに保持され、取り消すと消した部分も元に戻ります。
+- **虫眼鏡** は配置・手書きの隣から選べます。手元のキャンバス上でカーソルを動かすと、
+  プレビューと共有Stageの両方に円形レンズを表示します。倍率は **2×**・**3×**・**4×** から選べ、
+  配置と切り抜きは変わりません。カーソルをキャンバスの外へ移すとレンズは消えます。
+  キャンバスにフォーカスがある間は矢印キーでも動かせます。**Escape** または **虫眼鏡を終了** で
+  配置へ戻り、選択中のポインター設定を復元します。虫眼鏡中は観客側のポインターを自動で隠し、
+  カーテン中は観客側のレンズも隠します。
 - **レーザーポインター** は外観設定で色、大きさ、発光を調整できます。
 - StagePaneロゴは無料版で表示され、StagePane Proでは外観設定から無効にできます。
 - **Audience画像をコピー** はStageのPNGをペーストボードへ置きます。
@@ -163,9 +182,9 @@ Each source is approved in Apple's content-sharing picker for that capture sessi
 
 各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は取得を始めません。
 
-Arrange, Crop, and Draw stay inside StagePane. StagePane does not forward clicks, keys, or drags to source applications, and it never requests Accessibility or Input Monitoring permission.
+Arrange, Crop, Draw, and Magnify stay inside StagePane. StagePane does not forward clicks, keys, or drags to source applications, and it never requests Accessibility or Input Monitoring permission.
 
-配置、切り抜き、手書きはStagePane内だけで動作します。StagePaneは共有元アプリへクリック、キー入力、ドラッグを転送せず、アクセシビリティや入力監視の許可も要求しません。
+配置、切り抜き、手書き、虫眼鏡はStagePane内だけで動作します。StagePaneは共有元アプリへクリック、キー入力、ドラッグを転送せず、アクセシビリティや入力監視の許可も要求しません。
 
 StagePane has no account, advertising, analytics, microphone/audio capture, publisher server, or screen upload. Apple StoreKit handles the optional Pro product, purchase, entitlement, and restore flow. See the bundled Privacy Policy for the complete data-flow description.
 

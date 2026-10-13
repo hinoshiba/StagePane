@@ -4,6 +4,47 @@ import XCTest
 @testable import StagePaneCore
 
 final class StageWindowSizingTests: XCTestCase {
+    func testRestoringVisibleWindowKeepsItsExactFrame() {
+        let saved = CGRect(x: 300, y: 180, width: 960, height: 540)
+        XCTAssertEqual(
+            StageWindowSizing.restoredContentRect(saved, in: CGRect(x: 0, y: 40, width: 1440, height: 860)),
+            saved
+        )
+    }
+
+    func testRestoringOnAnotherDisplayMovesWindowInsideVisibleFrame() {
+        XCTAssertEqual(
+            StageWindowSizing.restoredContentRect(
+                CGRect(x: 100, y: 100, width: 960, height: 540),
+                in: CGRect(x: -1440, y: 40, width: 1440, height: 860)
+            ),
+            CGRect(x: -960, y: 100, width: 960, height: 540)
+        )
+    }
+
+    func testRestoringOnSmallerDisplayPreservesShapeAndKeepsWholeWindowVisible() throws {
+        let restored = try XCTUnwrap(StageWindowSizing.restoredContentRect(
+            CGRect(x: -1200, y: -100, width: 1280, height: 720),
+            in: CGRect(x: 0, y: 40, width: 900, height: 600)
+        ))
+        XCTAssertEqual(restored, CGRect(x: 0, y: 40, width: 900, height: 506.25))
+        XCTAssertEqual(restored.width / restored.height, 16.0 / 9.0, accuracy: 0.000_001)
+    }
+
+    func testWindowRestorationRejectsInvalidRects() {
+        let valid = CGRect(x: 0, y: 40, width: 960, height: 540)
+        for invalid in [
+            CGRect.zero,
+            CGRect(x: CGFloat.nan, y: 0, width: 960, height: 540),
+            CGRect(x: 0, y: 0, width: CGFloat.infinity, height: 540),
+            CGRect(x: CGFloat.greatestFiniteMagnitude, y: 0,
+                   width: CGFloat.greatestFiniteMagnitude, height: 540)
+        ] {
+            XCTAssertNil(StageWindowSizing.restoredContentRect(invalid, in: valid))
+            XCTAssertNil(StageWindowSizing.restoredContentRect(valid, in: invalid))
+        }
+    }
+
     func testWideCanvasAddsOnlyVerticalMatteOnSixteenByTenScreen() throws {
         let frame = try XCTUnwrap(StageWindowSizing.fittedCanvasRect(
             in: CGRect(x: 0, y: 0, width: 1440, height: 900),

@@ -13,6 +13,14 @@ struct StageView: View {
                 ZStack {
                     StageCompositeDisplayView(entries: stageEntries)
                     StageAnnotationOverlay(store: controller.annotations)
+                    if controller.stageInteractionMode == .magnify {
+                        StageMagnifierPresentation(
+                            store: controller.magnifier,
+                            entries: stageEntries,
+                            theme: controller.theme,
+                            annotations: controller.annotations
+                        )
+                    }
                 }
                     .accessibilityLabel(L10n.text(
                         "共有ステージ。ソースは\(capture.sources.count)件です。",

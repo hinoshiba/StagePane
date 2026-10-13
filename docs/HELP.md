@@ -29,7 +29,10 @@ window when you want to limit the source more narrowly.
 
 The Stage has no title bar. In windowed mode, drag its displayed content to move the window;
 composition editing stays in the private Workspace. The intended initial size
-or saved window size is preserved when the Stage opens.
+or saved window size is preserved when the Stage opens. Double-click its displayed
+content to maximize the window within the current screen while preserving its
+aspect ratio. The menu bar and Dock remain available. Double-click again to
+restore its previous size and position.
 
 In **Stage Settings**, **Audience PNG** shows the preset dimensions used for
 image export. **Current Stage Rendering Size** shows the Stage canvas's drawing
@@ -44,7 +47,9 @@ Stage size and PNG dimensions do not guarantee the resolution your audience rece
 
 Stageにはタイトルバーがありません。通常表示では、表示内容をドラッグするとウインドウを移動できます。
 構図の編集は手元用のWorkspaceで行います。Stageを開く際は、初期サイズまたは保存済みの
-ウインドウサイズを保持します。
+ウインドウサイズを保持します。表示内容をダブルクリックすると、縦横比を保ったまま
+現在の画面内で最大化します。メニューバーとDockは利用できます。もう一度ダブルクリックすると、
+元の大きさと位置へ戻ります。
 
 **Stage設定** の **Audience PNG** は、画像の書き出しに使うプリセットのサイズです。
 **現在のStage描画サイズ** はStageキャンバスの描画ピクセル数で、大きさや表示先の画面が
@@ -236,11 +241,11 @@ StagePaneの外側でmacOSが1件のソース共有を終了した場合、Stage
 
 ## Workspace tools / Workspaceのツール
 
-StagePane provides the global **Arrange / 配置** and **Draw / 手書き** modes, plus
+StagePane provides the global **Arrange / 配置**, **Draw / 手書き**, and **Magnify / 虫眼鏡** modes, plus
 a **Crop / 切り抜き** action owned by every layer. None of these tools sends input to source applications or needs macOS Accessibility or Input
 Monitoring permission.
 
-StagePaneではStage全体の **配置** と **手書き** モードに加え、各レイヤーに **切り抜き** 操作があります。いずれも共有元アプリへ入力を
+StagePaneではStage全体の **配置**・**手書き**・**虫眼鏡** モードに加え、各レイヤーに **切り抜き** 操作があります。いずれも共有元アプリへ入力を
 送らず、macOSのアクセシビリティ許可や入力監視許可も必要としません。
 
 - **Arrange / 配置** moves and proportionally resizes the selected content while preserving
@@ -261,6 +266,14 @@ StagePaneではStage全体の **配置** と **手書き** モードに加え、
   Workspace and public Stage, stays only in memory, is hidden from the audience
   by the Curtain, and is cleared by **Stop All** or removal of the final source.
   Use **Undo / 取り消す** or **Clear / すべて消す** to edit it.
+- **Magnify / 虫眼鏡** sits beside Arrange and Draw. Move the cursor over the
+  private Canvas to show a circular lens in both the preview and shared Stage.
+  Choose **2×**, **3×**, or **4×** magnification without changing layout or crop.
+  The lens disappears when the cursor leaves the Canvas. With the Canvas
+  focused, arrow keys also move it. Press **Escape** or choose **Exit Magnify /
+  虫眼鏡を終了** to return to Arrange and restore your pointer preference.
+  Magnify hides the audience pointer while active; the Curtain hides the
+  audience lens.
 
 - **配置** は選択中の映像の重なり順を保って移動し、縦横比を保ってサイズ変更します。重なり順は
   前面・背面への操作で明示的に変更し、編集ジェスチャーは取得元アプリへ送りません。
@@ -274,6 +287,12 @@ StagePaneではStage全体の **配置** と **手書き** モードに加え、
   切り抜きへ戻ると選択中のポインター設定を復元します。線は手元のWorkspaceと共有Stageに表示され、
   メモリ内だけに保持されます。カーテン中は相手側から隠れ、**すべて停止** または最後の
   ソース解除で消去されます。**取り消す** と **すべて消す** で編集できます。
+- **虫眼鏡** は配置・手書きの隣から選べます。手元のキャンバス上でカーソルを動かすと、
+  プレビューと共有Stageの両方に円形レンズを表示します。倍率は **2×**・**3×**・**4×** から選べ、
+  配置と切り抜きは変わりません。カーソルをキャンバスの外へ移すとレンズは消えます。
+  キャンバスにフォーカスがある間は矢印キーでも動かせます。**Escape** または **虫眼鏡を終了** で
+  配置へ戻り、選択中のポインター設定を復元します。虫眼鏡中は観客側のポインターを自動で隠し、
+  カーテン中は観客側のレンズも隠します。
 
 Cropping is a local composition mask, not a narrower macOS capture permission.
 Whenever the source stream runs, ScreenCaptureKit handles the complete window,
