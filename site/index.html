@@ -1,347 +1,236 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StagePane — 見せたいものだけ、ひとつのステージへ。</title>
-<meta content="StagePaneは、キャンバスとレイヤー一覧を並べた手元用Workspaceで、重なった画面の移動・表示切替・切り抜き・手書きを整えるオープンソースのmacOSアプリです。" name="description"/>
-<meta content="#0c1018" name="theme-color"/>
-<meta content="website" property="og:type"/>
-<meta content="StagePane" property="og:site_name"/>
-<meta content="ja_JP" property="og:locale"/>
-<meta content="en_US" property="og:locale:alternate"/>
-<meta content="StagePane — 見せたいものだけ、ひとつのステージへ。" property="og:title"/>
-<meta content="キャンバスの横でレイヤーを選び、重なり順を保って移動。目のボタンで一時的に隠し、整えたStageを共有。" property="og:description"/>
-<meta content="https://stagepane.hinoshiba.com/" property="og:url"/>
-<meta content="https://stagepane.hinoshiba.com/assets/screenshots/ja/arrange.webp" property="og:image"/>
-<meta content="image/webp" property="og:image:type"/>
-<meta content="2880" property="og:image:width"/>
-<meta content="1800" property="og:image:height"/>
-<meta content="3つの合成レイヤーとキャンバスを並べて操作するStagePane Workspace" property="og:image:alt"/>
-<meta content="summary_large_image" name="twitter:card"/>
-<meta content="StagePane — 見せたいものだけ、ひとつのステージへ。" name="twitter:title"/>
-<meta content="キャンバスの横でレイヤーを選び、重なり順を保って移動。目のボタンで一時的に隠し、整えたStageを共有。" name="twitter:description"/>
-<meta content="https://stagepane.hinoshiba.com/assets/screenshots/ja/arrange.webp" name="twitter:image"/>
-<meta content="3つの合成レイヤーとキャンバスを並べて操作するStagePane Workspace" name="twitter:image:alt"/>
-<link href="https://stagepane.hinoshiba.com/" rel="canonical"/>
-<link href="https://stagepane.hinoshiba.com/" hreflang="ja" rel="alternate"/>
-<link href="https://stagepane.hinoshiba.com/?lang=en" hreflang="en" rel="alternate"/>
-<link href="https://stagepane.hinoshiba.com/" hreflang="x-default" rel="alternate"/>
-<link href="assets/StagePaneMark.svg" rel="icon" type="image/svg+xml"/>
-<link href="styles.css?v=20260824" rel="stylesheet"/>
-<script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "StagePane",
-        "applicationCategory": "ProductivityApplication",
-        "operatingSystem": "macOS 14 or later",
-        "description": "StagePaneは、共有用のStageと、キャンバス横の常設レイヤー一覧で配置・表示切替・切り抜き・手書きを行う手元用Workspaceを備えるオープンソースのmacOSアプリです。",
-        "url": "https://stagepane.hinoshiba.com/",
-        "sameAs": "https://github.com/hinoshiba/StagePane",
-        "license": "https://www.apache.org/licenses/LICENSE-2.0"
-      }
-    </script>
-<script defer="" src="site.js?v=20260912-unified-workspace"></script></head>
-<body>
-<a class="skip-link" data-i18n="t1" href="#main">本文へ移動</a>
-<header class="site-header">
-<div class="shell header-inner">
-<a aria-label="StagePane ホーム" class="brand" data-i18n="t2" href="#top">
-<img alt="" height="42" src="assets/StagePaneMark.svg" width="42"/>
-<span>StagePane</span>
-</a>
-<nav aria-label="メインナビゲーション" class="site-nav" data-i18n="t3">
-<a data-i18n="t4" href="#features">機能</a>
-<a data-i18n="t5" href="#examples">実画面</a>
-<a data-i18n="t6" href="#how-it-works">使い方</a>
-<a data-i18n="t7" href="#privacy">プライバシー</a>
-<a data-i18n="t8" href="#support">サポート</a>
-<a class="nav-language" data-i18n="t9" data-language="en" href="?lang=en" hreflang="en" lang="en">EN</a>
-<a class="nav-github" href="https://github.com/hinoshiba/StagePane">GitHub</a>
-<a data-i18n="t10" href="#terms">販売ポリシー</a><a data-i18n="t11" href="https://www.hinoshiba.com/products/">ほかの作品</a></nav>
+<meta name="description" data-i18n="meta-description" content="複数の資料やアプリをひとつの共有ウインドウに整えるmacOSアプリ。無料で4ソース、買い切りのProはアプリ側の件数制限なし。開発中の新UIも紹介しています。">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161617" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="StagePane">
+<meta property="og:locale" data-i18n="meta-locale" content="ja_JP">
+<meta property="og:locale:alternate" data-i18n="meta-alternate-locale" content="en_US">
+<meta property="og:title" data-i18n="meta-title" content="StagePane — 見せたいものだけ、ひとつのステージへ。">
+<meta property="og:description" data-i18n="meta-description" content="複数の資料やアプリをひとつの共有ウインドウに整えるmacOSアプリ。無料で4ソース、買い切りのProはアプリ側の件数制限なし。開発中の新UIも紹介しています。">
+<meta property="og:url" data-i18n="meta-url" content="https://stagepane.hinoshiba.com/">
+<meta property="og:image" data-i18n="meta-image" content="https://stagepane.hinoshiba.com/assets/screenshots/ja/workspace-light.webp">
+<meta property="og:image:type" content="image/webp">
+<meta property="og:image:width" content="1800">
+<meta property="og:image:height" content="1240">
+<meta property="og:image:alt" data-i18n="meta-image-alt" content="開発中のStagePane Workspaceの合成サンプル。App Store公開版とは一部異なります。">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" data-i18n="meta-title" content="StagePane — 見せたいものだけ、ひとつのステージへ。">
+<meta name="twitter:description" data-i18n="meta-description" content="複数の資料やアプリをひとつの共有ウインドウに整えるmacOSアプリ。無料で4ソース、買い切りのProはアプリ側の件数制限なし。開発中の新UIも紹介しています。">
+<meta name="twitter:image" data-i18n="meta-image" content="https://stagepane.hinoshiba.com/assets/screenshots/ja/workspace-light.webp">
+<meta name="twitter:image:alt" data-i18n="meta-image-alt" content="開発中のStagePane Workspaceの合成サンプル。App Store公開版とは一部異なります。">
+<link rel="canonical" data-i18n="canonical" href="https://stagepane.hinoshiba.com/">
+<link rel="alternate" hreflang="ja" href="https://stagepane.hinoshiba.com/">
+<link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/?lang=en">
+<link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/">
+<link rel="icon" href="assets/StagePaneMark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=20261014-refined">
+<script id="application-data" type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "StagePane", "applicationCategory": "ProductivityApplication", "operatingSystem": "macOS 14 or later", "description": "複数の資料やアプリをひとつの共有ウインドウに整えるmacOSアプリ。無料で4ソース、買い切りのProはアプリ側の件数制限なし。開発中の新UIも紹介しています。", "url": "https://stagepane.hinoshiba.com/", "sameAs": "https://github.com/hinoshiba/StagePane", "license": "https://www.apache.org/licenses/LICENSE-2.0"}</script>
+<script defer src="site.js?v=20261014-refined"></script>
+</head><body>
+<a data-i18n="skip" href="#main" class="skip-link">本文へ移動</a>
+<header class="site-header"><div class="shell header-inner">
+<a class="brand" data-i18n="home" href="#top" aria-label="StagePane ホーム"><img src="assets/StagePaneMark.svg" width="36" height="36" alt=""><span>StagePane</span></a>
+<nav class="site-nav" data-i18n="nav" aria-label="メインナビゲーション"><a data-i18n="features" href="#features">できること</a>
+<a data-i18n="how" href="#how-it-works">使い方</a>
+<a data-i18n="support" href="#support">サポート</a></nav>
+<div class="header-actions">
+<a data-i18n="language" href="?lang=en" data-language="en" hreflang="en" lang="en" aria-label="英語に切り替える">EN</a>
+<a data-i18n="store" href="https://apps.apple.com/jp/app/id6802005741" class="button button-primary">Mac App Store</a>
+</div>
 <details class="mobile-menu">
-<summary aria-label="メニュー" data-i18n="t12">
-<span class="mobile-menu-label" data-i18n="t13">メニュー</span>
-<span aria-hidden="true" class="mobile-menu-icon"></span>
-</summary>
-<nav aria-label="モバイルナビゲーション" class="mobile-menu-panel" data-i18n="t14">
-<a data-i18n="t15" href="#features">機能</a>
-<a data-i18n="t16" href="#examples">実画面</a>
-<a data-i18n="t17" href="#how-it-works">使い方</a>
-<a data-i18n="t18" href="#privacy">プライバシー</a>
-<a data-i18n="t19" href="#support">サポート</a>
-<a data-i18n="t20" data-language="en" href="?lang=en" hreflang="en" lang="en">English</a>
-<a href="https://github.com/hinoshiba/StagePane">GitHub</a>
-<a data-i18n="t21" href="#terms">販売ポリシー</a><a data-i18n="t22" href="https://www.hinoshiba.com/products/">ほかの作品</a></nav>
-</details>
-</div>
-</header>
+<summary data-i18n="menu">メニュー</summary>
+<nav data-i18n="nav" aria-label="メインナビゲーション"><a data-i18n="features" href="#features">できること</a>
+<a data-i18n="how" href="#how-it-works">使い方</a>
+<a data-i18n="support" href="#support">サポート</a></nav>
+</details></div></header>
 <main id="main">
-<section class="hero" id="top">
-<div aria-hidden="true" class="hero-glow hero-glow-one"></div>
-<div aria-hidden="true" class="hero-glow hero-glow-two"></div>
-<div class="shell hero-grid">
-<div class="hero-copy">
-<p class="eyebrow" data-i18n="t23"><span></span> Mac App Storeで配信中</p>
-<h1><span data-i18n="t24">見せたいものだけ、</span><br/><em data-i18n="t25">ひとつの<span class="mobile-break"><br/></span>ステージへ。</em></h1>
-<p class="lead" data-i18n="t26">StagePaneは、画面共有で選べる専用ウインドウを作ります。<br/>操作画面はあなたのMacに残し、相手には整えたStageだけを。</p>
-<p class="lead-en" data-i18n="t27" lang="en">A clean stage for everything you share.</p>
+<section class="hero" id="top"><div class="shell">
+<p data-i18n="eyebrow" class="eyebrow">画面共有のためのmacOSアプリ</p>
+<h1 data-i18n="hero-title">見せたいものだけ、<br>ひとつのステージへ。</h1>
+<p data-i18n="hero-lead" class="lead">複数の資料やアプリを、ひとつの共有ウインドウに。手元で配置・切り抜き・手書きを整え、会議アプリではStageだけを共有します。</p>
 <div class="hero-actions">
-<a class="button button-primary" data-i18n="t28" href="https://apps.apple.com/jp/app/id6802005741">Mac App Storeからダウンロード <span aria-hidden="true">↗</span></a>
-<a class="button button-secondary" data-i18n="t29" href="#workspace-proof">実画面を見る</a>
+<a data-i18n="store-cta" href="https://apps.apple.com/jp/app/id6802005741" class="button button-primary">公開版をApp Storeで入手</a>
+<a data-i18n="preview-link" href="#workspace-proof" class="button button-secondary">開発中の新UIを見る</a>
 </div>
-<ul aria-label="動作要件と特徴" class="hero-facts" data-i18n="t30">
-<li><span class="fact-dot fact-dot-mint"></span>macOS 14+</li>
-<li><span class="fact-dot fact-dot-aqua"></span>Apple Silicon / Intel</li>
-<li><span class="fact-dot fact-dot-indigo"></span>Apache 2.0</li>
-<li data-i18n="t31"><span class="fact-dot fact-dot-mint"></span>ソースコード公開</li>
-</ul>
-</div>
-<div aria-label="共有用のきれいなStageと手元のStage Workspaceを表したイメージ" class="product-visual" data-i18n="t32" role="img">
-<div class="stage-window">
-<div class="stage-canvas">
-<div aria-hidden="true" class="stage-grid"></div>
-<div class="stage-mark">
-<img alt="" height="88" src="assets/StagePaneMark.svg" width="88"/>
-<strong>Ready for your content</strong>
-<span data-i18n="t33">このウインドウを共有してください</span>
-</div>
-<span class="safe-area safe-area-top">SAFE AREA</span>
-<div aria-hidden="true" class="safe-area-box"></div>
-</div>
-</div>
-<div class="control-window">
-<div class="control-heading">
-<div><span>STAGE WORKSPACE</span><strong>Keep Private</strong></div>
-<span class="private-pill" data-i18n="t34">共有しない</span>
-</div>
-<div class="control-row">
-<span class="control-icon control-icon-indigo">✦</span>
-<div><b data-i18n="t35">配置 · 切り抜き · 手書き</b><small data-i18n="t36">キャンバスとレイヤーを並べて</small></div>
-<span class="chevron">›</span>
-</div>
-<div class="control-row">
-<span class="control-icon control-icon-aqua">▣</span>
-<div><b data-i18n="t37">画像をコピー · PNGを保存</b><small data-i18n="t38">きれいな観客側Stage</small></div>
-<span class="chevron">›</span>
-</div>
-<div class="curtain-button"><span>◉</span> Privacy Curtain <kbd>⇧⌘H</kbd></div>
-</div>
-</div>
-</div>
-</section>
-<section aria-label="StagePaneの画面構成" class="separation-strip" data-i18n="t39">
-<div class="shell separation-grid">
-<div class="separation-item separation-share">
-<span class="separation-icon">↗</span>
-<div><small>SHARE THIS</small><strong>Stage</strong></div>
-<p data-i18n="t40">相手に見せる、整えられた専用ウインドウ</p>
-</div>
-<div aria-hidden="true" class="separation-line"><span></span></div>
-<div class="separation-item separation-private">
-<span class="separation-icon">⌘</span>
-<div><small>KEEP PRIVATE</small><strong>Stage Workspace</strong></div>
-<p data-i18n="t41">キャンバスの横で、レイヤーの選択・順序・表示を管理</p>
-</div>
-</div>
-</section>
-<section aria-labelledby="product-proof-title" class="product-proof" id="workspace-proof">
-<div class="shell">
+<p data-i18n="compatibility" class="compatibility">macOS 14以降 · Apple Silicon / Intel</p>
+</div></section>
+<section class="shell" id="workspace-proof" aria-labelledby="preview-caption">
+<figure class="hero-preview">
+<a data-preview="workspace" data-i18n="workspace-zoom" href="assets/screenshots/ja/workspace-light.webp" aria-label="画像を拡大: 開発中のStagePane Workspace。レイヤー一覧とキャンバスを並べ、選択レイヤーの切り抜きとその他メニューを表示した合成サンプル">
+<picture><source media="(prefers-color-scheme: dark)" data-i18n="workspace-dark" srcset="assets/screenshots/ja/workspace-dark.webp">
+<img data-i18n="workspace-image" src="assets/screenshots/ja/workspace-light.webp" alt="開発中のStagePane Workspace。レイヤー一覧とキャンバスを並べ、選択レイヤーの切り抜きとその他メニューを表示した合成サンプル" width="900" height="620" loading="eager" decoding="async" fetchpriority="high"></picture></a>
+<figcaption data-i18n="preview-caption" id="preview-caption" class="preview-note">開発中の新UIです。App Store公開版とは一部の画面・機能が異なります。画像は合成サンプルで、実際の画面取得は行っていません。</figcaption>
+</figure></section>
+<section class="section" id="features"><div class="shell">
+<span class="anchor-alias" id="examples" aria-hidden="true"></span>
 <div class="section-heading">
-<p class="eyebrow"><span></span> Live workspace</p>
-<h2 data-i18n="t42" id="product-proof-title">整える。切り取る。描く。<br/>すべて、手元の大きな画面で。</h2>
-<p data-i18n="t43">共有Stageには編集UIを載せず、合成結果だけを表示します。配置と手書きはライブ反映され、切り抜きは対象レイヤーのボタンから開いて手元で下書きし、「適用」したときだけ反映します。</p>
-</div>
-<div class="proof-grid">
-<article class="proof-card">
-<div class="proof-copy">
-<p class="eyebrow" data-i18n="t44"><span></span> 無料で利用 · Arrange</p>
-<h3 data-i18n="t45">重なった画面も、選んで動かす。</h3>
-<p data-i18n="t46">一覧から重なったレイヤーを選び、移動しても順序はそのまま。前後の順番は矢印で、非表示・再表示は目のボタンで切り替えます。</p>
-</div>
-<div class="proof-shot">
-<img alt="キャンバスの横に3つの合成レイヤーが並ぶ配置モード。1つは非表示で、選択中レイヤーだけに編集枠・切り抜き・サイズ変更の操作を表示するStage Workspace" data-i18n="t47" decoding="async" height="1800" loading="eager" src="assets/screenshots/ja/arrange.webp" width="2880"/>
-</div>
+<h2 data-i18n="feature-title">整える。伝える。<br>ひとつのStageで。</h2>
+<p data-i18n="feature-note" class="preview-note">以下は開発中の新UIでの操作例です。App Store公開版とは一部異なります。</p>
+</div><div class="feature-grid">
+<article class="feature-card">
+<h3 data-i18n="compose-title">重ねる、必要な範囲に切り抜く</h3>
+<p data-i18n="compose-copy">レイヤーを並べ、見せたい範囲を整えます。新UIでは一覧のドラッグで重なり順を変更。切り抜きは手元で下書きし、適用したときだけStageに反映します。</p>
 </article>
-<article class="proof-card">
-<div class="proof-copy">
-<p class="eyebrow" data-i18n="t48"><span></span> 無料で利用 · Draw</p>
-<h3 data-i18n="t49">伝えたい場所へ、そのまま描く。</h3>
-<p data-i18n="t50">ペン、半透明の蛍光ペン、大きさを変えられる部分消去の消しゴムをひとつのDockに。消去も正確に取り消せ、手書き中は観客側のポインターを隠します。</p>
-</div>
-<div class="proof-shot">
-<img alt="キャンバス横の3つの合成レイヤーのうち1つを非表示にした手書きモード。ペン・蛍光ペン・部分消去の跡と消しゴムの操作を表示し、観客側ポインターを隠したStage Workspace" data-i18n="t51" decoding="async" height="1800" loading="lazy" src="assets/screenshots/ja/draw.webp" width="2880"/>
-</div>
+<article class="feature-card">
+<h3 data-i18n="explain-title">描いて、拡大して伝える</h3>
+<p data-i18n="explain-copy">ペンや蛍光ペンで大事な場所を示し、消しゴムで整える。開発中の虫眼鏡では、細部を拡大して観客に見せられます。</p>
 </article>
-</div>
-</div>
-</section>
-<section class="section" id="features">
-<div class="shell">
+<article class="feature-card">
+<h3 data-i18n="curtain-title">ひと息つくときは、カーテン</h3>
+<p data-i18n="curtain-copy"><kbd>⇧⌘H</kbd> ですぐにStageを覆い、次の内容を準備できます。画面取得を終了するときは「すべて停止」を使います。</p>
+</article>
+</div><div class="showcase-grid">
+<figure class="showcase-shot">
+<a data-preview="draw" data-i18n="draw-zoom" href="assets/screenshots/ja/draw-light.webp" aria-label="画像を拡大: 開発中の手書きモード。合成サンプルのキャンバスにペン・蛍光ペン・部分消去を表示">
+<picture><source media="(prefers-color-scheme: dark)" data-i18n="draw-dark" srcset="assets/screenshots/ja/draw-dark.webp">
+<img data-i18n="draw-image" src="assets/screenshots/ja/draw-light.webp" alt="開発中の手書きモード。合成サンプルのキャンバスにペン・蛍光ペン・部分消去を表示" width="900" height="620" loading="lazy" decoding="async"></picture></a>
+<figcaption data-i18n="draw-caption">手書きの道具はキャンバスのそばへ。観客には編集UIを含まない合成結果を表示します。</figcaption>
+</figure>
+<figure class="showcase-shot is-portrait">
+<a data-preview="stage-settings" data-i18n="stage-settings-zoom" href="assets/screenshots/ja/stage-settings.webp" aria-label="画像を拡大: 開発中のStage設定。画面の形、背景、カーテン、ポインタをまとめたパネル">
+<picture><source media="(prefers-color-scheme: dark)" data-i18n="stage-settings-dark" srcset="assets/screenshots/ja/stage-settings-dark.webp">
+<img data-i18n="stage-settings-image" src="assets/screenshots/ja/stage-settings.webp" alt="開発中のStage設定。画面の形、背景、カーテン、ポインタをまとめたパネル" width="360" height="600" loading="lazy" decoding="async"></picture></a>
+<figcaption data-i18n="settings-caption">Stageの形、背景、カーテン、ポインタをひとまとめに。編集用UIはmacOSの外観に自動で追従します。</figcaption>
+</figure>
+</div></div></section>
+<section class="section" id="how-it-works"><div class="shell">
 <div class="section-heading">
-<p class="eyebrow"><span></span> Built for calm sharing</p>
-<h2 data-i18n="t52">「見せたくない」を、<br/>設計で減らす。</h2>
-<p data-i18n="t53">共有する内容と操作する場所を分け、プレゼン中の迷いや誤操作を少なくします。</p>
-</div>
-<div class="feature-grid">
-<article class="feature-card feature-card-wide">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="11" rx="2" width="14" x="3" y="4"></rect><path d="M7 20h14V9h-4M10 15v5"></path></svg></div>
-<div><h3 data-i18n="t54">共有用と編集用を、明確に分離</h3><p data-i18n="t55">共有Stageには相手に見せる内容を、Workspaceには編集UIを表示します。会議アプリでは「StagePane Stage」ウインドウを選んで共有してください。</p></div>
-<div aria-hidden="true" class="mini-windows"><div class="mini-window mini-stage"><span>STAGE</span><i></i></div><div class="mini-window mini-control"><span>WORKSPACE</span><i></i><i></i><i></i></div></div>
-</article>
-<article class="feature-card">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 12a8 8 0 1 0 16 0M12 4v8l4 2"></path></svg></div>
-<h3 data-i18n="t56">一瞬でPrivacy Curtain</h3>
-<p data-i18n="t57"><kbd>⇧⌘H</kbd> でStageを前面へ移動せずにすぐ覆えます。メッセージは80文字まで。カーテン自体では取得は止まらないため、完全に止めるときは「すべて停止」を使います。</p>
-</article>
-<article class="feature-card">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="12" rx="2" width="18" x="3" y="6"></rect><path d="m8 12 2 2 5-5"></path></svg></div>
-<h3 data-i18n="t58">無料で4ソース、Proならアプリ側の件数制限なし</h3>
-<p data-i18n="t59">Appleのピッカーでソースを選び、配置・サイズ・重なり順・切り抜き・手書きを整えます。無料版は同時に4ソースまで。買い切りのProはアプリ側の件数制限を解除します。利用できる件数はMacとOSの性能に依存します。</p>
-</article>
-<article class="feature-card">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 7h16M7 4v16m10-9v9M4 17h16"></path></svg></div>
-<h3 data-i18n="t60">きれいな1枚のスクリーンショット</h3>
-<p data-i18n="t61">観客側Stageを16:9（1920×1080）、4:3（1440×1080）、9:16（1080×1920）、1:1（1080×1080）のPNGとして明示的にコピーまたは保存できます。現在の共有内容またはカーテン、手書き、ロゴ、有効な場合はセーフエリア、表示中の場合はポインターを含み、Workspaceの編集UIは含みません。</p>
-</article>
-<article class="feature-card">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 18V6m5 12V9m5 9V4m5 14v-7"></path></svg></div>
-<h3 data-i18n="t62">発表に合わせた見え方</h3>
-<p data-i18n="t63">Aurora、Midnight、Paper、Studioのテーマに加え、通常・レーザーポインター・非表示を選べます。レーザーポインターは色・サイズ・発光を調整でき、最前面ソースだけに表示します。半透明のStagePaneロゴは待機画面、共有内容、カーテンの右下に表示され、買い切りのStagePane Proなら設定から非表示にできます。</p>
-</article>
-<article class="feature-card feature-card-accent">
-<div class="feature-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3 5 6v5c0 4.6 2.8 8.3 7 10 4.2-1.7 7-5.4 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-5"></path></svg></div>
-<h3 data-i18n="t64">使い方に合わせた保存</h3>
-<p data-i18n="t65">必要な場面をPNGとしてコピーまたは保存できます。画面の扱いは下のポリシーをご確認ください。</p>
-<a data-i18n="t66" href="#privacy">プライバシーポリシーへ <span>→</span></a>
-</article>
-</div>
-</div>
-</section>
-<section class="section examples-section" id="examples">
-<div class="shell">
+<h2 data-i18n="workflow-title">選んで、整えて、共有する。</h2>
+</div><ol class="steps">
+<li>
+<h3 data-i18n="step-1">追加する</h3>
+<p data-i18n="step-1-copy">「ソースを追加」から、ウインドウ・アプリ・画面をAppleの選択画面で選びます。</p>
+</li>
+<li>
+<h3 data-i18n="step-2">手元で整える</h3>
+<p data-i18n="step-2-copy">Workspaceで配置や表示範囲を調整します。準備中はカーテンで観客向けの映像を隠せます。</p>
+</li>
+<li>
+<h3 data-i18n="step-3">Stageを共有する</h3>
+<p data-i18n="step-3-copy">会議アプリのウインドウ共有で「StagePane Stage」を選びます。共有対象を確認してからカーテンを開きます。</p>
+</li>
+</ol></div></section>
+<section class="section" id="plans"><div class="shell">
 <div class="section-heading">
-<p class="eyebrow"><span></span> Real interface</p>
-<h2 data-i18n="t67">機能と安心を、<br/>実画面で確認。</h2>
-<p data-i18n="t68">以下はStagePane自身が合成データだけで描画した画面です。Workspaceを手元に置き、会議アプリでは正確なStageウインドウだけを共有します。</p>
+<h2 data-i18n="plan-title">無料で始める。必要に応じてProへ。</h2>
 </div>
-<div class="screenshot-grid">
-<figure class="screenshot-card screenshot-card-tall">
-<div class="screenshot-label" data-i18n="t69"><span class="label-private">3ソース · 無料範囲</span> Workspace レイヤー</div>
-<img alt="キャンバス横の常設一覧で、3つの合成レイヤーの表示切替と選択中レイヤーの順序・切り抜きを操作するWorkspace。観客側Stageはカーテン中" data-i18n="t70" decoding="async" height="1800" loading="lazy" src="assets/screenshots/ja/sources.webp" width="2880"/>
-<figcaption data-i18n="t71"><strong>無料版でも4件まで、個別に管理。</strong> 目のボタンで一時的に非表示にしても、位置・切り抜き・重なり順を保持。再表示すると取得が再開し、新しい映像が届いてから同じ場所へ戻ります。</figcaption>
-</figure>
-<figure class="screenshot-card screenshot-card-tall">
-<div class="screenshot-label" data-i18n="t72"><span class="label-local">選択時に確認</span> アクセス権限</div>
-<img alt="画面共有は追加時に確認されると説明し、「ソースを追加」ボタンを表示するStagePane Workspaceのアクセス権限画面" data-i18n="t73" decoding="async" height="1800" loading="lazy" src="assets/screenshots/ja/permissions.webp" width="2880"/>
-<figcaption data-i18n="t74"><strong>許可は、ソースを選ぶときだけ。</strong> Appleの選択画面で共有対象ごとに確認する仕組みと、次の「ソースを追加」を確認できます。</figcaption>
-</figure>
-<figure class="screenshot-card screenshot-card-tall">
-<div class="screenshot-label"><span class="label-local" data-i18n="t75">手元で調整</span> Appearance</div>
-<img alt="レーザーポインターの色・大きさ・発光、セーフエリア、StagePaneロゴを調整する外観画面" data-i18n="t76" decoding="async" height="1800" loading="lazy" src="assets/screenshots/ja/appearance.webp" width="2880"/>
-<figcaption data-i18n="t77"><strong>ポインターを、ひと目で伝わる見え方に。</strong> レーザーの色・大きさ・発光を調整できます。StagePane Proならロゴ表示も選べます。</figcaption>
-</figure>
-
-<figure class="screenshot-card">
-<div class="screenshot-label"><span class="label-share" data-i18n="t78">共有する</span> Stage ready</div>
-<img alt="共有ステージの準備ができましたと表示するStagePane Stageの待機画面" data-i18n="t79" decoding="async" height="1080" loading="lazy" src="assets/screenshots/ja/stage-ready.webp" width="1920"/>
-<figcaption data-i18n="t80"><strong>カーテンを開いても、ソース未選択なら待機画面。</strong> Stageを共有対象にしたまま、次に見せるソースを落ち着いて選べます。</figcaption>
-</figure>
-<figure class="screenshot-card">
-<div class="screenshot-label"><span class="label-curtain" data-i18n="t81">遮蔽中</span> Privacy Curtain</div>
-<img alt="少々お待ちくださいというメッセージで共有内容を隠すStagePaneのPrivacy Curtain" data-i18n="t82" decoding="async" height="1080" loading="lazy" src="assets/screenshots/ja/privacy-curtain.webp" width="1920"/>
-<figcaption data-i18n="t83"><strong>内容を案内メッセージで覆う。</strong> 相手には共有内容の代わりに、設定した「少々お待ちください」を表示します。</figcaption>
-</figure>
-</div>
-</div>
-</section>
-<section class="section workflow-section" id="how-it-works">
-<div class="shell workflow-layout">
-<div class="section-heading workflow-heading">
-<p class="eyebrow"><span></span> How it works</p>
-<h2 data-i18n="t84">Stageの準備は、<br/>4つのステップ。</h2>
-<p data-i18n="t85">仮想ディスプレイや別のデスクトップは作りません。会議アプリから普通のウインドウとして選びます。</p>
-<aside class="note-card"><strong data-i18n="t86">正確なウインドウ名を確認</strong><p data-i18n="t87">会議アプリでは「StagePane Stage」を選びます。「共有しない」はWorkspaceを技術的に除外する仕組みではなく、アプリ全体やディスプレイ全体の共有では映る可能性があります。macOS 15以降の「共有先をStageへ切替」は、対応する実行中の共有セッションへ切り替えを依頼する機能であり、すべての会議アプリで共有を開始・操作できるものではありません。</p></aside>
-</div>
-<ol class="steps">
-<li><span>01</span><div><h3 data-i18n="t88">StagePaneを開く</h3><p data-i18n="t89">StagePaneは、共有するStageと、キャンバスの横に常設レイヤー一覧を備えた手元用Workspaceの2画面です。設定はWorkspaceのサイドバーから開けます。</p></div></li>
-<li><span>02</span><div><h3 data-i18n="t90">見せるものを追加</h3><p data-i18n="t91">「ソースを追加」でウインドウ・アプリ・画面から1件を、その取得セッション用に許可します。アプリを選ぶと、そのアプリが持つ複数のウインドウが含まれる場合があります。範囲を狭くする場合は1つのウインドウを選びます。無料版は同時に4件まで追加でき、買い切りのStagePane Proにはアプリ側の件数制限がありません。実際に利用できる件数はMacの性能とOSの制約に依存します。</p></div></li>
-<li><span>03</span><div><h3 data-i18n="t92">配置してStageを共有</h3><p data-i18n="t93">手元のWorkspaceで移動・サイズ変更・手書きを行い、会議アプリでは正確な「StagePane Stage」ウインドウを選んでカーテンを開きます。</p></div></li>
-<li><span>04</span><div><h3 data-i18n="t94">終わったら完全に停止</h3><p data-i18n="t95">「すべて停止」で全ストリームを終了し、配置と切り抜きを保持している再接続待ちを含む、すべてのレイヤーを削除します。カーテンだけでは取得は止まりません。</p></div></li>
-</ol>
-</div>
-</section>
-<section class="section privacy-section" id="privacy"><div class="shell"><div class="section-heading"><p class="eyebrow" data-i18n="t96">プライバシーポリシー</p><h2 data-i18n="t97">画面の扱いと保存について。</h2></div><div class="policy-copy"><p data-i18n="t98">選択した画面と手書きは、Mac上でStageを表示するために処理します。画面の配信は、利用者が選んだ会議アプリが行います。</p><p data-i18n="t99">設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言、手書きツールの設定、WorkspaceとStageウインドウの位置と大きさです。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。</p><p data-i18n="t100">開発者はアプリ内の画面や個人データを収集しません。Proの購入・復元はAppleが処理します。このサイトはGitHub Pagesで配信され、接続情報は配信事業者に処理されます。</p><p data-i18n="t101">画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。</p><p data-i18n="privacy-sharing">StagePaneは、画面、手書き、その他のデータを開発者や第三者へ送信しません。このアプリはネットワークのエンタイトルメントを持たずに配布されており、アプリ自身がネットワーク接続を開くことはできません。画面はソースが動作している間だけメモリで保持し、そのソースを非表示または解除したとき、「すべて停止」を選んだとき、終了したときに解放します。画面に由来するデータで残るのは、利用者自身が「画像をコピー」「PNGを保存」で作成した画像だけで、クリップボードまたは選択した場所に残ります。Proの購入・復元はAppleが処理し、その処理に画面は一切含まれません。</p><p data-i18n="privacy-static-en">英語版のプライバシーポリシーは、JavaScriptなしで読める<a class="contact-link" href="en/privacy/" hreflang="en" lang="en">静的ページ</a>でも公開しています。</p><p><a class="contact-link" href="https://www.apple.com/legal/privacy/">Apple Privacy</a> · <a class="contact-link" href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy</a></p><p data-i18n="contact-retention">問い合わせのメールアドレスと本文は対応のために必要な期間だけ保管し、削除依頼を受け付けます。</p><p><a class="contact-link" href="mailto:support@hinoshiba.com">support@hinoshiba.com</a></p></div></div></section><section class="section" id="terms"><div class="shell policy-copy"><h2 data-i18n="t102">販売ポリシー</h2><p data-i18n="t103">公式アプリはMac App Storeで配信しています。価格、追加購入の内容、対応環境はApp Storeとアプリ内の購入画面をご確認ください。購入・支払い・返金の手続きにはAppleの規定が適用されます。このサイトでは販売・決済を行いません。</p><a class="contact-link" data-i18n="t104" href="https://support.apple.com/billing">Appleの購入サポート</a>
+<table class="plan-table">
+<caption data-i18n="plan-caption">無料版とStagePane Pro</caption>
+<thead><tr>
+<th data-i18n="plan-feature" scope="col">機能</th>
+<th data-i18n="plan-free" scope="col">無料版</th>
+<th data-i18n="plan-pro" scope="col">Pro</th>
+</tr></thead><tbody>
+<tr>
+<th data-i18n="plan-sources" scope="row">同時に使えるソース</th>
+<td data-i18n="plan-four">4件</td>
+<td data-i18n="plan-unlimited">アプリ側の上限なし</td>
+</tr>
+<tr>
+<th data-i18n="plan-mark" scope="row">StagePaneロゴ</th>
+<td data-i18n="plan-shown">表示</td>
+<td data-i18n="plan-optional">表示／非表示</td>
+</tr>
+<tr>
+<th data-i18n="plan-tools" scope="row">配置・切り抜き・手書き・カーテン</th>
+<td data-i18n="plan-included">利用可</td>
+<td data-i18n="plan-included">利用可</td>
+</tr>
+</tbody></table>
+<p data-i18n="plan-note" class="plan-note">Proは買い切りです。利用できるソース数はMacの性能とOSの制約に依存します。価格と通貨はApp Storeとアプリ内の購入画面で確認できます。</p>
+</div></section>
+<section class="section" id="support"><div class="shell">
+<div class="section-heading">
+<h2 data-i18n="faq-title">使う前に、知っておきたいこと。</h2>
+</div><div class="faq-list">
+<details>
+<summary data-i18n="faq-share">会議では何を共有すればよいですか？</summary>
+<p data-i18n="faq-share-copy">会議アプリで「StagePane Stage」ウインドウを選んでください。Workspaceは手元の編集用です。アプリ全体や画面全体を共有するとWorkspaceも映る場合があるため、共有対象を確認してください。</p>
+</details>
+<details>
+<summary data-i18n="faq-curtain">カーテンを閉じると取得も止まりますか？</summary>
+<p data-i18n="faq-curtain-copy">カーテンは観客向けの映像を覆い、画面取得は継続します。「すべて停止」は取得を終了し、再接続待ちを含む全レイヤーを削除します。1件だけ一時的に隠す場合は、そのレイヤーの「非表示」を使います。</p>
+</details>
+<details>
+<summary data-i18n="faq-crop">切り抜きやソース選択の範囲は？</summary>
+<p data-i18n="faq-crop-copy">各ソースはAppleの選択画面で、その取得セッション用に許可します。アプリを選ぶと複数ウインドウが含まれる場合があるため、範囲を絞るには1つのウインドウを選びます。切り抜きはStageの表示範囲を変えるもので、選択したソース全体の取得範囲は変わりません。</p>
+</details>
+<details>
+<summary data-i18n="faq-recovery">ウインドウや映像を見失ったときは？</summary>
+<p data-i18n="faq-recovery-copy">メニューバーのStagePaneアイコンからWorkspaceやStageを再表示できます。macOS側で共有が終了したレイヤーは「選び直す」で再接続し、配置と切り抜きを保てます。「解除」で削除したレイヤーは、ソースを追加し直してください。</p>
+</details>
+<details>
+<summary data-i18n="faq-settings">新UIでは設定をどこから開きますか？</summary>
+<p data-i18n="faq-settings-copy">キャンバス上部の「Stage設定」で、形・背景・カーテン・ポインタを調整します。変更はStageへすぐ反映されます。「設定」（⌘,）は独立ウインドウで、一般設定、Pro、アプリ情報、プライバシー、画面共有の案内を確認できます。</p>
+</details>
+<details>
+<summary data-i18n="faq-contact">問い合わせや購入の相談は？</summary>
+<p data-i18n="faq-contact-copy">製品の問い合わせは <a class="contact-link" href="mailto:support@hinoshiba.com">support@hinoshiba.com</a> へ。購入・請求・返金は <a class="contact-link" href="https://support.apple.com/billing">Appleの購入サポート</a> をご利用ください。問題を報告するときはOS・アプリのバージョンと合成データでの再現手順を添え、実画面、私的なウインドウ名、会議URL、トークンなどは送らないでください。</p>
+</details>
+</div></div></section>
+<section class="section" id="privacy"><div class="shell">
+<span class="anchor-alias" id="security" aria-hidden="true"></span>
+<div class="section-heading">
+<h2 data-i18n="privacy-title">画面の扱いとプライバシー</h2>
+<p data-i18n="privacy-summary">選択した画面はMac上で処理します。会議への配信は、利用者が選んだ会議アプリが行います。StagePaneにアカウントは不要で、画像はコピーやPNG保存を選んだときだけ残ります。</p>
+</div><details class="legal-details">
+<summary data-i18n="privacy-full">プライバシーポリシー全文を読む</summary>
+<div class="policy-copy">
+<p data-i18n="t98">選択した画面と手書きは、Mac上でStageを表示するために処理します。画面の配信は、利用者が選んだ会議アプリが行います。</p>
+<p data-i18n="t99">設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、およびWorkspace・Stage・設定・Pro・画面共有の案内・画面取得エラーの各ウインドウの位置と大きさです。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。</p>
+<p data-i18n="t100">開発者はアプリ内の画面や個人データを収集しません。Proの購入・復元はAppleが処理します。このサイトはGitHub Pagesで配信され、接続情報は配信事業者に処理されます。</p>
+<p data-i18n="t101">画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。</p>
+<p data-i18n="privacy-sharing">StagePaneは、画面、手書き、その他のデータを開発者や第三者へ送信しません。このアプリはネットワークのエンタイトルメントを持たずに配布されており、アプリ自身がネットワーク接続を開くことはできません。画面はソースが動作している間だけメモリで保持し、そのソースを非表示または解除したとき、「すべて停止」を選んだとき、終了したときに解放します。画面に由来するデータで残るのは、利用者自身が「画像をコピー」「PNGを保存」で作成した画像だけで、クリップボードまたは選択した場所に残ります。Proの購入・復元はAppleが処理し、その処理に画面は一切含まれません。</p>
+<p data-i18n="privacy-static-en">英語版のプライバシーポリシーは、JavaScriptなしで読める<a class="contact-link" href="en/privacy/" hreflang="en" lang="en">静的ページ</a>でも公開しています。</p>
+<p><a class="contact-link" href="https://www.apple.com/legal/privacy/">Apple Privacy</a> · <a class="contact-link" href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy</a></p>
+<p data-i18n="contact-retention">問い合わせのメールアドレスと本文は対応のために必要な期間だけ保管し、削除依頼を受け付けます。</p>
+<p><a class="contact-link" href="mailto:support@hinoshiba.com">support@hinoshiba.com</a></p>
+</div></details></div></section>
+<section class="section" id="terms"><div class="shell"><details class="legal-details">
+<summary data-i18n="terms-title">販売ポリシー</summary>
+<div class="policy-copy">
+<p data-i18n="t103">公式アプリはMac App Storeで配信しています。価格、追加購入の内容、対応環境はApp Storeとアプリ内の購入画面をご確認ください。購入・支払い・返金の手続きにはAppleの規定が適用されます。このサイトでは販売・決済を行いません。</p>
+<a data-i18n="t104" href="https://support.apple.com/billing" class="contact-link">Appleの購入サポート</a>
 <p data-i18n="sales-disclosure">販売事業者の氏名、住所および電話番号については、「特定商取引法に基づく表記」の開示請求をいただいた場合、法令に基づき遅滞なく電子メールにて提供いたします。</p>
 <p data-i18n="sales-disclosure-contact">購入判断前に確認できるよう、<a class="contact-link" href="mailto:support@hinoshiba.com">support@hinoshiba.com</a>へご請求ください。購入済みである必要はありません。</p>
-<p><a class="contact-link" data-i18n="sales-reference" href="https://www.no-trouble.caa.go.jp/qa/advertising.html">参考: 特定商取引法ガイド</a></p>
+<a data-i18n="sales-reference" href="https://www.no-trouble.caa.go.jp/qa/advertising.html" class="contact-link">参考: 特定商取引法ガイド</a>
+</div></details></div></section>
+<section class="section" id="disclaimer"><div class="shell"><details class="legal-details">
+<summary data-i18n="disclaimer-title">免責事項</summary>
+<div class="policy-copy">
+<p data-i18n="disclaimer-1">本サイトならびに本サイトで紹介・公開しているアプリケーション、コンテンツ、成果物およびソースコード等は、制作者が個人(hinoshiba)として制作・提供しているものです。</p>
+<p data-i18n="disclaimer-2">これらは制作者が所属する組織・団体とは関係なく、所属組織・団体の公式な見解、製品、サービスまたは活動を示すものではありません。</p>
+<p data-i18n="disclaimer-3">本サイトおよび本アプリケーション等に関するお問い合わせ、サポートその他の責任は制作者個人が負うものであり、所属組織・団体はこれらの提供・運営には関与しておりません。</p>
+<p data-i18n="disclaimer-4">本サイトまたは本アプリケーション等の利用により生じた損害については、法令上認められる範囲において、制作者は責任を負わないものとします。</p>
+</div></details></div></section>
+<section class="section" id="build"><div class="shell build-note">
+<h2 data-i18n="build-title">ソースコードから試す</h2>
+<p data-i18n="build-copy">StagePaneはApache License 2.0でソースコードを公開しています。ビルド方法はREADMEをご覧ください。ローカルの開発ビルドは公式配布版ではありません。</p>
+<p><a data-i18n="repository" href="https://github.com/hinoshiba/StagePane" class="contact-link">GitHubリポジトリ</a> · <a data-i18n="build-readme" href="https://github.com/hinoshiba/StagePane#build-and-run" class="contact-link">ビルド方法（README）</a></p>
+<p data-i18n="t122"><strong>ライセンス:</strong> ソースコードとロゴ・アイコンの著作物はApache License 2.0です。StagePaneの名称やロゴを、公式性や提携を示す商標として使う権利は付与されません。</p>
 </div></section>
-<section class="section support-section" id="support">
-<div class="shell support-layout">
-<div class="section-heading support-heading">
-<p class="eyebrow"><span></span> Support</p>
-<h2 data-i18n="t105">困ったときの、<br/>確認ポイント。</h2>
-<p data-i18n="t106">購入・請求・返金についてはAppleのサポートをご利用ください。アプリの使い方はこのページのガイドをご確認ください。解決しない製品のお問い合わせ: <a class="contact-link" href="mailto:support@hinoshiba.com">support@hinoshiba.com</a></p>
-<a class="button button-primary" data-i18n="t107" href="https://support.apple.com/billing">Appleの購入サポート</a>
-</div>
-<div class="support-cards">
-<article class="support-card"><span>01</span><div><h3 data-i18n="t108">ウインドウを見失った</h3><p data-i18n="t109">Stage Workspaceまたは共有Stageはメニューバーから再表示できます。<kbd>⇧⌘H</kbd> はカーテン、<kbd>⇧⌘P</kbd> は「ソースを追加」です。</p></div></article>
-<article class="support-card"><span>02</span><div><h3 data-i18n="t110">取得がうまく戻らない</h3><p data-i18n="t111">解除されたレイヤーの「選び直す」から同じ配置と切り抜きへ再接続できます。共有Stageを閉じてもレイヤーと取得はWorkspaceに残るため、完全に終了する場合は「すべて停止」を使ってください。</p></div></article>
-<article class="support-card"><span>03</span><div><h3 data-i18n="t112">Issueに載せてよいもの</h3><p data-i18n="t113">macOS・StagePaneのバージョン、合成データで再現する手順、期待した結果と実際の結果を共有してください。</p></div></article>
-<article class="support-card support-card-alert"><span>!</span><div><h3 data-i18n="t114">載せてはいけないもの</h3><p data-i18n="t115">実際の画面フレーム、私的なウインドウ名、会議URL、トークン、TCCデータベース、未編集の診断情報は投稿しないでください。</p></div></article>
-</div>
-</div>
-</section>
-<section class="section build-section" id="build">
-<div class="shell build-card">
-<div class="build-copy">
-<p class="eyebrow"><span></span> Build from source</p>
-<h2 data-i18n="t116">自分のMacで、<br/>ソースから試す。</h2>
-<p data-i18n="t117">macOS 14以降とXcode 16以降を用意し、リポジトリをcloneしてください。Apple SiliconとIntelの両方を対象にしています。</p>
-<p class="release-note" data-i18n="t118"><strong>公式版はMac App Storeで配信中です。</strong> <code>./build.sh</code> の成果物はStore版と同じApp Sandboxと配置・切り抜き・手書き機能を使いますが、開発用のad-hoc署名・未公証ビルドであり、公式バイナリや配布用成果物ではありません。</p>
-<div class="build-links"><a class="button button-primary" data-i18n="t119" href="https://github.com/hinoshiba/StagePane">リポジトリを開く</a><a class="text-link" data-i18n="t120" href="#how-it-works">使い方へ戻る <span>↑</span></a></div>
-</div>
-<div aria-label="StagePaneのビルドコマンド" class="terminal" data-i18n="t121">
-<div class="terminal-bar"><div aria-hidden="true" class="traffic-lights"><i></i><i></i><i></i></div><span>Terminal</span></div>
-<pre><code><span class="prompt">$</span> git clone https://github.com/<br/>  hinoshiba/StagePane.git
-<span class="prompt">$</span> cd StagePane
-<span class="prompt">$</span> ./build.sh
-<span class="prompt">$</span> open dist/StagePane.app</code></pre>
-<div class="terminal-result"><span>✓</span> Development build complete</div>
-</div>
-</div>
-<div class="shell notices"><p data-i18n="t122"><strong>ライセンス:</strong> ソースコードとロゴ・アイコンの著作物はApache License 2.0です。StagePaneの名称やロゴを、公式性や提携を示す商標として使う権利は付与されません。</p></div>
-</section>
-<section aria-labelledby="disclaimer-title" class="section" id="disclaimer" lang="ja">
-<div class="shell policy-copy">
-<h2 id="disclaimer-title">免責事項</h2>
-<p>本サイトならびに本サイトで紹介・公開しているアプリケーション、コンテンツ、成果物およびソースコード等は、制作者が個人(hinoshiba)として制作・提供しているものです。</p>
-<p>これらは制作者が所属する組織・団体とは関係なく、所属組織・団体の公式な見解、製品、サービスまたは活動を示すものではありません。</p>
-<p>本サイトおよび本アプリケーション等に関するお問い合わせ、サポートその他の責任は制作者個人が負うものであり、所属組織・団体はこれらの提供・運営には関与しておりません。</p>
-<p>本サイトまたは本アプリケーション等の利用により生じた損害については、法令上認められる範囲において、制作者は責任を負わないものとします。</p>
-</div>
-</section>
-<section class="closing">
-<div aria-hidden="true" class="closing-glow"></div>
-<div class="shell closing-inner">
-<img alt="" height="72" src="assets/StagePaneMark.svg" width="72"/>
-<h2 data-i18n="t123">見せたいものだけ、<br/>ひとつのステージへ。</h2>
-<p data-i18n="t124" lang="en">A clean stage for everything you share.</p>
-<a class="button button-primary" data-i18n="t125" href="https://apps.apple.com/jp/app/id6802005741">Mac App Storeからダウンロード <span aria-hidden="true">↗</span></a>
-</div>
-</section>
+<section class="closing"><div class="shell">
+<h2 data-i18n="closing-title">次の画面共有を、<br>あなたのStageで。</h2>
+<p data-i18n="closing-copy">公式の公開版はMac App Storeで配信しています。</p>
+<a data-i18n="store-cta" href="https://apps.apple.com/jp/app/id6802005741" class="button button-primary">公開版をApp Storeで入手</a>
+</div></section>
 </main>
-<footer>
-<div class="shell footer-inner">
-<a class="brand footer-brand" href="#top"><img alt="" height="34" src="assets/StagePaneMark.svg" width="34"/><span>StagePane</span></a>
-<p>Open-source macOS software · Apache License 2.0</p>
-<nav aria-label="フッターナビゲーション" data-i18n="t126">
-<a data-i18n="t127" href="#features">機能</a><a data-i18n="t128" href="#examples">実画面</a><a data-i18n="t129" href="#privacy">プライバシー</a><a data-i18n="t130" href="#support">サポート</a><a data-i18n="t131" href="#build">ビルド</a><a data-i18n="t132" href="https://apps.apple.com/jp/app/id6802005741">Mac App Store</a><a data-i18n="t133" data-language="en" href="?lang=en" hreflang="en" lang="en">English</a><a href="https://github.com/hinoshiba/StagePane">GitHub</a>
-<a href="#disclaimer" lang="ja">免責事項</a>
-<a data-i18n="t134" href="#terms">販売ポリシー</a><a data-i18n="t135" href="https://www.hinoshiba.com/products/">ほかの作品</a></nav>
-</div>
-</footer>
-</body>
-</html>
+<footer><div class="shell footer-inner">
+<a class="brand" href="#top"><img src="assets/StagePaneMark.svg" width="28" height="28" alt=""><span>StagePane</span></a>
+<nav data-i18n="footer-nav" aria-label="関連リンク">
+<a data-i18n="privacy-link" href="#privacy">プライバシー</a>
+<a data-i18n="support" href="#support">サポート</a>
+<a data-i18n="terms-title" href="#terms">販売ポリシー</a>
+<a data-i18n="disclaimer-title" href="#disclaimer">免責事項</a>
+<a data-i18n="repository" href="https://github.com/hinoshiba/StagePane">GitHubリポジトリ</a>
+<a data-i18n="store" href="https://apps.apple.com/jp/app/id6802005741">Mac App Store</a>
+<a data-i18n="more-products" href="https://www.hinoshiba.com/products/">ほかの作品</a>
+<a data-i18n="footer-language" href="?lang=en" data-language="en" hreflang="en" lang="en" aria-label="英語に切り替える">English</a>
+</nav></div></footer>
+</body></html>

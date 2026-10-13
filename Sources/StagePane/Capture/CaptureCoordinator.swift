@@ -17,6 +17,13 @@ enum CapturePhase: Equatable, Sendable {
     }
 }
 
+/// A confirmed failure to open source selection or start its capture stream.
+/// This describes the failed operation without guessing a permission cause.
+struct CaptureAccessIssue: Sendable {
+    let title: String
+    let detail: String
+}
+
 enum CaptureSourceKind: String, Sendable {
     case window
     case application
@@ -552,7 +559,41 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         sources.contains(where: \.needsReselection)
     }
 
+    /// Stream activity is separate from retained layers and sessions. A failed
+    /// stop still counts until the stream is known to have stopped.
+    var runningSourceCount: Int {
+        sessions.values.filter(\.isStreamRunning).count
+    }
+
+    /// Compact, truthful state for the layer list. Keep the full framework
+    /// error in source.phase/statusDetail; never infer activity from that text.
+    func attentionSummary(for sourceID: StageSourceID) -> String? {
+        if let session = sessions[sourceID], let attention = session.activeAttention {
+            switch attention {
+            case .pauseFailure:
+                return session.isStreamRunning
+                    ? L10n.text("非表示失敗・取得継続", "Hide failed · capture continues")
+                    : L10n.text("再表示失敗・非表示中", "Show failed · hidden")
+            case .stopFailure:
+                return session.isStreamRunning
+                    ? L10n.text("停止失敗・取得継続", "Stop failed · capture continues")
+                    : L10n.text("取得停止済み・後処理を確認", "Capture stopped · review cleanup")
+            case .pickerFailure:
+                return L10n.text("選択を確認", "Review source selection")
+            }
+        }
+        guard let source = source(for: sourceID) else { return nil }
+        if source.needsReselection {
+            return L10n.text("選び直しが必要", "Select again")
+        }
+        if case .needsAttention = source.phase {
+            return L10n.text("確認が必要", "Needs attention")
+        }
+        return nil
+    }
+
     var sourceLimitReachedHandler: (() -> Void)?
+    var sourceAccessIssueHandler: ((CaptureAccessIssue) -> Void)?
 
     // SCStreamConfiguration does not retain its backgroundColor. Keep this
     // object alive while any stream configuration can refer to it.
@@ -1090,6 +1131,29 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         layout = updated
     }
 
+    @discardableResult
+    func moveSources(
+        fromFrontOffsets offsets: IndexSet,
+        toFrontOffset destination: Int,
+        expectedFrontToBackIDs: [StageSourceID]
+    ) -> Bool {
+        guard !isPickerPresented,
+              layout.sources.reversed().map(\.id) == expectedFrontToBackIDs,
+              offsets.allSatisfy({ index in
+                  guard expectedFrontToBackIDs.indices.contains(index),
+                        let source = source(for: expectedFrontToBackIDs[index]) else { return false }
+                  return source.phase != .stopping
+              }) else { return false }
+        var updated = layout
+        guard updated.moveSources(
+            fromFrontOffsets: offsets,
+            toFrontOffset: destination,
+            expectedFrontToBackIDs: expectedFrontToBackIDs
+        ) else { return false }
+        layout = updated
+        return true
+    }
+
     private func beginCapture(
         with filter: SCContentFilter,
         reusingLayer sourceIDToReuse: StageSourceID? = nil
@@ -1380,6 +1444,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
               session.stream === stream,
               !session.isFinalizing else { return }
         if let errorMessage {
+            let shouldReportAccessIssue = !session.isStopping &&
+                !session.outputSuppressed &&
+                !session.source.isOutputSuppressed &&
+                source(for: sourceID) === session.source
+            let sourceTitle = session.source.title
             session.startDidFail = true
             beginTeardown(
                 of: session,
@@ -1389,6 +1458,18 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     message: errorMessage
                 )
             )
+            if shouldReportAccessIssue {
+                sourceAccessIssueHandler?(CaptureAccessIssue(
+                    title: L10n.text(
+                        "画面の取得を開始できませんでした",
+                        "Couldn’t start capture"
+                    ),
+                    detail: L10n.text(
+                        "「\(sourceTitle)」の画面取得を開始できませんでした。レイヤー一覧の「選び直す」から、対象をもう一度選択してください。",
+                        "Capture couldn’t start for “\(sourceTitle)”. Use Select Again in the layer list to choose the source again."
+                    ) + " (\(errorMessage))"
+                ))
+            }
             return
         }
 
@@ -2750,6 +2831,10 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                 return
             }
 
+            let issueTitle = L10n.text(
+                "画面の選択を開始できませんでした",
+                "Couldn’t open source selection"
+            )
             if case let .replace(sourceID) = intent,
                let source = self.source(for: sourceID) {
                 guard let session = self.sessions[sourceID] else {
@@ -2761,6 +2846,10 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                         source,
                         message: reconnectMessage
                     )
+                    self.sourceAccessIssueHandler?(CaptureAccessIssue(
+                        title: issueTitle,
+                        detail: reconnectMessage
+                    ))
                     return
                 }
                 guard !session.isStopping else {
@@ -2777,9 +2866,30 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                     session.activeAttention = .pickerFailure(activeMessage)
                     session.source.phase = .needsAttention(activeMessage)
                     self.publishSteadyState()
+                    if !session.isFinalizing,
+                       !session.outputSuppressed,
+                       !session.source.isOutputSuppressed {
+                        self.sourceAccessIssueHandler?(CaptureAccessIssue(
+                            title: issueTitle,
+                            detail: L10n.text(
+                                "「\(session.source.title)」の選択画面を開けませんでした。レイヤー一覧からもう一度選び直してください。",
+                                "Source selection couldn’t open for “\(session.source.title)”. Try Select Again from the layer list."
+                            ) + " (\(message))"
+                        ))
+                    }
                 }
             } else {
                 self.publishFailure(message)
+                // A removed replacement target has no remaining action to
+                // recover. A nil intent can be a system-menu picker request.
+                if case .replace = intent { return }
+                self.sourceAccessIssueHandler?(CaptureAccessIssue(
+                    title: issueTitle,
+                    detail: L10n.text(
+                        "「ソースを追加」から、もう一度選択画面を開いてください。",
+                        "Use Add Source to open the selection again."
+                    ) + " (\(message))"
+                ))
             }
         }
     }

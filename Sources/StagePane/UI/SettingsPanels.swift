@@ -2,6 +2,305 @@ import AppKit
 import StagePaneCore
 import SwiftUI
 
+/// Stage-specific controls stay beside the composition. Unlike Crop, these
+/// preferences apply immediately and are not reverted by closing the popover.
+struct StageInspectorPanel: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(L10n.text("Stage設定", "Stage Settings"))
+                    .font(.headline)
+                    .accessibilityHeading(.h1)
+                Spacer()
+                Button {
+                    controller.isStageSettingsPresented = false
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(L10n.text("Stage設定を閉じる", "Close Stage Settings"))
+                .help(L10n.text("閉じる", "Close"))
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+
+            Text(L10n.text(
+                "変更はStageへすぐ反映されます。",
+                "Changes apply to the Stage immediately."
+            ))
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
+            .padding(.bottom, 14)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    appearanceSection
+                    Divider()
+                    curtainSection
+                    Divider()
+                    pointerSection
+                    Divider()
+                    outputSection
+                    Divider()
+                    StageOutputDetails(controller: controller)
+                }
+                .padding(18)
+            }
+        }
+        .frame(width: 360, height: 600)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .controlSize(.regular)
+    }
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(L10n.text("形と背景", "Shape and Background"))
+            Picker(L10n.text("画面の形", "Stage shape"), selection: presetBinding) {
+                ForEach(StagePreset.allCases) { preset in
+                    Text(L10n.presetName(preset)).tag(preset)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(controller.stageFullScreenTransitionInProgress)
+
+            Picker(L10n.text("背景", "Background"), selection: themeBinding) {
+                ForEach(StageTheme.allCases) { theme in
+                    Text(L10n.themeName(theme)).tag(theme)
+                }
+            }
+            .pickerStyle(.menu)
+        }
+    }
+
+    private var curtainSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                sectionTitle(L10n.text("カーテンのメッセージ", "Curtain Message"))
+                Spacer()
+                Text("\(controller.privacyMessage.count)/\(StageMessage.characterLimit)")
+                    .font(.system(size: 12).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L10n.text("メッセージの文字数", "Message character count"))
+            }
+            TextField(
+                L10n.text("少々お待ちください", "Back in a moment"),
+                text: $controller.privacyMessage,
+                axis: .vertical
+            )
+            .lineLimit(2...4)
+            .textFieldStyle(.roundedBorder)
+            .accessibilityLabel(L10n.text("カーテンのメッセージ", "Curtain message"))
+            .help(L10n.text(
+                "カーテンを閉じている間だけ表示します。",
+                "Shown only while the curtain is closed."
+            ))
+            .accessibilityHint(L10n.text(
+                "カーテンを閉じている間だけ表示します。",
+                "Shown only while the curtain is closed."
+            ))
+
+            Stepper(
+                value: $controller.privacyMessageSize,
+                in: StageMessage.textSizeRange,
+                step: StageMessage.textSizeStep
+            ) {
+                HStack {
+                    Text(L10n.text("文字の大きさ", "Text size"))
+                    Spacer()
+                    Text("\(controller.privacyMessageSize)%")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityLabel(L10n.text("カーテンの文字の大きさ", "Curtain text size"))
+            .accessibilityValue("\(controller.privacyMessageSize)%")
+        }
+    }
+
+    private var pointerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(L10n.text("ポインタ", "Pointer"))
+            Picker(L10n.text("表示方法", "Appearance"), selection: $controller.pointerStyle) {
+                ForEach(StagePaneCore.PointerStyle.allCases) { style in
+                    Text(L10n.pointerStyleName(style)).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityHint(L10n.pointerStyleDetail(controller.pointerStyle))
+
+            if controller.isAudiencePointerSuppressedByInteractionMode {
+                Label {
+                    detail(L10n.text(
+                        "手書き・虫眼鏡モードではポインタを隠します。配置へ戻ると、この設定を復元します。",
+                        "Draw and Magnify hide the pointer. Returning to Arrange restores this setting."
+                    ))
+                } icon: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if controller.pointerStyle == .redDot {
+                PointerAppearanceEditor(appearance: $controller.pointerAppearance, compact: true)
+            }
+        }
+    }
+
+    private var outputSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(L10n.text("表示", "Display"))
+            Toggle(L10n.text("セーフエリア（外周5%）", "Safe area (outer 5%)"), isOn: $controller.showsSafeArea)
+                .help(L10n.text(
+                    "投影や配信で切れやすい外周5%を確認します。",
+                    "Check the outer 5% that projectors and streams may crop."
+                ))
+                .accessibilityHint(L10n.text(
+                    "投影や配信で切れやすい外周5%を確認します。",
+                    "Check the outer 5% that projectors and streams may crop."
+                ))
+
+            Toggle(L10n.text("StagePaneロゴを表示", "Show StagePane mark"), isOn: watermarkBinding)
+                .accessibilityHint(controller.hasProAccess
+                    ? L10n.text("Stageのロゴ表示を切り替えます。", "Toggles the StagePane mark on the Stage.")
+                    : L10n.text("オフにするとStagePane Proの画面を開きます。", "Turning this off opens StagePane Pro."))
+            if !controller.hasProAccess {
+                detail(L10n.text(
+                    "非表示にはStagePane Proが必要です。",
+                    "Hiding the mark requires StagePane Pro."
+                ))
+            }
+        }
+        .toggleStyle(.switch)
+    }
+
+    private var presetBinding: Binding<StagePreset> {
+        Binding(get: { controller.preset }, set: { controller.setPreset($0) })
+    }
+
+    private var themeBinding: Binding<StageTheme> {
+        Binding(get: { controller.theme }, set: { controller.setTheme($0) })
+    }
+
+    private var watermarkBinding: Binding<Bool> {
+        Binding(get: { controller.showsWatermark }, set: { controller.requestWatermarkVisibility($0) })
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title).font(.headline).accessibilityHeading(.h2)
+    }
+
+    private func detail(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// App-level information lives in a separate window, so it never replaces the
+/// editing canvas or interrupts its current selection and Crop draft.
+struct AppSettingsView: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker(L10n.text("設定のカテゴリ", "Settings category"), selection: selection) {
+                Text(L10n.text("一般", "General")).tag(WorkspaceSection.appearance)
+                Text(L10n.text("このアプリについて", "About")).tag(WorkspaceSection.about)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(20)
+
+            Divider()
+
+            Group {
+                switch selection.wrappedValue {
+                case .about:
+                    AboutPanel(controller: controller)
+                default:
+                    generalPane
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 640, minHeight: 520)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var generalPane: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L10n.text(
+                        "形・背景・カーテン・ポインタ",
+                        "Shape, background, curtain, and pointer"
+                    ))
+                    .foregroundStyle(.secondary)
+                    Button(L10n.text("Stage設定を開く", "Open Stage Settings"), action: controller.showStageSettings)
+                }
+            } header: {
+                Text(L10n.text("Stageの表示", "Stage Appearance"))
+            }
+
+            Section {
+                if controller.hasProAccess {
+                    LabeledContent("StagePane Pro") {
+                        HStack(spacing: 10) {
+                            Text(L10n.text("有効", "Active"))
+                                .foregroundStyle(.secondary)
+                            Button(L10n.text("詳細…", "Details…"), action: controller.showProUpgrade)
+                                .accessibilityLabel(L10n.text("StagePane Proの詳細", "StagePane Pro details"))
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(L10n.text(
+                            "無料版では4つのソースを利用できます。Proではソース数の上限がなくなり、ロゴを非表示にできます。",
+                            "Free supports four sources. Pro removes the source limit and lets you hide the StagePane mark."
+                        ))
+                        .foregroundStyle(.secondary)
+                        Button("StagePane Pro…", action: controller.showProUpgrade)
+                    }
+                }
+            } header: {
+                if !controller.hasProAccess {
+                    Text("StagePane Pro")
+                }
+            }
+
+            Section {
+                Button(L10n.text("使い方とサポート", "Help and Support"), action: controller.openSupport)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var selection: Binding<WorkspaceSection> {
+        Binding(
+            get: {
+                switch controller.workspaceSection {
+                case .privacy, .about: .about
+                default: .appearance
+                }
+            },
+            set: { controller.selectWorkspaceSection($0) }
+        )
+    }
+}
+
 struct AppearancePanel: View {
     @ObservedObject var controller: AppController
     private let focusesAudienceForSnapshot: Bool
@@ -62,6 +361,7 @@ struct AppearancePanel: View {
                         )
                         .textFieldStyle(.roundedBorder)
                         .accessibilityLabel(L10n.text("カーテンのメッセージ", "Curtain message"))
+                        curtainTextSizeControl
                     }
                     .cardSurface()
 
@@ -110,6 +410,43 @@ struct AppearancePanel: View {
         }
     }
 
+    private var curtainTextSizeControl: some View {
+        HStack(spacing: 10) {
+            Text(L10n.text("文字の大きさ", "Text size"))
+            Spacer()
+            Button {
+                controller.privacyMessageSize -= StageMessage.textSizeStep
+            } label: {
+                Image(systemName: "minus")
+                    .frame(width: 24, height: 24)
+            }
+            .disabled(controller.privacyMessageSize <= StageMessage.textSizeRange.lowerBound)
+            .accessibilityLabel(L10n.text("カーテンの文字を小さく", "Decrease curtain text size"))
+            .accessibilityValue("\(controller.privacyMessageSize)%")
+            .help(L10n.text("文字を小さく", "Make text smaller"))
+
+            Text("\(controller.privacyMessageSize)%")
+                .font(.body.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 48)
+                .accessibilityLabel(L10n.text("カーテンの文字の大きさ", "Curtain text size"))
+                .accessibilityValue("\(controller.privacyMessageSize)%")
+
+            Button {
+                controller.privacyMessageSize += StageMessage.textSizeStep
+            } label: {
+                Image(systemName: "plus")
+                    .frame(width: 24, height: 24)
+            }
+            .disabled(controller.privacyMessageSize >= StageMessage.textSizeRange.upperBound)
+            .accessibilityLabel(L10n.text("カーテンの文字を大きく", "Increase curtain text size"))
+            .accessibilityValue("\(controller.privacyMessageSize)%")
+            .help(L10n.text("文字を大きく", "Make text larger"))
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+    }
+
     private var audienceViewCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(L10n.text("相手に見える画面", "Audience view"))
@@ -137,51 +474,117 @@ struct AppearancePanel: View {
     }
 }
 
+struct ScreenSharingAccessView: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        VStack(spacing: 0) {
+            PermissionsPanel(controller: controller, capture: capture)
+            Divider()
+            HStack {
+                Spacer()
+                Button(L10n.text("閉じる", "Close"), action: controller.closePermissionCheck)
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 560, minHeight: 440)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+struct CaptureAccessIssueView: View {
+    @ObservedObject var controller: AppController
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.circle")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(controller.captureAccessIssue?.title ?? L10n.text("画面取得を開始できませんでした", "Couldn’t start capture"))
+                    .font(.title3.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHeading(.h1)
+                Spacer(minLength: 0)
+            }
+            .padding(24)
+
+            ScrollView {
+                Text(controller.captureAccessIssue?.detail ?? "")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+            }
+
+            Divider()
+            HStack {
+                Button(L10n.text("画面共有について…", "About Screen Sharing…"), action: controller.showAccessHelpForIssue)
+                Spacer()
+                Button(L10n.text("閉じる", "Close"), action: controller.dismissCaptureAccessIssue)
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 480, minHeight: 260)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
 struct PermissionsPanel: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                SectionHeading(
-                    eyebrow: L10n.text("ACCESS CHECK", "ACCESS CHECK"),
-                    title: L10n.text("macOSのアクセス確認", "Check macOS access"),
-                    detail: L10n.text(
-                        "StagePaneは、機能を使う時だけmacOSの確認画面を開きます。状態と用途はここでいつでも確認できます。",
-                        "StagePane opens macOS confirmation only when you use a feature that needs it. Review each purpose and status here at any time."
-                    )
-                )
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.text("画面共有について", "About Screen Sharing"))
+                        .font(.title2.weight(.semibold))
+                        .accessibilityHeading(.h1)
+                    Text(L10n.text(
+                        "ソースを追加・選び直すときに、macOSの共有ピッカーで対象を選択します。",
+                        "When you add or replace a source, choose what to share in the macOS picker."
+                    ))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
 
-                PermissionAccessCard(
-                    symbol: "rectangle.on.rectangle.angled",
-                    title: L10n.text("画面共有", "Screen sharing"),
-                    role: L10n.text("ソースごとに確認", "Confirmed per source"),
-                    detail: L10n.text(
-                        "「ソースを追加」でAppleの選択画面が開きます。そこで選んだウインドウ、アプリ、または画面だけを、その共有セッション中に表示します。別の広い画面収録許可は要求せず、音声も取得しません。",
-                        "Add Source opens Apple’s picker. StagePane can display only the window, app, or display you choose, and only for that sharing session. It doesn’t request separate broad screen-recording access or capture audio."
-                    ),
-                    statusTitle: screenSharingStatusTitle,
-                    statusSymbol: screenSharingStatusSymbol,
-                    statusColor: screenSharingStatusColor
-                ) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(screenSharingStatusTitle, systemImage: screenSharingStatusSymbol)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(screenSharingStatusColor)
+                        .accessibilityLabel(L10n.text("ソースの選択状況", "Source selection status"))
+                        .accessibilityValue(screenSharingStatusTitle)
+                    Text(L10n.text(
+                        "選んだウインドウ、アプリ、または画面だけを、その共有セッション中に表示します。音声は取得しません。",
+                        "Only the window, app, or display you choose is shown for that sharing session. Audio is not captured."
+                    ))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     addSourceButton
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .cardSurface(padding: 16)
 
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(StagePanePalette.aquaReadable)
-                        .accessibilityHidden(true)
+                DisclosureGroup(L10n.text("共有アクセスの詳細", "Sharing Access Details")) {
                     Text(permissionFooterText)
-                        .font(.caption)
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 8)
                 }
-                .cardSurface()
             }
-            .padding(.top, 38)
-            .padding(.horizontal, 32)
-            .padding(.bottom, 34)
+            .padding(24)
         }
     }
 
@@ -215,7 +618,7 @@ struct PermissionsPanel: View {
     }
 
     private var addSourceButton: some View {
-        Button(action: controller.chooseSource) {
+        Button(action: controller.chooseSourceFromAccessGuide) {
             Label(
                 requiresProForSourceAddition
                     ? L10n.text("Proでさらに追加", "Add More with Pro")
@@ -319,102 +722,109 @@ struct PrivacyPanel: View {
                         "Selected screen content is displayed on the Stage on your Mac. Control screen sharing from your meeting app."
                     )
                 )
-
-                HStack(spacing: 0) {
-                    DataFlowNode(
-                        symbol: "macwindow",
-                        title: L10n.text("選んだ内容", "Chosen content"),
-                        detail: L10n.text("macOSが許可", "Approved by macOS")
-                    )
-                    FlowArrow()
-                    DataFlowNode(
-                        symbol: "memorychip.fill",
-                        title: L10n.text("メモリ内プレビュー", "In-memory preview"),
-                        detail: L10n.text("最大30 fps", "Up to 30 fps")
-                    )
-                    FlowArrow()
-                    DataFlowNode(
-                        symbol: "rectangle.inset.filled",
-                        title: "StagePane Stage",
-                        detail: L10n.text(
-                            "通常は表示後に破棄。明示したAudience PNGだけ作成",
-                            "Normally discarded after display; only an explicit Audience PNG is created"
-                        )
-                    )
-                }
-                .padding(18)
-                .background(StagePanePalette.mintReadable.opacity(0.07), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(StagePanePalette.mintReadable.opacity(0.24)))
-                .accessibilityElement(children: .combine)
-
-                VStack(alignment: .leading, spacing: 13) {
-                    HStack(alignment: .top, spacing: 13) {
-                        Image(systemName: captureStatusSymbol)
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(captureStatusColor)
-                            .frame(width: 30)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(captureStatusTitle)
-                                .font(.headline)
-                            Text(captureStatusDetail)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    if capture.hasLayers || capture.isCaptureActive || captureNeedsAttention {
-                        Button(action: controller.stopPreview) {
-                            Label(
-                                L10n.stopAllAndRemoveLayersTitle,
-                                systemImage: capture.hasDisconnectedLayers && !capture.isCaptureActive
-                                    ? "trash.fill"
-                                    : "stop.circle.fill"
-                            )
-                        }
-                        .buttonStyle(PrimaryActionButtonStyle())
-                    }
-                }
-                .cardSurface()
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L10n.text("保存した画像について", "Saved images"))
-                        .font(.headline)
-                    Text(L10n.text(
-                        "「画像をコピー」はクリップボードへ、「PNGを保存」は選択した場所へ画像を作成します。不要な保存画像はご自身で削除してください。",
-                        "Copy Image places an image on the clipboard. Save PNG creates a file at your chosen location. Delete saved images when you no longer need them."
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    Button(L10n.text("プライバシーポリシー", "Privacy policy")) {
-                        controller.openPrivacyPolicy()
-                    }
-                }
-                .cardSurface()
-
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "apple.logo")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(StagePanePalette.aquaReadable)
-                        .frame(width: 30)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(L10n.text("StagePane Proの購入", "StagePane Pro purchases"))
-                            .font(.subheadline.weight(.semibold))
-                        Text(L10n.text(
-                            "Proの商品情報・購入・復元はAppleのStoreKitが処理します。購入や請求についてはAppleのサポートをご確認ください。",
-                            "Apple StoreKit handles Pro product information, purchases, and restores. For purchase and billing questions, see Apple Support."
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .cardSurface()
-
+                PrivacyDetailsContent(controller: controller, capture: capture)
+                Button(L10n.text("プライバシーポリシー", "Privacy Policy"), action: controller.openPrivacyPolicy)
             }
-            .padding(.top, 38)
-            .padding(.horizontal, 32)
-            .padding(.bottom, 34)
+            .padding(24)
+        }
+    }
+}
+
+/// Embeddable details share the same live capture status without a nested scroll view.
+private struct PrivacyDetailsContent: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 0) {
+                DataFlowNode(
+                    symbol: "macwindow",
+                    title: L10n.text("選んだ内容", "Chosen content"),
+                    detail: L10n.text("macOSが許可", "Approved by macOS")
+                )
+                FlowArrow()
+                DataFlowNode(
+                    symbol: "memorychip.fill",
+                    title: L10n.text("メモリ内プレビュー", "In-memory preview"),
+                    detail: L10n.text("最大30 fps", "Up to 30 fps")
+                )
+                FlowArrow()
+                DataFlowNode(
+                    symbol: "rectangle.inset.filled",
+                    title: "StagePane Stage",
+                    detail: L10n.text(
+                        "通常は表示後に破棄。明示したAudience PNGだけ作成",
+                        "Normally discarded after display; only an explicit Audience PNG is created"
+                    )
+                )
+            }
+            .padding(18)
+            .background(StagePanePalette.mintReadable.opacity(0.07), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(StagePanePalette.mintReadable.opacity(0.24)))
+            .accessibilityElement(children: .combine)
+
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(alignment: .top, spacing: 13) {
+                    Image(systemName: captureStatusSymbol)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(captureStatusColor)
+                        .frame(width: 30)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(captureStatusTitle)
+                            .font(.headline)
+                        Text(captureStatusDetail)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if capture.hasLayers || capture.isCaptureActive || captureNeedsAttention {
+                    Button(action: controller.stopPreview) {
+                        Label(
+                            L10n.stopAllAndRemoveLayersTitle,
+                            systemImage: capture.hasDisconnectedLayers && !capture.isCaptureActive
+                                ? "trash.fill"
+                                : "stop.circle.fill"
+                        )
+                    }
+                    .buttonStyle(PrimaryActionButtonStyle())
+                }
+            }
+            .cardSurface()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("保存した画像について", "Saved images"))
+                    .font(.headline)
+                Text(L10n.text(
+                    "「画像をコピー」はクリップボードへ、「PNGを保存」は選択した場所へ画像を作成します。不要な保存画像はご自身で削除してください。",
+                    "Copy Image places an image on the clipboard. Save PNG creates a file at your chosen location. Delete saved images when you no longer need them."
+                ))
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+            }
+            .cardSurface()
+
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(StagePanePalette.aquaReadable)
+                    .frame(width: 30)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.text("StagePane Proの購入", "StagePane Pro purchases"))
+                        .font(.subheadline.weight(.semibold))
+                    Text(L10n.text(
+                        "Proの商品情報・購入・復元はAppleのStoreKitが処理します。購入や請求についてはAppleのサポートをご確認ください。",
+                        "Apple StoreKit handles Pro product information, purchases, and restores. For purchase and billing questions, see Apple Support."
+                    ))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .cardSurface()
+
         }
     }
 
@@ -515,22 +925,14 @@ struct AboutPanel: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                SectionHeading(
-                    eyebrow: L10n.text("ABOUT", "ABOUT"),
-                    title: "StagePane",
-                    detail: L10n.text(
-                        "見せたいものだけ、ひとつのステージへ。",
-                        "A clean stage for everything you share."
-                    )
-                )
-
-                HStack(spacing: 24) {
-                    BrandMark(size: 92)
+                HStack(spacing: 18) {
+                    BrandMark(size: 64)
                     VStack(alignment: .leading, spacing: 7) {
                         Text("StagePane")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .font(.title2.weight(.semibold))
+                            .accessibilityHeading(.h1)
                         Text(L10n.text("バージョン \(version)", "Version \(version)"))
-                            .font(.caption.monospacedDigit())
+                            .font(.system(size: 12).monospacedDigit())
                             .foregroundStyle(.secondary)
                         Text(L10n.text(
                             "画面共有専用のステージ",
@@ -540,20 +942,32 @@ struct AboutPanel: View {
                     }
                     Spacer()
                 }
-                .cardSurface()
+                .padding(.vertical, 8)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L10n.text(
+                        "選択した画面はMac上で処理します。画像の保存はコピーやPNG保存を実行したときだけ行います。会議への共有は会議アプリで操作してください。",
+                        "Selected screen content is processed on your Mac. Images are saved only when you copy an image or save a PNG. Control sharing to your meeting from your meeting app."
+                    ))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    Button(L10n.text("プライバシーポリシー", "Privacy Policy"), action: controller.openPrivacyPolicy)
+                        .buttonStyle(.link)
+
+                    Button(L10n.text("画面共有について…", "About Screen Sharing…"), action: controller.showPermissions)
+
+                    DisclosureGroup(L10n.text("プライバシーとデータ", "Privacy and Data")) {
+                        PrivacyDetailsContent(controller: controller, capture: controller.capture)
+                            .padding(.top, 12)
+                    }
+                }
 
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 150), spacing: 10)],
                     spacing: 10
                 ) {
-                    Button {
-                        controller.openPrivacyPolicy()
-                    } label: {
-                        Label(L10n.text("プライバシーポリシー", "Privacy Policy"), systemImage: "hand.raised.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(SecondaryActionButtonStyle())
-
                     Button {
                         controller.openSupport()
                     } label: {
@@ -590,15 +1004,6 @@ struct AboutPanel: View {
                     )
                     Divider().padding(.leading, 42)
                     AboutFact(
-                        symbol: "apple.logo",
-                        title: L10n.text("公開APIのみ", "Public APIs only"),
-                        detail: L10n.text(
-                            "SwiftUI、AppKit、ScreenCaptureKitを使ったサンドボックス対応設計です。",
-                            "Built with SwiftUI, AppKit, and ScreenCaptureKit in an App Sandbox-ready architecture."
-                        )
-                    )
-                    Divider().padding(.leading, 42)
-                    AboutFact(
                         symbol: "shippingbox.fill",
                         title: L10n.text("対応環境", "Compatibility"),
                         detail: L10n.text(
@@ -613,12 +1018,12 @@ struct AboutPanel: View {
                         "ロゴとアイコンの著作物としての利用はApache-2.0で許諾されます。ただし、公式性や提携を示す商標としてStagePaneの名称・ロゴを使う権利は付与されません。詳しくは同梱の商標ポリシーを確認してください。",
                         "Apache-2.0 licenses copyright use of the logo and icon artwork, but it does not grant trademark rights to use the StagePane name or marks to imply official status or affiliation. See the bundled trademark policy for details."
                 ))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
             }
-            .padding(.top, 38)
-            .padding(.horizontal, 32)
-            .padding(.bottom, 34)
+            .padding(.top, 24)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
         }
     }
 }
@@ -764,90 +1169,127 @@ private struct PointerStylePicker: View {
 
 private struct PointerAppearanceEditor: View {
     @Binding var appearance: PointerAppearance
+    var compact = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: 18) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.black.opacity(0.82))
-                Circle()
-                    .fill(pointerColor)
-                    .overlay(Circle().stroke(Color.white.opacity(0.74), lineWidth: 1.5))
-                    .shadow(
-                        color: pointerColor.opacity(appearance.glow * 0.88),
-                        radius: CGFloat(3 + (appearance.glow * 12))
-                    )
-                    .frame(
-                        width: CGFloat(appearance.diameter),
-                        height: CGFloat(appearance.diameter)
-                    )
-            }
-            .frame(width: 76, height: 76)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(L10n.text("ポインターのプレビュー", "Pointer preview"))
-
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    Text(L10n.text("サイズ", "Size"))
-                        .frame(width: 42, alignment: .leading)
-                    Slider(
-                        value: diameterBinding,
-                        in: PointerAppearance.minimumDiameter...PointerAppearance.maximumDiameter,
-                        step: 1
-                    )
-                    .accessibilityLabel(L10n.text("ポインターのサイズ", "Pointer size"))
-                    Text("\(Int(appearance.diameter.rounded())) pt")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 43, alignment: .trailing)
-                }
-
-                HStack(spacing: 10) {
-                    Text(L10n.text("発光", "Glow"))
-                        .frame(width: 42, alignment: .leading)
-                    Slider(
-                        value: glowBinding,
-                        in: PointerAppearance.minimumGlow...PointerAppearance.maximumGlow,
-                        step: 0.05
-                    )
-                    .accessibilityLabel(L10n.text("ポインターの発光", "Pointer glow"))
-                    Text("\(Int((appearance.glow * 100).rounded()))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 43, alignment: .trailing)
-                }
-
-                HStack {
-                    ColorPicker(
-                        L10n.text("色", "Color"),
-                        selection: colorBinding,
-                        supportsOpacity: false
-                    )
-                    .accessibilityLabel(L10n.text("ポインターの色", "Pointer color"))
-
-                    Spacer()
-
-                    Button(L10n.text("標準に戻す", "Reset")) {
-                        appearance = .presentationDefault
+        Group {
+            if compact {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 14) {
+                        pointerPreview
+                        colorControls
                     }
-                    .buttonStyle(.borderless)
-                    .accessibilityHint(L10n.text(
-                        "赤色、22ポイント、中程度の発光に戻します。",
-                        "Restore red, 22 points, and medium glow."
-                    ))
+                    sizeAndGlowControls
+                }
+            } else {
+                HStack(alignment: .center, spacing: 18) {
+                    pointerPreview
+                    VStack(alignment: .leading, spacing: 10) {
+                        sizeAndGlowControls
+                        colorControls
+                    }
                 }
             }
-            .font(.caption)
         }
-        .padding(12)
-        .background(
-            Color.primary.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+        .font(.system(size: 12))
+        .padding(compact ? 0 : 12)
+        .background {
+            if !compact {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            }
+        }
+    }
+
+    private var pointerPreview: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(nsColor: .underPageBackgroundColor))
+            Circle()
+                .fill(pointerColor)
+                .overlay(Circle().stroke(Color.white.opacity(0.74), lineWidth: 1.5))
+                .shadow(
+                    color: pointerColor.opacity(appearance.glow * 0.88),
+                    radius: CGFloat(3 + (appearance.glow * 12))
+                )
+                .frame(
+                    width: CGFloat(appearance.diameter),
+                    height: CGFloat(appearance.diameter)
+                )
+        }
+        .frame(width: 76, height: 76)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.text("ポインターのプレビュー", "Pointer preview"))
+    }
+
+    private var sizeAndGlowControls: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Text(L10n.text("サイズ", "Size"))
+                    .frame(width: 42, alignment: .leading)
+                Slider(
+                    value: diameterBinding,
+                    in: PointerAppearance.minimumDiameter...PointerAppearance.maximumDiameter,
+                    step: 1
+                )
+                .accessibilityLabel(L10n.text("ポインターのサイズ", "Pointer size"))
+                .accessibilityValue("\(Int(appearance.diameter.rounded())) pt")
+                Text("\(Int(appearance.diameter.rounded())) pt")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 43, alignment: .trailing)
+            }
+
+            HStack(spacing: 10) {
+                Text(L10n.text("発光", "Glow"))
+                    .frame(width: 42, alignment: .leading)
+                Slider(
+                    value: glowBinding,
+                    in: PointerAppearance.minimumGlow...PointerAppearance.maximumGlow,
+                    step: 0.05
+                )
+                .accessibilityLabel(L10n.text("ポインターの発光", "Pointer glow"))
+                .accessibilityValue("\(Int((appearance.glow * 100).rounded()))%")
+                Text("\(Int((appearance.glow * 100).rounded()))%")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 43, alignment: .trailing)
+            }
+        }
+    }
+
+    private var colorControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                pointerColorPicker
+                Spacer(minLength: 8)
+                resetButton
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                pointerColorPicker
+                resetButton
+            }
+        }
+    }
+
+    private var pointerColorPicker: some View {
+        ColorPicker(
+            L10n.text("色", "Color"),
+            selection: colorBinding,
+            supportsOpacity: false
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        )
+        .accessibilityLabel(L10n.text("ポインターの色", "Pointer color"))
+    }
+
+    private var resetButton: some View {
+        Button(L10n.text("標準に戻す", "Reset")) {
+            appearance = .presentationDefault
+        }
+        .buttonStyle(.borderless)
+        .accessibilityHint(L10n.text(
+            "赤色、22ポイント、中程度の発光に戻します。",
+            "Restore red, 22 points, and medium glow."
+        ))
     }
 
     private var pointerColor: Color {
@@ -903,89 +1345,6 @@ private struct PointerAppearanceEditor: View {
     }
 }
 
-private struct PermissionAccessCard<Actions: View>: View {
-    let symbol: String
-    let title: String
-    let role: String
-    let detail: String
-    let statusTitle: String
-    let statusSymbol: String
-    let statusColor: Color
-    let actions: Actions
-
-    init(
-        symbol: String,
-        title: String,
-        role: String,
-        detail: String,
-        statusTitle: String,
-        statusSymbol: String,
-        statusColor: Color,
-        @ViewBuilder actions: () -> Actions
-    ) {
-        self.symbol = symbol
-        self.title = title
-        self.role = role
-        self.detail = detail
-        self.statusTitle = statusTitle
-        self.statusSymbol = statusSymbol
-        self.statusColor = statusColor
-        self.actions = actions()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 13) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(StagePanePalette.aquaReadable)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        StagePanePalette.aquaReadable.opacity(0.11),
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    )
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Text(title)
-                            .font(.headline)
-                        Text(role)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(StagePanePalette.indigo)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                StagePanePalette.indigo.opacity(0.10),
-                                in: Capsule()
-                            )
-                    }
-
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 12)
-
-                Label(statusTitle, systemImage: statusSymbol)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(statusColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(statusColor.opacity(0.10), in: Capsule())
-                    .accessibilityLabel(title)
-                    .accessibilityValue(statusTitle)
-            }
-
-            actions
-        }
-        .cardSurface()
-        .accessibilityElement(children: .contain)
-    }
-}
-
 private struct DataFlowNode: View {
     let symbol: String
     let title: String
@@ -997,10 +1356,10 @@ private struct DataFlowNode: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(StagePanePalette.mintReadable)
             Text(title)
-                .font(.caption.weight(.bold))
+                .font(.system(size: 12).weight(.bold))
                 .multilineTextAlignment(.center)
             Text(detail)
-                .font(.caption2)
+                .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -1011,7 +1370,7 @@ private struct DataFlowNode: View {
 private struct FlowArrow: View {
     var body: some View {
         Image(systemName: "arrow.right")
-            .font(.caption.weight(.bold))
+            .font(.system(size: 12).weight(.bold))
             .foregroundStyle(StagePanePalette.mintReadable.opacity(0.82))
             .accessibilityHidden(true)
     }
@@ -1032,7 +1391,7 @@ private struct PrivacyPromise: View {
                 .font(.subheadline.weight(.medium))
             Spacer()
             Image(systemName: "checkmark")
-                .font(.caption.weight(.black))
+                .font(.system(size: 12).weight(.black))
                 .foregroundStyle(StagePanePalette.mintReadable)
         }
         .padding(.vertical, 7)
@@ -1056,7 +1415,7 @@ private struct AboutFact: View {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                 Text(detail)
-                    .font(.caption)
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

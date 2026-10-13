@@ -50,24 +50,11 @@ private struct SnapshotSourcePresentation: Identifiable {
 
 struct SnapshotSourceRailList: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 2) {
             ForEach(SnapshotSourcePresentation.fixtures) { source in
                 SnapshotLayerRow(source: source)
             }
-
-            Spacer(minLength: 8)
-
-            Button(action: {}) {
-                Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(SecondaryActionButtonStyle())
-
-            Button(action: {}) {
-                Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(SecondaryActionButtonStyle())
+            Spacer(minLength: 0)
         }
         .accessibilityHidden(true)
     }
@@ -77,63 +64,61 @@ private struct SnapshotLayerRow: View {
     let source: SnapshotSourcePresentation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+        HStack(spacing: 3) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .frame(width: 16, height: 44)
+            HStack(spacing: 7) {
                 Image(systemName: source.symbol)
-                    .foregroundStyle(StagePanePalette.aquaReadable)
-                    .frame(width: 22)
-
-                VStack(alignment: .leading, spacing: 3) {
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(source.title)
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 13, weight: source.isSelected ? .semibold : .regular))
                         .lineLimit(1)
                     Text(source.isHidden
-                        ? L10n.text("非表示・取得停止中", "Hidden · Capture paused")
-                        : L10n.text("表示中", "Visible on Stage"))
-                        .font(.caption2)
+                        ? L10n.text("非表示・取得停止", "Hidden · Capture paused")
+                        : L10n.text("画面取得中", "Capturing"))
+                        .font(.system(size: 12))
+                        .lineLimit(2, reservesSpace: true)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: source.isHidden ? "eye.slash" : "eye")
-                    .foregroundStyle(source.isHidden ? Color.secondary : StagePanePalette.aquaReadable)
-                    .frame(width: 28, height: 28)
-                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
-
-                Image(systemName: "ellipsis")
-                    .frame(width: 22, height: 28)
             }
+            .frame(minHeight: 44)
+            Image(systemName: source.isHidden ? "eye.slash" : "eye")
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+            Image(systemName: "ellipsis")
+                .frame(width: 28, height: 28)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
+        .frame(minHeight: 56)
+        .background(source.isSelected ? Color.accentColor.opacity(0.13) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 6))
+    }
+}
 
-            if source.isSelected {
-                HStack(spacing: 6) {
-                    Button(action: {}) {
-                        Image(systemName: "arrow.up").frame(width: 28, height: 25)
-                    }
-                    .disabled(true)
-                    Button(action: {}) {
-                        Image(systemName: "arrow.down").frame(width: 28, height: 25)
-                    }
-                    Spacer(minLength: 0)
-                    Button(action: {}) {
-                        Label(L10n.cropEditActionTitle(isCropped: false), systemImage: "crop")
-                            .font(.caption2)
-                            .lineLimit(1)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+struct SnapshotSelectedLayerTools: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(L10n.text("プレゼン資料", "Presentation"))
+                .font(.callout)
+                .lineLimit(1)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Button(action: {}) {
+                Label(L10n.cropEditActionTitle(isCropped: false), systemImage: "crop")
             }
+            Menu {} label: { Image(systemName: "ellipsis").frame(minWidth: 20) }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
         }
-        .padding(9)
-        .background(
-            source.isSelected ? StagePanePalette.aqua.opacity(0.10) : Color.white.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 10)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(source.isSelected ? StagePanePalette.aquaReadable.opacity(0.65) : Color.white.opacity(0.07))
-        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .accessibilityHidden(true)
     }
 }
 
@@ -273,17 +258,6 @@ private struct SnapshotStageTile: View {
                         .frame(minHeight: 20)
                         .background(Color.black.opacity(0.72), in: Capsule())
                         .padding(7)
-
-                    if !isPaused {
-                        Image(systemName: "crop")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 25, height: 25)
-                            .background(StagePanePalette.indigo, in: Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.90), lineWidth: 1))
-                            .padding(5)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    }
 
                     if isSelected {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")

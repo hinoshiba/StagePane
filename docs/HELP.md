@@ -12,12 +12,12 @@
 3. Use the Canvas and the persistent layer list together in the private
    **Workspace / ワークスペース**. Select a layer, then move, resize, or crop it;
    use **Hide / 非表示**, **Show / 再表示**, **Replace / 選び直す**, or
-   **Remove / 解除** beside that layer. **Auto Arrange / 自動配置** makes an even grid.
-   In Arrange mode, **Quick Layout / クイック配置** also offers Side by
+   **Remove / 解除** beside that layer. **Layout → Grid / レイアウト → グリッド** makes an even grid.
+   In Arrange mode, **Layout / レイアウト** also offers Side by
    Side, Stacked, and Picture in Picture without changing source order.
-4. To use a separate full-screen Space, choose **Enter Stage Full Screen / Stageをフルスクリーンにする** in Stage Settings before starting your meeting share. Press **Command-1** to return to the private Workspace.
+4. To use a separate full-screen Space, choose **Enter Stage Full Screen / Stageをフルスクリーンにする** in the menu beside **Show Stage** before starting your meeting share. Press **Command-1** to return to the private Workspace.
 5. In your meeting app, share only the exact **StagePane Stage** window.
-6. Confirm the correct share target, then choose **Reveal Stage / カーテンを開く**.
+6. Confirm the correct share target, then choose **Open Curtain / カーテンを開く**.
 
 Selecting an app can include every window owned by that app. Select a single
 window when you want to limit the source more narrowly.
@@ -34,9 +34,10 @@ content to maximize the window within the current screen while preserving its
 aspect ratio. The menu bar and Dock remain available. Double-click again to
 restore its previous size and position.
 
-In **Stage Settings**, **Audience PNG** shows the preset dimensions used for
-image export. **Current Stage Rendering Size** shows the Stage canvas's drawing
-pixel dimensions and updates when its size or display changes. A small Stage
+In **Stage Settings → Output Details**, **Stage rendering size** shows the Stage
+canvas's drawing pixel dimensions and updates when its size or display changes.
+Audience PNG exports use the selected Stage shape preset's dimensions instead.
+A small Stage
 can reduce sharing quality. Choose **Enlarge Stage for Sharing** to grow it
 toward a sharing size that fits the current screen, keeping its shape. An
 already larger Stage is not reduced. This keeps the same Stage window, so it
@@ -51,9 +52,9 @@ Stageにはタイトルバーがありません。通常表示では、表示内
 現在の画面内で最大化します。メニューバーとDockは利用できます。もう一度ダブルクリックすると、
 元の大きさと位置へ戻ります。
 
-**Stage設定** の **Audience PNG** は、画像の書き出しに使うプリセットのサイズです。
-**現在のStage描画サイズ** はStageキャンバスの描画ピクセル数で、大きさや表示先の画面が
-変わると更新されます。Stageが小さいと、共有画質が低下することがあります。
+**Stage設定 → 出力の詳細** の **Stageの描画サイズ** はStageキャンバスの描画ピクセル数で、
+大きさや表示先の画面が変わると更新されます。Audience PNGの書き出しには、選択した
+Stageの形状プリセットの寸法を使います。Stageが小さいと、共有画質が低下することがあります。
 **共有向けにStageを拡大** を選ぶと、形を保ちながら現在の画面に収まる共有向けサイズへ
 近づけます。すでに大きいStageを縮小することはありません。
 同じStageウインドウを使うため、共有対象を別のウインドウへ置き換えません。
@@ -94,12 +95,19 @@ Audience PNGはプリセットのサイズを保ち、フルスクリーンの�
 ## Work with overlapping layers / 重なったレイヤーを編集する
 
 The layer list stays beside the Canvas, with the frontmost layer at the top.
-Select a covered or hidden layer from this list. Selecting, dragging, or
-resizing it preserves its stacking order. Only the selected Canvas tile shows
-its editing outline and controls.
+Select a covered or hidden layer from this list. Selecting a layer, or moving
+and resizing it on the Canvas, preserves its stacking order. Only the selected Canvas tile shows
+its editing outline and handles; Crop and the selected layer's More menu stay
+in the fixed tools below the Canvas.
 
-For a selected rear or hidden layer, drag its private title badge or use arrow
-keys to move it. Its resize handle remains accessible above overlapping layers.
+Drag a layer's grip in the list to change stacking order: higher rows are in
+front. The new order takes effect when you drop; canceling the drag leaves it
+unchanged. Reordering keeps every layer's placement and crop, and keeps the
+current selection. Finish Crop or close Apple's source picker before reordering.
+The More menu in the layer's row or selected-layer tools also works without dragging.
+
+For a selected rear or hidden layer, drag its private title badge or focus the Canvas and use arrow
+keys to move it. Up and Down in the layer list change selection without moving content. Its resize handle remains accessible above overlapping layers.
 Clicking visible foreground content selects that foreground layer; the empty
 interior of the selected editing outline does not block that click.
 
@@ -110,10 +118,17 @@ proportions and holds its visible upper-left corner in place. Keyboard and
 VoiceOver actions use the same bounds. A hidden layer keeps its last bounds.
 
 レイヤー一覧はキャンバスの横に常設され、最前面のレイヤーが上に並びます。
-重なって見えないレイヤーや非表示のレイヤーも一覧から選べます。選択・移動・サイズ変更では
-重なり順は変わりません。キャンバスの編集枠と操作ボタンは、選択中のレイヤーだけに表示します。
+重なって見えないレイヤーや非表示のレイヤーも一覧から選べます。選択と、キャンバス上の移動・サイズ変更では
+重なり順は変わりません。キャンバスの編集枠とハンドルは、選択中のレイヤーだけに表示します。
+切り抜きと選択レイヤーのその他メニューは、キャンバス下の固定ツールに表示します。
 
-背面や非表示のレイヤーを選んだら、手元のタイトル表示をドラッグするか、矢印キーで移動します。
+一覧のつまみをドラッグすると、上のレイヤーほど手前になるよう重なり順を変更できます。
+ドロップした時点で順序を確定し、ドラッグをキャンセルすれば元の順序を保ちます。
+各レイヤーの配置・切り抜きと、現在の選択は変わりません。切り抜き編集中やAppleの
+ソース選択画面を表示している間は、それを終えてから並べ替えてください。ドラッグを
+使わず、レイヤー行や選択レイヤー用ツールのその他メニューからも操作できます。
+
+背面や非表示のレイヤーを選んだら、手元のタイトル表示をドラッグするか、キャンバスにフォーカスして矢印キーで移動します。一覧の上下キーは選択だけを変えます。
 サイズ変更ハンドルは重なりの上から操作できます。前面に見えている映像をクリックすると
 そのレイヤーを選べるため、選択枠の内側が前面の映像へのクリックを遮ることはありません。
 
@@ -122,12 +137,12 @@ VoiceOver actions use the same bounds. A hidden layer keeps its last bounds.
 サイズ変更では左上の位置と縦横比を保ちます。キーボードやVoiceOverでも同じ範囲を
 操作でき、非表示中は最後の範囲を保ちます。
 
-Use **Move Forward / ひとつ前へ** or **Move Backward / ひとつ後ろへ** to move
-one position in the stack, and **Bring to Front / 最前面へ** or
+In a layer's **More / その他** menu, use **Move Forward / ひとつ前面へ** or
+**Move Backward / ひとつ背面へ** to move one position in the stack, and **Bring to Front / 最前面へ** or
 **Send to Back / 最背面へ** to move to an end. The list updates to match the
 Stage. These actions preserve placement and crop.
 
-**ひとつ前へ**・**ひとつ後ろへ** は重なり順を1段変え、**最前面へ**・**最背面へ** は
+各レイヤーの **その他** メニューにある **ひとつ前面へ**・**ひとつ背面へ** は重なり順を1段変え、**最前面へ**・**最背面へ** は
 一番手前・一番奥へ移します。一覧はStageの順番に合わせて更新され、配置と切り抜きは保ちます。
 
 Use the direct **Hide / 非表示** control when a layer should disappear
@@ -137,22 +152,23 @@ fresh frame arrives, with the same placement, crop, and order.
 一時的に消したいレイヤーは **非表示** を選びます。一覧には残り、**再表示** を選ぶと
 新しい完全なフレームが届いてから、同じ配置・切り抜き・重なり順で映像が戻ります。
 
-## Permissions / アクセス権限
+## About screen sharing / 画面共有について
 
-Workspace's persistent **Permissions / アクセス権限** view explains every
-access path StagePane can use. Screen sharing is approved one selection at a
+**About Screen Sharing** in the Stage menu or **Settings → About** opens a
+separate guide. Screen sharing is approved one selection at a
 time in Apple's `SCContentSharingPicker`: choosing a window, app, or display
 authorizes only that content for its capture session. StagePane does not request
 separate, broad Screen Recording access, and canceling the picker grants no
-source access.
+new source access. Consent happens when you select a source; StagePane does not
+show a permission warning at launch.
 
-Workspaceの常設 **アクセス権限** 画面では、StagePaneが利用できるアクセス経路を
-確認できます。画面共有はAppleの `SCContentSharingPicker` で1件ずつ承認され、選んだ
+ステージメニューまたは **設定 → このアプリについて** の **画面共有について** から、
+別の案内ウインドウを開けます。画面共有はAppleの `SCContentSharingPicker` で1件ずつ承認され、選んだ
 ウインドウ、アプリ、または画面だけが、その取得セッション中に許可されます。別途、
 広範な画面収録許可を求めることはなく、ピッカーをキャンセルした場合はソースへの
-アクセスも始まりません。
+新しいアクセスも始まりません。必要な承認はソース選択時に確認し、起動時の権限警告は表示しません。
 
-In **Appearance / 見た目と動作**, set **Pointer appearance / カーソルの表示方法**
+In **Stage Settings / Stage設定**, set **Pointer appearance / カーソルの表示方法**
 to **System / 通常**, **Laser pointer / レーザーポインター**, or **Hidden /
 非表示**. The laser pointer's color, size, and glow are adjustable. Its dot is
 drawn only over the frontmost Stage source; it does not replace the pointer you
@@ -198,12 +214,19 @@ sent that frame yet, changing the slide or source content applies the new style.
 The private Workspace stays visible while the audience Curtain is on, so you can
 prepare a layout before revealing it. Dragging or resizing a tile changes only
 the Stage composition while **Arrange / 配置** mode is selected. **Crop / 切り抜き**
-starts from the button on an individual layer, shows only that layer at full
+starts from the selected-layer tools below the Canvas or a layer's More menu, shows only that layer at full
 Canvas size, and drafts the framed part sent to the Stage. The Stage does not
 change until Apply Crop; Cancel discards the draft.
 The Canvas and layer list stay together, including at the minimum window size.
-Its navigation provides Stage Settings, Appearance, Permissions, Privacy, and About.
+Use **Stage Settings** above the Canvas for appearance and output. The labeled
+**Settings** button (Command-comma) opens a separate window with **General** and
+**About**. About includes a privacy summary and expandable **Privacy and Data**
+details. **About StagePane** in the app menu opens the same page.
+Workspace and Settings automatically follow macOS Light or Dark appearance.
+This is independent of the audience Stage theme and needs no app appearance setting.
 Toggling the Curtain does not bring the Stage window to the front.
+Under **Stage Settings → Curtain**, use the size stepper to make the message
+smaller or larger. Changes apply immediately and the size is saved for next time.
 “Keep Private” is guidance, not a technical capture boundary. Application or
 full-display sharing can expose the Workspace, and a meeting app may still list
 it. Select the exact **StagePane Stage — Share
@@ -211,11 +234,14 @@ This Window** window.
 
 観客側のカーテン中も手元のWorkspaceは表示されるため、公開前に準備できます。
 **配置** モードでのタイルのドラッグや大きさ変更は、Stage内の配置だけを変えます。
-**切り抜き** は各レイヤーのボタンから開始し、そのレイヤーだけを手元に全面表示して、Stageへ出す範囲を下書きします。
+**切り抜き** はキャンバス下の選択レイヤー用ツールや各レイヤーのその他メニューから開始し、そのレイヤーだけを手元に全面表示して、Stageへ出す範囲を下書きします。
 「切り抜きを適用」を選ぶまでStageは変わらず、キャンセルすると下書きを破棄します。
-キャンバスとレイヤー一覧は、最小ウインドウサイズでも並べて表示します。ナビゲーションには
-Stage設定、見た目と動作、アクセス権限、プライバシー、このアプリについてをまとめています。
+キャンバスとレイヤー一覧は、最小ウインドウサイズでも並べて表示します。見た目や出力はキャンバス上部の **Stage設定** にまとめています。文字付きの **設定** ボタン（⌘,）は、**一般** と **このアプリについて** の2項目を持つ独立ウインドウを開きます。**このアプリについて** にはプライバシーの要約と展開式の **プライバシーとデータ** があり、アプリメニューの **StagePaneについて** からも同じ画面を開けます。
+Workspaceと設定画面はmacOSのライト／ダークの外観に自動で追従します。
+観客向けStageのテーマとは独立しており、アプリ内で外観を設定する必要はありません。
 カーテンを切り替えてもStageウインドウは前面へ移動しません。
+**Stage設定 → カーテン** の文字サイズステッパーで文字を小さく・大きくできます。
+変更はすぐに反映され、文字の大きさは次回起動時も維持されます。
 「共有しない」は使い方の案内であり、技術的な共有防止境界ではありません。アプリ全体や
 ディスプレイ全体を共有するとWorkspaceが映る可能性があります。会議アプリでは
 正確に **StagePane Stage — このウインドウを共有** を選んでください。
@@ -251,8 +277,8 @@ StagePaneではStage全体の **配置**・**手書き**・**虫眼鏡** モー�
 - **Arrange / 配置** moves and proportionally resizes the selected content while preserving
   its order; explicit ordering actions change the stack. It never sends those
   editing gestures to a source app.
-- **Crop / 切り抜き** starts from the crop button on the selected Canvas tile or layer
-  row, then displays only that layer at full Canvas size in the private
+- **Crop / 切り抜き** starts from the selected-layer tools below the Canvas or the
+  layer's More menu, then displays only that layer at full Canvas size in the private
   Workspace. Drag inside the bright frame to move it or use its four
   corner handles to resize it. The Stage keeps the previously applied crop while
   you edit. Choose **Apply Crop / 切り抜きを適用** to publish the draft, or
@@ -315,20 +341,22 @@ Audience PNGでそのレイヤーを透明にします。再表示を選ぶと�
 ## Screenshots / スクリーンショット
 
 Use **Copy Audience Image / Audience画像をコピー** or **Save Audience Image… /
-Audience画像を保存…** in Stage Workspace only when you want a one-shot image
+Audience画像を保存…** in the menu beside **Show Stage** (or the File menu) only when you want a one-shot image
 of the clean audience Stage. The
 PNG uses the selected preset's Audience PNG dimensions regardless of the Stage
 window size and includes the exact audience state:
 shared content or Curtain, ink, watermark, the safe-area guide when enabled, and
 the pointer when visible. It does not include Workspace navigation or controls,
 window title-bar chrome, or other app windows.
+The StagePane menu-bar icon also provides these actions under **Stage Image**.
 
-観客側のきれいなStageを1枚だけ画像にしたいときは、Stage Workspaceの
+観客側のきれいなStageを1枚だけ画像にしたいときは、**Stageを表示** の横のメニュー（またはファイルメニュー）の
 **Audience画像をコピー** または **Audience画像を保存…** を明示的に選びます。PNGは
 Stageウインドウの大きさにかかわらず、選択中のプリセットのAudience PNGサイズで作成され、共有内容
 またはカーテン、手書き、ウォーターマーク、有効な場合はセーフエリア、表示中の場合は
 ポインターを含みます。Workspaceのナビゲーションや操作UI、ウインドウのタイトルバー、
 他アプリのウインドウは含みません。
+メニューバーのStagePaneアイコンにある **Stage画像** からもコピー・保存できます。
 
 Copy places that PNG on the macOS clipboard. Save writes it only to the location
 you choose, and canceling the save panel writes nothing. StagePane uses the
@@ -368,9 +396,18 @@ only the audience composition.
 - Press **Shift-Command-P** to add one source.
 - Press **Command-1** to return to the private Workspace, **Command-2** to show
   Stage, and **Control-Command-F** to toggle Stage full screen.
-- Open **Permissions / アクセス権限** in Workspace to review the
+- Open **About Screen Sharing / 画面共有について** from the Stage menu or
+  **Settings → About / 設定 → このアプリについて** to review the
   per-selection screen-sharing model. Add Source opens Apple's picker; no
   separate broad Screen Recording permission or settings step is required.
+- If source selection or capture cannot start, a separate message window explains
+  the issue while the editor remains usable. Canceling the picker does not open
+  this message. Hide and Stop failures remain in the layer and capture status.
+
+ソースの選択画面や取得を開始できない場合は、短い説明を別ウインドウに表示します。
+編集画面は引き続き操作でき、ピッカーのキャンセルではこの案内を表示しません。
+非表示や停止の失敗は、レイヤーと画面取得の状態表示で確認できます。
+
 StagePane processes frames locally and does not upload them. When you share the
 Stage, transmission is performed by your meeting app under its own privacy
 policy. In the Mac App Store build, Apple StoreKit handles the optional Pro
@@ -382,14 +419,14 @@ StagePane自身はフレームをローカル処理し、外部送信しませ�
 
 ## StagePane Pro / 購入と復元
 
-In the Mac App Store build, open **StagePane Pro** in Workspace to see the
+In the Mac App Store build, open **StagePane Pro** from Settings or the StagePane menu to see the
 localized one-time price. Pro removes StagePane's source-count limit and makes
 the StagePane mark optional. The practical source total depends on Mac
 performance and operating-system constraints. **Restore Purchases / 購入を復元**
 is available on the same screen. A canceled purchase never changes or stops the
 current Stage.
 
-Mac App Store版ではWorkspaceの **StagePane Pro** で、App Storeが提供する買い切り価格を
+Mac App Store版では設定またはStagePaneメニューの **StagePane Pro** で、App Storeが提供する買い切り価格を
 確認できます。無料版は同時に4件まで利用でき、Proではアプリ側のソース件数制限がなくなり、
 ロゴ非表示も開放します。実際に利用できる件数はMacの性能とOSの制約に依存します。同じ画面から
 **購入を復元** できます。購入をキャンセルしても、現在のStageを変更・停止しません。

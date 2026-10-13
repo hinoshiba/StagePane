@@ -42,43 +42,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             #selector(AppController.showStage),
             target: controller
         ))
-        menu.addItem(item(
-            controller.stageIsFullScreen
-                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
-                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
-            #selector(AppController.toggleStageFullScreen),
-            target: controller
-        ))
         menu.addItem(.separator())
         menu.addItem(item(
             L10n.text("ソースを追加…", "Add Source…"),
             #selector(AppController.chooseSource),
             target: controller
         ))
-        menu.addItem(item(
-            L10n.text("アクセス権限を確認…", "Review Permissions…"),
-            #selector(AppController.showPermissions),
-            target: controller
-        ))
-        menu.addItem(item(
-            "StagePane Pro…",
-            #selector(AppController.showProUpgrade),
-            target: controller
-        ))
-        menu.addItem(.separator())
-        menu.addItem(item(
-            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
-            #selector(AppController.copyStageScreenshot),
-            target: controller
-        ))
-        menu.addItem(item(
-            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
-            #selector(AppController.saveStageScreenshot),
-            target: controller
-        ))
-
         let curtain = item(
-            L10n.text("カーテン", "Curtain"),
+            controller.privacyCurtain
+                ? L10n.text("カーテンを開く", "Open Curtain")
+                : L10n.text("カーテンを閉じる", "Close Curtain"),
             #selector(AppController.toggleCurtain),
             target: controller
         )
@@ -94,6 +67,41 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         )
         stop.isEnabled = capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
         menu.addItem(stop)
+        menu.addItem(.separator())
+
+        menu.addItem(item(
+            controller.stageIsFullScreen
+                ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
+                : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
+            #selector(AppController.toggleStageFullScreen),
+            target: controller
+        ))
+        menu.addItem(item(
+            L10n.text("Stage設定…", "Stage Settings…"),
+            #selector(AppController.showStageSettings),
+            target: controller
+        ))
+        let imagesTitle = L10n.text("Stage画像", "Stage Image")
+        let imagesItem = NSMenuItem(title: imagesTitle, action: nil, keyEquivalent: "")
+        let imagesMenu = NSMenu(title: imagesTitle)
+        imagesMenu.addItem(item(
+            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
+            #selector(AppController.copyStageScreenshot),
+            target: controller
+        ))
+        imagesMenu.addItem(item(
+            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
+            #selector(AppController.saveStageScreenshot),
+            target: controller
+        ))
+        imagesItem.submenu = imagesMenu
+        menu.addItem(imagesItem)
+        menu.addItem(.separator())
+        menu.addItem(item(
+            L10n.text("設定…", "Settings…"),
+            #selector(AppController.showSettings),
+            target: controller
+        ))
         menu.addItem(.separator())
         menu.addItem(item(
             L10n.text("StagePaneを終了", "Quit StagePane"),

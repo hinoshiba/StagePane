@@ -1,75 +1,57 @@
+import AppKit
 import StagePaneCore
 import SwiftUI
 
-private extension WorkspaceSection {
-    var title: String {
-        switch self {
-        case .canvas, .sources: L10n.text("ワークスペース", "Workspace")
-        case .stage: L10n.text("Stage設定", "Stage Settings")
-        case .appearance: L10n.text("見た目と動作", "Appearance")
-        case .pro: "StagePane Pro"
-        case .permissions: L10n.text("アクセス権限", "Permissions")
-        case .privacy: L10n.text("プライバシー", "Privacy")
-        case .about: L10n.text("このアプリについて", "About")
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .canvas, .sources: "rectangle.inset.filled"
-        case .stage: "slider.horizontal.3"
-        case .appearance: "paintpalette.fill"
-        case .pro: "sparkles"
-        case .permissions: "checkmark.shield.fill"
-        case .privacy: "hand.raised.fill"
-        case .about: "info.circle.fill"
-        }
-    }
-}
-
-/// A private, large-format workspace for composing and operating the audience Stage.
-///
-/// This view deliberately uses the preview renderers through `StageLayoutEditor`.
-/// The shareable `StageView` remains a separate, chrome-free window, so workspace
-/// controls can never become part of the intended audience output.
+/// The private editor always keeps layers and canvas together. Audience content
+/// is rendered in the separate, chrome-free Stage window.
 struct StageWorkspaceView: View {
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    private let focusesAppearanceForSnapshot: Bool
     private let snapshotFixture: StageWorkspaceSnapshotFixture?
-
     @State private var isClearInkConfirmationPresented = false
+    @State private var showsSharingGuide = false
+    @AppStorage("workspace.layerRailWidth") private var savedLayerRailWidth = 232.0
+    @State private var railDragStart: Double?
 
     init(
         controller: AppController,
         capture: CaptureCoordinator,
-        focusesAppearanceForSnapshot: Bool = false,
         snapshotFixture: StageWorkspaceSnapshotFixture? = nil
     ) {
         self.controller = controller
         self.capture = capture
-        self.focusesAppearanceForSnapshot = focusesAppearanceForSnapshot
         self.snapshotFixture = snapshotFixture
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            let usesCompactNavigation = geometry.size.width < 1_200
-
+        VStack(spacing: 0) {
+            workspaceToolbar
+            Divider()
             HStack(spacing: 0) {
-                workspaceNavigation(compact: usesCompactNavigation)
-                    .frame(width: usesCompactNavigation ? 66 : 218)
-
-                Divider().overlay(Color.white.opacity(0.10))
-
-                workspaceContent
+                sourceRail.frame(width: layerRailWidth)
+                railDivider
+                stageWorkspace
+                    .frame(minWidth: 550, maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+            Divider()
+            sharingFooter
         }
         .frame(minWidth: 900, minHeight: 620)
-        .background(workspaceBackground.ignoresSafeArea())
-        .preferredColorScheme(.dark)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .overlay(alignment: .top) {
+            if let notice = controller.transientNoticeState.notice {
+                WorkspaceNoticeToast(message: notice.message) {
+                    controller.dismissTransientNotice(id: notice.id)
+                }
+                .id(notice.id)
+                .padding(.horizontal, 12)
+                .padding(.top, 64)
+                .transition(accessibilityReduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+                .zIndex(20)
+            }
+        }
+        .animation(accessibilityReduceMotion ? nil : .easeOut(duration: 0.2), value: controller.transientNoticeState.notice?.id)
         .confirmationDialog(
             L10n.text("手書きをすべて消しますか？", "Clear all drawings?"),
             isPresented: $isClearInkConfirmationPresented,
@@ -80,796 +62,379 @@ struct StageWorkspaceView: View {
             }
             Button(L10n.text("キャンセル", "Cancel"), role: .cancel) {}
         } message: {
-            Text(L10n.text(
-                "共有Stageとこのワークスペースから、すべての線を削除します。",
-                "Remove every line from the shared Stage and this workspace."
-            ))
+            Text(L10n.text("共有Stageと編集画面からすべての線を削除します。", "Remove every line from the audience Stage and editor."))
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "StagePane ステージワークスペース",
-            "StagePane Stage Workspace"
-        ))
-    }
-
-    private var workspaceContent: some View {
-        VStack(spacing: 0) {
-            workspaceToolbar
-            privateWorkspaceWarning
-            workspaceDetail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .top) {
-                    Group {
-                        if let notice = controller.transientNoticeState.notice {
-                            WorkspaceNoticeToast(message: notice.message) {
-                                controller.dismissTransientNotice(id: notice.id)
-                            }
-                            .id(notice.id)
-                            .padding(.horizontal, 12)
-                            .padding(.top, 12)
-                            .transition(transientNoticeTransition)
-                            .zIndex(20)
-                        }
-                    }
-                    .animation(
-                        accessibilityReduceMotion
-                            ? .linear(duration: 0.10)
-                            : .easeOut(duration: 0.20),
-                        value: controller.transientNoticeState.notice?.id
-                    )
-                }
-        }
-    }
-
-    private var transientNoticeTransition: AnyTransition {
-        if accessibilityReduceMotion { return .opacity }
-        return .opacity.combined(with: .move(edge: .top))
-    }
-
-    @ViewBuilder
-    private var workspaceDetail: some View {
-        switch controller.workspaceSection {
-        case .canvas, .sources:
-            compositionWorkspace
-        case .stage:
-            StageSettingsPanel(controller: controller, capture: capture)
-        case .appearance:
-            AppearancePanel(
-                controller: controller,
-                focusesAudienceForSnapshot: focusesAppearanceForSnapshot
-            )
-        case .pro:
-            ProUpgradePanel(controller: controller, purchases: controller.purchases)
-        case .permissions:
-            PermissionsPanel(controller: controller, capture: capture)
-        case .privacy:
-            PrivacyPanel(controller: controller, capture: capture)
-        case .about:
-            AboutPanel(controller: controller)
-        }
-    }
-
-    private func workspaceNavigation(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Group {
-                if compact {
-                    BrandMark(size: 30)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    BrandLockup()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(.horizontal, compact ? 10 : 18)
-            .padding(.top, 20)
-            .padding(.bottom, compact ? 21 : 24)
-
-            navigationGroup(
-                title: L10n.text("ワークスペース", "WORKSPACE"),
-                sections: [.canvas],
-                compact: compact
-            )
-
-            navigationDivider(compact: compact)
-
-            navigationGroup(
-                title: L10n.text("ステージ", "STAGE"),
-                sections: [.stage, .appearance, .pro],
-                compact: compact
-            )
-
-            navigationDivider(compact: compact)
-
-            navigationGroup(
-                title: L10n.text("アプリ", "APP"),
-                sections: [.permissions, .privacy, .about],
-                compact: compact
-            )
-
-            Spacer(minLength: 12)
-
-            if !compact {
-                HStack(spacing: 7) {
-                    Image(systemName: "eye.slash.fill")
-                        .foregroundStyle(StagePanePalette.aqua)
-                    Text(L10n.text("この画面は共有しない", "KEEP THIS PRIVATE"))
-                        .font(.caption2.weight(.bold))
-                        .tracking(0.35)
-                }
-                .foregroundStyle(Color.white.opacity(0.58))
-                .padding(.horizontal, 17)
-                .padding(.bottom, 17)
-                .accessibilityElement(children: .combine)
-            }
-        }
-        .background(Color.black.opacity(0.20))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "StagePane ワークスペースのナビゲーション",
-            "StagePane Workspace navigation"
-        ))
-    }
-
-    private func navigationGroup(
-        title: String,
-        sections: [WorkspaceSection],
-        compact: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            if !compact {
-                Text(title)
-                    .font(.system(size: 10, weight: .bold))
-                    .tracking(0.8)
-                    .foregroundStyle(Color.white.opacity(0.38))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 3)
-            }
-
-            ForEach(sections) { section in
-                navigationButton(section, compact: compact)
-            }
-        }
-        .padding(.horizontal, compact ? 7 : 9)
-    }
-
-    private func navigationButton(
-        _ section: WorkspaceSection,
-        compact: Bool
-    ) -> some View {
-        let isSelected = controller.workspaceSection == section ||
-            (section == .canvas && controller.workspaceSection == .sources)
-
-        return Button {
-            controller.selectWorkspaceSection(section)
-        } label: {
-            HStack(spacing: 10) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: navigationSymbol(for: section))
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 23, height: 23)
-
-                    if compact, section == .canvas, displayedSourceCount > 0 {
-                        Text("\(displayedSourceCount)")
-                            .font(.system(size: 8, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-                            .frame(width: 14, height: 14)
-                            .background(StagePanePalette.indigo, in: Circle())
-                            .offset(x: 5, y: -4)
-                    }
-                }
-
-                if !compact {
-                    Text(section.title)
-                        .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
-                        .lineLimit(1)
-
-                    Spacer(minLength: 4)
-
-                    if section == .pro {
-                        Text(controller.hasProAccess ? L10n.text("有効", "ACTIVE") : "PRO")
-                            .font(.system(size: 8, weight: .black, design: .rounded))
-                            .tracking(0.4)
-                            .foregroundStyle(controller.hasProAccess
-                                ? StagePanePalette.mint
-                                : StagePanePalette.aqua)
-                    }
-                }
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.65))
-            .padding(.horizontal, compact ? 9 : 11)
-            .frame(maxWidth: .infinity, minHeight: 39, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(isSelected ? StagePanePalette.indigo.opacity(0.34) : Color.clear)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .stroke(
-                        isSelected ? StagePanePalette.aqua.opacity(0.15) : .clear,
-                        lineWidth: 1
-                    )
-            }
-        }
-        .buttonStyle(.plain)
-        .help(section.title)
-        .accessibilityLabel(section.title)
-        .accessibilityValue(navigationAccessibilityValue(for: section))
-    }
-
-    private func navigationDivider(compact: Bool) -> some View {
-        Divider()
-            .overlay(Color.white.opacity(0.08))
-            .padding(.horizontal, compact ? 13 : 15)
-            .padding(.vertical, compact ? 10 : 13)
-    }
-
-    private func navigationSymbol(for section: WorkspaceSection) -> String {
-        section.symbol
-    }
-
-    private func navigationAccessibilityValue(for section: WorkspaceSection) -> String {
-        var values: [String] = []
-        if controller.workspaceSection == section ||
-            (section == .canvas && controller.workspaceSection == .sources) {
-            values.append(L10n.text("選択中", "Selected"))
-        }
-        if section == .canvas {
-            values.append(
-                controller.sourceCountAccessibilityDescription(displayedSourceCount)
-            )
-        }
-        if section == .pro, controller.hasProAccess {
-            values.append(L10n.text("有効", "Active"))
-        }
-        return values.joined(separator: ", ")
+        .accessibilityLabel(L10n.text("StagePane 編集画面", "StagePane editor"))
     }
 
     private var workspaceToolbar: some View {
-        GeometryReader { proxy in
-            workspaceToolbarContent(compact: proxy.size.width < 1_040)
-                .frame(width: proxy.size.width, height: 58)
-        }
-        .frame(height: 58)
-        .background(Color.white.opacity(0.055))
-        .overlay(alignment: .bottom) {
-            Divider().overlay(Color.white.opacity(0.10))
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "ステージワークスペースのツールバー",
-            "Stage Workspace toolbar"
-        ))
-    }
-
-    private func workspaceToolbarContent(compact: Bool) -> some View {
-        HStack(spacing: 11) {
-            if compact {
-                Image(systemName: controller.workspaceSection.symbol)
-                    .frame(width: 29, height: 29)
-                    .accessibilityLabel(controller.workspaceSection.title)
-            } else {
-                Label(
-                    controller.workspaceSection.title,
-                    systemImage: controller.workspaceSection.symbol
-                )
-                .font(.caption.weight(.semibold))
-            }
-
-            WorkspaceOutputStatus(
-                isStageVisible: controller.stageIsVisible,
-                capture: capture,
-                compact: compact,
-                snapshotSourceCount: snapshotFixture?.sourceCount
-            )
-
-            Spacer(minLength: 8)
-
-            if isCompositionWorkspace {
-                if controller.stageInteractionMode == .crop {
-                    cropToolbarIdentity(compact: compact)
-                } else {
-                    Picker(
-                        L10n.text("ワークスペースのモード", "Workspace mode"),
-                        selection: interactionModeBinding
-                    ) {
-                        ForEach(globalInteractionModes, id: \.rawValue) { mode in
-                            Label(
-                                L10n.stageInteractionModeName(mode),
-                                systemImage: modeSymbol(mode)
-                            )
-                            .tag(mode)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(
-                        minWidth: compact ? 230 : 280,
-                        idealWidth: compact ? 260 : 300,
-                        maxWidth: compact ? 280 : 320
-                    )
-                    .accessibilityLabel(L10n.text(
-                        "ワークスペースのモード",
-                        "Workspace mode"
-                    ))
-                    .accessibilityValue(L10n.stageInteractionModeName(
-                        controller.stageInteractionMode
-                    ))
-                    .accessibilityHint(L10n.text(
-                        "配置・手書き・虫眼鏡を選びます。\(L10n.perLayerCropEntryHint)",
-                        "Choose Arrange, Draw, or Magnify. \(L10n.perLayerCropEntryHint)"
-                    ))
-                }
-
-                Spacer(minLength: 8)
-            }
-
-            screenshotMenu(compact: compact)
-
-            Button(action: controller.toggleCurtain) {
-                if compact {
-                    Image(systemName: curtainButtonSymbol)
-                } else {
-                    Label(curtainButtonTitle, systemImage: curtainButtonSymbol)
-                }
-            }
-            .buttonStyle(WorkspaceToolbarButtonStyle(
-                tint: controller.privacyCurtain
-                    ? StagePanePalette.coralReadable
-                    : nil
-            ))
-            .accessibilityLabel(curtainButtonTitle)
-            .accessibilityValue(controller.privacyCurtain
-                ? L10n.text("観客側はカーテン中", "Audience curtain is on")
-                : L10n.text("観客側に表示中", "Visible to the audience"))
-            .help(L10n.text(
-                "観客向けStageのカーテンを切り替えます（⇧⌘H）",
-                "Toggle the audience Stage curtain (⇧⌘H)"
-            ))
-
-            Button(action: controller.showStage) {
-                if compact {
-                    Image(systemName: "macwindow.on.rectangle")
-                } else {
-                    Label(
-                        L10n.text("共有Stageを表示", "Show Share Stage"),
-                        systemImage: "macwindow.on.rectangle"
-                    )
-                }
-            }
-            .buttonStyle(WorkspaceToolbarButtonStyle(tint: StagePanePalette.indigo))
-            .accessibilityLabel(L10n.text(
-                "共有Stageを表示",
-                "Show Share Stage"
-            ))
-            .help(L10n.text(
-                "会議アプリに共有する、操作UIのないStageウインドウを表示します",
-                "Show the chrome-free Stage window to share in a meeting app"
-            ))
-        }
-        .controlSize(.regular)
-        .padding(.horizontal, 14)
-        .frame(minHeight: 58)
-    }
-
-    private var privateWorkspaceWarning: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "eye.slash.fill")
-                .foregroundStyle(StagePanePalette.aqua)
-                .accessibilityHidden(true)
-
-            Text(L10n.text(
-                "これは手元用の編集ワークスペースです。会議アプリでは「StagePane Stage」を共有してください。共有一覧から完全に隠れるとは限りません。",
-                "This is your private editing workspace. Share “StagePane Stage” in your meeting app. This workspace may still appear in some share pickers."
-            ))
-            .lineLimit(2)
-
-            Spacer(minLength: 8)
-
-            Button(action: controller.requestConferenceShare) {
-                Label(
-                    L10n.text("共有先をStageへ", "Switch Share to Stage"),
-                    systemImage: "arrow.up.forward.app"
-                )
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(StagePanePalette.aqua)
-            .help(L10n.text(
-                "対応する会議アプリの現在の共有対象をStageへ切り替えます",
-                "Ask a compatible meeting app to switch its current share to the Stage"
-            ))
-        }
-        .font(.caption.weight(.medium))
-        .foregroundStyle(Color.white.opacity(0.76))
-        .padding(.horizontal, 16)
-        .frame(minHeight: 38)
-        .background(StagePanePalette.aqua.opacity(0.07))
-        .overlay(alignment: .bottom) {
-            Divider().overlay(StagePanePalette.aqua.opacity(0.15))
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "非共有ワークスペース。このウインドウではなくStagePane Stageを共有してください。",
-            "Private workspace. Share StagePane Stage instead of this window."
-        ))
-        .accessibilityHint(L10n.text(
-            "一部の会議アプリの共有一覧には、この操作用ウインドウも表示される場合があります。",
-            "Some meeting-app share pickers may still list this control window."
-        ))
-    }
-
-    private var isCompositionWorkspace: Bool {
-        controller.workspaceSection == .canvas || controller.workspaceSection == .sources
-    }
-
-    private var compositionWorkspace: some View {
-        HStack(spacing: 0) {
-            sourceRail
-                .frame(width: 260)
-
-            Divider().overlay(Color.white.opacity(0.10))
-            stageWorkspace
-                .frame(minWidth: 0, maxWidth: .infinity)
-        }
-    }
-
-    private var sourceRail: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "square.stack.3d.up.fill")
-                    .foregroundStyle(StagePanePalette.aqua)
-                    .accessibilityHidden(true)
-                Text(L10n.text("レイヤー", "Layers"))
-                    .font(.caption.weight(.bold))
-                Spacer()
-                if controller.hasProAccess {
-                    Text("PRO")
-                        .font(.system(size: 8, weight: .black, design: .rounded))
-                        .tracking(0.4)
-                        .foregroundStyle(StagePanePalette.aqua)
-                        .padding(.horizontal, 6)
-                        .frame(minHeight: 17)
-                        .background(StagePanePalette.aqua.opacity(0.10), in: Capsule())
-                }
-                Text("\(displayedSourceCount) / \(controller.activeSourceLimitDescription)")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(
-                        controller.sourceCountAccessibilityDescription(displayedSourceCount)
-                    )
-                layerActionsMenu
-            }
-            .padding(.horizontal, 15)
-            .frame(minHeight: 42)
-
-            Text(L10n.text("上のレイヤーほど手前に表示", "Top layers appear in front"))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 15)
-                .padding(.bottom, 10)
-
-            Divider().overlay(Color.white.opacity(0.09))
-
-            if snapshotFixture?.hasCanvasComposition == true {
-                SnapshotSourceRailList()
-                    .padding(14)
-                    .frame(maxHeight: .infinity, alignment: .top)
-            } else {
-                CaptureSourceList(
-                    controller: controller,
-                    capture: capture,
-                    showsHeading: false,
-                    showsWorkspaceHint: false,
-                    expandsSourceList: true,
-                    usesSecondaryAddAction: true
-                )
-                    .padding(14)
-                    .frame(maxHeight: .infinity, alignment: .top)
-            }
-        }
-        .background(Color.black.opacity(0.16))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "ステージのレイヤー一覧",
-            "Stage layer list"
-        ))
-    }
-
-    private var layerActionsMenu: some View {
-        Menu {
+        HStack(spacing: 14) {
             Button(action: controller.chooseSource) {
-                Label(L10n.text("ソースを追加", "Add Source"), systemImage: "plus")
+                Label(
+                    requiresProForSourceAddition ? L10n.text("Proで追加", "Add with Pro") : L10n.text("ソースを追加", "Add Source"),
+                    systemImage: requiresProForSourceAddition ? "lock.open" : "plus"
+                )
             }
             .disabled(!controller.canRequestSourceAddition)
+            .help(requiresProForSourceAddition
+                ? L10n.text("StagePane Proでソース数の上限を解除します（⇧⌘P）", "Open StagePane Pro to remove the source limit (⇧⌘P)")
+                : L10n.text("共有するウインドウや画面を選びます（⇧⌘P）", "Choose a window or display to share (⇧⌘P)"))
 
-            Button(action: capture.arrangeSourcesAutomatically) {
-                Label(L10n.text("自動配置", "Auto Arrange"), systemImage: "square.grid.2x2")
+            Spacer(minLength: 0)
+            HStack(spacing: 2) {
+                ForEach(globalInteractionModes, id: \.rawValue) { mode in
+                    Button {
+                        controller.setStageInteractionMode(mode)
+                    } label: {
+                        Label(L10n.stageInteractionModeName(mode), systemImage: modeSymbol(mode))
+                            .padding(.horizontal, 9)
+                            .frame(height: 28)
+                            .background(controller.stageInteractionMode == mode ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(controller.stageInteractionMode == mode ? Color.accentColor : Color.primary)
+                    .accessibilityValue(controller.stageInteractionMode == mode ? L10n.text("選択中", "Selected") : "")
+                    .help(L10n.stageInteractionModeDetail(mode))
+                }
             }
-            .disabled(capture.sources.isEmpty || capture.isPickerPresented)
+            .padding(3)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(L10n.text("編集モード", "Editing mode"))
+            Spacer(minLength: 0)
 
+            Button(action: controller.toggleCurtain) {
+                Label(curtainButtonTitle, systemImage: curtainButtonSymbol)
+            }
+            .tint(controller.privacyCurtain ? .orange : .accentColor)
+            .accessibilityValue(controller.privacyCurtain ? L10n.text("カーテン中。カーテンは画面取得を停止しません", "Curtain on. Curtain does not stop capture") : L10n.text("カーテンは開いています", "Curtain is open"))
+            .help(L10n.text("観客向けの映像を隠します。画面取得を停止する操作ではありません（⇧⌘H）", "Hide audience content. This does not stop capture (⇧⌘H)"))
+
+            HStack(spacing: 3) {
+                Button(action: controller.showStage) {
+                    Label(L10n.text("Stageを表示", "Show Stage"), systemImage: "macwindow")
+                }
+                .help(L10n.text("会議で共有するStageウインドウを表示（⌘2）", "Open the audience Stage window (⌘2)"))
+                stageWindowMenu
+            }
+
+            Button(action: controller.showSettings) {
+                Label(L10n.text("設定", "Settings"), systemImage: "gearshape")
+            }
+            .help(L10n.text("アプリの設定（⌘,）", "App settings (⌘,)"))
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .font(.system(size: 12, weight: .medium))
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 16)
+        .frame(height: 54)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("編集ツールバー", "Editor toolbar"))
+    }
+
+    private var stageWindowMenu: some View {
+        Menu {
+            Button(action: controller.enlargeStageForSharing) {
+                Label(L10n.text("共有しやすい大きさに拡大", "Enlarge for Sharing"), systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            .disabled(controller.stageIsFullScreen || controller.stageFullScreenTransitionInProgress)
+            Button(action: controller.toggleStageFullScreen) {
+                Label(controller.stageIsFullScreen ? L10n.text("フルスクリーンを終了", "Exit Full Screen") : L10n.text("フルスクリーンにする", "Enter Full Screen"), systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            .disabled(!controller.stageIsVisible || controller.stageFullScreenTransitionInProgress)
             Divider()
-
-            Button(role: .destructive, action: controller.stopPreview) {
-                Label(
-                    capture.hasResettableFailure
-                        ? L10n.text("画面取得をリセット", "Reset Capture")
-                        : L10n.stopAllAndRemoveLayersTitle,
-                    systemImage: capture.hasResettableFailure
-                        ? "arrow.counterclockwise"
-                        : "stop.fill"
-                )
+            Toggle(L10n.text("常に手前に表示", "Keep on Top"), isOn: $controller.isAlwaysOnTop)
+                .disabled(controller.stageIsFullScreen || controller.stageFullScreenTransitionInProgress)
+            Toggle(L10n.text("すべてのデスクトップに表示", "Show on All Desktops"), isOn: $controller.followsAllSpaces)
+                .disabled(controller.stageIsFullScreen || controller.stageFullScreenTransitionInProgress)
+            Toggle(L10n.text("閉じる・最小化を防止", "Prevent Closing and Minimizing"), isOn: $controller.presentationLock)
+            Divider()
+            Button(action: controller.copyStageScreenshot) {
+                Label(L10n.text("Audience画像をコピー", "Copy Audience Image"), systemImage: "doc.on.clipboard")
             }
-            .disabled(
-                (!capture.hasLayers && !capture.isCaptureActive && !capture.hasResettableFailure) ||
-                    capture.isPickerPresented
-            )
+            .disabled(controller.isStageScreenshotInProgress || controller.stageFullScreenTransitionInProgress)
+            Button(action: controller.saveStageScreenshot) {
+                Label(L10n.text("Audience画像を保存…", "Save Audience Image…"), systemImage: "square.and.arrow.down")
+            }
+            .disabled(controller.isStageScreenshotInProgress || controller.stageFullScreenTransitionInProgress)
         } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 24, height: 28)
+            Image(systemName: "chevron.down")
+                .frame(width: 16, height: 26)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
-        .accessibilityLabel(L10n.text("レイヤーの操作", "Layer actions"))
-        .help(L10n.text("レイヤーの追加・自動配置・すべて停止", "Add, arrange, or stop all layers"))
+        .accessibilityLabel(L10n.text("Stageウインドウの操作", "Stage window actions"))
+        .help(L10n.text("Stageの表示方法と画像の保存", "Stage window behavior and audience images"))
+    }
+
+    private var layerRailWidth: Double {
+        snapshotFixture != nil ? 232 : min(300, max(220, savedLayerRailWidth))
+    }
+
+    private var railDivider: some View {
+        Rectangle()
+            .fill(Color(nsColor: .separatorColor))
+            .frame(width: 1)
+            .overlay {
+                Color.clear
+                    .frame(width: 9)
+                    .contentShape(Rectangle())
+                    .onHover { hovering in
+                        (hovering ? NSCursor.resizeLeftRight : NSCursor.arrow).set()
+                    }
+                    .gesture(DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if railDragStart == nil { railDragStart = layerRailWidth }
+                            savedLayerRailWidth = min(300, max(220, (railDragStart ?? 232) + value.translation.width))
+                        }
+                        .onEnded { _ in railDragStart = nil })
+            }
+            .focusable()
+            .onMoveCommand { direction in
+                if direction == .left { savedLayerRailWidth = max(220, layerRailWidth - 10) }
+                if direction == .right { savedLayerRailWidth = min(300, layerRailWidth + 10) }
+            }
+            .accessibilityRepresentation {
+                Slider(
+                    value: Binding(get: { layerRailWidth }, set: { savedLayerRailWidth = min(300, max(220, $0)) }),
+                    in: 220...300
+                ) {
+                    Text(L10n.text("レイヤー欄の幅", "Layer list width"))
+                }
+                .accessibilityValue(L10n.text("\(Int(layerRailWidth))ポイント", "\(Int(layerRailWidth)) points"))
+                .accessibilityHint(L10n.text("左右キーまたはドラッグで調整します。", "Adjust with Left and Right or drag."))
+            }
+    }
+
+    private var sourceRail: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 7) {
+                Text(L10n.text("レイヤー", "Layers"))
+                    .font(.system(size: 13, weight: .semibold))
+                Text(controller.activeSourceLimit.map { "\(displayedSourceCount) / \($0)" } ?? "\(displayedSourceCount)")
+                    .foregroundStyle(.secondary)
+                    .font(.caption.monospacedDigit())
+                    .accessibilityLabel(controller.sourceCountAccessibilityDescription(displayedSourceCount))
+                Spacer()
+                layerActionsMenu
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 46)
+            if snapshotFixture?.hasCanvasComposition == true {
+                SnapshotSourceRailList()
+                    .padding(.horizontal, 8)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            } else {
+                CaptureSourceList(controller: controller, capture: capture, showsHeading: false, expandsSourceList: true, usesSecondaryAddAction: true)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .background(.regularMaterial)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("レイヤー一覧", "Layer list"))
+    }
+
+    private var layerActionsMenu: some View {
+        Menu {
+            Button(role: .destructive, action: controller.stopPreview) {
+                Label(capture.hasResettableFailure ? L10n.text("画面取得をリセット", "Reset Capture") : L10n.stopAllAndRemoveLayersTitle, systemImage: capture.hasResettableFailure ? "arrow.counterclockwise" : "stop.fill")
+            }
+            .disabled((!capture.hasLayers && !capture.isCaptureActive && !capture.hasResettableFailure) || capture.isPickerPresented)
+        } label: {
+            Image(systemName: "ellipsis")
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel(L10n.text("全レイヤーの操作", "All layer actions"))
+        .help(L10n.stopAllAndRemoveLayersTitle)
     }
 
     private var stageWorkspace: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             canvasHeader
             fittedStageCanvas
-            contextualDock
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            if controller.stageInteractionMode != .arrange || controller.selectedSourceID != nil || snapshotFixture != nil {
+                Divider()
+                contextualDock
+            }
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 13)
-        .padding(.bottom, 14)
+        .background(Color(nsColor: .controlBackgroundColor))
     }
 
     private var canvasHeader: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(canvasTitle)
-                    .font(.caption2.weight(.bold))
-                    .tracking(1.0)
-                    .foregroundStyle(StagePanePalette.aqua)
-                Text(canvasDetail)
-                    .font(.caption)
-                    .foregroundStyle(Color.white.opacity(0.62))
-                    .lineLimit(2)
+        HStack(spacing: 12) {
+            WorkspaceOutputStatus(controller: controller, capture: capture, snapshotSourceCount: snapshotFixture?.sourceCount)
+            Spacer(minLength: 8)
+            layoutMenu
+            Button {
+                controller.beginWorkspaceInteraction()
+                controller.isStageSettingsPresented.toggle()
+            } label: {
+                Label(L10n.text("Stage設定", "Stage Settings"), systemImage: "slider.horizontal.3")
             }
-
-            Spacer()
-
-            if controller.privacyCurtain {
-                Label(
-                    L10n.text("観客側はカーテン中", "Audience Curtain On"),
-                    systemImage: "shield.fill"
-                )
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(StagePanePalette.coralReadable)
-                .padding(.horizontal, 9)
-                .frame(minHeight: 25)
-                .background(StagePanePalette.coral.opacity(0.10), in: Capsule())
-                .overlay(Capsule().stroke(StagePanePalette.coral.opacity(0.22)))
+            .popover(isPresented: $controller.isStageSettingsPresented, arrowEdge: .top) {
+                StageInspectorPanel(controller: controller, capture: capture)
             }
-
-            Text("PNG · \(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(Color.white.opacity(0.55))
-                .accessibilityLabel(L10n.text(
-                    "Audience PNGのサイズ、\(controller.preset.pixelWidth)かける\(controller.preset.pixelHeight)ピクセル",
-                    "Audience PNG size, \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight) pixels"
-                ))
+            .help(L10n.text("Stageの形・背景・カーテン・ポインタ", "Stage shape, background, curtain, and pointer"))
         }
-        .frame(minHeight: 32)
+        .font(.caption)
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 20)
+        .frame(height: 52)
+    }
+
+    private var layoutMenu: some View {
+        Menu {
+            layoutPresetButton(.grid, title: L10n.text("グリッド", "Grid"), symbol: "square.grid.2x2")
+            layoutPresetButton(.sideBySide, title: L10n.text("横に並べる", "Side by Side"), symbol: "rectangle.split.2x1")
+            layoutPresetButton(.stacked, title: L10n.text("縦に並べる", "Stacked"), symbol: "rectangle.split.1x2")
+            layoutPresetButton(.pictureInPicture, title: L10n.text("ピクチャーインピクチャ", "Picture in Picture"), symbol: "rectangle.inset.filled")
+        } label: {
+            Label(L10n.text("レイアウト", "Layout"), systemImage: "square.grid.2x2")
+        }
+        .disabled((capture.sources.isEmpty && snapshotFixture == nil) || capture.isPickerPresented || controller.stageInteractionMode == .crop)
+        .fixedSize()
+        .help(L10n.text("すべてのレイヤーを並べ直します", "Rearrange all layers"))
     }
 
     private var fittedStageCanvas: some View {
         GeometryReader { proxy in
-            let canvasSize = fittedCanvasSize(in: proxy.size)
-
+            let canvasSize = fittedCanvasSize(in: CGSize(width: max(0, proxy.size.width - 2), height: max(0, proxy.size.height - 2)))
             Group {
                 if let snapshotFixture, snapshotFixture.hasCanvasComposition {
-                    SnapshotStageComposition(
-                        showsDrawing: snapshotFixture == .draw,
-                        theme: controller.theme,
-                        showsWatermark: controller.showsWatermark
-                    )
+                    SnapshotStageComposition(showsDrawing: snapshotFixture == .draw, theme: controller.theme, showsWatermark: controller.showsWatermark)
                 } else {
-                    StageLayoutEditor(controller: controller, capture: capture)
+                    StageLayoutEditor(controller: controller, capture: capture, allowsEditingShortcuts: usesEditingShortcuts)
                 }
             }
-                .frame(width: canvasSize.width, height: canvasSize.height)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(
-                            controller.privacyCurtain
-                                ? StagePanePalette.coralReadable.opacity(0.78)
-                                : Color.white.opacity(0.18),
-                            lineWidth: controller.privacyCurtain ? 2 : 1
-                        )
-                        .allowsHitTesting(false)
-                }
-                .shadow(color: .black.opacity(0.58), radius: 28, y: 16)
-                .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+            .frame(width: canvasSize.width, height: canvasSize.height)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .shadow(color: .black.opacity(0.14), radius: 12, y: 5)
+            .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.black.opacity(0.18))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.055))
-                }
-        )
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "大きなステージキャンバス",
-            "Large Stage canvas"
-        ))
+        .accessibilityLabel(L10n.text("編集キャンバス", "Editing canvas"))
     }
 
-    @ViewBuilder
     private var contextualDock: some View {
         HStack(spacing: 10) {
-            ScrollView(.horizontal) {
-                HStack(spacing: 10) {
-                    modeIdentity
-                    Divider().frame(height: 25)
-
-                    switch controller.stageInteractionMode {
-                    case .arrange:
-                        Menu {
-                            layoutPresetButton(
-                                .grid,
-                                title: L10n.text("グリッド", "Grid"),
-                                symbol: "square.grid.2x2"
-                            )
-                            layoutPresetButton(
-                                .sideBySide,
-                                title: L10n.text("横に並べる", "Side by Side"),
-                                symbol: "rectangle.split.2x1"
-                            )
-                            layoutPresetButton(
-                                .stacked,
-                                title: L10n.text("縦に並べる", "Stacked"),
-                                symbol: "rectangle.split.1x2"
-                            )
-                            layoutPresetButton(
-                                .pictureInPicture,
-                                title: L10n.text("ピクチャーインピクチャ", "Picture in Picture"),
-                                symbol: "rectangle.inset.filled"
-                            )
-                        } label: {
-                            Label(
-                                L10n.text("クイック配置", "Quick Layout"),
-                                systemImage: "square.grid.2x2"
-                            )
-                        }
-                        .disabled(
-                            (capture.sources.isEmpty && snapshotFixture?.hasCanvasComposition != true) ||
-                                capture.isPickerPresented
-                        )
-                        .help(L10n.text(
-                            "ソースをグリッド、横並び、縦並び、ピクチャーインピクチャに配置します",
-                            "Arrange sources as a grid, side by side, stacked, or picture in picture"
-                        ))
-
-                    case .crop:
-                        HStack(spacing: 7) {
-                            Image(systemName: "viewfinder")
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(cropEditingLayerTitle)
-                                    .lineLimit(1)
-                                    .frame(maxWidth: 180, alignment: .leading)
-                                Text(L10n.cropDraftStatusTitle)
-                                    .font(.caption2.weight(.regular))
-                                    .foregroundStyle(Color.white.opacity(0.60))
-                            }
-                        }
-                        .foregroundStyle(Color.white.opacity(0.82))
-                        .accessibilityElement(children: .combine)
-
-                        Image(systemName: "info.circle")
-                            .foregroundStyle(Color.white.opacity(0.55))
-                            .help("\(L10n.cropCaptureScopeCompact) \(L10n.cropCaptureScopeDetail)")
-                            .accessibilityLabel(L10n.cropCaptureScopeCompact)
-                            .accessibilityHint(L10n.cropCaptureScopeDetail)
-
-                        Button {
-                            controller.resetCropDraft()
-                        } label: {
-                            Label(
-                                L10n.cropResetDraftTitle,
-                                systemImage: "arrow.counterclockwise"
-                            )
-                        }
-                        .disabled(
-                            controller.cropDraft == nil ||
-                                controller.cropDraft == .fullSource
-                        )
-                        .help(L10n.cropResetDraftHint)
-
-                    case .magnify:
-                        StageMagnifierToolShelf(store: controller.magnifier)
-                            .disabled(!capture.isCaptureActive)
-
-                        Button {
-                            controller.setStageInteractionMode(.arrange)
-                        } label: {
-                            Label(L10n.text("虫眼鏡を終了", "Exit Magnify"), systemImage: "xmark")
-                        }
-                        .keyboardShortcut(.cancelAction)
-
-                    case .annotate:
-                        StageInkToolShelf(store: controller.annotations)
-
-                        Button {
-                            controller.annotations.undo()
-                        } label: {
-                            Label(
-                                L10n.text("取り消す", "Undo"),
-                                systemImage: "arrow.uturn.backward"
-                            )
-                        }
-                        .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
-                        .keyboardShortcut("z", modifiers: [.command])
-
-                        Button(role: .destructive) {
-                            isClearInkConfirmationPresented = true
-                        } label: {
-                            Label(
-                                L10n.text("すべて消す", "Clear All"),
-                                systemImage: "trash"
-                            )
-                        }
-                        .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    if capture.hasResettableFailure {
-                        Button(action: controller.stopPreview) {
-                            Label(
-                                L10n.text("画面取得をリセット", "Reset Capture"),
-                                systemImage: "arrow.counterclockwise"
-                            )
-                        }
-                        .tint(.orange)
-                        .help(L10n.text(
-                            "エラー状態を消して、ソースを選び直せる状態へ戻します",
-                            "Clear the error so you can choose the source again"
-                        ))
-                    }
+            if controller.stageInteractionMode == .arrange {
+                if snapshotFixture?.hasCanvasComposition == true {
+                    SnapshotSelectedLayerTools()
+                } else {
+                    SelectedLayerTools(controller: controller, capture: capture)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 13)
-                .frame(minHeight: 50)
-                .fixedSize(horizontal: true, vertical: false)
-            }
-            .scrollIndicators(.visible)
-            if controller.stageInteractionMode == .crop {
-                cropCompletionActions
-                    .padding(.trailing, 13)
+            } else {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 12) {
+                        switch controller.stageInteractionMode {
+                        case .arrange:
+                            EmptyView()
+                        case .crop:
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(cropEditingLayerTitle).fontWeight(.medium).lineLimit(1)
+                                Text(L10n.cropDraftStatusTitle).font(.caption2).foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: 180, alignment: .leading)
+                            Image(systemName: "info.circle")
+                                .help("\(L10n.cropCaptureScopeCompact) \(L10n.cropCaptureScopeDetail)")
+                                .accessibilityLabel(L10n.cropCaptureScopeCompact)
+                                .accessibilityHint(L10n.cropCaptureScopeDetail)
+                            Button(action: controller.resetCropDraft) {
+                                Label(L10n.cropResetDraftTitle, systemImage: "arrow.counterclockwise")
+                            }
+                            .disabled(controller.cropDraft == nil || controller.cropDraft == .fullSource)
+                        case .magnify:
+                            StageMagnifierToolShelf(store: controller.magnifier, beginInteraction: controller.beginWorkspaceInteraction)
+                                .disabled(!capture.isCaptureActive)
+                            Button {
+                                controller.setStageInteractionMode(.arrange)
+                            } label: {
+                                Label(L10n.text("虫眼鏡を終了", "Exit Magnify"), systemImage: "checkmark")
+                            }
+                            .keyboardShortcut(usesEditingShortcuts ? .cancelAction : nil)
+                        case .annotate:
+                            StageInkToolShelf(store: controller.annotations, beginInteraction: controller.beginWorkspaceInteraction)
+                            Button {
+                                controller.beginWorkspaceInteraction()
+                                controller.annotations.undo()
+                            } label: {
+                                Label(L10n.text("取り消す", "Undo"), systemImage: "arrow.uturn.backward")
+                            }
+                            .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
+                            .keyboardShortcut(usesEditingShortcuts ? KeyboardShortcut("z", modifiers: [.command]) : nil)
+                            Button(role: .destructive) {
+                                controller.beginWorkspaceInteraction()
+                                isClearInkConfirmationPresented = true
+                            } label: {
+                                Label(L10n.text("すべて消す", "Clear All"), systemImage: "trash")
+                            }
+                            .disabled(!controller.hasAnnotations && snapshotFixture != .draw)
+                        }
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minHeight: 54)
+                }
+                .scrollIndicators(.visible)
+                if controller.stageInteractionMode == .crop {
+                    cropCompletionActions
+                }
             }
         }
-        .frame(height: 58)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white.opacity(0.11))
-        }
+        .font(.caption)
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .padding(.horizontal, 14)
+        .frame(height: 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .windowBackgroundColor))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text(
-            "現在のモードのツール",
-            "Current mode tools"
-        ))
+        .accessibilityLabel(L10n.text("現在の編集ツール", "Current editing tools"))
+    }
+
+    private var sharingFooter: some View {
+        HStack(spacing: 6) {
+            Text(L10n.text("会議では「StagePane Stage」を共有", "Share “StagePane Stage” in your meeting"))
+                .lineLimit(1)
+            Spacer()
+            Button(L10n.text("共有ガイド", "Sharing Guide")) { showsSharingGuide.toggle() }
+                .popover(isPresented: $showsSharingGuide, arrowEdge: .bottom) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(L10n.text("会議にはStageを共有", "Share the Stage in your meeting"))
+                            .font(.headline)
+                        Text(L10n.text("会議アプリで「StagePane Stage」ウインドウを選択してください。この編集画面も共有一覧に表示される場合があります。", "Choose the “StagePane Stage” window in your meeting app. This editor may also appear in its share picker."))
+                        Text(L10n.text("カーテンは観客向けの映像を隠します。画面取得は継続します。", "Curtain hides audience content. Capture continues."))
+                            .foregroundStyle(.secondary)
+                        Button(action: controller.requestConferenceShare) {
+                            Label(L10n.text("共有先をStageへ", "Switch Share to Stage"), systemImage: "arrow.up.forward.app")
+                        }
+                        Text(L10n.text("対応する会議アプリへ切り替えを要求します。共有中かどうかは会議アプリで確認してください。", "Requests a switch in compatible meeting apps. Check sharing status in your meeting app."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(20)
+                    .frame(width: 340)
+                }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 16)
+        .frame(height: 32)
     }
 
     private var cropCompletionActions: some View {
@@ -879,14 +444,14 @@ struct StageWorkspaceView: View {
             } label: {
                 Text(L10n.cropCancelTitle)
             }
-            .keyboardShortcut(.cancelAction)
+            .keyboardShortcut(usesEditingShortcuts ? .cancelAction : nil)
 
             Button {
                 controller.applyCropEditing()
             } label: {
                 Label(L10n.cropApplyTitle, systemImage: "checkmark")
             }
-            .keyboardShortcut(.defaultAction)
+            .keyboardShortcut(usesEditingShortcuts ? .defaultAction : nil)
             .tint(StagePanePalette.indigo)
             .disabled(!controller.canApplyCropEditing)
         }
@@ -896,148 +461,8 @@ struct StageWorkspaceView: View {
         .fixedSize()
     }
 
-    private var modeIdentity: some View {
-        let modeTitle = controller.stageInteractionMode == .crop
-            ? L10n.cropLayerModeTitle
-            : L10n.stageInteractionModeName(controller.stageInteractionMode)
-
-        return Label(
-            modeTitle,
-            systemImage: modeSymbol(controller.stageInteractionMode)
-        )
-        .font(.caption.weight(.bold))
-        .foregroundStyle(StagePanePalette.aqua)
-        .accessibilityLabel(L10n.text(
-            "現在のモード、\(modeTitle)",
-            "Current mode, \(modeTitle)"
-        ))
-    }
-
-    private func cropToolbarIdentity(compact: Bool) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "crop")
-                .foregroundStyle(StagePanePalette.aqua)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text(L10n.cropLayerModeTitle)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(Color.white.opacity(0.58))
-                Text(cropEditingSourceTitle)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, compact ? 9 : 11)
-        .frame(
-            minWidth: compact ? 170 : 210,
-            maxWidth: compact ? 210 : 260,
-            minHeight: 32,
-            alignment: .leading
-        )
-        .background(StagePanePalette.aqua.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(StagePanePalette.aqua.opacity(0.18))
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(cropEditingLayerTitle)
-        .accessibilityHint(L10n.stageInteractionModeDetail(.crop))
-    }
-
-    private func screenshotMenu(compact: Bool) -> some View {
-        HStack(spacing: 0) {
-            Button(action: controller.copyStageScreenshot) {
-                Group {
-                    if compact {
-                        Image(systemName: screenshotSymbol)
-                    } else {
-                        Label(screenshotTitle, systemImage: screenshotSymbol)
-                    }
-                }
-                .padding(.leading, compact ? 8 : 10)
-                .padding(.trailing, 8)
-                .frame(minHeight: 31)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("s", modifiers: [.command, .shift])
-            .accessibilityLabel(L10n.text(
-                "Audience画像をコピー",
-                "Copy Audience Image"
-            ))
-            .accessibilityHint(L10n.text(
-                "操作UIを含めず、観客向けStageと同じ内容をクリップボードへコピーします。",
-                "Copy the audience Stage to the clipboard without workspace controls."
-            ))
-
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 1, height: 18)
-                .accessibilityHidden(true)
-
-            Menu {
-                Button(action: controller.copyStageScreenshot) {
-                    Label(
-                        L10n.text("Audience画像をコピー", "Copy Audience Image"),
-                        systemImage: "doc.on.clipboard"
-                    )
-                }
-                Button(action: controller.saveStageScreenshot) {
-                    Label(
-                        L10n.text("Audience画像を保存…", "Save Audience Image…"),
-                        systemImage: "square.and.arrow.down"
-                    )
-                }
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .frame(width: 25, height: 31)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .accessibilityLabel(L10n.text(
-                "スクリーンショットのオプション",
-                "Screenshot options"
-            ))
-            .accessibilityHint(L10n.text(
-                "Audience画像をコピーするか、PNGとして保存するかを選びます。",
-                "Choose whether to copy the audience image or save it as a PNG."
-            ))
-        }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(Color.white.opacity(0.86))
-        .frame(minWidth: 56, minHeight: 31)
-        .background(
-            Color.white.opacity(0.08),
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.white.opacity(0.12))
-        }
-        .disabled(controller.isStageScreenshotInProgress)
-        .help(L10n.text(
-            "観客向けStageのスクリーンショット",
-            "Audience Stage screenshot"
-        ))
-    }
-
-    private var screenshotTitle: String {
-        controller.isStageScreenshotInProgress
-            ? L10n.text("作成中…", "Capturing…")
-            : L10n.text("スクリーンショット", "Screenshot")
-    }
-
-    private var screenshotSymbol: String {
-        controller.isStageScreenshotInProgress ? "hourglass" : "camera.fill"
-    }
-
-    private var interactionModeBinding: Binding<StageInteractionMode> {
-        Binding(
-            get: { controller.stageInteractionMode },
-            set: { controller.setStageInteractionMode($0) }
-        )
+    private var usesEditingShortcuts: Bool {
+        !controller.isStageSettingsPresented && !showsSharingGuide
     }
 
     private var globalInteractionModes: [StageInteractionMode] {
@@ -1056,32 +481,10 @@ struct StageWorkspaceView: View {
         L10n.cropEditingLayerTitle(cropEditingSourceTitle)
     }
 
-    private var canvasTitle: String {
-        if controller.stageInteractionMode == .crop {
-            return L10n.cropLayerModeTitle.uppercased()
-        }
-        return L10n.text("ステージキャンバス", "STAGE CANVAS")
-    }
-
-    private var canvasDetail: String {
-        if controller.stageInteractionMode == .crop {
-            return cropEditingLayerTitle
-        }
-        let detail = L10n.stageInteractionModeDetail(
-            controller.stageInteractionMode,
-            annotationTool: controller.annotationTool
-        )
-        guard controller.stageInteractionMode == .arrange else { return detail }
-        return L10n.text(
-            "レイヤーを選んで移動。重なった画面も左の一覧から選べます。",
-            "Select a layer to move it. Use the layer list to reach overlapping content."
-        )
-    }
-
     private var curtainButtonTitle: String {
         controller.privacyCurtain
-            ? L10n.text("カーテンを開く", "Reveal Stage")
-            : L10n.text("カーテン", "Curtain")
+            ? L10n.text("カーテンを開く", "Open Curtain")
+            : L10n.text("カーテンを閉じる", "Close Curtain")
     }
 
     private var curtainButtonSymbol: String {
@@ -1103,6 +506,7 @@ struct StageWorkspaceView: View {
         symbol: String
     ) -> some View {
         Button {
+            controller.beginWorkspaceInteraction()
             capture.applyLayoutPreset(preset)
         } label: {
             Label(title, systemImage: symbol)
@@ -1126,34 +530,25 @@ struct StageWorkspaceView: View {
         )
     }
 
-    private var workspaceBackground: some View {
-        ZStack {
-            StagePanePalette.ink
-            RadialGradient(
-                colors: [StagePanePalette.indigo.opacity(0.20), .clear],
-                center: .topTrailing,
-                startRadius: 0,
-                endRadius: 820
-            )
-            LinearGradient(
-                colors: [Color.clear, Color.black.opacity(0.20)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-    }
-
     private var displayedSourceCount: Int {
         snapshotFixture?.sourceCount ?? capture.sources.count
+    }
+
+    private var requiresProForSourceAddition: Bool {
+        StagePaneAccess.requiresProForNextSource(
+            currentCount: capture.occupiedSourceSlots,
+            hasProAccess: controller.hasProAccess
+        )
     }
 }
 
 private struct StageMagnifierToolShelf: View {
     @ObservedObject var store: StageMagnifierStore
+    let beginInteraction: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            Picker(L10n.text("拡大倍率", "Magnification"), selection: $store.magnification) {
+            Picker(L10n.text("拡大倍率", "Magnification"), selection: Binding(get: { store.magnification }, set: { beginInteraction(); store.magnification = $0 })) {
                 Text("2×").tag(2.0)
                 Text("3×").tag(3.0)
                 Text("4×").tag(4.0)
@@ -1165,6 +560,7 @@ private struct StageMagnifierToolShelf: View {
             .help(L10n.text("虫眼鏡の拡大倍率", "Magnifier zoom level"))
 
             Button {
+                beginInteraction()
                 store.center()
             } label: {
                 Label(L10n.text("中央に表示", "Show at Center"), systemImage: "scope")
@@ -1179,6 +575,7 @@ private struct StageMagnifierToolShelf: View {
 
 private struct StageInkToolShelf: View {
     @ObservedObject var store: StageAnnotationStore
+    let beginInteraction: () -> Void
 
     var body: some View {
         HStack(spacing: 9) {
@@ -1205,6 +602,9 @@ private struct StageInkToolShelf: View {
                 "ペン、半透明の蛍光ペン、部分消去の消しゴムを選びます",
                 "Choose a pen, translucent highlighter, or partial eraser"
             ))
+            .accessibilityHint(store.preferences.tool == .eraser
+                ? L10n.text("なぞった部分を消去します。", "Erases where you drag.")
+                : "")
 
             if store.preferences.tool == .eraser {
                 Divider()
@@ -1212,7 +612,7 @@ private struct StageInkToolShelf: View {
 
                 HStack(spacing: 5) {
                     Circle()
-                        .stroke(Color.white.opacity(0.62), lineWidth: 1)
+                        .stroke(Color.secondary, lineWidth: 1)
                         .frame(width: 7, height: 7)
                         .accessibilityHidden(true)
 
@@ -1230,19 +630,14 @@ private struct StageInkToolShelf: View {
                     .accessibilityValue(eraserWidthAccessibilityValue)
 
                     Circle()
-                        .stroke(Color.white.opacity(0.82), lineWidth: 1.5)
+                        .stroke(Color.primary, lineWidth: 1.5)
                         .frame(width: 15, height: 15)
                         .accessibilityHidden(true)
                 }
                 .help(L10n.text(
-                    "消す範囲の大きさを変更します",
-                    "Adjust the eraser size"
+                    "なぞった部分を消去します。消しゴムの大きさを変更できます。",
+                    "Erases where you drag. Adjust the eraser size."
                 ))
-
-                Text(L10n.text("なぞった部分を消去", "Erase where you drag"))
-                    .font(.caption2)
-                    .foregroundStyle(Color.white.opacity(0.62))
-                    .fixedSize()
             } else {
                 Divider()
                     .frame(height: 24)
@@ -1260,7 +655,7 @@ private struct StageInkToolShelf: View {
 
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(Color.white.opacity(0.62))
+                        .fill(Color.secondary)
                         .frame(width: 4, height: 4)
                         .accessibilityHidden(true)
 
@@ -1275,7 +670,7 @@ private struct StageInkToolShelf: View {
                     .accessibilityValue(widthAccessibilityValue)
 
                     Circle()
-                        .fill(Color.white.opacity(0.82))
+                        .fill(Color.primary)
                         .frame(width: 11, height: 11)
                         .accessibilityHidden(true)
                 }
@@ -1290,21 +685,21 @@ private struct StageInkToolShelf: View {
     private var toolBinding: Binding<StageInkTool> {
         Binding(
             get: { store.preferences.tool },
-            set: { store.selectTool($0) }
+            set: { beginInteraction(); store.selectTool($0) }
         )
     }
 
     private var widthBinding: Binding<Double> {
         Binding(
             get: { store.preferences.normalizedWidth },
-            set: { store.setNormalizedWidth($0) }
+            set: { beginInteraction(); store.setNormalizedWidth($0) }
         )
     }
 
     private var eraserWidthBinding: Binding<Double> {
         Binding(
             get: { store.preferences.eraserNormalizedWidth },
-            set: { store.setEraserNormalizedWidth($0) }
+            set: { beginInteraction(); store.setEraserNormalizedWidth($0) }
         )
     }
 
@@ -1336,6 +731,7 @@ private struct StageInkToolShelf: View {
         )
 
         return Button {
+            beginInteraction()
             store.selectColor(preset)
         } label: {
             ZStack {
@@ -1343,7 +739,7 @@ private struct StageInkToolShelf: View {
                     .fill(color)
                 Circle()
                     .stroke(
-                        isSelected ? Color.white : Color.white.opacity(0.30),
+                        isSelected ? Color.accentColor : Color.primary.opacity(0.30),
                         lineWidth: isSelected ? 2 : 1
                     )
                 if isSelected {
@@ -1402,136 +798,69 @@ private struct StageInkToolShelf: View {
 }
 
 private struct WorkspaceOutputStatus: View {
-    let isStageVisible: Bool
+    @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
-    let compact: Bool
     let snapshotSourceCount: Int?
 
     var body: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 7, height: 7)
-            if !compact {
-                ViewThatFits(in: .horizontal) {
-                    Text(statusTitle)
-                        .lineLimit(1)
-                    Text(shortStatusTitle)
-                        .lineLimit(1)
-                }
-            }
+        VStack(alignment: .leading, spacing: 3) {
+            Label(statusTitle, systemImage: statusSymbol)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(controller.privacyCurtain && controller.stageIsVisible ? Color.orange : Color.primary)
+            Text(captureTitle)
+                .font(.system(size: 11))
+                .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
         }
-        .font(.caption2.weight(.bold))
-        .foregroundStyle(Color.white.opacity(0.72))
-        .padding(.horizontal, compact ? 8 : 9)
-        .frame(minHeight: 27)
-        .background(Color.white.opacity(0.055), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.09)))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(statusTitle)
-        .accessibilityValue(statusDetail)
-        .accessibilityHint(L10n.text(
-            "会議アプリが実際に共有中かどうかを示すものではありません。",
-            "This does not indicate whether a meeting app is actively sharing."
-        ))
+        .lineLimit(1)
         .help(statusDetail)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(statusDetail)
     }
 
-    private var statusColor: Color {
-        if snapshotSourceCount != nil { return StagePanePalette.mintReadable }
-        guard isStageVisible else { return .secondary }
-        if captureNeedsAttention { return .orange }
-        if allSourcesPaused { return .secondary }
-        return capture.isCaptureActive
-            ? StagePanePalette.mintReadable
-            : StagePanePalette.aquaReadable
+    private var statusSymbol: String {
+        if !controller.stageIsVisible && snapshotSourceCount == nil { return "macwindow" }
+        if controller.privacyCurtain { return "shield.lefthalf.filled" }
+        return "rectangle.on.rectangle"
     }
 
     private var statusTitle: String {
-        if let snapshotSourceCount {
-            return L10n.text(
-                "\(snapshotSourceCount)件の合成ソースをプレビュー",
-                "Previewing \(snapshotSourceCount) Synthetic Sources"
-            )
-        }
-        if !isStageVisible {
-            return L10n.text("共有Stageは閉じています", "Share Stage Closed")
-        }
-        if captureNeedsAttention {
-            return L10n.text("画面取得の確認が必要", "Capture Needs Attention")
-        }
-        if allSourcesPaused {
-            return L10n.text("すべて一時停止中", "All Sources Paused")
-        }
-        switch capture.phase {
-        case .choosing:
-            return L10n.text("ソースを選択中", "Choosing a Source")
-        case .preparing:
-            return L10n.text("新しい映像を準備中", "Preparing Fresh Video")
-        default:
-            break
-        }
-        if capture.isCaptureActive {
-            return L10n.text(
-                "共有Stageを表示・\(capture.sources.count)件を取得中",
-                "Share Stage Open · \(capture.sources.count) Source\(capture.sources.count == 1 ? "" : "s") Active"
-            )
-        }
-        return L10n.text("共有Stageは待機中", "Share Stage Ready")
-    }
-
-    private var shortStatusTitle: String {
         if snapshotSourceCount != nil {
-            return L10n.text("合成プレビュー", "Synthetic Preview")
+            return controller.privacyCurtain ? L10n.text("Stage · カーテン中", "Stage · Curtain On") : L10n.text("Stage · コンテンツ", "Stage · Content")
         }
-        if !isStageVisible { return L10n.text("Stage非表示", "Stage Closed") }
-        if captureNeedsAttention { return L10n.text("確認が必要", "Needs Attention") }
-        if allSourcesPaused { return L10n.text("一時停止中", "Paused") }
-        if capture.isCaptureActive { return L10n.text("取得中", "Active") }
-        return L10n.text("待機中", "Ready")
+        if controller.stageIsMiniaturized { return L10n.text("Stage · 最小化中", "Stage · Minimized") }
+        guard controller.stageIsVisible else { return L10n.text("Stage · 閉じています", "Stage · Closed") }
+        if controller.privacyCurtain { return L10n.text("Stage · カーテン中", "Stage · Curtain On") }
+        if !capture.isCaptureActive { return L10n.text("Stage · 待機画面", "Stage · Holding Screen") }
+        if capture.sources.contains(where: \.isPresentationVisible) { return L10n.text("Stage · コンテンツ", "Stage · Content") }
+        if capture.sources.contains(where: { $0.phase == .preparing || $0.phase == .resuming }) {
+            return L10n.text("Stage · 映像を準備中", "Stage · Preparing Video")
+        }
+        return L10n.text("Stage · 映像なし", "Stage · No Video")
     }
 
-    private var allSourcesPaused: Bool {
-        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
-    }
-
-    private var captureNeedsAttention: Bool {
+    private var needsAttention: Bool {
+        if snapshotSourceCount != nil { return false }
         if case .failed = capture.phase { return true }
-        return false
+        return capture.sources.contains { capture.attentionSummary(for: $0.id) != nil }
+    }
+
+    private var captureTitle: String {
+        if snapshotSourceCount != nil {
+            return L10n.text("合成プレビュー · 画面取得なし", "Synthetic preview · no capture")
+        }
+        let count = capture.runningSourceCount
+        let activity = count > 0
+            ? L10n.text("\(count)件を画面取得中", "Capturing \(count) source\(count == 1 ? "" : "s")")
+            : L10n.text("画面取得なし", "No capture running")
+        if needsAttention { return activity + L10n.text(" · 要確認", " · Needs attention") }
+        if capture.isPickerPresented { return activity + L10n.text(" · 選択中", " · Choosing") }
+        return activity
     }
 
     private var statusDetail: String {
-        if snapshotSourceCount != nil {
-            return L10n.text(
-                "公開用スクリーンショットの合成データです。画面取得は行っていません。",
-                "Privacy-safe synthetic screenshot data; no screen capture is running."
-            )
-        }
-        return capture.statusDetail
-    }
-}
-
-private struct WorkspaceToolbarButtonStyle: ButtonStyle {
-    var tint: Color?
-
-    init(tint: Color? = nil) {
-        self.tint = tint
-    }
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(tint ?? Color.white.opacity(0.86))
-            .padding(.horizontal, 10)
-            .frame(minHeight: 31)
-            .background(
-                (tint ?? Color.white).opacity(configuration.isPressed ? 0.16 : 0.08),
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke((tint ?? Color.white).opacity(0.12))
-            }
+        let hint = L10n.text("会議アプリで共有中かどうかを示すものではありません。", "This does not indicate whether a meeting app is sharing.")
+        if snapshotSourceCount != nil { return L10n.text("合成プレビューです。画面取得は行っていません。", "Synthetic preview. No screen capture is running.") }
+        return "\(capture.statusDetail) \(hint)"
     }
 }
 
@@ -1542,7 +871,7 @@ private struct WorkspaceNoticeToast: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle.fill")
-                .foregroundStyle(StagePanePalette.aqua)
+                .foregroundStyle(Color.accentColor)
                 .padding(.top, 3)
                 .accessibilityHidden(true)
             Text(message)
@@ -1559,7 +888,7 @@ private struct WorkspaceNoticeToast: View {
             .buttonStyle(.plain)
             .accessibilityLabel(L10n.text("通知を閉じる", "Dismiss notice"))
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .padding(.leading, 13)
         .padding(.trailing, 8)
         .padding(.vertical, 8)
@@ -1567,7 +896,7 @@ private struct WorkspaceNoticeToast: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke(StagePanePalette.aqua.opacity(0.28))
+                .stroke(Color.accentColor.opacity(0.28))
         }
         .shadow(color: .black.opacity(0.35), radius: 15, y: 7)
         .accessibilityElement(children: .contain)

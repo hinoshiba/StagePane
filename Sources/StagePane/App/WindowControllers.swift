@@ -66,9 +66,8 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
-        // This is the app's sole private main window. Below the wide-canvas
-        // threshold its global navigation becomes an icon rail; the layer list
-        // stays beside the canvas so overlap controls are always available.
+        // The private editor always keeps the layer list beside the canvas.
+        // Settings and purchases use independent private windows.
         window.contentMinSize = NSSize(width: 900, height: 620)
         window.setFrameAutosaveName("StagePane.Workspace")
         window.tabbingMode = .disallowed
@@ -103,6 +102,62 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
 
     func windowDidDeminiaturize(_ notification: Notification) {
         controller?.workspaceDidBecomeVisible()
+    }
+}
+
+/// A secondary private window that never blocks the editing workspace.
+/// Its title is guidance, not a Window Server capture-exclusion guarantee.
+@MainActor
+final class StagePrivateWindowController: NSWindowController, NSWindowDelegate {
+    private let onClose: (() -> Void)?
+    private let onMiniaturize: (() -> Void)?
+
+    init<Content: View>(
+        title: String,
+        autosaveName: String,
+        size: NSSize,
+        minimumSize: NSSize,
+        content: Content,
+        onClose: (() -> Void)? = nil,
+        onMiniaturize: (() -> Void)? = nil
+    ) {
+        self.onClose = onClose
+        self.onMiniaturize = onMiniaturize
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.isReleasedWhenClosed = false
+        window.contentMinSize = minimumSize
+        window.tabbingMode = .disallowed
+        window.setFrameAutosaveName(autosaveName)
+        window.contentViewController = NSHostingController(rootView: content)
+        super.init(window: window)
+        window.delegate = self
+        if window.frame.origin == .zero { window.center() }
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func present() {
+        if window?.isMiniaturized == true { window?.deminiaturize(nil) }
+        showWindow(nil)
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        onClose?()
+    }
+
+    func windowDidMiniaturize(_ notification: Notification) {
+        onMiniaturize?()
     }
 }
 
@@ -423,8 +478,8 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         guard controller?.presentationLock == true else { return true }
         NSSound.beep()
         controller?.transientNotice = L10n.text(
-            "プレゼンテーションロック中です。設定から解除できます。",
-            "Presentation Lock is on. Turn it off in Appearance."
+            "Stageウインドウは保護されています。「ウインドウ」メニューから保護を解除できます。",
+            "The Stage window is protected. Turn off protection in the Window menu."
         )
         return false
     }

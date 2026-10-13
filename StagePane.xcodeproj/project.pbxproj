@@ -16,6 +16,7 @@
 		2AC792D386D766A586D6FEAE /* ProUpgradePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */; };
 		340F40C3FD28100274C31017 /* StageWorkspaceSnapshotFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1376D7B62EA8CC1F675B5447 /* StageWorkspaceSnapshotFixtures.swift */; };
 		3A6D2434DD8EEF2D5E58029C /* ScreenCaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */; };
+		3C161C7F0D6A35B06B54C5EB /* LayerReorderList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FADEE52EAFFE9B6B61C64EC /* LayerReorderList.swift */; };
 		3C4C78774223C5D332975572 /* StageMagnifierStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D57654F8399E7E8A0A7B69 /* StageMagnifierStore.swift */; };
 		3FB95F43FAB0265602454D46 /* StageMagnifierOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B094CB7F42DF8083D0744B /* StageMagnifierOverlay.swift */; };
 		4EB96CB8AB4FEF81BBE3FA2D /* en.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 4BBC81793D25A66F6F08D0FF /* en.lproj */; };
@@ -75,6 +76,7 @@
 		80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageWatermark.swift; sourceTree = "<group>"; };
 		81367F4215FA9164C376C053 /* StageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageView.swift; sourceTree = "<group>"; };
 		8558A9B483CFAA7020CFDE1B /* StageLayoutEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageLayoutEditor.swift; sourceTree = "<group>"; };
+		8FADEE52EAFFE9B6B61C64EC /* LayerReorderList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerReorderList.swift; sourceTree = "<group>"; };
 		936172AD016BFF1DFC652660 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		93D4E0545042D6A53D741A26 /* StageAnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageAnnotationStore.swift; sourceTree = "<group>"; };
 		97E1C3DD3EE39D4F799957ED /* StageMagnifierPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageMagnifierPresentation.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 			children = (
 				E10F2BEB81C9C02BBC4869A0 /* Branding.swift */,
 				CA6B1D02FD90DC2B8F083072 /* ControlRoomView.swift */,
+				8FADEE52EAFFE9B6B61C64EC /* LayerReorderList.swift */,
 				06DC6DCF2EF30BCE2233851E /* SettingsPanels.swift */,
 				8558A9B483CFAA7020CFDE1B /* StageLayoutEditor.swift */,
 				1376D7B62EA8CC1F675B5447 /* StageWorkspaceSnapshotFixtures.swift */,
@@ -452,6 +455,7 @@
 				5846FBCB7C905D59A39F1FF5 /* CaptureSourceRenderers.swift in Sources */,
 				0A06B097A76E15E951E90E16 /* ControlRoomView.swift in Sources */,
 				56BBD6E97EEC3EBC73DD4369 /* L10n.swift in Sources */,
+				3C161C7F0D6A35B06B54C5EB /* LayerReorderList.swift in Sources */,
 				51FF4B83092435E07ADABE88 /* ProPurchaseStore.swift in Sources */,
 				2AC792D386D766A586D6FEAE /* ProUpgradePanel.swift in Sources */,
 				E7198A1E8C03B0799678B7FE /* SampleBufferDisplayView.swift in Sources */,

@@ -210,15 +210,25 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 
 ## Detailed reviewer walkthrough reference
 
-> StagePane is a focused screen-sharing utility with two normal macOS windows:
+This walkthrough describes the current development UI, which has not been
+released as an official update. The 0.4.2 metadata and review-note draft above
+are retained as version-specific records. Prepare new submission notes and
+evidence only after validating the exact release candidate.
+
+> StagePane is a focused screen-sharing utility with two primary macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
-> private live Canvas for arranging, cropping, drawing, and taking an Audience
+> private live Canvas for arranging, cropping, drawing, magnifying, and taking an Audience
 > Stage PNG. A persistent layer list stays beside the Canvas, including at the
-> minimum 900×620-point Workspace size. Navigation also provides Stage Settings,
-> Appearance, Permissions, Privacy, and About. It
+> minimum 900×620-point Workspace size. Stage Settings opens beside the Canvas.
+> The toolbar's Settings button opens a separate window with General and About;
+> About contains privacy information and opens the separate About Screen Sharing
+> guide. Pro also uses a separate private window. StagePane
 > does not add a display, replace or imitate the macOS desktop, provide an app
 > launcher, modify Finder or the Dock, install a driver, use private APIs, or
 > continue running after the user quits.
+> Stage Settings → Output Details shows Stage rendering size. Audience PNG
+> exports instead use the selected shape preset's dimensions; neither size
+> guarantees the resolution transmitted by the meeting app.
 >
 > The app can be tested without permission by sharing its neutral Stage window.
 > To test source composition, choose “Add Source,” approve exactly one test
@@ -244,13 +254,18 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 > title badge or use arrow keys to move it. Its resize handle remains reachable
 > above overlapping layers. Only the selected layer has editing chrome, and
 > its transparent interior lets a click on visible foreground content select
-> that foreground layer naturally. Selecting, dragging, resizing, or opening
-> Crop does not change z-order. “Move Forward,” “Move Backward,” “Bring to Front,”
-> and “Send to Back” update the audience stack and list explicitly while
-> preserving placement and crop. Commands at the stack boundaries have no effect.
-> “Auto Arrange” and the other Quick Layout presets also remain available.
-> These actions change only StagePane's composition. The selected tile and each
-> layer row have a crop button; it shows that exact layer in full in the private Workspace and lets the reviewer move
+> that foreground layer naturally. Selection, Canvas movement, resizing, and
+> opening Crop do not change z-order. Drag a layer's list grip to reorder it;
+> higher rows are in front, and dropping commits the order. Canceling the drag
+> preserves the order. Placement, crop, and selection remain unchanged.
+> Finish Crop or close the source picker before reordering. “Move Forward,”
+> “Move Backward,” “Bring to Front,” and “Send to Back” remain in the layer's
+> More menu as keyboard-accessible alternatives. Commands at the stack
+> boundaries have no effect. The Layout menu offers Grid, Side by Side,
+> Stacked, and Picture in Picture without changing source order.
+> These actions change only StagePane's composition. Crop is available in the
+> fixed selected-layer tools below the Canvas and each layer's More menu;
+> it shows that exact layer in full in the private Workspace and lets the reviewer move
 > or resize a draft frame. The public Stage retains the previously applied crop
 > until “Apply Crop”; Cancel, a mode change, or source loss discards the draft.
 > Reset to Full Source also changes only the draft. Cropping is a local
@@ -258,10 +273,12 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 > Apple's picker remains in that stream. Applied crop rectangles remain only in
 > memory for the current StagePane run, including while a disconnected layer waits
 > for Select Again, until Remove, confirmed Stop All, or app termination.
-> StagePane provides global Arrange and Draw modes plus Crop on each layer. Arrange
+> StagePane provides Arrange, Draw, and Magnify modes plus Crop on each layer. Arrange
 > changes Stage placement, a layer's Crop changes only its visible source region, and Draw adds
 > bounded in-memory vector ink to
-> both the private Workspace and public Stage. Draw hides the audience pointer;
+> both the private Workspace and public Stage. Magnify enlarges content in a
+> temporary lens without changing the source layout or controlling the source app.
+> Draw and Magnify hide the audience pointer;
 > returning to Arrange or opening a layer crop restores the selected pointer style. The Curtain hides
 > ink and Stop All/final-source removal clears it. The StagePane process does not record,
 > encode, automatically save, or transmit frames. Only an explicit “Copy
@@ -274,21 +291,24 @@ Measure its UTF-8 size after removing the Markdown quote prefixes.
 > continue and the private Stage Workspace remains available for preparation.
 > Stage Workspace must remain private.
 >
-> StagePane Pro is reachable from the private Workspace sidebar, the app menu,
+> StagePane Pro is reachable from Settings → General, the app menu,
 > a fifth Add Source attempt in Free, or an attempt to turn off the StagePane
 > mark. It is a one-time non-consumable purchase. The screen shows StoreKit's
 > localized price, clearly says it is not a subscription, offers Continue Free
 > and Restore Purchases, and never appears in the audience Stage. Only a
 > StoreKit-verified transaction for `com.hinoshiba.stagepane.pro` unlocks it.
-> On successful purchase from the source limit, the app resumes Apple's picker;
-> from the mark toggle, it completes the requested mark removal. Canceling never
+> If the Pro window remains open and the user has not started another edit,
+> a successful purchase from the source limit resumes Apple's picker; a purchase
+> from the mark toggle completes the requested mark removal. Closing or minimizing
+> Pro, or starting another edit, cancels this automatic continuation. After purchase,
+> use Add Source or the Stage Settings mark toggle to resume manually. Canceling never
 > changes or stops the current Stage.
 >
-> Under “Appearance,” the pointer can remain standard, appear as a local red
+> Under Stage Settings → Pointer, the pointer can remain standard, appear as a local red
 > laser dot in the Stage, or be hidden. Its color, size, and glow are adjustable,
 > and the dot appears only on the frontmost
 > source; when that source is paused there is no dot and no fallback to a source
-> behind it. Draw mode temporarily hides every pointer style. Laser pointer mode
+> behind it. Draw and Magnify temporarily hide every pointer style. Laser pointer mode
 > does not request an additional permission and
 > does not retain pointer coordinates. A translucent
 > StagePane mark is shown at the lower-right of the holding screen, shared
@@ -310,7 +330,7 @@ all four explicit ordering actions, Hide/Show with fresh-frame return,
 replace, removal confirmation, all four Quick Layout presets, the Arrange/Draw switch, each layer's
 Crop action and target label, crop draft, Reset to
 Full Source, Apply, and Cancel (including an unchanged Stage before Apply),
-unchanged physical pointer,
+unchanged physical pointer, Magnify and its exit action,
 Draw/Clear/Curtain behavior, explicit Copy/Save Audience Image actions, the
 watermark, and Stop All. The video must use the exact Mac App Store candidate
 and must not show an Accessibility permission prompt. Provide

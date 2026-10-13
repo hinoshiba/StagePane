@@ -14,8 +14,7 @@ struct ProUpgradePanel: View {
                 } else {
                     triggerCard
                     purchaseCard
-                    benefitGrid
-                    planComparison
+                    ProPlanComparison()
                 }
 
                 privacyNote
@@ -98,8 +97,8 @@ struct ProUpgradePanel: View {
                     "Add more sources with Pro"
                 ),
                 detail: L10n.text(
-                    "現在のソースはそのままです。購入後、追加する内容をAppleの選択画面で選べます。",
-                    "Your current sources stay in place. After purchase, choose the next item in Apple’s picker."
+                    "この画面で購入を終えると、次のソースを選ぶ画面へ進みます。閉じる・最小化・別の編集を始めた場合は、購入後に「ソースを追加」を選んでください。",
+                    "Finish the purchase here to choose the next source. If you close or minimize this window, or start another edit, choose Add Source after purchase."
                 )
             )
         case .watermark:
@@ -110,77 +109,13 @@ struct ProUpgradePanel: View {
                     "A mark-free Stage is included with Pro"
                 ),
                 detail: L10n.text(
-                    "購入後、Stage、カーテン、Audience画像からStagePaneロゴをすぐに非表示にします。",
-                    "After purchase, the StagePane mark is removed immediately from the Stage, Curtain, and Audience images."
+                    "この画面で購入を終えると、StagePaneロゴを非表示にします。閉じる・最小化・別の編集を始めた場合は、購入後にStage設定で変更してください。",
+                    "Finish the purchase here to hide the StagePane mark. If you close or minimize this window, or start another edit, change it in Stage Settings after purchase."
                 )
             )
         case .direct:
             EmptyView()
         }
-    }
-
-    private var benefitGrid: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 230), spacing: 12)],
-            spacing: 12
-        ) {
-            ProBenefitCard(
-                symbol: "rectangle.3.group.fill",
-                title: L10n.text(
-                    "アプリ側のソース数制限なし",
-                    "No app-imposed source limit"
-                ),
-                detail: L10n.text(
-                    "スライド、デモ、コード、資料をひとつのStageへ。",
-                    "Bring slides, a demo, references, and more onto one Stage."
-                )
-            )
-            ProBenefitCard(
-                symbol: "rectangle.badge.minus",
-                title: L10n.text("ロゴを非表示", "Hide the StagePane mark"),
-                detail: L10n.text(
-                    "Stage、カーテン、保存するAudience画像まで、すっきり表示。",
-                    "Keep the Stage, Curtain, and saved Audience images clean."
-                )
-            )
-            ProBenefitCard(
-                symbol: "checkmark.seal.fill",
-                title: L10n.text("買い切り", "One-time purchase"),
-                detail: L10n.text(
-                    "サブスクリプション、StagePaneアカウント、広告はありません。",
-                    "No subscription, StagePane account, or advertising."
-                )
-            )
-        }
-    }
-
-    private var planComparison: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(L10n.text("無料版も、発表に必要な安全機能はそのまま。", "The free app keeps every safety essential."))
-                .font(.headline)
-
-            PlanComparisonRow(
-                title: L10n.text("同時に使えるソース", "Simultaneous sources"),
-                freeValue: L10n.text("4つ", "Four"),
-                proValue: L10n.text("アプリ側の上限なし", "No app limit")
-            )
-            Divider()
-            PlanComparisonRow(
-                title: L10n.text("StagePaneロゴ", "StagePane mark"),
-                freeValue: L10n.text("表示", "Shown"),
-                proValue: L10n.text("表示／非表示", "Optional")
-            )
-            Divider()
-            PlanComparisonRow(
-                title: L10n.text(
-                    "カーテン・停止・配置・切り抜き・手書き",
-                    "Curtain, Stop, Arrange, Crop, and Draw"
-                ),
-                freeValue: L10n.text("すべて利用可", "Included"),
-                proValue: L10n.text("すべて利用可", "Included")
-            )
-        }
-        .cardSurface()
     }
 
     private var purchaseCard: some View {
@@ -298,7 +233,7 @@ struct ProUpgradePanel: View {
                 } else if controller.proUpgradeTrigger == .watermark {
                     Button {
                         controller.requestWatermarkVisibility(false)
-                        controller.selectWorkspaceSection(.appearance)
+                        controller.showStageSettings()
                     } label: {
                         Label(L10n.text("ロゴを非表示", "Hide the StagePane Mark"), systemImage: "rectangle.badge.minus")
                     }
@@ -325,8 +260,8 @@ struct ProUpgradePanel: View {
                 Text(L10n.text("購入はAppleが処理", "Purchase handled by Apple"))
                     .font(.caption.weight(.semibold))
                 Text(L10n.text(
-                    "購入状態はStoreKitの検証済み取引で確認します。StagePaneのアカウントや解析SDKは追加しません。画面内容を購入処理へ渡すこともありません。",
-                    "Access is based on StoreKit-verified transactions. StagePane adds no account or analytics SDK and never provides screen content to the purchase flow."
+                    "StagePaneのアカウントは不要です。画面内容を購入処理へ送信しません。",
+                    "No StagePane account is needed. Screen content is never sent to the purchase process."
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -386,25 +321,46 @@ private struct UpgradeReasonCard: View {
     }
 }
 
-private struct ProBenefitCard: View {
-    let symbol: String
-    let title: String
-    let detail: String
-
+/// Shared with snapshot exports so the Free/Pro comparison is reviewed directly.
+struct ProPlanComparison: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(StagePanePalette.aquaReadable)
-            Text(title).font(.headline)
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L10n.text("無料版も、発表に必要な安全機能はそのまま。", "The free app keeps every safety essential."))
+                .font(.headline)
+
+            HStack(spacing: 16) {
+                Spacer(minLength: 0)
+                Text(L10n.text("無料版", "Free"))
+                    .frame(width: 100, alignment: .leading)
+                Text("Pro")
+                    .frame(width: 112, alignment: .leading)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+
+            PlanComparisonRow(
+                title: L10n.text("同時に使えるソース", "Simultaneous sources"),
+                freeValue: L10n.text("4つ", "Four"),
+                proValue: L10n.text("アプリ側の上限なし", "No app limit")
+            )
+            Divider()
+            PlanComparisonRow(
+                title: L10n.text("StagePaneロゴ", "StagePane mark"),
+                freeValue: L10n.text("表示", "Shown"),
+                proValue: L10n.text("表示／非表示", "Optional")
+            )
+            Divider()
+            PlanComparisonRow(
+                title: L10n.text(
+                    "カーテン・停止・配置・切り抜き・手書き",
+                    "Curtain, Stop, Arrange, Crop, and Draw"
+                ),
+                freeValue: L10n.text("すべて利用可", "Included"),
+                proValue: L10n.text("すべて利用可", "Included")
+            )
         }
-        .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
-        .cardSurface(cornerRadius: 16, padding: 17)
-        .accessibilityElement(children: .combine)
+        .cardSurface()
     }
 }
 

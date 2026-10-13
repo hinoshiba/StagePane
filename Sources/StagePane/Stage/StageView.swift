@@ -61,7 +61,11 @@ struct StageView: View {
                         .foregroundStyle(foreground)
                 }
                 Text(controller.privacyMessage)
-                    .font(.system(size: compact ? 24 : 30, weight: .semibold, design: .rounded))
+                    .font(.system(
+                        size: (compact ? 24 : 30) * CGFloat(controller.privacyMessageSize) / 100,
+                        weight: .semibold,
+                        design: .rounded
+                    ))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(foreground)
                     .lineLimit(compact ? 3 : 4)

@@ -22,6 +22,7 @@ struct StageMagnifierPresentation: View {
 
 struct StageMagnifierInputOverlay: View {
     @ObservedObject var store: StageMagnifierStore
+    let beginInteraction: () -> Void
     let exit: () -> Void
     @FocusState private var isFocused: Bool
 
@@ -35,6 +36,7 @@ struct StageMagnifierInputOverlay: View {
                 .onContinuousHover { phase in
                     switch phase {
                     case .active(let location):
+                        beginInteraction()
                         store.move(to: location, in: proxy.size)
                     case .ended:
                         store.hide()
@@ -42,6 +44,7 @@ struct StageMagnifierInputOverlay: View {
                 }
                 .gesture(DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        beginInteraction()
                         isFocused = true
                         store.move(to: value.location, in: proxy.size)
                     }
@@ -50,6 +53,7 @@ struct StageMagnifierInputOverlay: View {
                     }
                 )
                 .onMoveCommand { direction in
+                    beginInteraction()
                     let step: CGFloat = NSEvent.modifierFlags.contains(.shift) ? 0.05 : 0.01
                     switch direction {
                     case .left: store.move(byX: -step, y: 0)
@@ -67,6 +71,7 @@ struct StageMagnifierInputOverlay: View {
                 ))
                 .accessibilityValue(accessibilityPosition)
                 .accessibilityAction(named: L10n.text("中央に表示", "Show at Center")) {
+                    beginInteraction()
                     store.center()
                 }
                 .onAppear { isFocused = true }
