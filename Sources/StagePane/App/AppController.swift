@@ -25,6 +25,21 @@ enum ProUpgradeTrigger: Equatable, Sendable {
     case watermark
 }
 
+/// A source failure stays readable until dismissed or that operation recovers.
+/// An unrelated source update or a canceled picker is not recovery.
+struct CaptureAccessIssueNotice: Identifiable {
+    let id = UUID()
+    let issue: CaptureAccessIssue
+    let sourceIDsAtFailure: Set<StageSourceID>
+
+    func isResolved(currentSourceIDs: Set<StageSourceID>, readySourceIDs: Set<StageSourceID>) -> Bool {
+        if let sourceID = issue.sourceID {
+            return !currentSourceIDs.contains(sourceID) || readySourceIDs.contains(sourceID)
+        }
+        return !readySourceIDs.subtracting(sourceIDsAtFailure).isEmpty
+    }
+}
+
 @MainActor
 final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published var preset: StagePreset {
@@ -50,7 +65,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var cropDraft: NormalizedSourceRect?
     @Published private(set) var workspaceSection: WorkspaceSection = .appearance
     @Published var isStageSettingsPresented = false
-    @Published private(set) var captureAccessIssue: CaptureAccessIssue?
+    @Published private(set) var captureAccessIssueNotice: CaptureAccessIssueNotice?
+    @Published private(set) var hasMacScreenRecordingAccess = false
+    @Published private(set) var hasRequestedMacScreenRecordingAccess = false
     @Published private(set) var proWindowIsVisible = false
     @Published var isAlwaysOnTop: Bool {
         didSet {
@@ -210,7 +227,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var stageWindowController: StageWindowController?
     private var settingsWindowController: StagePrivateWindowController?
     private var permissionsWindowController: StagePrivateWindowController?
-    private var captureAccessIssueWindowController: StagePrivateWindowController?
+    private var macScreenRecordingAccessWindowController: StagePrivateWindowController?
+    private var checksMacScreenRecordingAccess = false
     private var proWindowController: StagePrivateWindowController?
     private var pendingStageSnapshot: StageSnapshot?
     private var stopAllConfirmationAlert: NSAlert?
@@ -272,6 +290,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             self?.presentProUpgrade(trigger: .sourceLimit)
         }
         capture.sourceAccessIssueHandler = { [weak self] issue in
+            // Keep source failures in the editor; they do not establish that
+            // app-wide Screen Recording permission is missing.
             self?.presentCaptureAccessIssue(issue)
         }
         previousHasProAccess = hasProAccess
@@ -595,28 +615,105 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func presentCaptureAccessIssue(_ issue: CaptureAccessIssue) {
-        captureAccessIssue = issue
-        if captureAccessIssueWindowController == nil {
-            captureAccessIssueWindowController = StagePrivateWindowController(
-                title: L10n.text("画面共有の確認 — 手元用", "Screen Sharing — Private"),
-                autosaveName: "StagePane.CaptureAccessIssue",
-                size: NSSize(width: 520, height: 300),
-                minimumSize: NSSize(width: 480, height: 260),
-                content: CaptureAccessIssueView(controller: self),
-                onClose: { [weak self] in self?.captureAccessIssue = nil }
+        transientNotice = nil
+        captureAccessIssueNotice = CaptureAccessIssueNotice(
+            issue: issue, sourceIDsAtFailure: Set(capture.sources.map(\.id))
+        )
+        AccessibilityNotification.Announcement(issue.title + "\n" + issue.detail).post()
+    }
+
+    func dismissCaptureAccessIssue(id: UUID) {
+        guard captureAccessIssueNotice?.id == id else { return }
+        captureAccessIssueNotice = nil
+    }
+
+    var canRetryCaptureAccessIssue: Bool {
+        guard let notice = captureAccessIssueNotice,
+              stageInteractionMode != .crop,
+              !capture.isPickerPresented else { return false }
+        if let sourceID = notice.issue.sourceID {
+            return capture.canReplaceSource(sourceID)
+        }
+        return canRequestSourceAddition
+    }
+
+    func retryCaptureAccessIssue() {
+        guard canRetryCaptureAccessIssue, let notice = captureAccessIssueNotice else { return }
+        // Keep the explanation during the attempt: canceling the picker must
+        // not erase the last failure. A successful frame clears it below.
+        if let sourceID = notice.issue.sourceID {
+            beginWorkspaceInteraction()
+            capture.replaceSource(sourceID)
+        } else {
+            chooseSource()
+        }
+    }
+
+    private func clearResolvedCaptureAccessIssue() {
+        guard let notice = captureAccessIssueNotice else { return }
+        let currentSourceIDs = Set(capture.sources.map(\.id))
+        let readySourceIDs = Set(capture.sources.filter {
+            $0.phase == .active && $0.isPresentationVisible && !$0.isOutputSuppressed
+        }.map(\.id))
+        if notice.isResolved(currentSourceIDs: currentSourceIDs, readySourceIDs: readySourceIDs) {
+            dismissCaptureAccessIssue(id: notice.id)
+        }
+    }
+
+    private func checkMacScreenRecordingAccessAtLaunch() {
+        checksMacScreenRecordingAccess = true
+        refreshMacScreenRecordingAccess()
+        guard !defaults.bool(forKey: Keys.macScreenRecordingAccessChecked) else { return }
+        // Remember the initial check separately from the live macOS status.
+        // A denied or deferred request must never create a launch prompt loop.
+        defaults.set(true, forKey: Keys.macScreenRecordingAccessChecked)
+        if !hasMacScreenRecordingAccess {
+            presentMacScreenRecordingAccess()
+        }
+    }
+
+    func refreshMacScreenRecordingAccess() {
+        // Snapshot launches never run a preflight, including activation events.
+        guard checksMacScreenRecordingAccess else { return }
+        hasMacScreenRecordingAccess = CGPreflightScreenCaptureAccess()
+    }
+
+    func showMacScreenRecordingAccess() {
+        beginWorkspaceInteraction()
+        checksMacScreenRecordingAccess = true
+        refreshMacScreenRecordingAccess()
+        presentMacScreenRecordingAccess()
+    }
+
+    private func presentMacScreenRecordingAccess() {
+        if macScreenRecordingAccessWindowController == nil {
+            macScreenRecordingAccessWindowController = StagePrivateWindowController(
+                title: L10n.text("Macの画面収録アクセス — 手元用", "Mac Screen Recording Access — Private"),
+                autosaveName: "StagePane.MacScreenRecordingAccess",
+                size: NSSize(width: 560, height: 340),
+                minimumSize: NSSize(width: 520, height: 320),
+                content: MacScreenRecordingAccessView(controller: self)
             )
         }
-        captureAccessIssueWindowController?.present()
+        macScreenRecordingAccessWindowController?.present()
     }
 
-    func dismissCaptureAccessIssue() {
-        captureAccessIssueWindowController?.close()
-        captureAccessIssue = nil
+    func requestMacScreenRecordingAccess() {
+        guard checksMacScreenRecordingAccess, !hasMacScreenRecordingAccess else { return }
+        hasRequestedMacScreenRecordingAccess = true
+        // Only the explicit Allow button calls this prompting API. Picker
+        // sharing remains available regardless of the app-wide result.
+        _ = CGRequestScreenCaptureAccess()
+        refreshMacScreenRecordingAccess()
     }
 
-    func showAccessHelpForIssue() {
-        dismissCaptureAccessIssue()
-        presentPermissionCheck()
+    func closeMacScreenRecordingAccess() {
+        macScreenRecordingAccessWindowController?.close()
+    }
+
+    func openMacSystemSettings() {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.systempreferences") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     func dismissTransientNotice(id: UUID? = nil) {
@@ -660,6 +757,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         if showWindows {
             showStage()
             showStageWorkspace()
+            checkMacScreenRecordingAccessAtLaunch()
         }
     }
 
@@ -681,6 +779,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalInteractionMode = stageInteractionMode
         let originalStageRenderingSize = stageRenderingSize
         let originalInkPreferences = annotations.preferences
+        let originalMacScreenRecordingAccess = hasMacScreenRecordingAccess
+        let originalMacScreenRecordingRequest = hasRequestedMacScreenRecordingAccess
+        let originalCaptureAccessIssueNotice = captureAccessIssueNotice
         defer {
             annotations.selectTool(originalInkPreferences.tool)
             annotations.selectColor(originalInkPreferences.colorPreset)
@@ -701,6 +802,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             privacyCurtain = originalCurtain
             workspaceSection = originalWorkspaceSection
             stageRenderingSize = originalStageRenderingSize
+            hasMacScreenRecordingAccess = originalMacScreenRecordingAccess
+            hasRequestedMacScreenRecordingAccess = originalMacScreenRecordingRequest
+            captureAccessIssueNotice = originalCaptureAccessIssueNotice
         }
 
         // Public assets must never depend on the developer's local defaults.
@@ -717,6 +821,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         privacyMessage = L10n.text("少々お待ちください", "Back in a moment")
         privacyMessageSize = StageMessage.defaultTextSize
         privacyCurtain = true
+        captureAccessIssueNotice = nil
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         setStageInteractionMode(.arrange)
@@ -785,21 +890,23 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             to: directory.appendingPathComponent("permissions.png")
         )
 
-        let originalAccessIssue = captureAccessIssue
-        captureAccessIssue = CaptureAccessIssue(
-            title: L10n.text("画面の選択を開始できませんでした", "Couldn’t open source selection"),
-            detail: L10n.text(
-                "時間をおいて、もう一度ソースを選択してください。既存のレイヤーは保持されています。",
-                "Try selecting the source again in a moment. Your existing layers are preserved."
+        // Synthetic access states never query or request macOS permissions.
+        let accessFixtures = [
+            (suffix: "", allowed: false, requested: false),
+            (suffix: "-pending", allowed: false, requested: true),
+            (suffix: "-allowed", allowed: true, requested: false)
+        ]
+        for fixture in accessFixtures {
+            hasMacScreenRecordingAccess = fixture.allowed
+            hasRequestedMacScreenRecordingAccess = fixture.requested
+            try writePNG(
+                of: MacScreenRecordingAccessView(controller: self)
+                    .preferredColorScheme(.light)
+                    .frame(width: 560, height: 340),
+                pointSize: CGSize(width: 560, height: 340),
+                to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix).png")
             )
-        )
-        defer { captureAccessIssue = originalAccessIssue }
-        try writePNG(
-            of: CaptureAccessIssueView(controller: self)
-                .frame(width: 520, height: 300),
-            pointSize: CGSize(width: 520, height: 300),
-            to: directory.appendingPathComponent("source-access-issue.png")
-        )
+        }
 
         workspaceSection = .privacy
         try writePNG(
@@ -862,13 +969,17 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             pointSize: CGSize(width: 640, height: 500),
             to: directory.appendingPathComponent("permissions-dark.png")
         )
-        try writePNG(
-            of: CaptureAccessIssueView(controller: self)
-                .preferredColorScheme(.dark)
-                .frame(width: 520, height: 300),
-            pointSize: CGSize(width: 520, height: 300),
-            to: directory.appendingPathComponent("source-access-issue-dark.png")
-        )
+        for fixture in accessFixtures {
+            hasMacScreenRecordingAccess = fixture.allowed
+            hasRequestedMacScreenRecordingAccess = fixture.requested
+            try writePNG(
+                of: MacScreenRecordingAccessView(controller: self)
+                    .preferredColorScheme(.dark)
+                    .frame(width: 560, height: 340),
+                pointSize: CGSize(width: 560, height: 340),
+                to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix)-dark.png")
+            )
+        }
         try writePNG(
             of: ProUpgradePanel(controller: self, purchases: purchases)
                 .preferredColorScheme(.dark)
@@ -898,6 +1009,43 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 pointSize: CGSize(width: 900, height: 620),
                 to: directory.appendingPathComponent("workspace-empty-900-\(appearanceName).png")
             )
+            captureAccessIssueNotice = CaptureAccessIssueNotice(
+                issue: CaptureAccessIssue(
+                    title: L10n.text("画面の選択を開始できませんでした", "Couldn’t open source selection"),
+                    detail: L10n.text(
+                        "「ソースを追加」から、もう一度選択画面を開いてください。選択画面を開けない状態が続く場合は、共有するウインドウが開いていることを確認してください。この説明は、もう一度選択して新しいソースを取得できるか、「閉じる」を選ぶまでここに残ります。（これは画面取得を行わない合成サンプルです。）",
+                        "Use Add Source to open the selection again. If source selection still cannot open, check that the window you want to share is open and try again. This explanation remains available until a new source is successfully captured or you choose Dismiss. Canceling the selection does not erase the error. (This is a synthetic sample; no screen capture is running.)"
+                    )
+                ),
+                sourceIDsAtFailure: []
+            )
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-empty-900-\(appearanceName).png")
+            )
+            let failedSourceID = StageSourceID(rawValue: "snapshot-presentation")
+            captureAccessIssueNotice = CaptureAccessIssueNotice(
+                issue: CaptureAccessIssue(
+                    title: L10n.text("画面の取得を開始できませんでした", "Couldn’t start capture"),
+                    detail: L10n.text(
+                        "「プレゼンテーション」の画面取得を開始できませんでした。レイヤー一覧の「選び直す」から、対象をもう一度選択してください。レイヤーの配置と切り抜きは保持されています。（これは画面取得を行わない合成サンプルです。）",
+                        "Capture couldn’t start for “Presentation”. Use Select Again in the layer list to choose the source again. The layer placement and crop were kept. (This is a synthetic sample; no screen capture is running.)"
+                    ),
+                    sourceID: failedSourceID
+                ),
+                sourceIDsAtFailure: [failedSourceID]
+            )
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .arrange)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-source-900-\(appearanceName).png")
+            )
+            captureAccessIssueNotice = nil
             try writePNG(
                 of: ProPlanComparison()
                     .padding(24)
@@ -1461,6 +1609,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             }
             let neededReset = capture.hasResettableFailure
             capture.stop()
+            if neededReset, let notice = captureAccessIssueNotice, notice.issue.sourceID == nil {
+                dismissCaptureAccessIssue(id: notice.id)
+            }
             transientNotice = neededReset
                 ? L10n.text(
                     "画面取得のエラー状態をリセットしました。",
@@ -1655,6 +1806,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
+        clearResolvedCaptureAccessIssue()
         discardCropEditingIfSourceUnavailable()
         if !isActive { magnifier.hide() }
         let previousPhase = previousCapturePhase
@@ -1678,21 +1830,23 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             let reachedPreview = activeSessionReachedPreview
             activeSessionStartedAt = nil
             activeSessionReachedPreview = false
-            if hasDisconnectedLayers {
-                transientNotice = L10n.text(
-                    "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
-                    "Capture stopped. The layer placement and crop were kept. Choose its source again."
-                )
-            } else if needsAttention {
-                transientNotice = L10n.text(
-                    "画面取得は完全に停止しました。後処理の確認が必要です。",
-                    "Capture stopped completely, but cleanup needs attention."
-                )
-            } else {
-                transientNotice = L10n.text(
-                    "すべてのソースを完全に停止しました。",
-                    "All sources stopped completely."
-                )
+            if captureAccessIssueNotice == nil || (!needsAttention && !hasDisconnectedLayers) {
+                if hasDisconnectedLayers {
+                    transientNotice = L10n.text(
+                        "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
+                        "Capture stopped. The layer placement and crop were kept. Choose its source again."
+                    )
+                } else if needsAttention {
+                    transientNotice = L10n.text(
+                        "画面取得は完全に停止しました。後処理の確認が必要です。",
+                        "Capture stopped completely, but cleanup needs attention."
+                    )
+                } else {
+                    transientNotice = L10n.text(
+                        "すべてのソースを完全に停止しました。",
+                        "All sources stopped completely."
+                    )
+                }
             }
             if ReviewPromptPolicy.qualifiesAsSuccessfulSession(
                 duration: sessionDuration,
@@ -1705,6 +1859,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
 
         if capturePhaseNeedsAttention(phase) {
+            // The persistent source-specific recovery stays authoritative;
+            // a generic Reset Capture toast would suggest a competing action.
+            guard captureAccessIssueNotice == nil else { return }
             if capture.hasDisconnectedLayers {
                 let detail = capture.statusDetail.trimmingCharacters(
                     in: .whitespacesAndNewlines
@@ -1830,6 +1987,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         static let showsWatermark = "stage.showsWatermark"
         static let privacyMessage = "stage.privacyMessage"
         static let privacyMessageSize = "stage.privacyMessageSize"
+        static let macScreenRecordingAccessChecked = "onboarding.macScreenRecordingAccessChecked"
         static let successfulSessionCount = "review.successfulSessionCount"
         static let firstSuccessfulSessionDate = "review.firstSuccessfulSessionDate"
         static let lastReviewRequestVersion = "review.lastRequestedVersion"

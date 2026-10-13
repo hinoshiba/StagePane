@@ -132,11 +132,26 @@ Update and review these values in one pull request:
     dist/StagePane.app/Contents/MacOS/StagePane --snapshot "$SNAPSHOT_DIR"
   ```
 
-  `workspace.png`, `arrange.png`, `draw.png`, `sources.png`, `permissions.png`,
-  `privacy.png`, `appearance.png`, `stage-settings.png`, and source-build `pro.png` must be opaque
-  2880×1800 images. The
-  1920×1080 Stage-only snapshots are website and QA assets, not valid Mac App
-  Store upload dimensions. Do not use an arbitrary `/tmp` or repository
+  Snapshots are opaque PNGs rendered at twice their native point dimensions.
+  CI checks every fixture against `AppController.writeSnapshots`:
+
+  | Fixtures (`.png`) | Pixel dimensions |
+  | --- | --- |
+  | `workspace`, `arrange`, `draw`, `sources` | 2880×1800 |
+  | `workspace-900-*`, `workspace-empty-900-*`, `workspace-access-error-*-900-*`, `draw-900`, `eraser-900-*` | 1800×1240 |
+  | `stage-settings`, `appearance`, `stage-inspector-dark` | 720×1200 |
+  | `permissions`, `permissions-dark` | 1280×1000 |
+  | `screen-recording-access`, its `-pending` and `-allowed` states, and each `-dark` variant | 1120×680 |
+  | `privacy`, `app-settings`, `app-settings-dark` | 1440×1300 |
+  | `settings-640-appearance`, `settings-640-about`, `settings-640-about-dark` | 1280×1080 |
+  | Source-build `pro`, `pro-dark` | 1560×1520 |
+  | `pro-comparison-light`, `pro-comparison-dark` | 1280×720 |
+  | `privacy-curtain`, `stage-ready` | 1920×1080 |
+
+  The native-window and Stage-only snapshots are website and QA assets; their
+  dimensions are not Mac App Store upload requirements. The access-state
+  fixtures are synthetic and never query or request macOS permission.
+  Do not use an arbitrary `/tmp` or repository
   directory as the sandboxed app's snapshot destination. Separately capture
   customer-facing Product Page screenshots from the exact `StagePane-AppStore`
   candidate. Label every gated feature “StagePane Pro” or “In-App Purchase” in
@@ -166,10 +181,13 @@ swift build -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 
 Manual acceptance must cover supported macOS versions and architectures plus:
 
-- per-selection `SCContentSharingPicker` approval and cancellation, including
-  confirmation that the app requests no separate broad Screen Recording access
-  and exposes no Screen Recording settings step in the source flow; end access
-  by removing the source or stopping all sources;
+- per-selection `SCContentSharingPicker` approval and cancellation; source
+  sharing remains usable without app-wide Screen Recording access, and removing
+  the source or stopping all sources ends its access;
+- first-launch app-wide Screen Recording preflight: already-allowed access
+  shows no panel, while missing access shows an optional panel only once;
+  only its explicit Allow action requests access, later launches do not repeat
+  the panel, and the screen-sharing guide offers a manual check;
 - one-item window/application/display selection; Free mixed-source addition
   through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
   Pro mixed-source addition at source five and beyond while Mac performance and
@@ -222,9 +240,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   arrow keys, with the selected resize handle reachable above other layers;
   the transparent selected interior must permit clicking visible foreground
   content to select that foreground layer without reordering;
-- strict two-window separation: the private Workspace contains the Canvas and
-  persistent layer list, with navigation for Stage Settings, Appearance,
-  Permissions, Privacy, and About; its Canvas has Arrange and Draw global modes
+- strict private/public separation: the private Workspace contains the Canvas
+  and persistent layer list, with Stage Settings in a popover; the separate
+  Settings window contains General and About, including Privacy, while About
+  Screen Sharing remains a separate guide; the Canvas has Arrange and Draw global modes
   plus a Crop action on the selected tile and each layer row; only the selected
   tile displays editing chrome, with no promotion of its source pixels;
   the public Stage has no private toolbar, mode control,
@@ -255,9 +274,10 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   cursorless complete frame), and removal on Curtain/stop;
 - Arrange-mode drag/resize affecting only composition, with global Arrange and
   Draw plus a crop button on every layer available in Workspace in both the local sandboxed build and exact Mac App
-  Store candidate on every supported OS; confirm the persistent Permissions view
-  describes only picker-scoped screen-sharing session access and neither build
-  contains a cross-application input-forwarding or Accessibility permission path;
+  Store candidate on every supported OS; confirm About Screen Sharing distinguishes
+  picker-scoped session access from optional app-wide Screen Recording access,
+  and neither build contains a cross-application input-forwarding or Accessibility
+  permission path;
 - the selected tile and each layer row opening Crop for that exact layer at
   full Canvas size in the private Workspace; verify the target layer name, drag, four-corner
   resize, keyboard and VoiceOver actions;
@@ -413,7 +433,8 @@ In Xcode Organizer and App Store Connect, verify:
   resources;
 - Arrange, Crop, and Draw present, with no cross-application input-forwarding or
   Accessibility permission path in the archived Mac App Store candidate; the
-  Permissions view must show only the picker-scoped sharing explanation;
+  About Screen Sharing guide must distinguish picker-scoped session access from
+  optional app-wide Screen Recording access;
 - no unexpected entitlement, embedded executable/framework, absolute
   `LC_RPATH`, updater, analytics, automatic screenshot, recording, publisher
   server, or screen-upload path; confirm Apple StoreKit is the only commerce

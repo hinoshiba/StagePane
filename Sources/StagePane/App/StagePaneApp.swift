@@ -57,6 +57,7 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         installConfiguredMainMenu()
+        controller?.refreshMacScreenRecordingAccess()
     }
 
     func applicationShouldHandleReopen(

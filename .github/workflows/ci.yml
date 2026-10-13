@@ -101,16 +101,72 @@ jobs:
           mkdir -p "$SNAPSHOT_PARENT"
           SNAPSHOT_DIR="$(mktemp -d "$SNAPSHOT_PARENT/stagepane-ci-shots.XXXXXX")"
           STAGEPANE_LANGUAGE=en "$BINARY" --snapshot "$SNAPSHOT_DIR"
-          for NAME in workspace arrange draw sources permissions privacy appearance stage-settings; do
-            test -s "$SNAPSHOT_DIR/$NAME.png"
-            test "$(sips -g pixelWidth "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelWidth/ { print $2 }')" = 2880
-            test "$(sips -g pixelHeight "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelHeight/ { print $2 }')" = 1800
-          done
-          for NAME in privacy-curtain stage-ready; do
-            test -s "$SNAPSHOT_DIR/$NAME.png"
-            test "$(sips -g pixelWidth "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelWidth/ { print $2 }')" = 1920
-            test "$(sips -g pixelHeight "$SNAPSHOT_DIR/$NAME.png" | awk '/pixelHeight/ { print $2 }')" = 1080
-          done
+          assert_snapshot_size() {
+            local name="$1" expected_width="$2" expected_height="$3"
+            local image="$SNAPSHOT_DIR/$name.png"
+            local dimensions actual_width actual_height
+            if [[ ! -s "$image" ]]; then
+              echo "::error::Snapshot $name.png is missing or empty" >&2
+              return 1
+            fi
+            if ! dimensions="$(sips -g pixelWidth -g pixelHeight "$image")"; then
+              echo "::error::Could not read dimensions for snapshot $name.png" >&2
+              return 1
+            fi
+            actual_width="$(awk '$1 == "pixelWidth:" { print $2 }' <<< "$dimensions")"
+            actual_height="$(awk '$1 == "pixelHeight:" { print $2 }' <<< "$dimensions")"
+            if [[ "$actual_width" != "$expected_width" || "$actual_height" != "$expected_height" ]]; then
+              echo "::error::Snapshot $name.png is ${actual_width:-unknown}x${actual_height:-unknown}; expected ${expected_width}x${expected_height}" >&2
+              return 1
+            fi
+          }
+          # AppController.writeSnapshots renders every pointSize at 2x.
+          # Keep this manifest aligned with its workspace and private-window fixtures.
+          SNAPSHOT_COUNT=0
+          while read -r NAME WIDTH HEIGHT; do
+            assert_snapshot_size "$NAME" "$WIDTH" "$HEIGHT"
+            SNAPSHOT_COUNT=$((SNAPSHOT_COUNT + 1))
+          done <<'SNAPSHOT_SIZES'
+          stage-settings 720 1200
+          workspace 2880 1800
+          arrange 2880 1800
+          draw 2880 1800
+          sources 2880 1800
+          permissions 1280 1000
+          screen-recording-access 1120 680
+          screen-recording-access-pending 1120 680
+          screen-recording-access-allowed 1120 680
+          privacy 1440 1300
+          appearance 720 1200
+          app-settings 1440 1300
+          pro 1560 1520
+          app-settings-dark 1440 1300
+          settings-640-about-dark 1280 1080
+          stage-inspector-dark 720 1200
+          permissions-dark 1280 1000
+          screen-recording-access-dark 1120 680
+          screen-recording-access-pending-dark 1120 680
+          screen-recording-access-allowed-dark 1120 680
+          pro-dark 1560 1520
+          workspace-900-light 1800 1240
+          workspace-900-dark 1800 1240
+          workspace-empty-900-light 1800 1240
+          workspace-empty-900-dark 1800 1240
+          workspace-access-error-empty-900-light 1800 1240
+          workspace-access-error-empty-900-dark 1800 1240
+          workspace-access-error-source-900-light 1800 1240
+          workspace-access-error-source-900-dark 1800 1240
+          pro-comparison-light 1280 720
+          pro-comparison-dark 1280 720
+          settings-640-appearance 1280 1080
+          settings-640-about 1280 1080
+          draw-900 1800 1240
+          eraser-900-light 1800 1240
+          eraser-900-dark 1800 1240
+          privacy-curtain 1920 1080
+          stage-ready 1920 1080
+          SNAPSHOT_SIZES
+          echo "Verified $SNAPSHOT_COUNT snapshot dimensions"
 
       - name: Build checked-in Mac App Store project
         run: |

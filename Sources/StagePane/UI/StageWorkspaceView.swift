@@ -34,6 +34,16 @@ struct StageWorkspaceView: View {
                 stageWorkspace
                     .frame(minWidth: 550, maxWidth: .infinity, maxHeight: .infinity)
             }
+            if let notice = controller.captureAccessIssueNotice {
+                Divider()
+                WorkspaceCaptureAccessIssueBanner(
+                    notice: notice,
+                    canRetry: controller.canRetryCaptureAccessIssue,
+                    retry: controller.retryCaptureAccessIssue,
+                    dismiss: { controller.dismissCaptureAccessIssue(id: notice.id) }
+                )
+                .id(notice.id)
+            }
             Divider()
             sharingFooter
         }
@@ -861,6 +871,49 @@ private struct WorkspaceOutputStatus: View {
         let hint = L10n.text("会議アプリで共有中かどうかを示すものではありません。", "This does not indicate whether a meeting app is sharing.")
         if snapshotSourceCount != nil { return L10n.text("合成プレビューです。画面取得は行っていません。", "Synthetic preview. No screen capture is running.") }
         return "\(capture.statusDetail) \(hint)"
+    }
+}
+
+private struct WorkspaceCaptureAccessIssueBanner: View {
+    let notice: CaptureAccessIssueNotice
+    let canRetry: Bool
+    let retry: () -> Void
+    let dismiss: () -> Void
+    @State private var showsDetails = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
+                Label(notice.issue.title, systemImage: "exclamationmark.circle")
+                    .font(.callout.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHeading(.h2)
+                Spacer(minLength: 8)
+                Button(L10n.text("もう一度試す", "Try Again"), action: retry)
+                    .disabled(!canRetry)
+                    .help(L10n.text(
+                        "切り抜きやソース選択を終えてから再試行できます。",
+                        "Finish cropping or source selection before trying again."
+                    ))
+                Button(L10n.text("閉じる", "Dismiss"), action: dismiss)
+            }
+            DisclosureGroup(L10n.text("詳細", "Details"), isExpanded: $showsDetails) {
+                ScrollView {
+                    Text(notice.issue.detail)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: 76)
+                .accessibilityLabel(L10n.text("画面取得エラーの詳細", "Capture error details"))
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("workspace.captureAccessIssue")
     }
 }
 

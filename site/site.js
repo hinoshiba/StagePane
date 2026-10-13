@@ -7,8 +7,8 @@ const translations = {
   },
   "t99": {
     "html": {
-      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、およびWorkspace・Stage・設定・Pro・画面共有の案内・画面取得エラーの各ウインドウの位置と大きさです。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
-      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, and the position and size of the Workspace, Stage, Settings, Pro, screen-sharing guide, and capture-error windows. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
+      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・設定・Pro・画面共有の案内・Macの画面収録アクセスの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
+      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, whether the first Mac Screen Recording Access check has been completed, and the position and size of the Workspace, Stage, Settings, Pro, screen-sharing guide, and Mac Screen Recording Access windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
     }
   },
   "t100": {
@@ -19,8 +19,8 @@ const translations = {
   },
   "t101": {
     "html": {
-      "ja": "画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。",
-      "en": "Use Apple’s sharing picker to change the selected content. Cropping changes the displayed area, while the complete selected source is still captured. The Curtain covers the Stage; use Stop All to end capture."
+      "ja": "画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。アプリ全体のMacの画面収録アクセスは任意で、「許可する」を選んだ場合だけ要求します。macOSのシステム設定で変更でき、未許可でもピッカーで選んだ内容は共有できます。",
+      "en": "Use Apple’s sharing picker to change the selected content. Cropping changes the displayed area, while the complete selected source is still captured. The Curtain covers the Stage; use Stop All to end capture. App-wide Mac Screen Recording Access is optional and requested only when you choose Allow. You can change it in macOS System Settings; picker-based sharing works without it."
     }
   },
   "privacy-sharing": {
@@ -429,6 +429,18 @@ const translations = {
       "en": "You approve each source in Apple’s picker for that capture session. Choosing an app can include several windows; choose a single window for a narrower scope. Cropping changes the area shown on the Stage, not the scope of the captured source."
     }
   },
+  "faq-access": {
+    "html": {
+      "ja": "新UIの画面収録アクセスは必須ですか？",
+      "en": "Is Screen Recording Access required in the new UI?"
+    }
+  },
+  "faq-access-copy": {
+    "html": {
+      "ja": "任意です。初回に未許可なら案内を表示し、「許可する…」を選んだ場合だけ要求します。「StagePaneを使う」で続ければ、未許可でもピッカーで選んだ内容を共有できます。案内は起動のたびに繰り返しません。「画面共有について」の「Macの画面収録アクセスを確認…」から再確認できます。",
+      "en": "It is optional. If access is not allowed on the first check, a guide appears; only Allow… requests it. Choose Continue to share picker-selected content without it. The guide does not repeat at each launch. Recheck from About Screen Sharing → Check Mac Screen Recording Access."
+    }
+  },
   "faq-recovery": {
     "html": {
       "ja": "ウインドウや映像を見失ったときは？",
@@ -437,8 +449,8 @@ const translations = {
   },
   "faq-recovery-copy": {
     "html": {
-      "ja": "メニューバーのStagePaneアイコンからWorkspaceやStageを再表示できます。macOS側で共有が終了したレイヤーは「選び直す」で再接続し、配置と切り抜きを保てます。「解除」で削除したレイヤーは、ソースを追加し直してください。",
-      "en": "Use the StagePane menu-bar icon to reopen Workspace or Stage. If macOS ends sharing for a source, Select Again reconnects its retained layer with the same placement and crop. If you removed a layer, add its source again."
+      "ja": "メニューバーのStagePaneアイコンからWorkspaceやStageを再表示できます。macOS側で共有が終了したレイヤーは「選び直す」で再接続し、配置と切り抜きを保てます。「解除」で削除したレイヤーは、ソースを追加し直してください。選択や取得開始のエラーはWorkspace内に表示し、閉じるか問題が解消するまで保持します。「もう一度試す」から再試行できます。",
+      "en": "Use the StagePane menu-bar icon to reopen Workspace or Stage. If macOS ends sharing for a source, Select Again reconnects its retained layer with the same placement and crop. If you removed a layer, add its source again. Selection or capture-start errors remain in Workspace until dismissed or resolved. Use Try Again to retry."
     }
   },
   "faq-settings": {

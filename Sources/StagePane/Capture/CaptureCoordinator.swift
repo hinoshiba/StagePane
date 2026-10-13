@@ -22,6 +22,13 @@ enum CapturePhase: Equatable, Sendable {
 struct CaptureAccessIssue: Sendable {
     let title: String
     let detail: String
+    let sourceID: StageSourceID?
+
+    init(title: String, detail: String, sourceID: StageSourceID? = nil) {
+        self.title = title
+        self.detail = detail
+        self.sourceID = sourceID
+    }
 }
 
 enum CaptureSourceKind: String, Sendable {
@@ -1467,7 +1474,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     detail: L10n.text(
                         "「\(sourceTitle)」の画面取得を開始できませんでした。レイヤー一覧の「選び直す」から、対象をもう一度選択してください。",
                         "Capture couldn’t start for “\(sourceTitle)”. Use Select Again in the layer list to choose the source again."
-                    ) + " (\(errorMessage))"
+                    ) + " (\(errorMessage))",
+                    sourceID: sourceID
                 ))
             }
             return
@@ -2848,7 +2856,8 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                     )
                     self.sourceAccessIssueHandler?(CaptureAccessIssue(
                         title: issueTitle,
-                        detail: reconnectMessage
+                        detail: reconnectMessage,
+                        sourceID: sourceID
                     ))
                     return
                 }
@@ -2874,7 +2883,8 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
                             detail: L10n.text(
                                 "「\(session.source.title)」の選択画面を開けませんでした。レイヤー一覧からもう一度選び直してください。",
                                 "Source selection couldn’t open for “\(session.source.title)”. Try Select Again from the layer list."
-                            ) + " (\(message))"
+                            ) + " (\(message))",
+                            sourceID: sourceID
                         ))
                     }
                 }

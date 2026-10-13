@@ -231,6 +231,15 @@ evidence only after validating the exact release candidate.
 > guarantees the resolution transmitted by the meeting app.
 >
 > The app can be tested without permission by sharing its neutral Stage window.
+> At launch, a public API reads the app-wide Mac Screen Recording Access status.
+> On the first check only, if access is not allowed, an optional private guide
+> appears. Only its “Allow…” button requests access; “Continue” leaves
+> picker-based sharing available without it. Later launches do not repeat the
+> guide. Reopen it from About Screen Sharing → Check Mac Screen Recording Access.
+> Local preferences store the first-check-completed flag and this window's frame,
+> not the permission status. Source-selection or capture-start errors remain in
+> Workspace until dismissed or resolved, with retry and detail controls; they do
+> not open a separate error window or imply missing app-wide access.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
 > repeat for up to four sources in Free. A StagePane Pro non-consumable purchase

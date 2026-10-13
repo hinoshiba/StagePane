@@ -155,18 +155,23 @@ fresh frame arrives, with the same placement, crop, and order.
 ## About screen sharing / 画面共有について
 
 **About Screen Sharing** in the Stage menu or **Settings → About** opens a
-separate guide. Screen sharing is approved one selection at a
-time in Apple's `SCContentSharingPicker`: choosing a window, app, or display
-authorizes only that content for its capture session. StagePane does not request
-separate, broad Screen Recording access, and canceling the picker grants no
-new source access. Consent happens when you select a source; StagePane does not
-show a permission warning at launch.
+separate guide. Apple's sharing picker authorizes the window, app, or display
+you select for that capture session; canceling grants no new source access.
+
+At first launch, StagePane checks app-wide **Mac Screen Recording Access**. If
+it is not allowed, an optional guide appears. Only **Allow…** requests access;
+**Continue** lets you use picker-based sharing without it. Later launches check
+the status without repeating this guide. To check again manually, use
+**About Screen Sharing → Check Mac Screen Recording Access…**.
 
 ステージメニューまたは **設定 → このアプリについて** の **画面共有について** から、
-別の案内ウインドウを開けます。画面共有はAppleの `SCContentSharingPicker` で1件ずつ承認され、選んだ
-ウインドウ、アプリ、または画面だけが、その取得セッション中に許可されます。別途、
-広範な画面収録許可を求めることはなく、ピッカーをキャンセルした場合はソースへの
-新しいアクセスも始まりません。必要な承認はソース選択時に確認し、起動時の権限警告は表示しません。
+別の案内ウインドウを開けます。Appleの共有ピッカーで選んだウインドウ、アプリ、
+または画面が、その取得セッション中に許可されます。キャンセルでは新しいアクセスを始めません。
+
+初回起動時に、アプリ全体の **Macの画面収録アクセス** を確認します。未許可なら任意の
+案内を表示し、**許可する…** を押した場合だけ許可を要求します。**StagePaneを使う** を
+選べば、未許可のままピッカーで選んだ内容を共有できます。以降の起動では状態だけを確認し、
+この案内を繰り返しません。手動で再確認するには **画面共有について → Macの画面収録アクセスを確認…** を選びます。
 
 In **Stage Settings / Stage設定**, set **Pointer appearance / カーソルの表示方法**
 to **System / 通常**, **Laser pointer / レーザーポインター**, or **Hidden /
@@ -398,14 +403,16 @@ only the audience composition.
   Stage, and **Control-Command-F** to toggle Stage full screen.
 - Open **About Screen Sharing / 画面共有について** from the Stage menu or
   **Settings → About / 設定 → このアプリについて** to review the
-  per-selection screen-sharing model. Add Source opens Apple's picker; no
-  separate broad Screen Recording permission or settings step is required.
-- If source selection or capture cannot start, a separate message window explains
-  the issue while the editor remains usable. Canceling the picker does not open
-  this message. Hide and Stop failures remain in the layer and capture status.
+  per-selection screen-sharing model or recheck optional Mac Screen Recording
+  Access. Add Source works through Apple's picker without this app-wide access.
+- If source selection or capture cannot start, read the error in Workspace. It
+  remains until dismissed or the issue is resolved; use **Try Again** to retry.
+  No separate error window opens, and canceling the picker does not create an
+  error. Hide and Stop failures remain in the layer and capture status.
 
-ソースの選択画面や取得を開始できない場合は、短い説明を別ウインドウに表示します。
-編集画面は引き続き操作でき、ピッカーのキャンセルではこの案内を表示しません。
+ソースの選択画面や取得を開始できない場合は、Workspace内のエラー表示を確認します。
+**閉じる** を押すか問題が解消するまで表示を保持し、**もう一度試す** から再試行できます。
+独立したエラーウインドウは開かず、ピッカーのキャンセルもエラー扱いしません。
 非表示や停止の失敗は、レイヤーと画面取得の状態表示で確認できます。
 
 StagePane processes frames locally and does not upload them. When you share the

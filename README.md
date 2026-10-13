@@ -18,9 +18,9 @@ ScreenCaptureKit picker can add a window, an app, or a display as an independent
 source. The free Mac App Store app supports four simultaneous sources, while
 the one-time StagePane Pro purchase removes StagePane's source-count limit.
 The number that can run in practice depends on Mac performance and
-operating-system constraints. Approval is scoped to each picker selection and
-capture session; StagePane does not request separate, broad Screen Recording
-access.
+operating-system constraints. Picker approval is scoped to each selection and
+capture session. App-wide Mac Screen Recording Access is optional; picker-based
+sharing works without it.
 
 ## Why StagePane
 
@@ -38,8 +38,8 @@ access.
   only that source for its capture session, without a separate broad Screen
   Recording permission.
 - **Screen-sharing guidance when needed** — **About Screen Sharing** opens a
-  separate guide from the Stage menu or Settings → About. Add Source opens
-  Apple's picker for session-scoped sharing; no permission warning appears at launch.
+  separate guide from the Stage menu or Settings → About, including a link to
+  recheck optional Mac Screen Recording Access.
 - **Layers beside the Canvas** — manage every source without leaving the
   composition. The persistent list runs from front to back, so a covered or
   hidden layer stays easy to select. Selection and Canvas movement or resizing
@@ -90,13 +90,18 @@ access.
 - Apple Silicon or Intel Mac
 - Xcode 16 or newer, including matching Swift command-line tools, to build
 
-The app asks you to approve content only in Apple's picker when you choose a
-source to mirror. That selection grants session access to the chosen content;
-there is no separate request for broad Screen Recording permission. Creating
-and sharing an empty/holding Stage does not itself capture your screen.
-If source selection or capture cannot start, a separate message window explains
-the issue while the editor remains usable. Canceling the picker does not show
-that message. Hide and Stop failures remain in the layer and capture status.
+Choose a source in Apple's picker to authorize that content for its capture
+session. At first launch, StagePane checks app-wide Mac Screen Recording Access
+and shows an optional guide if it is not allowed. Only **Allow…** requests it;
+**Continue** lets you use picker-based sharing without it. Later launches check
+the status without repeating the guide. Recheck manually from **About Screen
+Sharing → Check Mac Screen Recording Access…**. Creating and sharing an empty
+Stage does not capture your screen.
+
+If source selection or capture cannot start, an error remains in Workspace
+until dismissed or resolved. Use **Try Again** to retry. No separate error
+window opens, and canceling the picker does not create an error. Hide and Stop
+failures remain in the layer and capture status.
 
 ## Build and run
 
@@ -361,10 +366,13 @@ Stageの見た目はキャンバス上部の **Stage設定** で調整します�
 プライバシーの要約と展開式の **プライバシーとデータ** は **このアプリについて** にまとめ、
 アプリメニューの **StagePaneについて** からも同じ画面を開けます。
 **画面共有について** はステージメニューや **このアプリについて** から別の案内ウインドウを
-開きます。起動時の権限警告はなく、共有対象は
-Appleの選択画面で1件ずつ、その取得セッションに限って許可され、別途広範な画面収録許可は
-求めません。選択画面や取得を開始できない場合は、編集を妨げない別ウインドウで説明します。
-キャンセルではこの案内を出さず、非表示・停止の失敗はレイヤーと取得状態で確認できます。
+開きます。共有対象はAppleの選択画面で1件ずつ、その取得セッションに限って許可されます。
+初回起動時にはアプリ全体の **Macの画面収録アクセス** を確認し、未許可なら任意の案内を表示します。
+**許可する…** を押した場合だけ要求し、**StagePaneを使う** を選べば未許可でもピッカーで共有できます。
+以降の起動では状態だけを確認し、案内を繰り返しません。**画面共有について → Macの画面収録アクセスを確認…**
+から手動で再確認できます。選択や取得開始のエラーは、閉じるか問題が解消するまでWorkspace内に保持し、
+**もう一度試す** から再試行できます。独立したエラーウインドウは開かず、キャンセルもエラー扱いしません。
+非表示・停止の失敗はレイヤーと取得状態で確認できます。
 明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
 画面の扱いと保存については[プライバシーポリシー](https://stagepane.hinoshiba.com/#privacy)を確認できます。
 Mac App Store版は無料で同時に4ソースまで利用でき、買い切りのStagePane Proでは

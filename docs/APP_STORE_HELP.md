@@ -209,12 +209,18 @@ independently of the audience Stage theme. No separate app appearance setting is
 Workspaceと設定画面はmacOSのライト／ダークの外観に自動で追従します。観客向けStageの
 テーマとは独立しており、アプリ内で外観を設定する必要はありません。
 
-Each source is approved in Apple's content-sharing picker for that capture session.
-Canceling the picker grants no new access. StagePane does not request separate broad
-Screen Recording access or show a permission warning at launch.
+Each source is approved in Apple's picker for that capture session; canceling
+it grants no new access. At first launch, StagePane checks app-wide **Mac Screen
+Recording Access** and shows an optional guide if it is not allowed. Only
+**Allow…** requests access. **Continue** lets you use picker-based sharing
+without it. Later launches check the status without repeating the guide.
+Recheck manually from **About Screen Sharing → Check Mac Screen Recording Access…**.
 
-各ソースはAppleの共有ピッカーで取得セッションごとに承認されます。キャンセルした場合は
-新しい取得を始めません。別途広範な画面収録許可は要求せず、起動時の権限警告も表示しません。
+各ソースはAppleの共有ピッカーで取得セッションごとに承認され、キャンセルでは新しい取得を
+始めません。初回起動時にアプリ全体の **Macの画面収録アクセス** を確認し、未許可なら任意の
+案内を表示します。**許可する…** を押した場合だけ許可を要求し、**StagePaneを使う** を
+選べば未許可のままピッカーで共有できます。以降の起動では状態だけを確認し、案内を繰り返しません。
+手動の再確認は **画面共有について → Macの画面収録アクセスを確認…** から行えます。
 
 Arrange, Crop, Draw, and Magnify stay inside StagePane. StagePane does not forward clicks, keys, or drags to source applications, and it never requests Accessibility or Input Monitoring permission.
 
@@ -234,8 +240,9 @@ Open **StagePane Pro** from Settings or the StagePane menu to see the App Store'
 
 - Make sure you shared **StagePane Stage**, not Workspace.
 - If selection was canceled, choose **Add Source** again.
-- If source selection or capture cannot start, read the separate message window;
-  the editor remains usable. Canceling selection does not show this message.
+- If source selection or capture cannot start, read the error in Workspace. It
+  remains until dismissed or resolved; use **Try Again** to retry. No separate
+  error window opens, and canceling selection does not create an error.
   Hide and Stop failures remain in the layer and capture status.
 - If a source stops, use **Select Again** on that retained layer. Its placement and crop remain in place.
 - If a saved PNG cannot be written, choose another location in the macOS save panel.
@@ -243,8 +250,9 @@ Open **StagePane Pro** from Settings or the StagePane menu to see the App Store'
 
 - 会議アプリでWorkspaceではなく **StagePane Stage** を共有したことを確認します。
 - 選択をキャンセルした場合は、もう一度 **ソースを追加** を選びます。
-- ソースの選択画面や取得を開始できない場合は、別ウインドウの短い説明を確認します。
-  編集は引き続き操作でき、選択のキャンセルではこの案内を表示しません。
+- ソースの選択画面や取得を開始できない場合は、Workspace内のエラー表示を確認します。
+  **閉じる** を押すか問題が解消するまで表示を保持し、**もう一度試す** から再試行できます。
+  独立したエラーウインドウは開かず、選択のキャンセルもエラー扱いしません。
   非表示や停止の失敗は、レイヤーと画面取得の状態表示で確認できます。
 - ソースが停止した場合は、保持されたレイヤーの **選び直す** を使います。配置と切り抜きはそのまま残ります。
 - PNGを保存できない場合は、macOSの保存パネルで別の場所を選びます。

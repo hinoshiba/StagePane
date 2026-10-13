@@ -495,46 +495,73 @@ struct ScreenSharingAccessView: View {
     }
 }
 
-struct CaptureAccessIssueView: View {
+struct MacScreenRecordingAccessView: View {
     @ObservedObject var controller: AppController
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "exclamationmark.circle")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text(controller.captureAccessIssue?.title ?? L10n.text("画面取得を開始できませんでした", "Couldn’t start capture"))
-                    .font(.title3.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityHeading(.h1)
-                Spacer(minLength: 0)
-            }
-            .padding(24)
+            Text(L10n.text("Macの画面収録アクセス", "Mac Screen Recording Access"))
+                .font(.title2.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHeading(.h1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(24)
 
             ScrollView {
-                Text(controller.captureAccessIssue?.detail ?? "")
-                    .font(.body)
+                VStack(alignment: .leading, spacing: 16) {
+                    Label(
+                        controller.hasMacScreenRecordingAccess
+                            ? L10n.text("許可済み", "Allowed")
+                            : L10n.text("未許可", "Not allowed"),
+                        systemImage: controller.hasMacScreenRecordingAccess
+                            ? "checkmark.circle" : "circle"
+                    )
+                    .font(.body.weight(.medium))
+                    .accessibilityLabel(L10n.text("Macの画面収録アクセス", "Mac Screen Recording Access"))
+                    .accessibilityValue(controller.hasMacScreenRecordingAccess
+                        ? L10n.text("許可済み", "Allowed")
+                        : L10n.text("未許可", "Not allowed"))
+
+                    Text(L10n.text(
+                        "このアクセスは任意です。未許可でも「ソースを追加」からmacOSで選んだ画面を共有できます。",
+                        "This app-wide access is optional. You can still share content you select in the macOS picker using Add Source."
+                    ))
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 20)
+
+                    if controller.hasRequestedMacScreenRecordingAccess && !controller.hasMacScreenRecordingAccess {
+                        Text(L10n.text(
+                            "許可はまだ確認できません。システム設定の「プライバシーとセキュリティ」で画面収録の項目を確認してください。変更後はStagePaneの再起動が必要な場合があります。",
+                            "Access is not confirmed yet. Check screen recording in System Settings > Privacy & Security. You may need to restart StagePane after making changes."
+                        ))
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .font(.body)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
             }
 
             Divider()
-            HStack {
-                Button(L10n.text("画面共有について…", "About Screen Sharing…"), action: controller.showAccessHelpForIssue)
+            HStack(spacing: 12) {
+                if !controller.hasMacScreenRecordingAccess {
+                    if controller.hasRequestedMacScreenRecordingAccess {
+                        Button(L10n.text("システム設定を開く", "Open System Settings"), action: controller.openMacSystemSettings)
+                    } else {
+                        Button(L10n.text("許可する…", "Allow…"), action: controller.requestMacScreenRecordingAccess)
+                    }
+                }
                 Spacer()
-                Button(L10n.text("閉じる", "Close"), action: controller.dismissCaptureAccessIssue)
-                    .keyboardShortcut(.cancelAction)
+                Button(L10n.text("StagePaneを使う", "Continue"), action: controller.closeMacScreenRecordingAccess)
+                    .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         }
-        .frame(minWidth: 480, minHeight: 260)
+        .frame(minWidth: 520, minHeight: 320)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onExitCommand(perform: controller.closeMacScreenRecordingAccess)
     }
 }
 
@@ -583,6 +610,8 @@ struct PermissionsPanel: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 8)
                 }
+                Button(L10n.text("Macの画面収録アクセスを確認…", "Check Mac Screen Recording Access…"), action: controller.showMacScreenRecordingAccess)
+                    .buttonStyle(.link)
             }
             .padding(24)
         }

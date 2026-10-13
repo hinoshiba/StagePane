@@ -79,9 +79,16 @@ final class StageCompositeNSView: NSView {
                 sourceViews[entry.id] = sourceView
                 addSubview(sourceView)
             }
-            sourceView.update(sourceCrop: entry.sourceCrop)
-            sourceView.isHidden = !entry.isVisible
             sourceFrames[entry.id] = entry.frame
+            // A ready renderer may already have delivered its geometry while
+            // the new crop wrapper still had zero bounds. Commit placement,
+            // crop, and media-layer geometry together instead of waiting for
+            // another AppKit layout (which may only arrive on window resize).
+            sourceView.update(
+                frame: sourceFrame(for: entry.frame),
+                sourceCrop: entry.sourceCrop
+            )
+            sourceView.isHidden = !entry.isVisible
 
             if let previousView {
                 addSubview(sourceView, positioned: .above, relativeTo: previousView)
@@ -100,13 +107,17 @@ final class StageCompositeNSView: NSView {
         super.layout()
         for (sourceID, sourceView) in sourceViews {
             guard let normalized = sourceFrames[sourceID] else { continue }
-            sourceView.frame = CGRect(
-                x: bounds.width * CGFloat(normalized.x),
-                y: bounds.height * CGFloat(normalized.y),
-                width: bounds.width * CGFloat(normalized.width),
-                height: bounds.height * CGFloat(normalized.height)
-            )
+            sourceView.updateFrame(sourceFrame(for: normalized))
         }
+    }
+
+    private func sourceFrame(for normalized: NormalizedStageRect) -> CGRect {
+        CGRect(
+            x: bounds.width * CGFloat(normalized.x),
+            y: bounds.height * CGFloat(normalized.y),
+            width: bounds.width * CGFloat(normalized.width),
+            height: bounds.height * CGFloat(normalized.height)
+        )
     }
 }
 
@@ -160,6 +171,19 @@ final class CroppedSampleBufferNSView: NSView {
 
     func update(sourceCrop: NormalizedSourceRect) {
         self.sourceCrop = sourceCrop
+        applyPresentationLayout(using: presentationGeometry)
+        needsLayout = true
+    }
+
+    func update(frame: CGRect, sourceCrop: NormalizedSourceRect) {
+        self.sourceCrop = sourceCrop
+        updateFrame(frame)
+    }
+
+    /// Synchronize the inner video/mask even when AppKit skips layout for a
+    /// hidden or unchanged-size child. No recursive layout pass is needed.
+    func updateFrame(_ frame: CGRect) {
+        self.frame = frame
         applyPresentationLayout(using: presentationGeometry)
         needsLayout = true
     }

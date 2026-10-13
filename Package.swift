@@ -32,6 +32,11 @@ let package = Package(
             name: "StagePaneCoreTests",
             dependencies: ["StagePaneCore"],
             path: "Tests/StagePaneCoreTests"
+        ),
+        .testTarget(
+            name: "StagePaneTests",
+            dependencies: ["StagePane"],
+            path: "Tests/StagePaneTests"
         )
     ]
 )
