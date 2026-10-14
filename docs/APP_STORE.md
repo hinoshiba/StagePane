@@ -13,17 +13,13 @@
   includes four sources; Pro removes the app's source-count limit and mark.
   Source count depends on your Mac and OS.
 - **Promotional Text (JA):** 見せたいものだけ、ひとつのステージへ。無料で4ソース、StagePane Proならアプリ側の件数制限なし・ロゴ非表示。利用可能数はMacとOSに依存します。
-- **What's New 0.4.2 (EN):** Fixed Stage window dragging and startup sizing.
-  Drag the Stage's content to move it; each shape now keeps its correct minimum
-  proportions. Stage can now enter native full screen in its own macOS Space
-  while Workspace remains available for private editing. The complete Stage
-  canvas keeps its shape, and Audience PNGs retain their preset dimensions
-  without full-screen margins. Stage Settings shows the actual rendering size
-  separately from Audience PNG dimensions and adds Enlarge Stage for Sharing
-  in windowed mode. Enlargement keeps the same share window and never shrinks
-  an already larger Stage. Share only the Stage window; the meeting app still
-  controls the resolution it sends.
-- **What's New 0.4.2 (JA):** Stageウインドウのドラッグ移動と起動時サイズを修正しました。表示内容をドラッグして移動でき、縦長を含む各形状の最小サイズも縦横比を保ちます。Stageだけを専用のmacOS Spaceでフルスクリーン表示し、手元のWorkspaceで編集できるようになりました。Stage全体の形状を保ち、Audience PNGはフルスクリーンの余白を含めず、プリセットの寸法で出力します。Stage設定ではPNGサイズと実際の描画サイズを分けて表示し、通常ウインドウ向けの「共有向けにStageを拡大」を追加しました。拡大時も共有対象のウインドウを保ち、すでに大きいStageを縮小することはありません。会議アプリではStageだけを共有してください。送信解像度は会議アプリが決めます。
+- **What's New 0.4.3 (EN):** A redesigned Workspace brings the Canvas, layers,
+  and editing tools together. Magnify details with a shared 2×, 3×, or 4× lens,
+  double-click Stage to maximize and restore its window, and adjust Curtain
+  message text size. This update also improves source layout synchronization
+  and access-error recovery, adds an optional first-launch Mac screen-recording
+  access guide, and refreshes English and Japanese help.
+- **What's New 0.4.3 (JA):** Workspaceを刷新し、キャンバス、レイヤー、編集ツールを使いやすくまとめました。2倍・3倍・4倍の共有虫眼鏡、Stageのダブルクリックによる最大化と復元、カーテンの文字サイズ調整を追加しました。ソースの映像と配置の同期、アクセスエラーからの復旧を改善し、初回起動時の任意の画面収録アクセス案内と日英ヘルプを更新しました。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 
@@ -143,77 +139,70 @@ partnership, and no “#1” or ranking guarantee. Export opaque 2880×1800 imag
 from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English.
 
-## 0.4.2 App Review notes draft
+## 0.4.3 App Review notes draft
 
-Exact-candidate manual acceptance is pending. Use this concise block for the
-0.4.2 candidate only after its acceptance checks have been recorded:
+Exact-candidate manual acceptance is pending. Use this block only after the
+0.4.3 candidate's acceptance checks have been recorded.
 
 Keep the copied Notes text within Apple's [4,000-byte limit](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
 Measure its UTF-8 size after removing the Markdown quote prefixes.
 
 > No sign-in is required.
 >
-> Share only the "StagePane Stage" window in your meeting app; keep
-> "StagePane Workspace — Keep Private" private. In Workspace, choose Add Source
-> and approve a harmless window, app, or display in Apple's ScreenCaptureKit
-> picker. Each selection authorizes only that content for its capture session.
-> StagePane requests no broad Screen Recording or Accessibility permission.
-> Free supports four simultaneous sources; a fifth Add Source attempt opens Pro.
+> Share only the "StagePane Stage" window in your meeting app. Keep Workspace,
+> Settings, Pro and access guides private. In Workspace, choose Add Source and
+> approve a harmless window, app or display in Apple's ScreenCaptureKit picker.
+> Each selection authorizes only that content for its capture session.
 >
-> For this update, drag Stage content to move its titleless window, including
-> while StagePane is inactive; the perimeter remains resizable. In Stage
-> Settings, compare Current Stage Rendering Size with Audience PNG dimensions.
-> Shrink Stage, then choose Enlarge Stage for Sharing: it grows the same window
-> toward the preset size within the current screen, preserving its identity
-> without shrinking an already larger Stage. For a separate macOS Space, choose
-> Enter Stage Full Screen before starting your meeting share. Command-1 returns
-> to the private Workspace; Control-Command-F toggles Stage full screen. The
-> complete canvas keeps its preset proportions; PNGs exclude full-screen
-> margins. Select only the Stage window and keep it open, not minimized. Check
-> on a receiving device that Stage keeps updating while you edit in Workspace.
-> Enlarge is available in windowed mode. The meeting app chooses capture and
-> transmission resolution; neither size readout guarantees received resolution.
+> On first launch, StagePane checks Mac Screen Recording Access and offers an
+> optional guide if access is not allowed. Only its explicit Allow action asks
+> macOS for permission. Continue or Escape dismisses the guide; Apple's picker
+> remains usable without broad access. Recheck from About Screen Sharing.
+> StagePane never requests Accessibility or Input Monitoring access.
 >
-> StagePane Pro (com.hinoshiba.stagepane.pro) is a one-time non-consumable In-App
-> Purchase, not a subscription. It removes the app's source-count limit and
+> For 0.4.3, use the redesigned Workspace's Canvas and layer list to select,
+> arrange, crop and draw. Stage Settings opens beside the Canvas; Settings and
+> Pro open separate private windows. In Magnify mode, select 2x, 3x or 4x and
+> move the lens over content; the audience sees the lens and source geometry
+> stays unchanged. Double-click Stage content to maximize within the display,
+> then double-click again to restore it. Adjust Curtain message text size.
+> Check that source video, frames and masks stay aligned after adding,
+> arranging, hiding/showing and applying a crop.
+>
+> Free supports four simultaneous sources. A fifth Add Source attempt opens
+> StagePane Pro (com.hinoshiba.stagepane.pro), a one-time non-consumable In-App
+> Purchase, not a subscription. Pro removes the app's source-count limit and
 > makes the Stage/Curtain/Audience PNG mark optional. Practical source count
-> depends on the Mac and OS. Open Pro from the sidebar or fifth-source attempt;
-> verify StoreKit's localized price, Restore Purchases and Continue Free.
-> Canceling does not change or stop Stage. For IAP review screenshots, use the
-> real Pro screen under StoreKit Configuration, Sandbox or TestFlight, showing
-> price, one-time wording and both actions. Source-build fixtures are not
-> purchase evidence.
+> depends on the Mac and OS. Verify the localized StoreKit price, Restore
+> Purchases and Continue Free. Canceling does not stop Stage. IAP review images
+> must show the real Pro screen under StoreKit Configuration, Sandbox or
+> TestFlight; source-build fixtures are not purchase evidence.
 >
-> Arrange/Crop/Draw change only StagePane's composition and never forward input
-> to source apps. Crop is a private draft until Apply and does not narrow the
-> source approved in the picker. Draw stores bounded ink in memory. Hide pauses
-> a source and clears its pixels while retaining placement/crop/order; Show
-> waits for a fresh complete frame. Curtain covers only audience output without
-> stopping capture. Stop All ends every stream and removes all layers.
-> Copy/Save Audience Image creates one clean local PNG only when chosen.
+> Arrange/Crop/Draw/Magnify never forward input to source apps. Crop is private
+> until Apply and does not narrow the picker-approved source. Hide pauses a
+> source and clears its pixels while preserving placement/crop/order; Show
+> waits for a fresh frame. Curtain covers audience output without stopping
+> capture. Stop All ends all streams and removes every layer. Copy/Save
+> Audience Image creates one local PNG only when chosen.
 >
 > StagePane is sandboxed, has no network entitlement, and sends no screen
 > content, drawings or other data to the developer or third parties. It does
-> not record video, capture audio/microphone, use analytics/ads or operate a
-> publisher server. Live frames remain only in memory and are released on Hide,
-> removal, Stop All or quit. Only explicitly copied/saved PNGs persist. Meeting
-> apps transmit shared Stage content; enabled clipboard/file synchronization
-> may transmit user-created PNGs. Local preferences include window geometry and three
-> rating-prompt timing values. Apple handles Pro commerce; no screen content is
-> included.
+> not record video, capture audio/microphone, or use analytics or ads. Frames
+> remain in memory and are released on Hide, removal, Stop All or quit. Only
+> explicitly copied/saved PNGs persist. Meeting apps transmit the shared Stage;
+> clipboard/file synchronization may transmit user-created PNGs. Preferences
+> include window geometry, the first-launch access-check flag and three
+> rating-prompt timing values. Apple handles commerce without screen content.
 >
-> The Guideline 2.1 privacy reply for 0.4.0 (7), submission
-> 90569aa7-c006-4848-8d52-4ec9aaaf46c5, is historical. Its disclosure/sharing/
-> retention details remain in https://stagepane.hinoshiba.com/#privacy (JA),
-> https://stagepane.hinoshiba.com/en/privacy/ (static EN), and bundled
-> Contents/Resources/PRIVACY.md.
+> Privacy: https://stagepane.hinoshiba.com/#privacy (JA),
+> https://stagepane.hinoshiba.com/en/privacy/ (EN), and bundled PRIVACY.md.
 
 ## Detailed reviewer walkthrough reference
 
 This walkthrough describes the current development UI, which has not been
-released as an official update. The 0.4.2 metadata and review-note draft above
-are retained as version-specific records. Prepare new submission notes and
-evidence only after validating the exact release candidate.
+released as an official update. The 0.4.3 metadata and review-note draft above
+remain pending acceptance. Prepare submission evidence only after validating
+the exact release candidate.
 
 > StagePane is a focused screen-sharing utility with two primary macOS windows:
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
