@@ -150,6 +150,8 @@ jobs:
           pro-dark 1560 1520
           workspace-900-light 1800 1240
           workspace-900-dark 1800 1240
+          product-workspace-light 1800 1240
+          product-workspace-dark 1800 1240
           workspace-empty-900-light 1800 1240
           workspace-empty-900-dark 1800 1240
           workspace-access-error-empty-900-light 1800 1240
@@ -165,6 +167,7 @@ jobs:
           eraser-900-dark 1800 1240
           privacy-curtain 1920 1080
           stage-ready 1920 1080
+          product-stage 1920 1080
           SNAPSHOT_SIZES
           echo "Verified $SNAPSHOT_COUNT snapshot dimensions"
 

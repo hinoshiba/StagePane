@@ -234,7 +234,7 @@ struct StageWorkspaceView: View {
             .padding(.horizontal, 14)
             .frame(height: 46)
             if snapshotFixture?.hasCanvasComposition == true {
-                SnapshotSourceRailList()
+                SnapshotSourceRailList(fixture: snapshotFixture ?? .arrange)
                     .padding(.horizontal, 8)
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {
@@ -320,7 +320,9 @@ struct StageWorkspaceView: View {
         GeometryReader { proxy in
             let canvasSize = fittedCanvasSize(in: CGSize(width: max(0, proxy.size.width - 2), height: max(0, proxy.size.height - 2)))
             Group {
-                if let snapshotFixture, snapshotFixture.hasCanvasComposition {
+                if snapshotFixture == .product {
+                    SnapshotProductComposition(showsEditingChrome: true, theme: controller.theme, showsWatermark: controller.showsWatermark)
+                } else if let snapshotFixture, snapshotFixture.hasCanvasComposition {
                     SnapshotStageComposition(showsDrawing: snapshotFixture == .draw, theme: controller.theme, showsWatermark: controller.showsWatermark)
                 } else {
                     StageLayoutEditor(controller: controller, capture: capture, allowsEditingShortcuts: usesEditingShortcuts)
@@ -345,7 +347,7 @@ struct StageWorkspaceView: View {
         HStack(spacing: 10) {
             if controller.stageInteractionMode == .arrange {
                 if snapshotFixture?.hasCanvasComposition == true {
-                    SnapshotSelectedLayerTools()
+                    SnapshotSelectedLayerTools(fixture: snapshotFixture ?? .arrange)
                 } else {
                     SelectedLayerTools(controller: controller, capture: capture)
                 }

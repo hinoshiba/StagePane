@@ -1087,6 +1087,32 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         annotations.selectTool(.pen)
         setStageInteractionMode(.arrange)
 
+        // The same fictional slides and booking form illustrate what the
+        // audience sees and how that exact composition looks in Workspace.
+        // No source stream, source metadata, or permission state is created.
+        privacyCurtain = false
+        try writePNG(
+            of: SnapshotProductComposition(
+                showsEditingChrome: false,
+                theme: theme,
+                showsWatermark: showsWatermark
+            )
+                .preferredColorScheme(.light)
+                .frame(width: 960, height: 540),
+            pointSize: CGSize(width: 960, height: 540),
+            to: directory.appendingPathComponent("product-stage.png")
+        )
+        for colorScheme in [ColorScheme.light, .dark] {
+            let appearanceName = colorScheme == .dark ? "dark" : "light"
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .product)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("product-workspace-\(appearanceName).png")
+            )
+        }
+
         privacyCurtain = true
         try writePNG(
             of: StageView(controller: self, capture: capture)

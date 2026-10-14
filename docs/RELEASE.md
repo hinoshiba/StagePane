@@ -133,12 +133,12 @@ Update and review these values in one pull request:
   ```
 
   Snapshots are opaque PNGs rendered at twice their native point dimensions.
-  CI checks every fixture against `AppController.writeSnapshots`:
+  CI checks all 41 fixtures against `AppController.writeSnapshots`:
 
   | Fixtures (`.png`) | Pixel dimensions |
   | --- | --- |
   | `workspace`, `arrange`, `draw`, `sources` | 2880×1800 |
-  | `workspace-900-*`, `workspace-empty-900-*`, `workspace-access-error-*-900-*`, `draw-900`, `eraser-900-*` | 1800×1240 |
+  | `workspace-900-*`, `workspace-empty-900-*`, `workspace-access-error-*-900-*`, `product-workspace-light`, `product-workspace-dark`, `draw-900`, `eraser-900-*` | 1800×1240 |
   | `stage-settings`, `appearance`, `stage-inspector-dark` | 720×1200 |
   | `permissions`, `permissions-dark` | 1280×1000 |
   | `screen-recording-access`, its `-pending` and `-allowed` states, and each `-dark` variant | 1120×680 |
@@ -146,10 +146,12 @@ Update and review these values in one pull request:
   | `settings-640-appearance`, `settings-640-about`, `settings-640-about-dark` | 1280×1080 |
   | Source-build `pro`, `pro-dark` | 1560×1520 |
   | `pro-comparison-light`, `pro-comparison-dark` | 1280×720 |
-  | `privacy-curtain`, `stage-ready` | 1920×1080 |
+  | `privacy-curtain`, `stage-ready`, `product-stage` | 1920×1080 |
 
   The native-window and Stage-only snapshots are website and QA assets; their
-  dimensions are not Mac App Store upload requirements. The access-state
+  dimensions are not Mac App Store upload requirements. The `product-stage` and
+  `product-workspace-*` fixtures show the same synthetic slide-and-demo layout
+  in the audience Stage and private Workspace. The access-state
   fixtures are synthetic and never query or request macOS permission.
   Do not use an arbitrary `/tmp` or repository
   directory as the sandboxed app's snapshot destination. Separately capture
