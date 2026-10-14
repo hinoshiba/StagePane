@@ -12,8 +12,9 @@ English: **A clean stage for everything you share.**
 The mental model is **Audience Stage + private Stage Workspace**, never a
 replacement desktop. The Stage is a chrome-free output. The Workspace places
 the large WYSIWYG Canvas beside a persistent layer list, ordered from front to
-back. Stage Settings, Appearance, Permissions, Privacy, and About remain in its
-navigation. Composition and source lifecycle controls share one working view.
+back. Stage Settings opens beside the Canvas; a separate Settings window holds
+General and About, including privacy information. About Screen Sharing opens a
+separate guide. Composition and source lifecycle controls share one working view.
 Ink `#0C1018`, Stage Indigo `#5B5CF0`, and Beam Aqua `#48D8E8` form the core
 palette. Status uses macOS semantic colors plus icons/text; the brand gradient
 is reserved for the mark and empty states.
@@ -34,8 +35,8 @@ and end capture with no retained frame or orphaned state.
   label is guidance, not protection from full-display
   or application sharing
 - Apple system picker for one window/app/display source consent at a time;
-  access is scoped to that selection and capture session, with no separate
-  broad Screen Recording permission
+  access is scoped to that selection and capture session and works without
+  optional app-wide Mac Screen Recording Access
 - four independently pausable/resumable, replaceable, and removable in-memory
   video sources in Free; the one-time StagePane Pro purchase removes the app's
   source-count limit, while the practical total depends on Mac performance and
@@ -79,7 +80,9 @@ and end capture with no retained frame or orphaned state.
   excluding Workspace chrome; no automatic screenshot, recording, or network path
 - all-Spaces, always-on-top compatibility, Presentation Lock
 - menu-bar recovery and keyboard shortcuts
-- persistent Permissions view explaining picker-scoped screen sharing
+- About Screen Sharing guide with a manual Mac Screen Recording Access check;
+  an optional first-check guide appears if access is not allowed, requests it
+  only through Allow, and does not repeat on later launches
 - Japanese/English UI selected from system language
 - App Sandbox, privacy manifest, no publisher-operated network service,
   analytics, StagePane account, or cross-application Accessibility/input-forwarding
@@ -93,7 +96,8 @@ and end capture with no retained frame or orphaned state.
 - cursor teleportation, app activation/focus, generic canvas/content control, or
   input sent to app/display/ambiguous sources
 - audio, microphone, recording, streaming, cloud, AI, OCR, or automatic screenshots
-- separate broad Screen Recording permission or a custom source-permission flow
+- requiring app-wide Screen Recording access for picker-selected sharing, or
+  replacing Apple's per-source consent flow
 - StagePane account, subscription, ads, analytics, crash upload, custom updater
 - Finder/Dock clone, app launcher, or alternate desktop
 

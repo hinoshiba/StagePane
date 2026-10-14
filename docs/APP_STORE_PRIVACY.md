@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / プライバシーポリシー
 
-Updated / 更新日: 2026-09-18
+Updated / 更新日: 2026-10-14
 
 ## Data and purpose / データと利用目的
 
@@ -16,21 +16,26 @@ StagePaneは、Appleの共有ピッカーで選んだ画面と手書きをMac上
 
 Preferences are saved on your Mac: the Stage shape and appearance, window
 behavior, the safe-area guide and StagePane mark settings, the pointer style,
-size, color, and glow, the Curtain message, drawing tool settings, and the
-position and size of the Workspace and Stage windows. The Mac App Store build
-additionally saves three local values used only to decide when to show the App
-Store rating prompt: a count of successful sessions, the date of the first one,
-and the app version in which the prompt was last shown. Screen content, source
-names, the Stage layout of your sources, and drawings are not saved. Source
-details, crop positions, and drawings remain in memory during use; Stop All or
-quitting discards them. Cropping changes the displayed area while the selected
-source is still captured in full. The Curtain covers the Stage; it does not stop
-capture. Select the Stage window in your meeting app, because sharing the whole
-app or display can also reveal the Workspace.
+size, color, and glow, the Curtain message and its text size, drawing tool
+settings, the layer list width, whether the first Mac Screen Recording Access
+check has been completed, and the position and size of the Workspace, Stage,
+Settings, Pro, screen-sharing guide, and Mac Screen Recording Access windows.
+The access status itself is read from macOS, not saved by StagePane. The
+Mac App Store build additionally saves three local values used only to decide
+when to show the App Store rating prompt: a count of successful sessions, the
+date of the first one, and the app version in which the prompt was last shown.
+Screen content, source names, the Stage layout of your sources, and drawings
+are not saved. Source details, crop positions, and drawings remain in memory
+during use; Stop All or quitting discards them. Cropping changes the displayed
+area while the selected source is still captured in full. The Curtain covers
+the Stage; it does not stop capture. Select the Stage window in your meeting
+app, because sharing the whole app or display can also reveal the Workspace.
 
 設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、
 セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、
-カーテンの文言、手書きツールの設定、WorkspaceとStageウインドウの位置と大きさです。
+カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、Macの画面収録アクセスの
+初回確認が済んだかどうか、およびWorkspace・Stage・設定・Pro・画面共有の案内・Macの画面収録アクセスの
+各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。
 Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使う
 ローカルな3つの値（成功したセッションの回数、その最初の日付、
 評価依頼を最後に表示したアプリのバージョン）を保存します。
@@ -43,11 +48,15 @@ Mac App Store版はこれに加えて、App Storeの評価依頼を表示する�
 Copy Image places a PNG on the system clipboard, where other apps may access it.
 Save PNG writes to your selected location. You can delete saved images and clear
 local app data using macOS controls. Revoke a source’s session access by removing
-it or choosing Stop All.
+it or choosing Stop All. App-wide Mac Screen Recording Access is optional and
+is requested only when you choose Allow. You can change it in macOS System
+Settings; picker-based sharing works without it.
 
 「画像をコピー」は他のアプリからも参照できるシステムのクリップボードへPNGを置きます。
 「PNGを保存」は選んだ場所へ書き込みます。保存画像とアプリのローカルデータはmacOSの機能で削除できます。
 ソースの解除または「すべて停止」で、その取得セッションを終了できます。
+アプリ全体のMacの画面収録アクセスは任意で、「許可する」を選んだ場合だけ要求します。
+macOSのシステム設定で変更でき、未許可でもピッカーで選んだ内容は共有できます。
 
 ## Sharing and retention / 提供と保持期間
 

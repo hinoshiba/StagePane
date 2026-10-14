@@ -87,35 +87,25 @@ struct BrandLockup: View {
 }
 
 struct CardSurface: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-    var cornerRadius: CGFloat = 20
-    var padding: CGFloat = 20
+    var cornerRadius: CGFloat = 10
+    var padding: CGFloat = 18
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.055)
-                            : Color.white.opacity(0.88)
-                    )
+                    .fill(Color(nsColor: .controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                colorScheme == .dark
-                                    ? Color.white.opacity(0.09)
-                                    : Color.black.opacity(0.055),
-                                lineWidth: 1
-                            )
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
                     )
             )
     }
 }
 
 extension View {
-    func cardSurface(cornerRadius: CGFloat = 20, padding: CGFloat = 20) -> some View {
+    func cardSurface(cornerRadius: CGFloat = 10, padding: CGFloat = 18) -> some View {
         modifier(CardSurface(cornerRadius: cornerRadius, padding: padding))
     }
 }
@@ -126,46 +116,34 @@ struct PrimaryActionButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .frame(minHeight: 38)
+            .foregroundStyle(Color(nsColor: .alternateSelectedControlTextColor))
+            .padding(.horizontal, 12)
+            .frame(minHeight: 32)
             .background(
-                LinearGradient(
-                    colors: configuration.isPressed
-                        ? [StagePanePalette.indigo.opacity(0.82), StagePanePalette.actionBeam.opacity(0.82)]
-                        : [StagePanePalette.indigo, StagePanePalette.actionBeam],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ),
-                in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                Color.accentColor.opacity(configuration.isPressed ? 0.82 : 1),
+                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
             )
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .saturation(isEnabled ? 1 : 0.25)
             .opacity(isEnabled ? 1 : 0.48)
     }
 }
 
 struct SecondaryActionButtonStyle: ButtonStyle {
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
+            .font(.body)
             .foregroundStyle(.primary)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 38)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 32)
             .background(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        colorScheme == .dark
-                            ? Color.white.opacity(configuration.isPressed ? 0.12 : 0.075)
-                            : Color.black.opacity(configuration.isPressed ? 0.09 : 0.045)
-                    )
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: configuration.isPressed ? .selectedControlColor : .controlColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(Color.primary.opacity(0.09), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
             )
             .opacity(isEnabled ? 1 : 0.43)
     }
@@ -178,16 +156,11 @@ struct SectionHeading: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text(eyebrow.uppercased())
-                .font(.caption2.weight(.bold))
-                .tracking(1.2)
-                .foregroundStyle(StagePanePalette.aquaReadable)
             Text(title)
-                .font(.system(.title, design: .rounded, weight: .bold))
-                .tracking(-0.7)
+                .font(.title2.weight(.semibold))
                 .accessibilityHeading(.h1)
             Text(detail)
-                .font(.subheadline)
+                .font(.body)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

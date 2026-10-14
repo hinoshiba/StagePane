@@ -266,6 +266,112 @@ final class StageLayoutTests: XCTestCase {
         XCTAssertEqual(single, original)
     }
 
+    func testListMoveMapsFrontAndBackRowsToStackingOrder() {
+        let layers = overlappingLayers
+        let expectedIDs = layers.reversed().map(\.id)
+        let cases: [(IndexSet, Int, [StageSourceLayout])] = [
+            (IndexSet(integer: 0), 4, [layers[3], layers[0], layers[1], layers[2]]),
+            (IndexSet(integer: 3), 0, [layers[1], layers[2], layers[3], layers[0]]),
+            (IndexSet(integer: 2), 1, [layers[0], layers[2], layers[1], layers[3]]),
+            (IndexSet(integer: 1), 3, [layers[0], layers[2], layers[1], layers[3]])
+        ]
+
+        for (offsets, destination, expectedLayers) in cases {
+            var layout = StageLayout(sources: layers)
+            XCTAssertTrue(layout.moveSources(
+                fromFrontOffsets: offsets,
+                toFrontOffset: destination,
+                expectedFrontToBackIDs: expectedIDs
+            ))
+            // Full values prove both moved and untouched layers retain geometry/crop.
+            XCTAssertEqual(layout.sources, expectedLayers)
+        }
+    }
+
+    func testListMovePreservesRelativeOrderOfMultipleMovedAndRemainingLayers() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.moveSources(
+            fromFrontOffsets: IndexSet([0, 2]),
+            toFrontOffset: 4,
+            expectedFrontToBackIDs: layers.reversed().map(\.id)
+        ))
+        XCTAssertEqual(layout.sources, [layers[1], layers[3], layers[0], layers[2]])
+    }
+
+    func testListMoveRejectsUnchangedAndInvalidOffsetsWithoutMutation() {
+        let original = StageLayout(sources: overlappingLayers)
+        let cases: [(IndexSet, Int)] = [
+            (IndexSet(), 0),
+            (IndexSet(integer: 0), 0),
+            (IndexSet(integer: 0), 1),
+            (IndexSet(integer: 2), 2),
+            (IndexSet(integer: 2), 3),
+            (IndexSet(integersIn: 1...2), 2),
+            (IndexSet(integersIn: 0...3), 4),
+            (IndexSet(integer: 4), 0),
+            (IndexSet([1, 4]), 0),
+            (IndexSet(integer: 0), -1),
+            (IndexSet(integer: 0), 5)
+        ]
+
+        for (offsets, destination) in cases {
+            var layout = original
+            XCTAssertFalse(layout.moveSources(
+                fromFrontOffsets: offsets,
+                toFrontOffset: destination,
+                expectedFrontToBackIDs: original.sources.reversed().map(\.id)
+            ))
+            XCTAssertEqual(layout, original)
+        }
+
+        for original in [StageLayout(), StageLayout(sources: [overlappingLayers[0]])] {
+            var layout = original
+            XCTAssertFalse(layout.moveSources(
+                fromFrontOffsets: IndexSet(integer: 0),
+                toFrontOffset: original.sources.count,
+                expectedFrontToBackIDs: original.sources.reversed().map(\.id)
+            ))
+            XCTAssertEqual(layout, original)
+        }
+    }
+
+    func testListMoveRejectsIdentitySnapshotsAfterReorderOrRemoval() {
+        let original = StageLayout(sources: overlappingLayers)
+        let snapshot = original.sources.reversed().map(\.id)
+        var reordered = original
+        XCTAssertTrue(reordered.bringSourceForward(sourceB))
+        var removed = original
+        XCTAssertTrue(removed.removeSource(sourceA))
+
+        for current in [reordered, removed] {
+            var layout = current
+            XCTAssertFalse(layout.moveSources(
+                fromFrontOffsets: IndexSet(integer: 0),
+                toFrontOffset: 3,
+                expectedFrontToBackIDs: snapshot
+            ))
+            XCTAssertEqual(layout, current)
+        }
+    }
+
+    func testListMovePreservesGeometryChangedSinceIdentitySnapshot() {
+        var layout = StageLayout(sources: overlappingLayers)
+        let snapshot = layout.sources.reversed().map(\.id)
+        XCTAssertTrue(layout.moveSource(sourceD, byX: 0.1, y: 0.1))
+        let currentLayers = layout.sources
+
+        XCTAssertTrue(layout.moveSources(
+            fromFrontOffsets: IndexSet(integer: 0),
+            toFrontOffset: 4,
+            expectedFrontToBackIDs: snapshot
+        ))
+        XCTAssertEqual(layout.sources, [
+            currentLayers[3], currentLayers[0], currentLayers[1], currentLayers[2]
+        ])
+    }
+
     func testMovingAndResizingCoveredLayerPreservesStackingAndCrop() {
         let layers = overlappingLayers
         var layout = StageLayout(sources: layers)

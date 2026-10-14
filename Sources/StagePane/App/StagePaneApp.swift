@@ -57,6 +57,7 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         installConfiguredMainMenu()
+        controller?.refreshMacScreenRecordingAccess()
     }
 
     func applicationShouldHandleReopen(
@@ -101,11 +102,13 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu(title: "StagePane")
-        appMenu.addItem(
-            withTitle: L10n.text("StagePaneについて", "About StagePane"),
-            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
-            keyEquivalent: ""
-        )
+        appMenu.addItem(menuItem(
+            L10n.text("StagePaneについて", "About StagePane"),
+            action: #selector(AppController.showAbout),
+            key: "",
+            modifiers: [],
+            target: controller
+        ))
         appMenu.addItem(.separator())
         appMenu.addItem(menuItem(
             L10n.text("設定…", "Settings…"),
@@ -162,6 +165,25 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         appItem.submenu = appMenu
         main.addItem(appItem)
 
+        let fileItem = NSMenuItem()
+        let fileMenu = NSMenu(title: L10n.text("ファイル", "File"))
+        fileMenu.addItem(menuItem(
+            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
+            action: #selector(AppController.copyStageScreenshot),
+            key: "s",
+            modifiers: [.command, .shift],
+            target: controller
+        ))
+        fileMenu.addItem(menuItem(
+            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
+            action: #selector(AppController.saveStageScreenshot),
+            key: "s",
+            modifiers: [.command, .option, .shift],
+            target: controller
+        ))
+        fileItem.submenu = fileMenu
+        main.addItem(fileItem)
+
         let editItem = NSMenuItem()
         let editMenu = NSMenu(title: L10n.text("編集", "Edit"))
         editMenu.addItem(menuItem(
@@ -217,7 +239,17 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             target: controller
         ))
         stageMenu.addItem(menuItem(
-            L10n.text("アクセス権限を確認…", "Review Permissions…"),
+            L10n.text("Stage設定…", "Stage Settings…"),
+            action: #selector(AppController.showStageSettings),
+            key: "", modifiers: [], target: controller
+        ))
+        stageMenu.addItem(menuItem(
+            L10n.text("共有向けにStageを拡大", "Enlarge Stage for Sharing"),
+            action: #selector(AppController.enlargeStageForSharing),
+            key: "", modifiers: [], target: controller
+        ))
+        stageMenu.addItem(menuItem(
+            L10n.text("画面共有について…", "About Screen Sharing…"),
             action: #selector(AppController.showPermissions),
             key: "",
             modifiers: [],
@@ -232,21 +264,6 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ))
         stageMenu.addItem(.separator())
         stageMenu.addItem(menuItem(
-            L10n.text("観客向けStageの画像をコピー", "Copy Audience Stage Image"),
-            action: #selector(AppController.copyStageScreenshot),
-            key: "s",
-            modifiers: [.command, .shift],
-            target: controller
-        ))
-        stageMenu.addItem(menuItem(
-            L10n.text("観客向けStageの画像を保存…", "Save Audience Stage Image…"),
-            action: #selector(AppController.saveStageScreenshot),
-            key: "s",
-            modifiers: [.command, .option, .shift],
-            target: controller
-        ))
-        stageMenu.addItem(.separator())
-        stageMenu.addItem(menuItem(
             L10n.stopAllAndRemoveLayersTitle,
             action: #selector(AppController.stopPreview),
             key: ".",
@@ -255,6 +272,20 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ))
         stageItem.submenu = stageMenu
         main.addItem(stageItem)
+
+        let layerItem = NSMenuItem()
+        let layerMenu = NSMenu(title: L10n.text("レイヤー", "Layer"))
+        for (title, action) in [
+            (L10n.text("切り抜く…", "Crop…"), #selector(AppController.editSelectedLayerCrop)),
+            (L10n.text("ひとつ前面へ", "Move Forward"), #selector(AppController.moveSelectedLayerForward)),
+            (L10n.text("ひとつ背面へ", "Move Backward"), #selector(AppController.moveSelectedLayerBackward)),
+            (L10n.text("最前面へ", "Bring to Front"), #selector(AppController.bringSelectedLayerToFront)),
+            (L10n.text("最背面へ", "Send to Back"), #selector(AppController.sendSelectedLayerToBack))
+        ] {
+            layerMenu.addItem(menuItem(title, action: action, key: "", modifiers: [], target: controller))
+        }
+        layerItem.submenu = layerMenu
+        main.addItem(layerItem)
 
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: L10n.text("ウインドウ", "Window"))
@@ -292,6 +323,15 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: [.command],
             target: controller
         ))
+        windowMenu.addItem(.separator())
+        for (title, action) in [
+            (L10n.text("Stageを常に手前に表示", "Keep Stage in Front"), #selector(AppController.toggleStageAlwaysOnTop)),
+            (L10n.text("StageをすべてのSpaceに表示", "Show Stage on Every Space"), #selector(AppController.toggleStageAllSpaces)),
+            (L10n.text("Stageウインドウを保護", "Protect Stage Window"), #selector(AppController.toggleStageProtection))
+        ] {
+            windowMenu.addItem(menuItem(title, action: action, key: "", modifiers: [], target: controller))
+        }
+        windowMenu.addItem(.separator())
         windowMenu.addItem(menuItem(
             L10n.text("すべてを手前に移動", "Bring All to Front"),
             action: #selector(NSApplication.arrangeInFront(_:)),

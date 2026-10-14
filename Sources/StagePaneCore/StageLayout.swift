@@ -416,6 +416,34 @@ public struct StageLayout: Codable, Equatable, Sendable {
         return true
     }
 
+    /// Commits a list move whose first row is the frontmost layer. The destination
+    /// is an insertion offset in the original list, before removing the moved rows.
+    /// A stale identity/order snapshot, invalid offsets, or an unchanged order is
+    /// rejected without mutation. Every layer retains its placement and crop.
+    @discardableResult
+    public mutating func moveSources(
+        fromFrontOffsets offsets: IndexSet,
+        toFrontOffset destination: Int,
+        expectedFrontToBackIDs: [StageSourceID]
+    ) -> Bool {
+        let frontToBack = Array(sources.reversed())
+        guard frontToBack.map(\.id) == expectedFrontToBackIDs,
+              !offsets.isEmpty,
+              offsets.allSatisfy({ frontToBack.indices.contains($0) }),
+              (0...frontToBack.count).contains(destination) else { return false }
+
+        let moved = offsets.map { frontToBack[$0] }
+        var remaining = frontToBack.enumerated().compactMap { index, source in
+            offsets.contains(index) ? nil : source
+        }
+        let insertionOffset = destination - offsets.filter { $0 < destination }.count
+        remaining.insert(contentsOf: moved, at: insertionOffset)
+        let reordered = Array(remaining.reversed())
+        guard reordered != sources else { return false }
+        sources = reordered
+        return true
+    }
+
     /// Replaces current positions with the deterministic automatic grid while
     /// retaining source IDs and their order.
     public mutating func arrangeAutomatically(gap: Double = StageLayout.defaultGap) {

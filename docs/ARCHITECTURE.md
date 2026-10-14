@@ -23,10 +23,11 @@ StagePaneApplication
     └── AppController ─────────────── settings / actions / lifecycle
         ├── StageWorkspaceWindowController
         │   └── StageWorkspaceView    private unified working window
-        │       ├── StageLayoutEditor Arrange / per-layer Crop / Draw
+        │       ├── StageLayoutEditor Arrange / per-layer Crop / Draw / Magnify
         │       ├── Layer list        persistent, front-to-back lifecycle controls
-        │       ├── Stage Settings / Appearance
-        │       └── Permissions / Privacy / About
+        │       └── StageInspectorPanel
+        ├── StagePrivateWindowController
+        │   └── Settings / Pro / About Screen Sharing / optional Mac access guide
         ├── StageWindowController
         │   └── StageView             chrome-free public share surface
         ├── StageWindowSnapshotter    explicit clean Stage PNG copy/save
@@ -53,8 +54,7 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
 2. `SCContentSharingPicker.shared` presents macOS-owned consent UI. StagePane's
    bundle identifier is excluded to prevent recursive self-selection. The
    returned approval is scoped to the chosen content and capture session;
-   StagePane neither requests nor models a separate broad Screen Recording
-   permission.
+   this path works without optional app-wide Mac Screen Recording Access.
 3. The returned `SCContentFilter` represents one window, application, or
    display. StagePane creates one independent `SCStream` for it at up to 30 fps.
    Repeating this flow adds up to four sources in Free. StagePane Pro removes
@@ -173,15 +173,23 @@ it does not order the Stage window to the front.
 
 ## Permission model
 
-The persistent Workspace **Permissions** view describes the picker-scoped
-screen-sharing access path:
+The separate **About Screen Sharing** guide describes picker-scoped sharing
+and offers a manual **Check Mac Screen Recording Access** action.
 
-- Screen sharing is not represented as an app-wide allow/deny switch. Each
-  `SCContentSharingPicker` interaction is the consent UI, and its returned
-  filter authorizes only the selected window, application, or display for that
-  capture session. Cancel grants nothing. The app does not request separate,
-  broad Screen Recording access or expose a Screen Recording settings step.
-  Removing the source or stopping all sources ends the scoped access.
+- Each `SCContentSharingPicker` interaction authorizes the selected window,
+  application, or display for that capture session. Cancel grants nothing;
+  removing the source or stopping all sources ends the scoped access.
+- Normal startup and app activation read app-wide access with
+  `CGPreflightScreenCaptureAccess`. The first startup check saves a completed
+  flag and opens an optional guide if access is not allowed. Later launches
+  update the status without repeating the guide. Only the explicit **Allow**
+  action calls `CGRequestScreenCaptureAccess`; **Continue** leaves picker-based
+  sharing available without this access. A false result does not diagnose an
+  individual source error. Snapshot-only startup performs no access check,
+  request, or first-check preference write.
+- Preferences retain the completed-check flag and access-window frame, not the
+  permission status. Individual source errors stay in Workspace, not this guide.
+
 StagePane contains no cross-application input path and requests neither
 Accessibility nor Input Monitoring permission.
 
@@ -297,14 +305,16 @@ PNG is independent before source removal or Stop All can drain the live layers.
 
 - Picker cancellation keeps all existing sources, or returns to idle if there
   were none.
-- Start and runtime errors become a visible **Needs Attention** state in
-  Workspace. A failure in one source does not stop another healthy source.
+- Selection and start errors appear in Workspace with retry and details and
+  remain until dismissed or resolved; no separate error window opens. Source
+  rows retain their **Needs Attention** details for runtime or lifecycle errors.
+  A failure in one source does not stop another healthy source.
 - Removing a source hides its output immediately. If ScreenCaptureKit refuses
   to stop it, the row remains in a capture-active warning state for an explicit
   retry; StagePane does not silently claim that capture ended.
-- Picker cancellation or loss of a selected source is treated as an ordinary
-  recoverable session error; the user can choose that source again without a
-  separate broad Screen Recording permission request.
+- Picker cancellation is not an error. Loss of a selected source keeps its
+  layer available for **Select Again**, preserving layout and crop. Reselection
+  uses the picker and does not require app-wide Screen Recording access.
 - A source that is minimized may stop producing frames because this is a
   ScreenCaptureKit limitation; StagePane does not misrepresent it as a virtual
   display.
@@ -323,9 +333,9 @@ Huddles, Discord, and OBS.
 Mac App Store acceptance requires a sandboxed, consistently signed candidate
 that contains no cross-application input or Accessibility implementation and
 requests no Accessibility permission on any supported OS.
-Its persistent Permissions view must explain picker-scoped screen-sharing
-access without requesting separate broad Screen Recording access. Arrange and
-Draw must remain available.
+Its About Screen Sharing guide must distinguish picker-scoped sharing from
+optional app-wide access. Verify first-check-only guidance, explicit Allow,
+Continue without access, and manual rechecking. Arrange and Draw remain available.
 The private Workspace must host those modes with a persistent layer list while
 the public Stage stays chrome-free. Acceptance includes selecting fully covered
 and hidden layers, selection/drag/resize preserving z-order, all four explicit

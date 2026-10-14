@@ -25,6 +25,21 @@ enum ProUpgradeTrigger: Equatable, Sendable {
     case watermark
 }
 
+/// A source failure stays readable until dismissed or that operation recovers.
+/// An unrelated source update or a canceled picker is not recovery.
+struct CaptureAccessIssueNotice: Identifiable {
+    let id = UUID()
+    let issue: CaptureAccessIssue
+    let sourceIDsAtFailure: Set<StageSourceID>
+
+    func isResolved(currentSourceIDs: Set<StageSourceID>, readySourceIDs: Set<StageSourceID>) -> Bool {
+        if let sourceID = issue.sourceID {
+            return !currentSourceIDs.contains(sourceID) || readySourceIDs.contains(sourceID)
+        }
+        return !readySourceIDs.subtracting(sourceIDsAtFailure).isEmpty
+    }
+}
+
 @MainActor
 final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published var preset: StagePreset {
@@ -48,9 +63,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var selectedSourceID: StageSourceID?
     @Published private(set) var cropEditingSourceID: StageSourceID?
     @Published private(set) var cropDraft: NormalizedSourceRect?
-    @Published private(set) var workspaceSection: WorkspaceSection = .canvas
+    @Published private(set) var workspaceSection: WorkspaceSection = .appearance
+    @Published var isStageSettingsPresented = false
+    @Published private(set) var captureAccessIssueNotice: CaptureAccessIssueNotice?
+    @Published private(set) var hasMacScreenRecordingAccess = false
+    @Published private(set) var hasRequestedMacScreenRecordingAccess = false
+    @Published private(set) var proWindowIsVisible = false
     @Published var isAlwaysOnTop: Bool {
         didSet {
+            beginWorkspaceInteraction()
             defaults.set(isAlwaysOnTop, forKey: Keys.alwaysOnTop)
             stageWindowController?.applyWindowBehavior()
         }
@@ -58,6 +79,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var followsAllSpaces: Bool {
         didSet {
+            beginWorkspaceInteraction()
             defaults.set(followsAllSpaces, forKey: Keys.followsAllSpaces)
             stageWindowController?.applyWindowBehavior()
         }
@@ -65,6 +87,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @Published var presentationLock: Bool {
         didSet {
+            beginWorkspaceInteraction()
             defaults.set(presentationLock, forKey: Keys.presentationLock)
             stageWindowController?.applyWindowBehavior()
         }
@@ -107,7 +130,18 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
+    @Published var privacyMessageSize: Int {
+        didSet {
+            let normalized = StageMessage.normalizedTextSize(privacyMessageSize)
+            defaults.set(normalized, forKey: Keys.privacyMessageSize)
+            if normalized != privacyMessageSize {
+                privacyMessageSize = normalized
+            }
+        }
+    }
+
     @Published private(set) var stageIsVisible = false
+    @Published private(set) var stageIsMiniaturized = false
     @Published private(set) var workspaceIsVisible = false
     @Published private(set) var isStageScreenshotInProgress = false
     @Published private(set) var hasAnnotations = false
@@ -191,6 +225,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private let defaults: UserDefaults
     private var workspaceWindowController: StageWorkspaceWindowController?
     private var stageWindowController: StageWindowController?
+    private var settingsWindowController: StagePrivateWindowController?
+    private var permissionsWindowController: StagePrivateWindowController?
+    private var macScreenRecordingAccessWindowController: StagePrivateWindowController?
+    private var checksMacScreenRecordingAccess = false
+    private var proWindowController: StagePrivateWindowController?
     private var pendingStageSnapshot: StageSnapshot?
     private var stopAllConfirmationAlert: NSAlert?
     private var statusItemController: StatusItemController?
@@ -201,6 +240,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var activeSessionReachedPreview = false
     private var previousHasProAccess = false
     private var pendingProContinuation = false
+    private var proContinuationID: UUID?
     private var reviewRequestIsScheduled = false
     private var transientNoticeDismissalTask: Task<Void, Never>?
 
@@ -231,6 +271,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             defaults.string(forKey: Keys.privacyMessage) ?? "",
             fallback: L10n.text("少々お待ちください", "Back in a moment")
         )
+        self.privacyMessageSize = StageMessage.normalizedTextSize(
+            defaults.object(forKey: Keys.privacyMessageSize) as? Int ?? StageMessage.defaultTextSize
+        )
         self.purchases = ProPurchaseStore()
         self.capture = CaptureCoordinator()
         super.init()
@@ -245,6 +288,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         capture.setAllowedSourceLimit(activeSourceLimit)
         capture.sourceLimitReachedHandler = { [weak self] in
             self?.presentProUpgrade(trigger: .sourceLimit)
+        }
+        capture.sourceAccessIssueHandler = { [weak self] issue in
+            // Keep source failures in the editor; they do not establish that
+            // app-wide Screen Recording permission is missing.
+            self?.presentCaptureAccessIssue(issue)
         }
         previousHasProAccess = hasProAccess
         previousCapturePhase = capture.phase
@@ -308,34 +356,40 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     pendingProContinuation = false
                     return
                 }
-                if gainedProAccess,
-                   workspaceSection == .pro,
-                   proUpgradeTrigger != .direct {
+                if gainedProAccess, proWindowIsVisible, proContinuationID != nil {
                     pendingProContinuation = true
                 }
                 guard pendingProContinuation,
-                      operationState == .idle else { return }
-                guard workspaceSection == .pro else {
-                    pendingProContinuation = false
-                    return
-                }
+                      operationState == .idle,
+                      proWindowIsVisible,
+                      let continuationID = proContinuationID else { return }
                 pendingProContinuation = false
-                switch proUpgradeTrigger {
-                case .sourceLimit:
-                    // Resume the action that demonstrated Pro's value. Wait
-                    // one turn so StoreKit's purchase sheet can dismiss first.
-                    DispatchQueue.main.async { [weak self] in
-                        self?.chooseSource()
+                // Allow the StoreKit sheet to dismiss before returning to the
+                // original action. Recheck its identity after that turn: closing
+                // Pro or beginning another task invalidates this continuation.
+                DispatchQueue.main.async { [weak self] in
+                    guard let self,
+                          self.hasProAccess,
+                          self.proWindowIsVisible,
+                          self.proContinuationID == continuationID else { return }
+                    let trigger = self.proUpgradeTrigger
+                    self.beginWorkspaceInteraction()
+                    switch trigger {
+                    case .sourceLimit:
+                        guard self.canRequestSourceAddition else { return }
+                        self.proWindowController?.close()
+                        self.chooseSource()
+                    case .watermark:
+                        self.prefersWatermark = false
+                        self.proWindowController?.close()
+                        self.showStageSettings()
+                        self.transientNotice = L10n.text(
+                            "StagePaneロゴを非表示にしました。",
+                            "The StagePane mark is now hidden."
+                        )
+                    case .direct:
+                        break
                     }
-                case .watermark:
-                    prefersWatermark = false
-                    workspaceSection = .appearance
-                    transientNotice = L10n.text(
-                        "StagePaneロゴを非表示にしました。",
-                        "The StagePane mark is now hidden."
-                    )
-                case .direct:
-                    break
                 }
             }
             .store(in: &cancellables)
@@ -367,11 +421,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                   source.phase != .stopping,
                   capture.layout[sourceID: sourceID] != nil else { return }
         }
+        beginWorkspaceInteraction()
         guard selectedSourceID != sourceID else { return }
         selectedSourceID = sourceID
     }
 
     func setStageInteractionMode(_ mode: StageInteractionMode) {
+        beginWorkspaceInteraction()
         if mode == .crop, cropEditingSourceID == nil {
             guard let sourceID = defaultCropEditingSourceID,
                   beginCropEditing(sourceID) else { return }
@@ -388,7 +444,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func editCrop(of sourceID: StageSourceID) {
         if cropEditingSourceID == sourceID, cropDraft != nil {
             selectSource(sourceID)
-            workspaceSection = .canvas
             setStageInteractionMode(.crop)
             return
         }
@@ -403,7 +458,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func resetCrop(of sourceID: StageSourceID) {
         if cropEditingSourceID == sourceID, cropDraft != nil {
             selectSource(sourceID)
-            workspaceSection = .canvas
             cropDraft = .fullSource
             setStageInteractionMode(.crop)
             transientNotice = L10n.cropResetDraftNotice
@@ -422,11 +476,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         for sourceID: StageSourceID
     ) {
         guard cropEditingSourceID == sourceID else { return }
+        beginWorkspaceInteraction()
         cropDraft = crop
     }
 
     func resetCropDraft() {
         guard cropEditingSourceID != nil else { return }
+        beginWorkspaceInteraction()
         cropDraft = .fullSource
         transientNotice = L10n.cropResetDraftNotice
     }
@@ -446,6 +502,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
 
         let sourceTitle = capture.source(for: sourceID)?.title ?? ""
+        selectSource(sourceID)
         capture.setSourceCrop(sourceID, crop: cropDraft)
         capture.commitSourceCrop(sourceID)
         discardCropEditing(announce: false)
@@ -455,6 +512,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func cancelCropEditing() {
         let hadDraft = cropEditingSourceID != nil
+        if let sourceID = cropEditingSourceID { selectSource(sourceID) }
         discardCropEditing(announce: false)
         setStageInteractionMode(.arrange)
         if hadDraft {
@@ -501,7 +559,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         selectSource(sourceID)
         cropEditingSourceID = sourceID
         cropDraft = draft ?? sourceLayout.sourceCrop
-        workspaceSection = .canvas
         return true
     }
 
@@ -518,6 +575,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         _ sourceID: StageSourceID,
         completion: ((String?) -> Void)? = nil
     ) {
+        beginWorkspaceInteraction()
         if selectedSourceID == sourceID {
             selectedSourceID = nil
         }
@@ -534,8 +592,128 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func presentPermissionCheck() {
-        workspaceSection = .permissions
-        presentWorkspace()
+        beginWorkspaceInteraction()
+        if permissionsWindowController == nil {
+            permissionsWindowController = StagePrivateWindowController(
+                title: L10n.text("画面共有について — 手元用", "About Screen Sharing — Private"),
+                autosaveName: "StagePane.ScreenSharingAccess",
+                size: NSSize(width: 640, height: 500),
+                minimumSize: NSSize(width: 560, height: 440),
+                content: ScreenSharingAccessView(controller: self, capture: capture)
+            )
+        }
+        permissionsWindowController?.present()
+    }
+
+    func closePermissionCheck() {
+        permissionsWindowController?.close()
+    }
+
+    func chooseSourceFromAccessGuide() {
+        closePermissionCheck()
+        chooseSource()
+    }
+
+    private func presentCaptureAccessIssue(_ issue: CaptureAccessIssue) {
+        transientNotice = nil
+        captureAccessIssueNotice = CaptureAccessIssueNotice(
+            issue: issue, sourceIDsAtFailure: Set(capture.sources.map(\.id))
+        )
+        AccessibilityNotification.Announcement(issue.title + "\n" + issue.detail).post()
+    }
+
+    func dismissCaptureAccessIssue(id: UUID) {
+        guard captureAccessIssueNotice?.id == id else { return }
+        captureAccessIssueNotice = nil
+    }
+
+    var canRetryCaptureAccessIssue: Bool {
+        guard let notice = captureAccessIssueNotice,
+              stageInteractionMode != .crop,
+              !capture.isPickerPresented else { return false }
+        if let sourceID = notice.issue.sourceID {
+            return capture.canReplaceSource(sourceID)
+        }
+        return canRequestSourceAddition
+    }
+
+    func retryCaptureAccessIssue() {
+        guard canRetryCaptureAccessIssue, let notice = captureAccessIssueNotice else { return }
+        // Keep the explanation during the attempt: canceling the picker must
+        // not erase the last failure. A successful frame clears it below.
+        if let sourceID = notice.issue.sourceID {
+            beginWorkspaceInteraction()
+            capture.replaceSource(sourceID)
+        } else {
+            chooseSource()
+        }
+    }
+
+    private func clearResolvedCaptureAccessIssue() {
+        guard let notice = captureAccessIssueNotice else { return }
+        let currentSourceIDs = Set(capture.sources.map(\.id))
+        let readySourceIDs = Set(capture.sources.filter {
+            $0.phase == .active && $0.isPresentationVisible && !$0.isOutputSuppressed
+        }.map(\.id))
+        if notice.isResolved(currentSourceIDs: currentSourceIDs, readySourceIDs: readySourceIDs) {
+            dismissCaptureAccessIssue(id: notice.id)
+        }
+    }
+
+    private func checkMacScreenRecordingAccessAtLaunch() {
+        checksMacScreenRecordingAccess = true
+        refreshMacScreenRecordingAccess()
+        guard !defaults.bool(forKey: Keys.macScreenRecordingAccessChecked) else { return }
+        // Remember the initial check separately from the live macOS status.
+        // A denied or deferred request must never create a launch prompt loop.
+        defaults.set(true, forKey: Keys.macScreenRecordingAccessChecked)
+        if !hasMacScreenRecordingAccess {
+            presentMacScreenRecordingAccess()
+        }
+    }
+
+    func refreshMacScreenRecordingAccess() {
+        // Snapshot launches never run a preflight, including activation events.
+        guard checksMacScreenRecordingAccess else { return }
+        hasMacScreenRecordingAccess = CGPreflightScreenCaptureAccess()
+    }
+
+    func showMacScreenRecordingAccess() {
+        beginWorkspaceInteraction()
+        checksMacScreenRecordingAccess = true
+        refreshMacScreenRecordingAccess()
+        presentMacScreenRecordingAccess()
+    }
+
+    private func presentMacScreenRecordingAccess() {
+        if macScreenRecordingAccessWindowController == nil {
+            macScreenRecordingAccessWindowController = StagePrivateWindowController(
+                title: L10n.text("Macの画面収録アクセス — 手元用", "Mac Screen Recording Access — Private"),
+                autosaveName: "StagePane.MacScreenRecordingAccess",
+                size: NSSize(width: 560, height: 340),
+                minimumSize: NSSize(width: 520, height: 320),
+                content: MacScreenRecordingAccessView(controller: self)
+            )
+        }
+        macScreenRecordingAccessWindowController?.present()
+    }
+
+    func requestMacScreenRecordingAccess() {
+        guard checksMacScreenRecordingAccess, !hasMacScreenRecordingAccess else { return }
+        hasRequestedMacScreenRecordingAccess = true
+        // Only the explicit Allow button calls this prompting API. Picker
+        // sharing remains available regardless of the app-wide result.
+        _ = CGRequestScreenCaptureAccess()
+        refreshMacScreenRecordingAccess()
+    }
+
+    func closeMacScreenRecordingAccess() {
+        macScreenRecordingAccessWindowController?.close()
+    }
+
+    func openMacSystemSettings() {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.systempreferences") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     func dismissTransientNotice(id: UUID? = nil) {
@@ -579,6 +757,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         if showWindows {
             showStage()
             showStageWorkspace()
+            checkMacScreenRecordingAccessAtLaunch()
         }
     }
 
@@ -594,11 +773,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalShowsSafeArea = showsSafeArea
         let originalShowsWatermark = showsWatermark
         let originalPrivacyMessage = privacyMessage
+        let originalPrivacyMessageSize = privacyMessageSize
         let originalCurtain = privacyCurtain
         let originalWorkspaceSection = workspaceSection
         let originalInteractionMode = stageInteractionMode
         let originalStageRenderingSize = stageRenderingSize
         let originalInkPreferences = annotations.preferences
+        let originalMacScreenRecordingAccess = hasMacScreenRecordingAccess
+        let originalMacScreenRecordingRequest = hasRequestedMacScreenRecordingAccess
+        let originalCaptureAccessIssueNotice = captureAccessIssueNotice
         defer {
             annotations.selectTool(originalInkPreferences.tool)
             annotations.selectColor(originalInkPreferences.colorPreset)
@@ -615,9 +798,13 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             showsSafeArea = originalShowsSafeArea
             showsWatermark = originalShowsWatermark
             privacyMessage = originalPrivacyMessage
+            privacyMessageSize = originalPrivacyMessageSize
             privacyCurtain = originalCurtain
             workspaceSection = originalWorkspaceSection
             stageRenderingSize = originalStageRenderingSize
+            hasMacScreenRecordingAccess = originalMacScreenRecordingAccess
+            hasRequestedMacScreenRecordingAccess = originalMacScreenRecordingRequest
+            captureAccessIssueNotice = originalCaptureAccessIssueNotice
         }
 
         // Public assets must never depend on the developer's local defaults.
@@ -632,18 +819,20 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         showsSafeArea = false
         showsWatermark = true
         privacyMessage = L10n.text("少々お待ちください", "Back in a moment")
+        privacyMessageSize = StageMessage.defaultTextSize
         privacyCurtain = true
+        captureAccessIssueNotice = nil
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         setStageInteractionMode(.arrange)
         // A public fixture illustrates a 1080p local Stage; it is not evidence
         // of any meeting app's transmitted resolution or this Mac's display.
         stageRenderingSize = CGSize(width: 1_920, height: 1_080)
-        workspaceSection = .stage
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
+            of: StageInspectorPanel(controller: self, capture: capture)
+                .frame(width: 360, height: 600)
+                .background(Color(nsColor: .windowBackgroundColor)),
+            pointSize: CGSize(width: 360, height: 600),
             to: directory.appendingPathComponent("stage-settings.png")
         )
         workspaceSection = .canvas
@@ -694,42 +883,235 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             to: directory.appendingPathComponent("sources.png")
         )
 
-        workspaceSection = .permissions
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
+            of: ScreenSharingAccessView(controller: self, capture: capture)
+                .frame(width: 640, height: 500),
+            pointSize: CGSize(width: 640, height: 500),
             to: directory.appendingPathComponent("permissions.png")
         )
 
+        // Synthetic access states never query or request macOS permissions.
+        let accessFixtures = [
+            (suffix: "", allowed: false, requested: false),
+            (suffix: "-pending", allowed: false, requested: true),
+            (suffix: "-allowed", allowed: true, requested: false)
+        ]
+        for fixture in accessFixtures {
+            hasMacScreenRecordingAccess = fixture.allowed
+            hasRequestedMacScreenRecordingAccess = fixture.requested
+            try writePNG(
+                of: MacScreenRecordingAccessView(controller: self)
+                    .preferredColorScheme(.light)
+                    .frame(width: 560, height: 340),
+                pointSize: CGSize(width: 560, height: 340),
+                to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix).png")
+            )
+        }
+
         workspaceSection = .privacy
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
+            of: AppSettingsView(controller: self, capture: capture)
+                .frame(width: 720, height: 650),
+            pointSize: CGSize(width: 720, height: 650),
             to: directory.appendingPathComponent("privacy.png")
         )
         pointerAppearance = .presentationDefault
         workspaceSection = .appearance
         try writePNG(
-            of: StageWorkspaceView(
-                controller: self,
-                capture: capture,
-                focusesAppearanceForSnapshot: true
-            )
-                .frame(width: 1_440, height: 900)
-                .background(StagePanePalette.cloud),
-            pointSize: CGSize(width: 1_440, height: 900),
+            of: StageInspectorPanel(controller: self, capture: capture)
+                .frame(width: 360, height: 600)
+                .background(Color(nsColor: .windowBackgroundColor)),
+            pointSize: CGSize(width: 360, height: 600),
             to: directory.appendingPathComponent("appearance.png")
         )
-
-        workspaceSection = .pro
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
-                .frame(width: 1_440, height: 900),
-            pointSize: CGSize(width: 1_440, height: 900),
+            of: AppSettingsView(controller: self, capture: capture)
+                .frame(width: 720, height: 650),
+            pointSize: CGSize(width: 720, height: 650),
+            to: directory.appendingPathComponent("app-settings.png")
+        )
+        try writePNG(
+            of: ProUpgradePanel(controller: self, purchases: purchases)
+                .frame(width: 780, height: 760)
+                .background(Color(nsColor: .windowBackgroundColor)),
+            pointSize: CGSize(width: 780, height: 760),
             to: directory.appendingPathComponent("pro.png")
         )
+
+        // Exercise private windows and native controls in dark appearance too,
+        // without changing the app's or the user's system appearance.
+        try writePNG(
+            of: AppSettingsView(controller: self, capture: capture)
+                .preferredColorScheme(.dark)
+                .frame(width: 720, height: 650),
+            pointSize: CGSize(width: 720, height: 650),
+            to: directory.appendingPathComponent("app-settings-dark.png")
+        )
+        workspaceSection = .about
+        try writePNG(
+            of: AppSettingsView(controller: self, capture: capture)
+                .preferredColorScheme(.dark)
+                .frame(width: 640, height: 540),
+            pointSize: CGSize(width: 640, height: 540),
+            to: directory.appendingPathComponent("settings-640-about-dark.png")
+        )
+        try writePNG(
+            of: StageInspectorPanel(controller: self, capture: capture)
+                .preferredColorScheme(.dark)
+                .frame(width: 360, height: 600),
+            pointSize: CGSize(width: 360, height: 600),
+            to: directory.appendingPathComponent("stage-inspector-dark.png")
+        )
+        try writePNG(
+            of: ScreenSharingAccessView(controller: self, capture: capture)
+                .preferredColorScheme(.dark)
+                .frame(width: 640, height: 500),
+            pointSize: CGSize(width: 640, height: 500),
+            to: directory.appendingPathComponent("permissions-dark.png")
+        )
+        for fixture in accessFixtures {
+            hasMacScreenRecordingAccess = fixture.allowed
+            hasRequestedMacScreenRecordingAccess = fixture.requested
+            try writePNG(
+                of: MacScreenRecordingAccessView(controller: self)
+                    .preferredColorScheme(.dark)
+                    .frame(width: 560, height: 340),
+                pointSize: CGSize(width: 560, height: 340),
+                to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix)-dark.png")
+            )
+        }
+        try writePNG(
+            of: ProUpgradePanel(controller: self, purchases: purchases)
+                .preferredColorScheme(.dark)
+                .frame(width: 780, height: 760)
+                .background(Color(nsColor: .windowBackgroundColor)),
+            pointSize: CGSize(width: 780, height: 760),
+            to: directory.appendingPathComponent("pro-dark.png")
+        )
+        privacyCurtain = false
+        for colorScheme in [ColorScheme.light, .dark] {
+            let appearanceName = colorScheme == .dark ? "dark" : "light"
+            try writePNG(
+                of: StageWorkspaceView(
+                    controller: self,
+                    capture: capture,
+                    snapshotFixture: .arrange
+                )
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-900-\(appearanceName).png")
+            )
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-empty-900-\(appearanceName).png")
+            )
+            captureAccessIssueNotice = CaptureAccessIssueNotice(
+                issue: CaptureAccessIssue(
+                    title: L10n.text("画面の選択を開始できませんでした", "Couldn’t open source selection"),
+                    detail: L10n.text(
+                        "「ソースを追加」から、もう一度選択画面を開いてください。選択画面を開けない状態が続く場合は、共有するウインドウが開いていることを確認してください。この説明は、もう一度選択して新しいソースを取得できるか、「閉じる」を選ぶまでここに残ります。（これは画面取得を行わない合成サンプルです。）",
+                        "Use Add Source to open the selection again. If source selection still cannot open, check that the window you want to share is open and try again. This explanation remains available until a new source is successfully captured or you choose Dismiss. Canceling the selection does not erase the error. (This is a synthetic sample; no screen capture is running.)"
+                    )
+                ),
+                sourceIDsAtFailure: []
+            )
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-empty-900-\(appearanceName).png")
+            )
+            let failedSourceID = StageSourceID(rawValue: "snapshot-presentation")
+            captureAccessIssueNotice = CaptureAccessIssueNotice(
+                issue: CaptureAccessIssue(
+                    title: L10n.text("画面の取得を開始できませんでした", "Couldn’t start capture"),
+                    detail: L10n.text(
+                        "「プレゼンテーション」の画面取得を開始できませんでした。レイヤー一覧の「選び直す」から、対象をもう一度選択してください。レイヤーの配置と切り抜きは保持されています。（これは画面取得を行わない合成サンプルです。）",
+                        "Capture couldn’t start for “Presentation”. Use Select Again in the layer list to choose the source again. The layer placement and crop were kept. (This is a synthetic sample; no screen capture is running.)"
+                    ),
+                    sourceID: failedSourceID
+                ),
+                sourceIDsAtFailure: [failedSourceID]
+            )
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .arrange)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-source-900-\(appearanceName).png")
+            )
+            captureAccessIssueNotice = nil
+            try writePNG(
+                of: ProPlanComparison()
+                    .padding(24)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 640, height: 360)
+                    .background(Color(nsColor: .windowBackgroundColor)),
+                pointSize: CGSize(width: 640, height: 360),
+                to: directory.appendingPathComponent("pro-comparison-\(appearanceName).png")
+            )
+        }
+
+        for section in [WorkspaceSection.appearance, .about] {
+            workspaceSection = section
+            try writePNG(
+                of: AppSettingsView(controller: self, capture: capture)
+                    .frame(width: 640, height: 540),
+                pointSize: CGSize(width: 640, height: 540),
+                to: directory.appendingPathComponent("settings-640-\(section.rawValue).png")
+            )
+        }
+        setStageInteractionMode(.annotate)
+        try writePNG(
+            of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .draw)
+                .frame(width: 900, height: 620),
+            pointSize: CGSize(width: 900, height: 620),
+            to: directory.appendingPathComponent("draw-900.png")
+        )
+        annotations.selectTool(.eraser)
+        for colorScheme in [ColorScheme.light, .dark] {
+            let appearanceName = colorScheme == .dark ? "dark" : "light"
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .draw)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("eraser-900-\(appearanceName).png")
+            )
+        }
+        annotations.selectTool(.pen)
+        setStageInteractionMode(.arrange)
+
+        // The same fictional slides and booking form illustrate what the
+        // audience sees and how that exact composition looks in Workspace.
+        // No source stream, source metadata, or permission state is created.
+        privacyCurtain = false
+        try writePNG(
+            of: SnapshotProductComposition(
+                showsEditingChrome: false,
+                theme: theme,
+                showsWatermark: showsWatermark
+            )
+                .preferredColorScheme(.light)
+                .frame(width: 960, height: 540),
+            pointSize: CGSize(width: 960, height: 540),
+            to: directory.appendingPathComponent("product-stage.png")
+        )
+        for colorScheme in [ColorScheme.light, .dark] {
+            let appearanceName = colorScheme == .dark ? "dark" : "light"
+            try writePNG(
+                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .product)
+                    .preferredColorScheme(colorScheme)
+                    .frame(width: 900, height: 620),
+                pointSize: CGSize(width: 900, height: 620),
+                to: directory.appendingPathComponent("product-workspace-\(appearanceName).png")
+            )
+        }
 
         privacyCurtain = true
         try writePNG(
@@ -840,13 +1222,30 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func showStageWorkspace() {
-        workspaceSection = .canvas
+        beginWorkspaceInteraction()
+        if proWindowIsVisible { proWindowController?.close() }
         presentWorkspace()
     }
 
     @objc func showSettings() {
-        workspaceSection = .stage
+        beginWorkspaceInteraction()
+        if workspaceSection == .privacy {
+            workspaceSection = .about
+        } else if workspaceSection != .about {
+            workspaceSection = .appearance
+        }
+        presentSettingsWindow()
+    }
+
+    @objc func showAbout() {
+        selectWorkspaceSection(.about)
+    }
+
+    @objc func showStageSettings() {
+        beginWorkspaceInteraction()
+        if proWindowIsVisible { proWindowController?.close() }
         presentWorkspace()
+        isStageSettingsPresented = true
     }
 
     @objc func showProUpgrade() {
@@ -854,20 +1253,70 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func selectWorkspaceSection(_ section: WorkspaceSection) {
-        if section == .pro, workspaceSection != .pro {
-            proUpgradeTrigger = .direct
+        switch section {
+        case .canvas, .sources:
+            showStageWorkspace()
+        case .stage:
+            showStageSettings()
+        case .pro:
+            showProUpgrade()
+        case .permissions:
+            presentPermissionCheck()
+        case .appearance, .privacy, .about:
+            beginWorkspaceInteraction()
+            workspaceSection = section == .privacy ? .about : section
+            presentSettingsWindow()
         }
-        workspaceSection = section
+    }
+
+    private func presentSettingsWindow() {
+        if settingsWindowController == nil {
+            settingsWindowController = StagePrivateWindowController(
+                title: L10n.text("StagePane設定 — 手元用", "StagePane Settings — Private"),
+                autosaveName: "StagePane.Settings",
+                size: NSSize(width: 720, height: 650),
+                minimumSize: NSSize(width: 640, height: 540),
+                content: AppSettingsView(controller: self, capture: capture)
+            )
+        }
+        settingsWindowController?.present()
     }
 
     func presentProUpgrade(trigger: ProUpgradeTrigger) {
         proUpgradeTrigger = trigger
-        workspaceSection = .pro
-        presentWorkspace()
+        pendingProContinuation = false
+        proContinuationID = trigger == .direct ? nil : UUID()
+        isStageSettingsPresented = false
+        if proWindowController == nil {
+            proWindowController = StagePrivateWindowController(
+                title: L10n.text("StagePane Pro — 手元用", "StagePane Pro — Private"),
+                autosaveName: "StagePane.Pro",
+                size: NSSize(width: 780, height: 760),
+                minimumSize: NSSize(width: 620, height: 540),
+                content: ProUpgradePanel(controller: self, purchases: purchases),
+                onClose: { [weak self] in self?.proWindowDidClose() },
+                onMiniaturize: { [weak self] in self?.beginWorkspaceInteraction() }
+            )
+        }
+        proWindowIsVisible = true
+        proWindowController?.present()
+    }
+
+    /// Returning to editing cancels a deferred purchase action, never the
+    /// purchase itself. Entitlements still update after the window closes.
+    func beginWorkspaceInteraction() {
+        pendingProContinuation = false
+        proContinuationID = nil
+    }
+
+    private func proWindowDidClose() {
+        proWindowIsVisible = false
+        beginWorkspaceInteraction()
     }
 
     func requestWatermarkVisibility(_ isVisible: Bool) {
         if isVisible || hasProAccess {
+            beginWorkspaceInteraction()
             prefersWatermark = isVisible
         } else {
             presentProUpgrade(trigger: .watermark)
@@ -906,6 +1355,50 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         stageWindowController?.toggleFullScreen()
     }
 
+    @objc func toggleStageAlwaysOnTop() { isAlwaysOnTop.toggle() }
+    @objc func toggleStageAllSpaces() { followsAllSpaces.toggle() }
+    @objc func toggleStageProtection() { presentationLock.toggle() }
+
+    @objc func editSelectedLayerCrop() {
+        guard let selectedSourceID, !capture.isPickerPresented else { return }
+        beginWorkspaceInteraction()
+        editCrop(of: selectedSourceID)
+        presentWorkspace()
+    }
+
+    @objc func moveSelectedLayerForward() {
+        guard canReorderSelectedLayer, let selectedSourceID else { return }
+        beginWorkspaceInteraction()
+        capture.bringSourceForward(selectedSourceID)
+    }
+
+    @objc func moveSelectedLayerBackward() {
+        guard canReorderSelectedLayer, let selectedSourceID else { return }
+        beginWorkspaceInteraction()
+        capture.sendSourceBackward(selectedSourceID)
+    }
+
+    @objc func bringSelectedLayerToFront() {
+        guard canReorderSelectedLayer, let selectedSourceID else { return }
+        beginWorkspaceInteraction()
+        capture.bringSourceToFront(selectedSourceID)
+    }
+
+    @objc func sendSelectedLayerToBack() {
+        guard canReorderSelectedLayer, let selectedSourceID else { return }
+        beginWorkspaceInteraction()
+        capture.sendSourceToBack(selectedSourceID)
+    }
+
+    private var canReorderSelectedLayer: Bool {
+        guard stageInteractionMode != .crop,
+              !capture.isPickerPresented,
+              let selectedSourceID,
+              let source = capture.source(for: selectedSourceID),
+              source.phase != .stopping else { return false }
+        return capture.layout[sourceID: selectedSourceID] != nil
+    }
+
     func updateStageFullScreenState(isFullScreen: Bool, isTransitioning: Bool) {
         if stageIsFullScreen != isFullScreen { stageIsFullScreen = isFullScreen }
         if stageFullScreenTransitionInProgress != isTransitioning {
@@ -937,9 +1430,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             stageWindowController?.window?.orderFront(nil)
         }
         stageIsVisible = true
+        stageIsMiniaturized = false
     }
 
     @objc func chooseSource() {
+        beginWorkspaceInteraction()
         guard canRequestSourceAddition else { return }
         if StagePaneAccess.requiresProForNextSource(
             currentCount: capture.occupiedSourceSlots,
@@ -948,6 +1443,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             presentProUpgrade(trigger: .sourceLimit)
             return
         }
+        if proWindowIsVisible { proWindowController?.close() }
         presentStage(makeKey: false)
         presentWorkspace()
         capture.addSource()
@@ -961,6 +1457,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func copyStageScreenshot() {
+        beginWorkspaceInteraction()
         guard let snapshot = makeStageScreenshot() else { return }
         defer { isStageScreenshotInProgress = false }
 
@@ -978,6 +1475,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func saveStageScreenshot() {
+        beginWorkspaceInteraction()
         guard let snapshot = makeStageScreenshot() else { return }
         pendingStageSnapshot = snapshot
 
@@ -1012,6 +1510,27 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
+        case #selector(toggleStageAlwaysOnTop):
+            menuItem.state = isAlwaysOnTop ? .on : .off
+            return !stageIsFullScreen && !stageFullScreenTransitionInProgress
+        case #selector(toggleStageAllSpaces):
+            menuItem.state = followsAllSpaces ? .on : .off
+            return !stageIsFullScreen && !stageFullScreenTransitionInProgress
+        case #selector(toggleStageProtection):
+            menuItem.state = presentationLock ? .on : .off
+            return true
+        case #selector(enlargeStageForSharing):
+            return !stageIsFullScreen && !stageFullScreenTransitionInProgress
+        case #selector(editSelectedLayerCrop):
+            guard !capture.isPickerPresented, let selectedSourceID,
+                  let source = capture.source(for: selectedSourceID) else { return false }
+            return source.isPresentationVisible && !source.isOutputSuppressed &&
+                source.phase != .stopping
+        case #selector(moveSelectedLayerForward), #selector(bringSelectedLayerToFront):
+            return canReorderSelectedLayer && capture.layout.sources.last?.id != selectedSourceID
+        case #selector(moveSelectedLayerBackward), #selector(sendSelectedLayerToBack):
+            return canReorderSelectedLayer && capture.layout.sources.first?.id != selectedSourceID
+
         case #selector(copyStageScreenshot), #selector(saveStageScreenshot):
             return !isStageScreenshotInProgress && !stageFullScreenTransitionInProgress
         case #selector(toggleStageFullScreen):
@@ -1028,7 +1547,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             return capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
         case #selector(toggleCurtain):
             menuItem.state = privacyCurtain ? .on : .off
-            menuItem.title = L10n.text("カーテン", "Curtain")
+            menuItem.title = privacyCurtain
+                ? L10n.text("カーテンを開く", "Open Curtain")
+                : L10n.text("カーテンを閉じる", "Close Curtain")
             return true
         default:
             return true
@@ -1106,6 +1627,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func stopPreview() {
+        beginWorkspaceInteraction()
         guard capture.hasLayers else {
             if capture.isCaptureActive {
                 performStopAllAndRemoveLayers()
@@ -1113,6 +1635,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             }
             let neededReset = capture.hasResettableFailure
             capture.stop()
+            if neededReset, let notice = captureAccessIssueNotice, notice.issue.sourceID == nil {
+                dismissCaptureAccessIssue(id: notice.id)
+            }
             transientNotice = neededReset
                 ? L10n.text(
                     "画面取得のエラー状態をリセットしました。",
@@ -1187,6 +1712,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func stageDidClose() {
         stageIsVisible = false
+        stageIsMiniaturized = false
         guard !capture.sources.isEmpty || capture.isPickerPresented else { return }
         privacyCurtain = true
         if capture.isPickerPresented {
@@ -1218,10 +1744,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func stageDidBecomeVisible() {
         stageIsVisible = true
+        stageIsMiniaturized = false
     }
 
     func stageDidBecomeHidden() {
         stageIsVisible = false
+        stageIsMiniaturized = stageWindowController?.window?.isMiniaturized == true
     }
 
     func requestConferenceShare() {
@@ -1304,6 +1832,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     private func captureStateDidChange(phase: CapturePhase, isActive: Bool) {
+        clearResolvedCaptureAccessIssue()
         discardCropEditingIfSourceUnavailable()
         if !isActive { magnifier.hide() }
         let previousPhase = previousCapturePhase
@@ -1327,21 +1856,23 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             let reachedPreview = activeSessionReachedPreview
             activeSessionStartedAt = nil
             activeSessionReachedPreview = false
-            if hasDisconnectedLayers {
-                transientNotice = L10n.text(
-                    "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
-                    "Capture stopped. The layer placement and crop were kept. Choose its source again."
-                )
-            } else if needsAttention {
-                transientNotice = L10n.text(
-                    "画面取得は完全に停止しました。後処理の確認が必要です。",
-                    "Capture stopped completely, but cleanup needs attention."
-                )
-            } else {
-                transientNotice = L10n.text(
-                    "すべてのソースを完全に停止しました。",
-                    "All sources stopped completely."
-                )
+            if captureAccessIssueNotice == nil || (!needsAttention && !hasDisconnectedLayers) {
+                if hasDisconnectedLayers {
+                    transientNotice = L10n.text(
+                        "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
+                        "Capture stopped. The layer placement and crop were kept. Choose its source again."
+                    )
+                } else if needsAttention {
+                    transientNotice = L10n.text(
+                        "画面取得は完全に停止しました。後処理の確認が必要です。",
+                        "Capture stopped completely, but cleanup needs attention."
+                    )
+                } else {
+                    transientNotice = L10n.text(
+                        "すべてのソースを完全に停止しました。",
+                        "All sources stopped completely."
+                    )
+                }
             }
             if ReviewPromptPolicy.qualifiesAsSuccessfulSession(
                 duration: sessionDuration,
@@ -1354,6 +1885,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
 
         if capturePhaseNeedsAttention(phase) {
+            // The persistent source-specific recovery stays authoritative;
+            // a generic Reset Capture toast would suggest a competing action.
+            guard captureAccessIssueNotice == nil else { return }
             if capture.hasDisconnectedLayers {
                 let detail = capture.statusDetail.trimmingCharacters(
                     in: .whitespacesAndNewlines
@@ -1447,7 +1981,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                   !capture.isPickerPresented,
                   !purchases.isBusy,
                   purchases.operationState != .pending,
-                  workspaceSection != .pro,
+                  !proWindowIsVisible,
                   let workspaceWindow = workspaceWindowController?.window,
                   workspaceWindow.isVisible,
                   let viewController = workspaceWindow.contentViewController else {
@@ -1478,6 +2012,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         static let showsSafeArea = "stage.showsSafeArea"
         static let showsWatermark = "stage.showsWatermark"
         static let privacyMessage = "stage.privacyMessage"
+        static let privacyMessageSize = "stage.privacyMessageSize"
+        static let macScreenRecordingAccessChecked = "onboarding.macScreenRecordingAccessChecked"
         static let successfulSessionCount = "review.successfulSessionCount"
         static let firstSuccessfulSessionDate = "review.firstSuccessfulSessionDate"
         static let lastReviewRequestVersion = "review.lastRequestedVersion"
