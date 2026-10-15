@@ -152,6 +152,27 @@ fresh frame arrives, with the same placement, crop, and order.
 一時的に消したいレイヤーは **非表示** を選びます。一覧には残り、**再表示** を選ぶと
 新しい完全なフレームが届いてから、同じ配置・切り抜き・重なり順で映像が戻ります。
 
+## Invert a layer's colors / レイヤーの色を反転する
+
+Select a layer and turn on **Invert Colors / 色を反転** in the tools below the
+Canvas or its **More / その他** menu. White becomes black and black becomes
+white, making bright documents easier to project. All source colors are
+inverted, including photos. Other layers, the Stage background, annotations,
+and the laser pointer keep their colors.
+
+The Workspace preview, Stage, magnifier, and Audience PNG use the same setting.
+It stays with the layer when you rearrange, crop, hide/show, or replace its
+source. Turn the switch off to restore the original colors.
+
+レイヤーを選び、キャンバス下のツールまたは **その他** メニューで **色を反転** を
+オンにします。白は黒に、黒は白になり、明るい資料をプロジェクターで見やすくできます。
+写真を含め、そのソースのすべての色が反転します。ほかのレイヤー・Stageの背景・手書き・
+レーザーポインターの色は変わりません。
+
+手元のプレビュー・Stage・虫眼鏡・Audience PNGに同じ設定が反映されます。
+配置・切り抜き・非表示／再表示・ソースの選び直しでも設定を保持します。
+スイッチをオフにすると元の色に戻ります。
+
 ## About screen sharing / 画面共有について
 
 **About Screen Sharing** in the Stage menu or **Settings → About** opens a
