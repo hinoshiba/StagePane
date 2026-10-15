@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import CoreMedia
 import QuartzCore
 import ScreenCaptureKit
@@ -115,6 +116,29 @@ final class SampleBufferRenderer: @unchecked Sendable {
     private static let snapshotImageContext = CIContext(options: [
         .cacheIntermediates: false
     ])
+
+    /// A presentation effect, independent of capture/cursor generations. Keep
+    /// it on the video layer so the local laser pointer retains its own color.
+    @MainActor
+    private var isColorInverted = false
+
+    @MainActor
+    func setColorInverted(_ isInverted: Bool) {
+        guard isColorInverted != isInverted else { return }
+        isColorInverted = isInverted
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        displayLayer.filters = isInverted ? [CIFilter.colorInvert()] : nil
+        CATransaction.commit()
+    }
+
+    /// Bitmap exports and magnifier patches bypass the live media layer, so
+    /// apply the same effect once while materializing their accepted pixels.
+    @MainActor
+    private func presentationImage(for pixelBuffer: CVPixelBuffer) -> CIImage {
+        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        return isColorInverted ? image.applyingFilter("CIColorInvert") : image
+    }
 
     private struct PendingVideoFrame {
         let sampleBuffer: CMSampleBuffer
@@ -1114,7 +1138,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         // accepted frame even if the render queue advances again meanwhile.
         synchronizeGeometry(geometry)
 
-        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        let image = presentationImage(for: pixelBuffer)
         guard !image.extent.isEmpty,
               image.extent.width.isFinite,
               image.extent.height.isFinite else { return nil }
@@ -1144,7 +1168,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 destinationFrame: destinationFrame
               ) else { return nil }
 
-        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        let image = presentationImage(for: pixelBuffer)
         let crop = projection.normalizedSurfaceRect
         // Core Image's crop uses a bottom-left origin; composition geometry
         // and the accepted surface crop both use a top-left origin.

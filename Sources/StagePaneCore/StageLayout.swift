@@ -263,21 +263,25 @@ public struct StageSourceLayout: Identifiable, Codable, Equatable, Sendable {
     public let id: StageSourceID
     public var frame: NormalizedStageRect
     public var sourceCrop: NormalizedSourceRect
+    public var isColorInverted: Bool
 
     public init(
         id: StageSourceID,
         frame: NormalizedStageRect,
-        sourceCrop: NormalizedSourceRect = .fullSource
+        sourceCrop: NormalizedSourceRect = .fullSource,
+        isColorInverted: Bool = false
     ) {
         self.id = id
         self.frame = frame
         self.sourceCrop = sourceCrop
+        self.isColorInverted = isColorInverted
     }
 
     private enum CodingKeys: String, CodingKey {
         case id
         case frame
         case sourceCrop
+        case isColorInverted
     }
 
     public init(from decoder: Decoder) throws {
@@ -288,7 +292,11 @@ public struct StageSourceLayout: Identifiable, Codable, Equatable, Sendable {
             sourceCrop: try container.decodeIfPresent(
                 NormalizedSourceRect.self,
                 forKey: .sourceCrop
-            ) ?? .fullSource
+            ) ?? .fullSource,
+            isColorInverted: try container.decodeIfPresent(
+                Bool.self,
+                forKey: .isColorInverted
+            ) ?? false
         )
     }
 
@@ -298,6 +306,9 @@ public struct StageSourceLayout: Identifiable, Codable, Equatable, Sendable {
         try container.encode(frame, forKey: .frame)
         if sourceCrop != .fullSource {
             try container.encode(sourceCrop, forKey: .sourceCrop)
+        }
+        if isColorInverted {
+            try container.encode(isColorInverted, forKey: .isColorInverted)
         }
     }
 }
@@ -515,6 +526,18 @@ public struct StageLayout: Codable, Equatable, Sendable {
             minimumWidth: minimumWidth,
             minimumHeight: minimumHeight
         )
+        return true
+    }
+
+    /// Changes the captured image's colors for one source without changing its
+    /// geometry or stacking order.
+    @discardableResult
+    public mutating func setSourceColorInverted(
+        _ sourceID: StageSourceID,
+        isInverted: Bool
+    ) -> Bool {
+        guard let index = sources.firstIndex(where: { $0.id == sourceID }) else { return false }
+        sources[index].isColorInverted = isInverted
         return true
     }
 

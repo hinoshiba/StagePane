@@ -139,6 +139,12 @@ struct SnapshotSelectedLayerTools: View {
                 .font(.callout)
                 .lineLimit(1)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(-1)
+            Toggle(isOn: .constant(false)) {
+                Label(L10n.invertLayerColorsTitle, systemImage: "circle.lefthalf.filled")
+            }
+            .toggleStyle(.switch)
+            .fixedSize()
             Button(action: {}) {
                 Label(L10n.cropEditActionTitle(isCropped: false), systemImage: "crop")
             }
