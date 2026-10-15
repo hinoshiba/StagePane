@@ -223,6 +223,11 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             target: controller
         ))
         stageMenu.addItem(menuItem(
+            controller.stageMaximizeMenuTitle,
+            action: #selector(AppController.toggleStageMaximized),
+            key: "", modifiers: [], target: controller
+        ))
+        stageMenu.addItem(menuItem(
             controller.stageIsFullScreen
                 ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
                 : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),

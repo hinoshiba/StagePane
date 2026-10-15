@@ -7,6 +7,10 @@ Versioning once 1.0.0 is released.
 
 ### Added
 
+- Right-click or Control-click the Stage to maximize or restore its window,
+  enlarge it for sharing, enter or exit full screen, change window behavior,
+  and open the private Workspace or Stage Settings. Maximize and restore are
+  also available in the Stage menu for keyboard and VoiceOver access.
 - Each layer has an Invert Colors switch for presenting bright sources on a
   dark background. Workspace, Stage, magnifier, and Audience PNG share the
   effect while annotations and the laser pointer keep their colors.
