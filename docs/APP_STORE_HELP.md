@@ -53,6 +53,28 @@ Stageキャンバスの描画ピクセル数です。Audience PNGの書き出し
 取得・送信する解像度は会議アプリが決めます。PNGやStageの描画サイズは、相手に届く
 解像度を保証するものではありません。
 
+## Stage context menu / Stageのコンテキストメニュー
+
+Right-click or Control-click the Stage's displayed content for **Maximize Stage /
+Restore Stage Size**, **Enlarge Stage for Sharing**, and **Enter / Exit Stage
+Full Screen**. Maximize and restore work like double-clicking, preserving the
+Stage's aspect ratio and leaving the menu bar and Dock available.
+The menu also provides **Keep Stage in Front**, **Show Stage on Every Space**,
+**Protect Stage Window**, **Show Stage Workspace**, and **Stage Settings…**.
+Checkmarks show the current window behavior settings. Maximize and sharing
+enlargement are unavailable in full screen; size changes are disabled during
+full-screen transitions. These actions are also available in the **Stage** and **Window** menus
+for keyboard and VoiceOver access.
+
+Stageの表示内容を右クリックまたはControlクリックすると、**Stageを最大化／Stageを元のサイズに戻す**、
+**共有向けにStageを拡大**、**Stageをフルスクリーンにする／Stageのフルスクリーンを終了** を選べます。
+最大化とサイズを戻す操作はダブルクリックと同じで、縦横比を保ち、メニューバーとDockも利用できます。
+**Stageを常に手前に表示**、**StageをすべてのSpaceに表示**、**Stageウインドウを保護**、
+**ステージワークスペースを表示**、**Stage設定…** も利用できます。ウインドウの動作設定は
+チェックマークで現在の状態を示します。フルスクリーン中は最大化と共有向けの拡大が無効になり、
+切り替え中はサイズの変更が無効になります。同じ操作は **ステージ** と **ウインドウ** メニューから
+キーボードやVoiceOverでも利用できます。
+
 ## Full-screen Stage / Stageのフルスクリーン
 
 **Enter Stage Full Screen** places only Stage in its own macOS Space; Workspace

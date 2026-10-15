@@ -5,6 +5,13 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Added
+
+- Right-click or Control-click the Stage to maximize or restore its window,
+  enlarge it for sharing, enter or exit full screen, change window behavior,
+  and open the private Workspace or Stage Settings. Maximize and restore are
+  also available in the Stage menu for keyboard and VoiceOver access.
+
 ## [0.4.3] - Unreleased
 
 ### Added

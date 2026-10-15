@@ -22,6 +22,19 @@ private final class StageShareWindow: NSWindow {
     }
 
     override func sendEvent(_ event: NSEvent) {
+        // Handle secondary clicks before the background-drag path, including
+        // Control-click. The native menu stays outside the audience canvas.
+        if event.window === self,
+           attachedSheet == nil,
+           event.type == .rightMouseDown ||
+               (event.type == .leftMouseDown && event.modifierFlags.contains(.control)),
+           let contentView, let menu = contentView.menu,
+           contentView.bounds.contains(contentView.convert(event.locationInWindow, from: nil)) {
+            if !NSApp.isActive { NSApp.activate() }
+            makeKeyAndOrderFront(nil)
+            NSMenu.popUpContextMenu(menu, with: event, for: contentView)
+            return
+        }
         // Stage contains audience artwork only. Handle double-click zoom and
         // native dragging explicitly so neither depends on SwiftUI forwarding
         // background mouse events. Leave the resize perimeter and sheets to
@@ -176,6 +189,8 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
     private var failureRecovery: Task<Void, Never>?
     private var contentRectBeforeMaximize: NSRect?
 
+    var isMaximized: Bool { contentRectBeforeMaximize != nil }
+
     var stageCanvasView: NSView {
         canvasHost.view.layoutSubtreeIfNeeded()
         return canvasHost.canvasView
@@ -221,6 +236,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.delegate = self
         window.exitFullScreen = { [weak self] in self?.toggleFullScreen() }
         window.toggleMaximized = { [weak self] in self?.toggleMaximized() }
+        window.contentView?.menu = controller.makeStageContextMenu()
         canvasHost.onCanvasLayout = { [weak self] in self?.updateRenderingSize() }
         applyPreset(controller.preset, resize: false)
         // Assigning contentViewController resizes the window to the hosting
@@ -267,7 +283,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         updateRenderingSize()
     }
 
-    private func toggleMaximized() {
+    func toggleMaximized() {
         guard allowsWindowGeometryChanges,
               let controller, let window,
               let screen = window.screen ?? NSScreen.main else { return }

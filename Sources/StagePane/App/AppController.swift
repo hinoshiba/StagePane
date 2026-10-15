@@ -1351,6 +1351,38 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
+    @objc func toggleStageMaximized() {
+        guard !stageIsFullScreen && !stageFullScreenTransitionInProgress else { return }
+        showStage()
+        stageWindowController?.toggleMaximized()
+    }
+
+    var stageMaximizeMenuTitle: String {
+        stageWindowController?.isMaximized == true
+            ? L10n.text("Stageを元のサイズに戻す", "Restore Stage Size")
+            : L10n.text("Stageを最大化", "Maximize Stage")
+    }
+
+    func makeStageContextMenu() -> NSMenu {
+        let menu = NSMenu(title: L10n.stageWindowTitle)
+        func add(_ title: String, _ action: Selector) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+        add(stageMaximizeMenuTitle, #selector(toggleStageMaximized))
+        add(L10n.text("共有向けにStageを拡大", "Enlarge Stage for Sharing"), #selector(enlargeStageForSharing))
+        add(L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"), #selector(toggleStageFullScreen))
+        menu.addItem(.separator())
+        add(L10n.text("Stageを常に手前に表示", "Keep Stage in Front"), #selector(toggleStageAlwaysOnTop))
+        add(L10n.text("StageをすべてのSpaceに表示", "Show Stage on Every Space"), #selector(toggleStageAllSpaces))
+        add(L10n.text("Stageウインドウを保護", "Protect Stage Window"), #selector(toggleStageProtection))
+        menu.addItem(.separator())
+        add(L10n.text("ステージワークスペースを表示", "Show Stage Workspace"), #selector(showStageWorkspace))
+        add(L10n.text("Stage設定…", "Stage Settings…"), #selector(showStageSettings))
+        return menu
+    }
+
     @objc func toggleStageFullScreen() {
         stageWindowController?.toggleFullScreen()
     }
@@ -1510,6 +1542,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
+        case #selector(toggleStageMaximized):
+            menuItem.title = stageMaximizeMenuTitle
+            return !stageIsFullScreen && !stageFullScreenTransitionInProgress
         case #selector(toggleStageAlwaysOnTop):
             menuItem.state = isAlwaysOnTop ? .on : .off
             return !stageIsFullScreen && !stageFullScreenTransitionInProgress

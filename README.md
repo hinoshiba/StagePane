@@ -33,6 +33,8 @@ sharing works without it.
 - **Double-click to maximize** — double-click the Stage's displayed content to
   fit its shape within the current screen, then double-click again to restore
   its previous size and position.
+- **Stage context menu** — right-click or Control-click the Stage for maximize,
+  sharing size, full screen, window behavior, Workspace, and Stage Settings.
 - **Consent-preserving source picker** — StagePane uses the macOS system picker,
   not a hand-built list of private window names. Each picker choice authorizes
   only that source for its capture session, without a separate broad Screen
@@ -178,6 +180,15 @@ In windowed mode, double-click the Stage's displayed content to maximize it
 within the current screen while preserving its aspect ratio and leaving the
 menu bar and Dock available. Double-click again to restore its previous size
 and position. Drag the content to move the window.
+
+Right-click or Control-click the Stage to open its context menu. **Maximize
+Stage / Restore Stage Size** performs the same action as double-clicking;
+**Enlarge Stage for Sharing** and **Enter / Exit Stage Full Screen** offer the
+other size options. The menu also provides **Keep Stage in Front**, **Show Stage
+on Every Space**, **Protect Stage Window**, **Show Stage Workspace**, and
+**Stage Settings…**. Maximize and sharing enlargement are unavailable in full
+screen; size changes are disabled during full-screen transitions. These actions
+are also available in the **Stage** and **Window** menus for keyboard and VoiceOver access.
 
 Cropping changes only the local composition shown on the Stage and in an
 Audience PNG. Whenever a source stream is running, ScreenCaptureKit handles the
@@ -354,6 +365,11 @@ StagePaneは、画面共有で選択するための専用ウインドウを作�
 再開し、新しい完全なフレームが届いてから映像を戻します。
 通常表示のStageは、表示内容をダブルクリックすると縦横比を保ったまま画面内で最大化し、
 もう一度ダブルクリックすると元の大きさと位置へ戻ります。メニューバーとDockは利用できます。
+Stageを右クリックまたはControlクリックすると、**Stageを最大化／Stageを元のサイズに戻す**、
+**共有向けにStageを拡大**、フルスクリーンの開始・終了を選べます。常に手前への表示、
+すべてのSpaceへの表示、ウインドウの保護、WorkspaceやStage設定を開く操作もあります。
+フルスクリーン中は最大化と共有向けの拡大が無効になり、切り替え中はサイズの変更が無効になります。
+同じ操作は **ステージ** と **ウインドウ** メニューからキーボードやVoiceOverでも利用できます。
 **配置**・**手書き** の隣にある **虫眼鏡** では、手元のキャンバス上でカーソルを動かすと、
 プレビューと共有Stageの両方に円形レンズを表示します。倍率は **2×**・**3×**・**4×** から選べ、
 配置と切り抜きは変わりません。カーソルをキャンバスの外へ移すとレンズは消えます。
