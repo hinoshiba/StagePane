@@ -88,6 +88,14 @@ unchanged. Finish Crop or close Apple's source picker before reordering.
 The More menu in the layer's row or selected-layer tools retains **Move Forward**,
 **Move Backward**, **Bring to Front**, and **Send to Back** as alternatives.
 
+To name a layer, choose **Rename…** from its row's **…** menu, enter a name,
+and choose **Save**. **Cancel** discards the edit; an empty or whitespace-only
+name restores the automatic title. Names appear in the list, Canvas, and crop
+controls, never on the audience Stage or in Audience PNG output. They survive
+Hide/Show, source replacement or reconnection, and layout presets while the
+layer remains. Names live only in memory and disappear when the layer is
+removed, on **Stop All**, or when StagePane quits.
+
 To move a selected rear or hidden layer, drag its private title badge or use
 arrow keys. Its resize handle stays accessible above overlapping layers.
 Click visible foreground content to select that layer; the selected outline's
@@ -108,6 +116,12 @@ layers retain their last bounds.
 変わりません。切り抜き編集中やAppleのソース選択画面を表示している間は、それを
 終えてから並べ替えてください。レイヤー行や選択レイヤー用ツールのその他メニューにある
 **ひとつ前面へ**・**ひとつ背面へ**・**最前面へ**・**最背面へ** も引き続き使えます。
+
+名前を付けるには、一覧の各行の **…** メニューで **名前を変更…** を選び、入力して **保存**
+します。**キャンセル** で変更を破棄し、空欄または空白だけで保存すると自動のタイトルへ戻ります。
+名前は一覧・キャンバス・切り抜き操作に表示され、観客向けStageやAudience PNGには含まれません。
+非表示・再表示、ソースの選び直しや再接続、配置プリセットの適用後も同じレイヤーに保持されます。
+名前はメモリ内だけに残り、レイヤーの解除、**すべて停止**、アプリ終了で消えます。
 
 背面や非表示のレイヤーを移動するときは、一覧で選んでから手元のタイトル表示をドラッグするか、
 矢印キーを使います。サイズ変更ハンドルは重なりの上から操作できます。前面の映像を

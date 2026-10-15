@@ -1460,6 +1460,7 @@ private struct CaptureSourceRow: View {
     let moveSelection: (MoveCommandDirection) -> Void
     @State private var isRemoveConfirmationPresented = false
     @State private var showsErrorDetails = false
+    @State private var isRenamePresented = false
 
     var body: some View {
         HStack(spacing: 3) {
@@ -1524,16 +1525,7 @@ private struct CaptureSourceRow: View {
             visibilityControl
 
             Menu {
-                SourceLayerMenu(
-                    source: source,
-                    controller: controller,
-                    capture: capture,
-                    requestRemoval: { isRemoveConfirmationPresented = true }
-                )
-                if errorMessage != nil {
-                    Divider()
-                    Button(L10n.text("問題の詳細…", "Issue Details…")) { showsErrorDetails = true }
-                }
+                rowActions
             } label: {
                 Image(systemName: "ellipsis")
                     .frame(width: 28, height: 28)
@@ -1553,6 +1545,11 @@ private struct CaptureSourceRow: View {
         .background(isSelected ? Color.accentColor.opacity(0.13) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: L10n.renameLayerActionTitle, beginRenaming)
+        .contextMenu { rowActions }
+        .sheet(isPresented: $isRenamePresented) {
+            RenameLayerSheet(source: source, capture: capture)
+        }
         .removeSourceConfirmation(
             isPresented: $isRemoveConfirmationPresented,
             source: source,
@@ -1568,6 +1565,35 @@ private struct CaptureSourceRow: View {
             .padding(18)
             .frame(width: 320)
         }
+    }
+
+    @ViewBuilder
+    private var rowActions: some View {
+        Button(action: beginRenaming) {
+            Label(L10n.renameLayerActionTitle, systemImage: "pencil")
+        }
+        .disabled(!canRename)
+        Divider()
+        SourceLayerMenu(
+            source: source,
+            controller: controller,
+            capture: capture,
+            requestRemoval: { isRemoveConfirmationPresented = true }
+        )
+        if errorMessage != nil {
+            Divider()
+            Button(L10n.text("問題の詳細…", "Issue Details…")) { showsErrorDetails = true }
+        }
+    }
+
+    private var canRename: Bool {
+        source.phase != .stopping && !capture.isPickerPresented && capture.source(for: source.id) != nil
+    }
+
+    private func beginRenaming() {
+        guard canRename else { return }
+        controller.beginWorkspaceInteraction()
+        isRenamePresented = true
     }
 
     @ViewBuilder
@@ -1799,6 +1825,62 @@ private struct SourceColorInversionToggle: View {
     private var canInvertColors: Bool {
         source.phase != .stopping && !capture.isPickerPresented &&
             capture.layout[sourceID: source.id] != nil
+    }
+}
+
+@MainActor
+private struct RenameLayerSheet: View {
+    @ObservedObject var source: CaptureSource
+    @ObservedObject var capture: CaptureCoordinator
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isNameFocused: Bool
+    @State private var nameDraft: String
+
+    init(source: CaptureSource, capture: CaptureCoordinator) {
+        self.source = source
+        self.capture = capture
+        _nameDraft = State(initialValue: source.customName ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.renameLayerTitle)
+                .font(.headline)
+            Text(L10n.renameLayerHint(defaultTitle: source.defaultTitle))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.layerNameTitle)
+                    .font(.callout)
+                TextField(L10n.layerNameTitle, text: $nameDraft, prompt: Text(source.defaultTitle))
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel(L10n.layerNameTitle)
+                    .focused($isNameFocused)
+                    .onSubmit(save)
+            }
+            HStack {
+                Spacer()
+                Button(L10n.text("キャンセル", "Cancel"), role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button(L10n.text("保存", "Save"), action: save)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canSave)
+            }
+        }
+        .padding(24)
+        .frame(width: 400)
+        .onAppear { isNameFocused = true }
+    }
+
+    private var canSave: Bool {
+        source.phase != .stopping && !capture.isPickerPresented && capture.source(for: source.id) != nil
+    }
+
+    private func save() {
+        guard canSave else { return }
+        capture.renameSource(source.id, to: nameDraft)
+        dismiss()
     }
 }
 
