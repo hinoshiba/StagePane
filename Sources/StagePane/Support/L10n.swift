@@ -170,6 +170,28 @@ enum L10n {
         )
     }
 
+    static var invertLayerColorsTitle: String {
+        text("色を反転", "Invert Colors")
+    }
+
+    static var layerColorsInvertedStatus: String {
+        text("色反転中", "Colors inverted")
+    }
+
+    static func invertLayerColorsAccessibilityLabel(_ sourceTitle: String) -> String {
+        text(
+            "\(sourceTitle)レイヤーの色を反転",
+            "Invert colors of the \(sourceTitle) layer"
+        )
+    }
+
+    static var invertLayerColorsHint: String {
+        text(
+            "このレイヤーだけの色を反転し、白を黒、黒を白にします。プレビューとStageに反映されます。",
+            "Invert only this layer's colors, turning white to black and black to white in the preview and Stage."
+        )
+    }
+
     static var cropApplyTitle: String {
         text("切り抜きを適用", "Apply Crop")
     }

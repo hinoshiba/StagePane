@@ -480,6 +480,102 @@ final class StageLayoutTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(StageLayout.self, from: encoded), layout)
     }
 
+    func testLegacySourceLayoutDefaultsToUnmodifiedColors() throws {
+        let data = Data(
+            #"{"id":"source-a","frame":{"x":0,"y":0,"width":1,"height":1}}"#.utf8
+        )
+
+        let decoded = try JSONDecoder().decode(StageSourceLayout.self, from: data)
+
+        XCTAssertFalse(decoded.isColorInverted)
+        XCTAssertEqual(decoded, StageSourceLayout(id: sourceA, frame: .fullCanvas))
+        let encoded = try JSONEncoder().encode(decoded)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        XCTAssertNil(object["isColorInverted"])
+    }
+
+    func testColorInversionRoundTripsIndependentlyForEachSource() throws {
+        var layout = StageLayout(sources: overlappingLayers)
+        XCTAssertTrue(layout.setSourceColorInverted(sourceB, isInverted: true))
+        XCTAssertTrue(layout.setSourceColorInverted(sourceD, isInverted: true))
+
+        let encoded = try JSONEncoder().encode(layout)
+        let decoded = try JSONDecoder().decode(StageLayout.self, from: encoded)
+
+        XCTAssertEqual(decoded, layout)
+        XCTAssertEqual(decoded.sources.map(\.isColorInverted), [false, true, false, true])
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        let sources = try XCTUnwrap(object["sources"] as? [[String: Any]])
+        XCTAssertNil(sources[0]["isColorInverted"])
+        XCTAssertEqual(sources[1]["isColorInverted"] as? Bool, true)
+    }
+
+    func testColorInversionTogglePreservesOtherSourcesGeometryAndOrder() {
+        let layers = overlappingLayers
+        var layout = StageLayout(sources: layers)
+
+        XCTAssertTrue(layout.setSourceColorInverted(sourceB, isInverted: true))
+        var expected = layers
+        expected[1].isColorInverted = true
+        XCTAssertEqual(layout.sources, expected)
+
+        XCTAssertTrue(layout.setSourceColorInverted(sourceB, isInverted: false))
+        XCTAssertEqual(layout.sources, layers)
+        XCTAssertFalse(layout.setSourceColorInverted(
+            StageSourceID(rawValue: "missing"),
+            isInverted: true
+        ))
+        XCTAssertEqual(layout.sources, layers)
+    }
+
+    func testLayoutAndCropEditsPreserveColorInversion() {
+        var layout = StageLayout(sources: overlappingLayers)
+        XCTAssertTrue(layout.setSourceColorInverted(sourceB, isInverted: true))
+        XCTAssertTrue(layout.moveSource(sourceB, byX: 0.1, y: 0.1))
+        XCTAssertTrue(layout.resizeSource(
+            sourceB, x: 0.1, y: 0.1, width: 0.4, height: 0.3
+        ))
+        for preset in StageLayoutPreset.allCases {
+            layout.apply(preset: preset)
+            XCTAssertEqual(layout[sourceID: sourceB]?.isColorInverted, true)
+        }
+        XCTAssertTrue(layout.bringSourceForward(sourceB))
+        XCTAssertTrue(layout.sendSourceBackward(sourceB))
+        XCTAssertTrue(layout.bringSourceToFront(sourceB))
+        XCTAssertTrue(layout.sendSourceToBack(sourceB))
+        XCTAssertTrue(layout.moveSources(
+            fromFrontOffsets: IndexSet(integer: layout.sources.count - 1),
+            toFrontOffset: 0,
+            expectedFrontToBackIDs: layout.sources.reversed().map(\.id)
+        ))
+        XCTAssertEqual(layout.sources.last?.id, sourceB)
+        XCTAssertEqual(layout[sourceID: sourceB]?.isColorInverted, true)
+        XCTAssertTrue(layout.setSourceCrop(
+            sourceB,
+            crop: NormalizedSourceRect(x: 0.2, y: 0.2, width: 0.6, height: 0.5)
+        ))
+        XCTAssertTrue(layout.moveSourceCrop(sourceB, byX: 0.1, y: 0.1))
+        XCTAssertTrue(layout.resetSourceCrop(sourceB))
+        layout.resetAllSourceCrops()
+
+        XCTAssertEqual(layout[sourceID: sourceB]?.isColorInverted, true)
+        XCTAssertTrue(layout.sources.filter { $0.id != sourceB }.allSatisfy {
+            !$0.isColorInverted
+        })
+
+        XCTAssertTrue(layout.removeSource(sourceA))
+        XCTAssertTrue(layout.addSource(sourceA))
+        XCTAssertEqual(layout[sourceID: sourceB]?.isColorInverted, true)
+        XCTAssertEqual(layout[sourceID: sourceA]?.isColorInverted, false)
+        XCTAssertTrue(layout.removeSource(sourceB))
+        XCTAssertTrue(layout.addSource(sourceB, frame: .fullCanvas))
+        XCTAssertEqual(layout[sourceID: sourceB]?.isColorInverted, false)
+    }
+
     func testCropMoveSetAndResetLeaveDestinationFrameUntouched() {
         let frame = NormalizedStageRect(x: 0.1, y: 0.2, width: 0.6, height: 0.7)
         var layout = StageLayout(sources: [

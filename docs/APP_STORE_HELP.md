@@ -121,6 +121,7 @@ layers retain their last bounds.
 - **Hide / 非表示** pauses that source's stream and makes its layer transparent in the Stage, private Workspace, and Audience PNG output while preserving placement, crop, and z-order. Its row remains in the list.
 - **Show / 再表示** resumes it and reveals the layer only after a new complete frame arrives.
 - **Replace / 選び直す** opens Apple's picker for that source.
+- **Invert Colors / 色を反転** in the selected-layer tools below the Canvas or the layer's More menu switches white to black and black to white. It inverts all source colors, including photos, in the Workspace, Stage, magnifier, and Audience PNG. Other layers, the Stage background, annotations, and laser pointer keep their colors. The setting stays with the layer through layout, crop, hide/show, and source replacement; turn it off to restore the original colors.
 - If macOS ends a source's sharing session, its layer remains without the old frame. **Select Again** reconnects that same layer while preserving its placement and crop; only Remove deletes them.
 - **Crop / 切り抜く** in the selected-layer tools below the Canvas or the layer's More menu opens that layer alone at full Canvas size with an adjustable crop draft. The Stage changes only when you choose Apply Crop; Cancel discards it.
 - **Remove / 解除** asks for confirmation, then ends and removes that source.
@@ -130,6 +131,7 @@ layers retain their last bounds.
 - **非表示** はそのソースの取得を一時停止し、配置・切り抜き・重なり順を保持したまま、Stage・手元用Workspace・Audience PNGでレイヤーを透明にします。一覧の行は残ります。
 - **再表示** は取得を再開し、新しい完全なフレームが届いた時点でレイヤーを再表示します。
 - **選び直す** はそのソース用のAppleピッカーを開きます。
+- キャンバス下の選択レイヤー用ツールや各レイヤーのその他メニューにある **色を反転** は、白を黒に、黒を白にして、明るい資料をプロジェクターで見やすくします。写真を含むソース全体の色を、Workspace・Stage・虫眼鏡・Audience PNGで反転します。ほかのレイヤー・Stageの背景・手書き・レーザーポインターの色は変わりません。配置・切り抜き・非表示／再表示・ソースの選び直しでも設定を保持し、オフにすると元の色へ戻ります。
 - macOS側でソースの共有が終了しても、古い映像を消したうえでレイヤー自体は残ります。**選び直す** と配置と切り抜きを保った同じレイヤーへ再接続し、**解除** を選んだ場合だけ削除します。
 - キャンバス下の選択レイヤー用ツールや各レイヤーのその他メニューから **切り抜く** を選ぶと、そのレイヤーだけを手元用Canvasへ全面表示し、切り抜き枠を下書きします。「切り抜きを適用」でStageへ反映し、キャンセルすると破棄します。
 - **解除** は確認後にそのソースの取得を終了し、一覧から削除します。
