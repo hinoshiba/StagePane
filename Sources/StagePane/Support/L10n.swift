@@ -70,6 +70,25 @@ enum L10n {
         }
     }
 
+    static var renameLayerActionTitle: String {
+        text("名前を変更…", "Rename…")
+    }
+
+    static var renameLayerTitle: String {
+        text("レイヤーの名前を変更", "Rename Layer")
+    }
+
+    static var layerNameTitle: String {
+        text("レイヤー名", "Layer Name")
+    }
+
+    static func renameLayerHint(defaultTitle: String) -> String {
+        text(
+            "一覧とキャンバスで見分けやすい名前を付けられます。空欄で保存すると「\(defaultTitle)」に戻ります。",
+            "Choose a name to identify this layer in the list and Canvas. Save an empty name to use “\(defaultTitle)”."
+        )
+    }
+
     static var requestSourceRemovalTitle: String {
         text("解除…", "Remove…")
     }

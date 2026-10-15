@@ -5,6 +5,11 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+### Added
+
+- Layers can be renamed from their list menu to make sources easier to identify.
+  Names appear only in the private Workspace and last for the current session.
+
 ## [0.4.3] - Unreleased
 
 ### Added

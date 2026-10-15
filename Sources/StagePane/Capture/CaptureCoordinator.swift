@@ -63,7 +63,7 @@ final class CaptureSource: ObservableObject, Identifiable {
     let ordinal: Int
     let renderers: CaptureSourceRenderers
 
-    @Published fileprivate(set) var title: String
+    @Published fileprivate(set) var name: StageLayerName
     @Published fileprivate(set) var kind: CaptureSourceKind
     @Published fileprivate(set) var contentSize: CGSize
     @Published fileprivate(set) var phase: CaptureSourcePhase = .preparing
@@ -83,6 +83,9 @@ final class CaptureSource: ObservableObject, Identifiable {
 
     var stageRenderer: SampleBufferRenderer { renderers.stage }
     var previewRenderer: SampleBufferRenderer { renderers.preview }
+    var title: String { name.displayTitle }
+    var customName: String? { name.customName }
+    var defaultTitle: String { name.defaultTitle }
 
     fileprivate init(
         id: StageSourceID,
@@ -94,7 +97,7 @@ final class CaptureSource: ObservableObject, Identifiable {
     ) {
         self.id = id
         self.ordinal = ordinal
-        self.title = title
+        self.name = StageLayerName(defaultTitle: title)
         self.kind = kind
         self.contentSize = contentSize
         self.renderers = renderers
@@ -864,6 +867,17 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         sources.first { $0.id == sourceID }
     }
 
+    func renameSource(_ sourceID: StageSourceID, to value: String) {
+        guard let source = source(for: sourceID), source.phase != .stopping else { return }
+        var updatedName = source.name
+        updatedName.rename(to: value)
+        guard updatedName != source.name else { return }
+        // Some enclosing Workspace views observe the coordinator rather than
+        // an individual source (for example, the active crop editor's title).
+        objectWillChange.send()
+        source.name = updatedName
+    }
+
     private func markSourceForReselection(
         _ source: CaptureSource,
         message: String,
@@ -1207,7 +1221,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                 for: filter,
                 ordinal: existingSource.ordinal
             )
-            source.title = metadata.title
+            source.name.defaultTitle = metadata.title
             source.kind = metadata.kind
             source.contentSize = sourceContentSize(for: filter)
             source.needsReselection = false
@@ -1718,7 +1732,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         if startPendingContentUpdateIfNeeded(for: session) { return }
         recordRequestedSourceConfiguration(for: session)
         let metadata = sourceMetadata(for: filter, ordinal: session.source.ordinal)
-        session.source.title = metadata.title
+        session.source.name.defaultTitle = metadata.title
         session.source.kind = metadata.kind
         session.source.contentSize = sourceContentSize(for: filter)
         if session.activeAttention?.clearsAfterSuccessfulContentUpdate == true {
