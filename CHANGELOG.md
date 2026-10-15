@@ -5,6 +5,33 @@ Versioning once 1.0.0 is released.
 
 ## [Unreleased]
 
+## [0.4.3] - Unreleased
+
+### Added
+
+- Magnify mode shows a shared 2×, 3×, or 4× lens while preserving source
+  layout and crop.
+- Double-click Stage content to maximize within the current display while
+  preserving its proportions; double-click again to restore its window frame.
+- Adjust the Curtain message text size from 50% to 200%.
+- An optional first-launch Mac Screen Recording Access guide, with an explicit
+  permission request and a way to continue using Apple's picker without it.
+
+### Changed
+
+- Redesigned the private Workspace around its Canvas, layer list, and tool
+  controls. Stage Settings stays beside the Canvas; General, About, screen
+  sharing guidance, and Pro use separate private windows.
+- Refreshed English and Japanese help, privacy disclosures, and product website
+  images to match the current interface and optional access guide.
+
+### Fixed
+
+- Synchronize source video, frame, and mask geometry when adding, arranging,
+  showing, or cropping a layer.
+- Preserve actionable source-access errors and provide contextual recovery
+  controls in the Workspace.
+
 ## [0.4.2] - 2026-10-04
 
 ### Added
