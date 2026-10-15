@@ -30,6 +30,12 @@ final class CaptureSourceRenderers: @unchecked Sendable {
         self.preview = SampleBufferRenderer(renderQueue: renderQueue)
     }
 
+    @MainActor
+    func setColorInverted(_ isInverted: Bool) {
+        stage.setColorInverted(isInverted)
+        preview.setColorInverted(isInverted)
+    }
+
     func setPointerStyle(_ value: StagePaneCore.PointerStyle) {
         stage.setPointerStyle(value)
         preview.setPointerStyle(value)

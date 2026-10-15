@@ -7,6 +7,9 @@ Versioning once 1.0.0 is released.
 
 ### Added
 
+- Each layer has an Invert Colors switch for presenting bright sources on a
+  dark background. Workspace, Stage, magnifier, and Audience PNG share the
+  effect while annotations and the laser pointer keep their colors.
 - Layers can be renamed from their list menu to make sources easier to identify.
   Names appear only in the private Workspace and last for the current session.
 

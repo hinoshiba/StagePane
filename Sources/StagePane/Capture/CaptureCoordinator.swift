@@ -1016,6 +1016,18 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         layout = updated
     }
 
+    func setSourceColorInverted(_ sourceID: StageSourceID, isInverted: Bool) {
+        guard !isPickerPresented,
+              let source = source(for: sourceID),
+              source.phase != .stopping,
+              let sourceLayout = layout[sourceID: sourceID],
+              sourceLayout.isColorInverted != isInverted else { return }
+        var updated = layout
+        guard updated.setSourceColorInverted(sourceID, isInverted: isInverted) else { return }
+        source.renderers.setColorInverted(isInverted)
+        layout = updated
+    }
+
     func setSourceCrop(
         _ sourceID: StageSourceID,
         crop: NormalizedSourceRect
@@ -1354,6 +1366,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
         isCaptureActive = true
         lastFailure = nil
+        renderers.setColorInverted(layout[sourceID: sourceID]?.isColorInverted ?? false)
         renderers.setPointerAppearance(pointerAppearance)
         renderers.setPointerStyle(pointerStyle)
         renderers.activate(

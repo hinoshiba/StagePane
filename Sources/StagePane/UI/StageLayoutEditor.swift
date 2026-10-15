@@ -1121,6 +1121,10 @@ private struct StageSourceEditingOverlay: View {
             if isCropped {
                 Image(systemName: "crop")
             }
+            if capture.layout[sourceID: source.id]?.isColorInverted == true {
+                Image(systemName: "circle.lefthalf.filled")
+                    .accessibilityLabel(L10n.layerColorsInvertedStatus)
+            }
             if !source.isPresentationVisible {
                 Image(systemName: "eye.slash")
                 Text(L10n.text("非表示", "Hidden"))
@@ -1478,9 +1482,18 @@ private struct CaptureSourceRow: View {
                         .frame(width: 18)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(source.title)
-                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Text(source.title)
+                                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                .lineLimit(1)
+                            if isColorInverted {
+                                Image(systemName: "circle.lefthalf.filled")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                    .help(L10n.layerColorsInvertedStatus)
+                                    .accessibilityHidden(true)
+                            }
+                        }
                         Text(phaseTitle)
                             .font(.system(size: 12))
                             .lineLimit(2, reservesSpace: true)
@@ -1497,7 +1510,11 @@ private struct CaptureSourceRow: View {
             .disabled(source.phase == .stopping)
             .help(errorMessage ?? source.title)
             .accessibilityLabel(L10n.text("\(source.title)を選択", "Select \(source.title)"))
-            .accessibilityValue([isSelected ? L10n.text("選択中", "Selected") : "", phaseTitle]
+            .accessibilityValue([
+                isSelected ? L10n.text("選択中", "Selected") : "",
+                phaseTitle,
+                isColorInverted ? L10n.layerColorsInvertedStatus : ""
+            ]
                 .filter { !$0.isEmpty }.joined(separator: ", "))
             .accessibilityHint(L10n.text(
                 "上下キーで選択します。ドラッグ、またはその他の操作メニューで重なり順を変更できます。上のレイヤーほど手前です。キャンバス上では矢印キーで配置を調整します。選択だけでは重なり順は変わりません。",
@@ -1617,6 +1634,7 @@ private struct CaptureSourceRow: View {
     }
 
     private var isSelected: Bool { controller.selectedSourceID == source.id }
+    private var isColorInverted: Bool { capture.layout[sourceID: source.id]?.isColorInverted ?? false }
     private var needsAttention: Bool { if case .needsAttention = source.phase { return true }; return false }
     private var errorMessage: String? { if case let .needsAttention(message) = source.phase { return message }; return nil }
     private var phaseTitle: String {
@@ -1670,6 +1688,10 @@ private struct SelectedSourceTools: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .help(source.title)
                 .layoutPriority(-1)
+
+            SourceColorInversionToggle(source: source, controller: controller, capture: capture)
+                .toggleStyle(.switch)
+                .fixedSize()
 
             Button {
                 controller.editCrop(of: source.id)
@@ -1750,6 +1772,7 @@ private struct SourceLayerMenu: View {
             }
             .disabled(!canEditCrop)
         }
+        SourceColorInversionToggle(source: source, controller: controller, capture: capture)
         Button(L10n.text("選び直す…", "Replace…")) {
             controller.beginWorkspaceInteraction()
             capture.replaceSource(source.id)
@@ -1770,6 +1793,38 @@ private struct SourceLayerMenu: View {
     private var canEditCrop: Bool {
         source.phase != .stopping && !source.isOutputSuppressed && source.isPresentationVisible &&
             !capture.isPickerPresented && capture.layout[sourceID: source.id] != nil
+    }
+}
+
+private struct SourceColorInversionToggle: View {
+    @ObservedObject var source: CaptureSource
+    @ObservedObject var controller: AppController
+    @ObservedObject var capture: CaptureCoordinator
+
+    var body: some View {
+        Toggle(isOn: colorInversionBinding) {
+            Label(L10n.invertLayerColorsTitle, systemImage: "circle.lefthalf.filled")
+        }
+        .disabled(!canInvertColors)
+        .accessibilityLabel(L10n.invertLayerColorsAccessibilityLabel(source.title))
+        .accessibilityHint(L10n.invertLayerColorsHint)
+        .help(L10n.invertLayerColorsHint)
+    }
+
+    private var colorInversionBinding: Binding<Bool> {
+        Binding(
+            get: { capture.layout[sourceID: source.id]?.isColorInverted ?? false },
+            set: { isInverted in
+                guard canInvertColors else { return }
+                controller.beginWorkspaceInteraction()
+                capture.setSourceColorInverted(source.id, isInverted: isInverted)
+            }
+        )
+    }
+
+    private var canInvertColors: Bool {
+        source.phase != .stopping && !capture.isPickerPresented &&
+            capture.layout[sourceID: source.id] != nil
     }
 }
 
