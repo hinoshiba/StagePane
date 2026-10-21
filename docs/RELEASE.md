@@ -133,23 +133,30 @@ Update and review these values in one pull request:
   ```
 
   Snapshots are opaque PNGs rendered at twice their native point dimensions.
-  CI checks all 41 fixtures against `AppController.writeSnapshots`:
+  `AppController.writeSnapshots` produces 49 fixtures per language (98 when
+  both Japanese and English are generated). CI checks the 49 English fixture
+  names and dimensions below; review both languages for the release:
 
   | Fixtures (`.png`) | Pixel dimensions |
   | --- | --- |
   | `workspace`, `arrange`, `draw`, `sources` | 2880×1800 |
   | `workspace-900-*`, `workspace-empty-900-*`, `workspace-access-error-*-900-*`, `product-workspace-light`, `product-workspace-dark`, `draw-900`, `eraser-900-*` | 1800×1240 |
-  | `stage-settings`, `appearance`, `stage-inspector-dark` | 720×1200 |
+  | `stage-settings`, `appearance`, `stage-inspector-dark` | 1360×1200 |
+  | `settings-{pointer,stage,window,access,pro}-{light,dark}` (10 fixtures) | 1360×1200 |
   | `permissions`, `permissions-dark` | 1280×1000 |
   | `screen-recording-access`, its `-pending` and `-allowed` states, and each `-dark` variant | 1120×680 |
   | `privacy`, `app-settings`, `app-settings-dark` | 1440×1300 |
-  | `settings-640-appearance`, `settings-640-about`, `settings-640-about-dark` | 1280×1080 |
+  | `settings-640-about-dark` | 1280×1080 |
   | Source-build `pro`, `pro-dark` | 1560×1520 |
   | `pro-comparison-light`, `pro-comparison-dark` | 1280×720 |
   | `privacy-curtain`, `stage-ready`, `product-stage` | 1920×1080 |
 
-  The native-window and Stage-only snapshots are website and QA assets; their
-  dimensions are not Mac App Store upload requirements. The `product-stage` and
+  These view-content and Stage-only snapshots are website and QA assets; their
+  dimensions are not Mac App Store upload requirements. Settings fixtures do
+  not include the native window frame or toolbar and do not verify focus,
+  keyboard navigation, or live capture. Legacy fixture filenames such as
+  `appearance`, `app-settings`, and `permissions` now render the Pointer or
+  Access & Privacy pane, not separate settings windows. The `product-stage` and
   `product-workspace-*` fixtures show the same synthetic slide-and-demo layout
   in the audience Stage and private Workspace. The access-state
   fixtures are synthetic and never query or request macOS permission.
@@ -189,7 +196,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - first-launch app-wide Screen Recording preflight: already-allowed access
   shows no panel, while missing access shows an optional panel only once;
   only its explicit Allow action requests access, later launches do not repeat
-  the panel, and the screen-sharing guide offers a manual check;
+  the panel, and Settings → Access & Privacy offers the manual access check;
 - one-item window/application/display selection; Free mixed-source addition
   through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
   Pro mixed-source addition at source five and beyond while Mac performance and
@@ -205,6 +212,13 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   proportional resize/minimum content size, matching Workspace/Stage
   layouts, and the Workspace's 900×620-point minimum content size;
+- Stage right-click and Control-click menus: Maximize/Restore, sharing
+  enlargement, full screen, checked window behavior, Show Workspace, and
+  Stage Settings must agree with the Stage/Window menu actions. Double-click
+  maximize/restore must retain aspect ratio and the previous frame; full-screen
+  and transition states must disable incompatible geometry changes. Confirm
+  the share window identity remains stable and private menus do not appear in
+  the receiver's Stage-only capture;
 - Stage-only native full-screen entry/exit through Workspace, the Stage menu,
   Control-Command-F, and the menu-bar recovery path, including when Workspace is
   key and Presentation Lock is on; Workspace must remain separate and private.
@@ -242,14 +256,40 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   arrow keys, with the selected resize handle reachable above other layers;
   the transparent selected interior must permit clicking visible foreground
   content to select that foreground layer without reordering;
+- layer Rename: Save, Cancel, blank-name reset, and keyboard/VoiceOver access;
+  the name must update the list, Canvas, and active Crop editor, survive
+  Hide/Show, replacement/reconnection, and Quick Layout while the layer remains,
+  and disappear on Remove, Stop All, or quit. Custom names must never appear in
+  the audience Stage or Audience PNG;
+- per-layer Invert Colors: Stage, Workspace, magnifier, and Audience PNG must
+  apply the same effect once, while ink and the laser pointer retain their
+  colors. Verify applied crops, overlapping layers, Hide/Show,
+  replacement/reconnection, Quick Layout, and screenshots in every Stage shape;
+  changing inversion must preserve source identity, geometry, crop, and z-order;
 - strict private/public separation: the private Workspace contains the Canvas
-  and persistent layer list, with Stage Settings in a popover; the separate
-  Settings window contains General and About, including Privacy, while About
-  Screen Sharing remains a separate guide; the Canvas has Arrange and Draw global modes
-  plus a Crop action on the selected tile and each layer row; only the selected
-  tile displays editing chrome, with no promotion of its source pixels;
+  and persistent layer list, with Arrange, Draw, Magnify, Curtain, and the
+  selected-layer and row Crop actions. Preferences live in one modeless native
+  Settings window with Pointer, Stage, Window, Access & Privacy, and Pro panes;
+  About remains separate, and Workspace retains its meeting-sharing guide.
+  Only the selected tile displays editing chrome, with no promotion of its
+  source pixels;
   the public Stage has no private toolbar, mode control,
   selection outline, resize handle, notice, or other editing chrome;
+- Settings entry points: StagePane → Settings…, Command-comma, and the
+  menu-bar status icon must reuse the same window. First use opens Pointer;
+  generic reopening restores the last pane, and explicit menu links open their
+  named pane. Check all five native toolbar items, Japanese/English and
+  light/dark layouts, keyboard/VoiceOver navigation, and immediate persistence
+  of preferences. Workspace must have no duplicate settings navigation or
+  Stage-settings popover;
+- Settings lifecycle during live capture, Draw, Magnify, and an uncommitted
+  Crop: opening, switching panes, and closing must preserve the selected layer,
+  tool, ink, crop draft, layout, and Curtain state. Closing Settings must neither
+  apply nor cancel Crop. Stage shape changes and sharing enlargement must keep
+  Settings in front and preserve its input focus; Command-W closes Settings
+  alone and returns to the still-valid originating control. Switching to
+  another window or app must prevent later restoration of stale focus. Confirm
+  the Curtain remains reachable during picker and StoreKit interactions;
 - exact-window sharing guidance that never claims Workspace can
   be technically excluded from capture; verify application and full-display
   sharing can expose private windows and the UI directs users to choose the
@@ -274,9 +314,16 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   changes, a static System-to-Laser transition
   with no native/laser double pointer (advance the slide if macOS defers the first
   cursorless complete frame), and removal on Curtain/stop;
-- Arrange-mode drag/resize affecting only composition, with global Arrange and
-  Draw plus a crop button on every layer available in Workspace in both the local sandboxed build and exact Mac App
-  Store candidate on every supported OS; confirm About Screen Sharing distinguishes
+- Stage → Pointer quick choices and Pointer Settings must share one saved
+  preference and synchronized menu checkmarks. Draw and Magnify temporarily
+  suppress the audience pointer without replacing that preference; changing it
+  while suppressed must take effect on return to Arrange or Crop. The settings
+  pane and quick menu must explain suppression, and the local macOS cursor must
+  remain unaffected;
+- Arrange-mode drag/resize affecting only composition, with Arrange, Draw,
+  Magnify, and per-layer Crop available in Workspace in both the local sandboxed
+  build and exact Mac App Store candidate on every supported OS; confirm
+  Settings → Access & Privacy distinguishes
   picker-scoped session access from optional app-wide Screen Recording access,
   and neither build contains a cross-application input-forwarding or Accessibility
   permission path;
@@ -305,8 +352,8 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   cancellation preserving stream/frame/layout, and source-state changes while
   the dialog is open;
 - no redundant privacy slogans in the Stage dashboard or Workspace sidebar,
-  no Important Limitation card in About, and the complete Privacy screen still
-  available;
+  no Important Limitation card in About, and the complete privacy policy and
+  capture details still available from Settings → Access & Privacy;
 - explicit one-shot screenshot Copy and Save for every Stage preset: exact
   preset pixel dimensions; clean Audience Stage only; correct source layout and
   current content-or-Curtain, ink, watermark, safe-area guide when enabled, and
@@ -328,14 +375,21 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - StoreKit Configuration, Sandbox, and TestFlight purchase paths: localized
   `Product.displayPrice`, verified success, cancel, pending/Ask to Buy, product
   load failure and retry, restore, reinstall/second Mac, refund/revocation, and
-  rejection of unverified transactions; purchase success must resume the exact
-  fifth-source or mark-removal action that opened Pro; entitlement loss with
-  more than four sources must preserve the existing session and block only new
-  additions.
+  rejection of unverified transactions; while the originating request remains
+  current, purchase success must resume its exact fifth-source or mark-removal
+  action once, after purchase processing finishes. Closing/minimizing Pro,
+  switching windows/apps, or starting another task must prevent stale automatic
+  continuation without losing a verified entitlement. If authentication moves
+  outside the app, verify the explicit post-purchase actions remain available;
+  a direct Pro purchase must not start an unrequested action. Entitlement loss
+  with more than four sources must preserve the existing session and block only
+  new additions.
 
 Record the exact commit, release-commit signature and DCO verification, pull
 request URL, review, pull-request and merged-`main` CI results, hardware, OS/app
 versions, manual results, and approved exceptions in the release record.
+The [0.4.4 acceptance template](RELEASE_0.4.4_ACCEPTANCE.md) lists pending work;
+it is not a completed acceptance record.
 
 Merge only after review, pull-request CI, and manual acceptance pass. Use a
 normal merge commit so the signed release commit remains reachable from
@@ -433,10 +487,10 @@ In Xcode Organizer and App Store Connect, verify:
 - bundle ID `com.hinoshiba.stagepane`, Team `94HVVWXLK3`, App Sandbox,
   Hardened Runtime, privacy manifest, icon, localizations, and legal/help
   resources;
-- Arrange, Crop, and Draw present, with no cross-application input-forwarding or
-  Accessibility permission path in the archived Mac App Store candidate; the
-  About Screen Sharing guide must distinguish picker-scoped session access from
-  optional app-wide Screen Recording access;
+- Arrange, Crop, Draw, and Magnify present, with no cross-application
+  input-forwarding or Accessibility permission path in the archived Mac App
+  Store candidate; Settings → Access & Privacy must distinguish picker-scoped
+  session access from optional app-wide Screen Recording access;
 - no unexpected entitlement, embedded executable/framework, absolute
   `LC_RPATH`, updater, analytics, automatic screenshot, recording, publisher
   server, or screen-upload path; confirm Apple StoreKit is the only commerce
