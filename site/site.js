@@ -168,19 +168,19 @@ const translations = {
   "eyebrow": {
     "html": {
       "ja": "画面共有のためのmacOSアプリ",
-      "en": "A calmer way to share your screen"
+      "en": "Screen sharing for macOS"
     }
   },
   "hero-title": {
     "html": {
-      "ja": "見せたいものを、<br>ひとつの画面に。",
-      "en": "Your work, together.<br>Your space, private."
+      "ja": "伝えたいことに、<br>集中できる。",
+      "en": "Focus on<br>your message."
     }
   },
   "hero-lead": {
     "html": {
-      "ja": "資料とデモは、相手へ。<br>Slackの通知や個人メモは、手元に。",
-      "en": "Slides and demos for your audience. <br>Slack notifications and notes for you."
+      "ja": "いつもの作業環境のまま、<br>画面共有をもっと気軽に。",
+      "en": "Share with less fuss,<br>without changing how you work."
     }
   },
   "compatibility": {
@@ -455,8 +455,8 @@ const translations = {
   },
   "meta-title": {
     "content": {
-      "ja": "StagePane — 見せたいものを、ひとつの画面に。",
-      "en": "StagePane — Your work, together. Your space, private."
+      "ja": "StagePane — 伝えたいことに、集中できる。",
+      "en": "StagePane — Focus on your message."
     }
   },
   "meta-description": {
