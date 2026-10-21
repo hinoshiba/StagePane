@@ -29,10 +29,10 @@
 <link rel="alternate" hreflang="en" href="https://stagepane.hinoshiba.com/?lang=en">
 <link rel="alternate" hreflang="x-default" href="https://stagepane.hinoshiba.com/">
 <link rel="icon" href="assets/StagePaneMark.svg" type="image/svg+xml">
-<link rel="stylesheet" href="styles.css?v=20261021-interactive-demo">
+<link rel="stylesheet" href="styles.css?v=20261021-stage-only-demo">
 <script id="application-data" type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "StagePane", "applicationCategory": "ProductivityApplication", "operatingSystem": "macOS 14 or later", "description": "資料とデモは相手へ、Slackの通知やメモは手元に。ウインドウを個別に選んで並べ、会議ではStageだけを共有するmacOSアプリ。選択したウインドウ内の通知は映る場合があります。4ソースまで無料。", "url": "https://stagepane.hinoshiba.com/", "sameAs": "https://github.com/hinoshiba/StagePane", "license": "https://www.apache.org/licenses/LICENSE-2.0"}</script>
-<script defer src="site.js?v=20261021-interactive-demo"></script>
-<script defer src="sharing-demo.js?v=20261021-interactive-demo"></script>
+<script defer src="site.js?v=20261021-stage-only-demo"></script>
+<script defer src="sharing-demo.js?v=20261021-stage-only-demo"></script>
 </head><body>
 <a data-i18n="skip" href="#main" class="skip-link">本文へ移動</a>
 <header class="site-header"><div class="shell header-inner">
@@ -61,21 +61,18 @@
 <figure class="sharing-demo">
 <div class="demo-labels" aria-hidden="true"><p data-i18n="demo-local">あなたのMac</p><p data-i18n="demo-audience">相手に見える画面</p></div>
 <div class="demo-views" aria-hidden="true">
-<div class="local-desktop"><div class="desktop-menubar"><b>●</b><span>Finder</span><span>•••</span></div>
+<div class="local-desktop" aria-hidden="true"><div class="desktop-menubar"><b>●</b><span>Finder</span><span>•••</span></div>
 <div class="local-windows"><div class="visual-window slides"><div class="window-chrome"><span class="window-dots"><i></i><i></i><i></i></span><span data-i18n="demo-slides">説明資料</span></div><div class="sample-slide"><span class="sample-kicker" data-i18n="sample-project">体験予約の改善</span><strong data-i18n="sample-title">体験予約を、<br>3ステップで。</strong><div class="sample-steps"><div><b>01</b><span data-i18n="sample-step1">日程</span></div><div><b>02</b><span data-i18n="sample-step2">人数</span></div><div><b>03</b><span data-i18n="sample-step3">確認</span></div></div></div></div><div class="visual-window app"><div class="window-chrome"><span class="window-dots"><i></i><i></i><i></i></span><span data-i18n="demo-app">アプリのデモ</span></div><div class="sample-app"><span class="app-kicker">HARU STUDIO</span><strong data-i18n="sample-app-title">陶芸ワークショップ</strong><span class="sample-date" data-i18n="sample-app-date">10月24日（土）</span><div class="sample-times"><b>10:00</b><span>13:00</span><span>15:00</span></div><span class="sample-action" data-i18n="sample-app-action">予約内容を確認</span></div></div></div>
+<div class="visual-window local-chat"><div class="window-chrome"><span class="window-dots"><i></i><i></i><i></i></span><span>Slack</span></div><div class="chat-body"><div class="chat-sidebar"><b>#</b><i></i><i></i><i></i><i></i></div><div class="chat-thread"><strong data-demo-text="chatChannel"># チーム</strong><div class="chat-message"><span class="chat-avatar">M</span><div><b>Mika</b><p data-demo-text="chatLine1">新しい案を共有しました</p></div></div><div class="chat-message"><span class="chat-avatar">R</span><div><b>Ren</b><p data-demo-text="chatLine2">あとで確認します！</p></div></div><div class="chat-message"><span class="chat-avatar">A</span><div><b>Aoi</b><p data-demo-text="chatLine3">ランチ、何にする？</p></div></div></div></div></div>
 <div class="personal-note"><strong data-i18n="demo-notes">自分用のメモ</strong><p data-i18n="demo-note-line">次は、デモの操作を紹介</p><i></i><i></i></div>
-<div class="notification" aria-hidden="true"><span class="notification-icon">#</span><div><strong>Slack</strong><p data-i18n="demo-notification">新しいメッセージが届きました</p></div></div>
+<div class="notification-stack" aria-hidden="true"><div class="notification"><span class="notification-icon">#</span><div><strong>Slack</strong><p data-i18n="demo-notification">新しいメッセージが届きました</p></div></div></div>
 <div class="desktop-dock"><i></i><i></i><img src="assets/StagePaneMark.svg" width="30" height="30" alt=""><i></i><i></i></div></div>
 <div class="stage-bridge"><img src="assets/StagePaneMark.svg" width="48" height="48" alt=""><span>→</span></div>
 <div class="audience-stage" id="stage-example"><div class="stage-topline"><span class="stage-status"></span><span>StagePane Stage</span></div><div class="shared-windows"><div class="visual-window slides"><div class="window-chrome"><span class="window-dots"><i></i><i></i><i></i></span><span data-i18n="demo-slides">説明資料</span></div><div class="sample-slide"><span class="sample-kicker" data-i18n="sample-project">体験予約の改善</span><strong data-i18n="sample-title">体験予約を、<br>3ステップで。</strong><div class="sample-steps"><div><b>01</b><span data-i18n="sample-step1">日程</span></div><div><b>02</b><span data-i18n="sample-step2">人数</span></div><div><b>03</b><span data-i18n="sample-step3">確認</span></div></div></div></div><div class="visual-window app"><div class="window-chrome"><span class="window-dots"><i></i><i></i><i></i></span><span data-i18n="demo-app">アプリのデモ</span></div><div class="sample-app"><span class="app-kicker">HARU STUDIO</span><strong data-i18n="sample-app-title">陶芸ワークショップ</strong><span class="sample-date" data-i18n="sample-app-date">10月24日（土）</span><div class="sample-times"><b>10:00</b><span>13:00</span><span>15:00</span></div><span class="sample-action" data-i18n="sample-app-action">予約内容を確認</span></div></div></div><span class="stage-wordmark">StagePane</span></div>
 </div>
-<div class="demo-toolbar" hidden>
-<p class="sr-only" id="demo-drag-hint" data-demo-text="hint">両側の画面をドラッグ。配置はそれぞれ独立しています。</p>
-<div class="demo-local-controls"><span class="demo-kind" data-demo-text="illustration">操作デモ</span><button type="button" class="demo-notifications-toggle demo-icon-button" aria-label="通知を一時停止" title="通知を一時停止"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="demo-pause-icon" d="M7 4v12M13 4v12"/><path class="demo-play-icon" d="m6 3 10 7-10 7Z"/></svg></button></div>
-<div class="demo-actions"><div role="group" aria-label="Stageの配置例" data-i18n="demo-controls"><button type="button" data-layout="side-by-side" aria-pressed="true" aria-controls="stage-example" data-i18n="demo-arrange">並べる</button><button type="button" data-layout="overlap" aria-pressed="false" aria-controls="stage-example" data-i18n="demo-overlap">重ねる</button></div><button type="button" class="demo-reset demo-icon-button" aria-label="配置をリセット" title="配置をリセット"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6.5 6.5 0 1 1-.4 6M4 2v5h5"/></svg></button></div>
+<p class="sr-only" id="demo-drag-hint" data-demo-text="hint">Stageのウインドウをドラッグして配置できます。</p>
 <p class="sr-only" id="demo-keyboard-hint" data-demo-text="keyboard">矢印キーで移動、Shiftと矢印キーで大きく移動、Homeで元の位置に戻せます。</p>
 <p class="sr-only demo-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
-</div>
 <figcaption><p class="sr-only" data-i18n="diagram-description">手元の説明資料とアプリのデモだけをStageに配置。選んでいないSlackの通知と個人メモは、手元の画面に残ります。</p><p class="scope-note" data-i18n="demo-condition">会議では「StagePane Stage」だけを共有します。選択したウインドウ内の通知・ダイアログは映る場合があります。</p></figcaption>
 </figure></section>
 <section class="section layout-section" id="workspace-proof"><div class="shell">

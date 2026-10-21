@@ -729,28 +729,10 @@ const translations = {
       "en": "Review booking"
     }
   },
-  "demo-arrange": {
-    "html": {
-      "ja": "並べる",
-      "en": "Side by side"
-    }
-  },
-  "demo-overlap": {
-    "html": {
-      "ja": "重ねる",
-      "en": "Overlap"
-    }
-  },
   "image-zoom": {
     "html": {
       "ja": "拡大 ↗",
       "en": "Enlarge ↗"
-    }
-  },
-  "demo-controls": {
-    "aria-label": {
-      "ja": "Stageの配置例",
-      "en": "Example Stage layouts"
     }
   }
 };
