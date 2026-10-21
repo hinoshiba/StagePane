@@ -609,22 +609,10 @@ const translations = {
       "en": "You have a new message"
     }
   },
-  "demo-illustration": {
-    "html": {
-      "ja": "ウインドウを個別に選んだときのイメージ",
-      "en": "Illustration: individual windows selected"
-    }
-  },
   "demo-condition": {
     "html": {
       "ja": "会議では「StagePane Stage」だけを共有します。選択したウインドウ内の通知・ダイアログは映る場合があります。",
       "en": "Share only “StagePane Stage” in your meeting. Notifications and dialogs inside selected windows may appear."
-    }
-  },
-  "demo-boundary": {
-    "html": {
-      "ja": "選ばなかったものは、共有の外に。",
-      "en": "What you don’t select stays outside the Stage."
     }
   },
   "local-link": {
@@ -810,6 +798,7 @@ function setLanguage(language, updateURL = false) {
     url.searchParams.set('lang', lang);
     history.pushState(null, '', url);
   }
+  document.dispatchEvent(new Event('stagepane:languagechange'));
 }
 
 document.addEventListener('click', event => {
@@ -836,17 +825,3 @@ addEventListener('hashchange', updateLanguageLinks);
 addEventListener('popstate', () => setLanguage(new URLSearchParams(location.search).get('lang')));
 colorScheme.addEventListener('change', updatePreviewLinks);
 setLanguage(new URLSearchParams(location.search).get('lang'));
-
-const demoToolbar = document.querySelector('.demo-toolbar');
-const stageExample = document.getElementById('stage-example');
-if (demoToolbar && stageExample) {
-  demoToolbar.hidden = false;
-  demoToolbar.addEventListener('click', event => {
-    const button = event.target.closest('button[data-layout]');
-    if (!button) return;
-    stageExample.classList.toggle('is-overlap', button.dataset.layout === 'overlap');
-    demoToolbar.querySelectorAll('button').forEach(item => {
-      item.setAttribute('aria-pressed', String(item === button));
-    });
-  });
-}
