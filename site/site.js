@@ -7,8 +7,8 @@ const translations = {
   },
   "t99": {
     "html": {
-      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・設定・Pro・画面共有の案内・Macの画面収録アクセスの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
-      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, whether the first Mac Screen Recording Access check has been completed, and the position and size of the Workspace, Stage, Settings, Pro, screen-sharing guide, and Mac Screen Recording Access windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
+      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に選択した設定項目、Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・このアプリについて・Pro・Macの画面収録アクセスの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
+      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, the last selected Settings pane, whether the first Mac Screen Recording Access check has been completed, and the position and size of the Workspace, Stage, About, Pro, and Mac Screen Recording Access windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
     }
   },
   "t100": {
@@ -97,14 +97,14 @@ const translations = {
   },
   "features": {
     "html": {
-      "ja": "できること",
-      "en": "Features"
+      "ja": "共有のしくみ",
+      "en": "How sharing works"
     }
   },
   "how": {
     "html": {
       "ja": "使い方",
-      "en": "How it works"
+      "en": "Get started"
     }
   },
   "support": {
@@ -168,25 +168,19 @@ const translations = {
   "eyebrow": {
     "html": {
       "ja": "画面共有のためのmacOSアプリ",
-      "en": "A macOS app for screen sharing"
+      "en": "A calmer way to share your screen"
     }
   },
   "hero-title": {
     "html": {
-      "ja": "見せたいものだけ、<br>ひとつの共有画面に。",
-      "en": "Share what matters.<br>In one window."
+      "ja": "見せたいものを、<br>ひとつの画面に。",
+      "en": "Your work, together.<br>Your space, private."
     }
   },
   "hero-lead": {
     "html": {
-      "ja": "資料とアプリのデモを、好きな大きさ・配置でひとつに。会議では専用のStageウインドウを共有し、手元の作業と見せる内容を分けられます。",
-      "en": "Bring slides and app demos together in the layout you want. Share the dedicated Stage window in your meeting, with your private workspace kept separate."
-    }
-  },
-  "preview-link": {
-    "html": {
-      "ja": "共有の仕組みを見る",
-      "en": "See how it works"
+      "ja": "資料とデモは、相手へ。<br>Slackの通知や個人メモは、手元に。",
+      "en": "Slides and demos for your audience. <br>Slack notifications and notes for you."
     }
   },
   "compatibility": {
@@ -195,153 +189,87 @@ const translations = {
       "en": "macOS 14 or later · Apple Silicon / Intel"
     }
   },
-  "preview-caption": {
-    "html": {
-      "ja": "説明資料とアプリのデモを、並べて共有。画面はサンプルです。",
-      "en": "Slides and an app demo, shared side by side. Sample content shown."
-    }
-  },
   "explain-title": {
     "html": {
-      "ja": "大事なところに、注目を。",
-      "en": "Bring details into focus."
+      "ja": "注目を集める",
+      "en": "Guide their attention"
     }
   },
   "explain-copy": {
     "html": {
-      "ja": "ペンや蛍光ペンで示し、虫眼鏡で細部を拡大。視線を集めて、説明をわかりやすく。",
-      "en": "Draw or highlight what matters, and magnify small details. Help everyone follow your explanation."
+      "ja": "ポインタ、手書き、虫眼鏡。伝えたいところを、その場で示せます。",
+      "en": "Point, draw, or magnify to bring the important details into focus."
     }
   },
   "curtain-title": {
     "html": {
-      "ja": "準備する間は、カーテンを。",
-      "en": "Take a moment behind the Curtain."
+      "ja": "準備する間は、ひと呼吸",
+      "en": "A moment to prepare"
     }
   },
   "curtain-copy": {
     "html": {
-      "ja": "Stageをさっと覆い、次の内容を準備。整ったら、また続きを見せられます。",
-      "en": "Cover the Stage while you prepare what comes next. Reveal it when you are ready to continue."
+      "ja": "カーテンでStageを覆って、次の内容へ。画面の取得は続きます。",
+      "en": "Cover the Stage with the Curtain while you prepare. Capture continues behind it."
     }
   },
   "workflow-title": {
     "html": {
-      "ja": "<span class=\"phrase\">選ぶ。</span><span class=\"phrase\">整える。</span><span class=\"phrase\">共有する。</span>",
-      "en": "Choose. Compose. Share."
+      "ja": "次の会議で、すぐに。",
+      "en": "Ready for your next meeting."
     }
   },
   "step-1": {
     "html": {
-      "ja": "ウインドウを選ぶ",
-      "en": "Choose your windows"
+      "ja": "選ぶ",
+      "en": "Choose"
     }
   },
   "step-1-copy": {
     "html": {
-      "ja": "「ソースを追加」から、見せたい資料やアプリのウインドウをAppleの選択画面で選びます。",
-      "en": "Use Add Source and Apple’s picker to choose the document or app windows you want to show."
+      "ja": "「ソースを追加」から、見せたいウインドウを1つずつ選びます。",
+      "en": "Use Add Source to select each window you want to show."
     }
   },
   "step-2": {
     "html": {
-      "ja": "手元で整える",
-      "en": "Compose on your Mac"
+      "ja": "並べる",
+      "en": "Arrange"
     }
   },
   "step-2-copy": {
     "html": {
-      "ja": "Workspaceで配置や表示範囲を調整します。準備中はカーテンで観客向けの映像を隠せます。",
-      "en": "Arrange and crop in the Workspace. Keep the audience view covered with Curtain while you prepare."
+      "ja": "Workspaceで、大きさ・位置・表示範囲を整えます。",
+      "en": "Set the size, position, and crop of your sources in the Workspace."
     }
   },
   "step-3": {
     "html": {
-      "ja": "Stageを共有する",
+      "ja": "Stageを共有",
       "en": "Share the Stage"
     }
   },
   "step-3-copy": {
     "html": {
-      "ja": "会議アプリのウインドウ共有で「StagePane Stage」を選びます。共有対象を確認してからカーテンを開きます。",
-      "en": "Select “StagePane Stage” in your meeting app’s window-sharing picker. Confirm the selected window, then open Curtain."
+      "ja": "会議アプリで「StagePane Stage」を選び、共有対象を確認してカーテンを開きます。",
+      "en": "Choose “StagePane Stage” in your meeting app, check the share target, then open the Curtain."
     }
   },
   "plan-title": {
     "html": {
-      "ja": "無料で始める。必要に応じてProへ。",
-      "en": "Start free. Add Pro when you need it."
-    }
-  },
-  "plan-caption": {
-    "html": {
-      "ja": "無料版とStagePane Pro",
-      "en": "Free and StagePane Pro"
-    }
-  },
-  "plan-feature": {
-    "html": {
-      "ja": "機能",
-      "en": "Feature"
-    }
-  },
-  "plan-free": {
-    "html": {
-      "ja": "無料版",
-      "en": "Free"
-    }
-  },
-  "plan-pro": {
-    "html": {
-      "ja": "Pro",
-      "en": "Pro"
-    }
-  },
-  "plan-sources": {
-    "html": {
-      "ja": "同時に使えるソース",
-      "en": "Simultaneous sources"
-    }
-  },
-  "plan-four": {
-    "html": {
-      "ja": "4件",
-      "en": "Four"
-    }
-  },
-  "plan-unlimited": {
-    "html": {
-      "ja": "アプリ側の上限なし",
-      "en": "No app-imposed limit"
-    }
-  },
-  "plan-mark": {
-    "html": {
-      "ja": "StagePaneロゴ",
-      "en": "StagePane mark"
-    }
-  },
-  "plan-shown": {
-    "html": {
-      "ja": "表示",
-      "en": "Shown"
-    }
-  },
-  "plan-optional": {
-    "html": {
-      "ja": "表示／非表示",
-      "en": "Optional"
+      "ja": "まずは、無料で。",
+      "en": "Start with Free."
     }
   },
   "plan-note": {
     "html": {
-      "ja": "Proは買い切りです。利用できるソース数はMacの性能とOSの制約に依存します。価格と通貨はApp Storeとアプリ内の購入画面で確認できます。",
-      "en": "Pro is a one-time purchase. The number of usable sources depends on your Mac’s performance and operating-system limits. Check the App Store and the in-app purchase screen for the price in your currency."
+      "ja": "Proの価格はApp Store・アプリ内でご確認ください。利用できるソース数はMacの性能とOSの制約に依存します。",
+      "en": "See the App Store or the app for Pro pricing. Available source capacity depends on your Mac and macOS."
     }
   },
   "faq-title": {
     "html": {
-      "ja": "よくある質問",
+      "ja": "使う前に、少しだけ。",
       "en": "A few things to know."
     }
   },
@@ -359,26 +287,14 @@ const translations = {
   },
   "faq-curtain": {
     "html": {
-      "ja": "カーテンを閉じると取得も止まりますか？",
-      "en": "Does closing Curtain stop capture?"
+      "ja": "カーテンや切り抜きで、画面の取得は止まりますか？",
+      "en": "Do the Curtain or cropping stop capture?"
     }
   },
   "faq-curtain-copy": {
     "html": {
-      "ja": "カーテンは観客向けの映像を覆い、画面取得は継続します。「すべて停止」は取得を終了し、再接続待ちを含む全レイヤーを削除します。1件だけ一時的に隠す場合は、そのレイヤーの「非表示」を使います。",
-      "en": "Curtain covers the audience view while capture continues. Stop All ends capture and removes every layer, including disconnected layers. To temporarily hide one source, use Hide on that layer."
-    }
-  },
-  "faq-crop": {
-    "html": {
-      "ja": "切り抜きやソース選択の範囲は？",
-      "en": "What do source selection and cropping include?"
-    }
-  },
-  "faq-crop-copy": {
-    "html": {
-      "ja": "各ソースはAppleの選択画面で、その取得セッション用に許可します。アプリを選ぶと複数ウインドウが含まれる場合があるため、範囲を絞るには1つのウインドウを選びます。切り抜きはStageの表示範囲を変えるもので、選択したソース全体の取得範囲は変わりません。",
-      "en": "You approve each source in Apple’s picker for that capture session. Choosing an app can include several windows; choose a single window for a narrower scope. Cropping changes the area shown on the Stage, not the scope of the captured source."
+      "ja": "カーテンはStageを覆い、切り抜きは表示範囲を変えます。どちらも選択したソースの取得は続きます。取得を終了するときは「すべて停止」を使ってください。",
+      "en": "The Curtain covers the Stage, and cropping changes the visible area. Both keep capturing the selected source. Use Stop All to end capture."
     }
   },
   "faq-access": {
@@ -393,28 +309,16 @@ const translations = {
       "en": "App-wide Screen Recording Access is optional. You can dismiss the initial guide and still share content selected in Apple’s picker. macOS may show source selection or sharing confirmation each time."
     }
   },
-  "faq-recovery": {
-    "html": {
-      "ja": "ウインドウや映像を見失ったときは？",
-      "en": "How do I recover a window or source?"
-    }
-  },
-  "faq-recovery-copy": {
-    "html": {
-      "ja": "メニューバーのStagePaneアイコンからWorkspaceやStageを再表示できます。共有が終了したレイヤーは「選び直す」で再接続すると、配置と切り抜きを保てます。ソース選択や取得開始のエラーは、Workspace内の案内から再試行できます。",
-      "en": "Reopen Workspace or Stage from the StagePane menu bar icon. Use Select Again on an ended source to reconnect while keeping its layout and crop. Source-selection or capture-start errors can be retried from the notice in Workspace."
-    }
-  },
   "privacy-title": {
     "html": {
-      "ja": "画面の扱いとプライバシー",
-      "en": "Screen content and privacy"
+      "ja": "プライバシーとポリシー",
+      "en": "Privacy & policies"
     }
   },
   "privacy-summary": {
     "html": {
-      "ja": "選択した画面はMac上で処理します。会議への配信は、利用者が選んだ会議アプリが行います。StagePaneにアカウントは不要で、画像はコピーやPNG保存を選んだときだけ残ります。",
-      "en": "Selected screen content is processed on your Mac. Your meeting app handles transmission to the meeting. StagePane needs no account, and images remain only when you choose to copy an image or save a PNG."
+      "ja": "画面の扱い、保存される設定、販売について。",
+      "en": "Screen content, saved preferences, and purchasing information."
     }
   },
   "privacy-full": {
@@ -483,18 +387,6 @@ const translations = {
       "en": "Build instructions (README)"
     }
   },
-  "closing-title": {
-    "html": {
-      "ja": "次の画面共有を、<br>もっと伝わる時間に。",
-      "en": "Make your next screen share<br>easier to follow."
-    }
-  },
-  "closing-copy": {
-    "html": {
-      "ja": "まずは無料で。4つのソースを、あなたのStageに。",
-      "en": "Start free. Bring up to four sources into your Stage."
-    }
-  },
   "footer-nav": {
     "aria-label": {
       "ja": "関連リンク",
@@ -545,14 +437,14 @@ const translations = {
       "en": "Workspace with two layers: a layer list on the left and slides beside a booking app demo on the canvas"
     },
     "src": {
-      "ja": "assets/screenshots/ja/product-workspace-light.webp",
-      "en": "assets/screenshots/en/product-workspace-light.webp"
+      "ja": "assets/screenshots/ja/product-workspace-light.webp?v=20261021-stage-lp",
+      "en": "assets/screenshots/en/product-workspace-light.webp?v=20261021-stage-lp"
     }
   },
   "workspace-dark": {
     "srcset": {
-      "ja": "assets/screenshots/ja/product-workspace-dark.webp",
-      "en": "assets/screenshots/en/product-workspace-dark.webp"
+      "ja": "assets/screenshots/ja/product-workspace-dark.webp?v=20261021-stage-lp",
+      "en": "assets/screenshots/en/product-workspace-dark.webp?v=20261021-stage-lp"
     }
   },
   "workspace-zoom": {
@@ -563,14 +455,14 @@ const translations = {
   },
   "meta-title": {
     "content": {
-      "ja": "StagePane — 見せたいものだけ、ひとつの共有ウインドウに。",
-      "en": "StagePane — Share what matters. In one window."
+      "ja": "StagePane — 見せたいものを、ひとつの画面に。",
+      "en": "StagePane — Your work, together. Your space, private."
     }
   },
   "meta-description": {
     "content": {
-      "ja": "資料とアプリを自由に並べて、ひとつの共有ウインドウに。選んだウインドウだけを共有し、通知や手元の作業と分けられるmacOSアプリ。4ソースまで無料。",
-      "en": "Arrange slides and apps in one shareable window. Choose individual windows to keep other apps’ notifications and private work outside your share. Free for up to four sources on macOS."
+      "ja": "資料とデモは相手へ、Slackの通知やメモは手元に。ウインドウを個別に選んで並べ、会議ではStageだけを共有するmacOSアプリ。選択したウインドウ内の通知は映る場合があります。4ソースまで無料。",
+      "en": "Keep unselected Slack windows and notes out of your presentation. Choose individual windows and share only the Stage in your meeting. Notifications within selected windows may appear. Free for four sources."
     }
   },
   "meta-locale": {
@@ -593,8 +485,8 @@ const translations = {
   },
   "meta-image": {
     "content": {
-      "ja": "https://stagepane.hinoshiba.com/assets/screenshots/ja/product-stage.webp",
-      "en": "https://stagepane.hinoshiba.com/assets/screenshots/en/product-stage.webp"
+      "ja": "https://stagepane.hinoshiba.com/assets/screenshots/ja/product-stage.webp?v=20261021-stage-lp",
+      "en": "https://stagepane.hinoshiba.com/assets/screenshots/en/product-stage.webp?v=20261021-stage-lp"
     }
   },
   "meta-image-alt": {
@@ -609,118 +501,28 @@ const translations = {
       "en": "https://stagepane.hinoshiba.com/?lang=en"
     }
   },
-  "audience-label": {
-    "html": {
-      "ja": "相手に見える画面",
-      "en": "What your audience sees"
-    }
-  },
-  "privacy-benefit-title": {
-    "html": {
-      "ja": "通知や個人メモを、<br>共有の外に。",
-      "en": "Keep notifications<br>and private work private."
-    }
-  },
-  "privacy-benefit-copy": {
-    "html": {
-      "ja": "見せたいウインドウを個別に選び、会議ではStageだけを共有。選択していない別アプリの通知や、デスクトップでの作業を混ぜずに見せられます。",
-      "en": "Choose individual windows, then share only the Stage in your meeting app. Notifications from other apps and work outside those windows stay out of the composition."
-    }
-  },
-  "sharing-condition": {
-    "html": {
-      "ja": "画面全体やアプリ全体を選ぶと、共有される範囲も広がります。選択したウインドウ内の通知やダイアログは表示されることがあります。",
-      "en": "Choosing an entire display or app broadens what is shared. Notifications and dialogs within a selected window may still appear."
-    }
-  },
-  "diagram-label": {
-    "aria-label": {
-      "ja": "ウインドウを個別に選んだ場合の共有範囲",
-      "en": "Sharing scope when you select individual windows"
-    }
-  },
-  "chosen-windows": {
-    "html": {
-      "ja": "選んだウインドウ",
-      "en": "Windows you choose"
-    }
-  },
-  "sample-slides": {
-    "html": {
-      "ja": "説明資料",
-      "en": "Slides"
-    }
-  },
-  "sample-demo": {
-    "html": {
-      "ja": "アプリのデモ",
-      "en": "App demo"
-    }
-  },
-  "shared-window": {
-    "html": {
-      "ja": "会議で共有",
-      "en": "Share in your meeting"
-    }
-  },
-  "private-label": {
-    "html": {
-      "ja": "選ばなかったものは、手元に",
-      "en": "Everything else stays with you"
-    }
-  },
-  "private-notifications": {
-    "html": {
-      "ja": "別アプリの通知",
-      "en": "Other apps’ notifications"
-    }
-  },
-  "private-notes": {
-    "html": {
-      "ja": "個人メモ",
-      "en": "Private notes"
-    }
-  },
-  "private-desktop": {
-    "html": {
-      "ja": "デスクトップ",
-      "en": "Your desktop"
-    }
-  },
   "layout-eyebrow": {
     "html": {
-      "ja": "見せるためのレイアウト",
-      "en": "A layout for your audience"
+      "ja": "いつもの操作で、見せやすく",
+      "en": "Familiar moves. A clearer picture."
     }
   },
   "layout-title": {
     "html": {
-      "ja": "資料とデモを、<br>並べて伝える。",
-      "en": "Your slides and demo.<br>Better together."
+      "ja": "並べる。重ねる。<br>伝わる形に。",
+      "en": "Move. Resize.<br>Make your point."
     }
   },
   "layout-copy": {
     "html": {
-      "ja": "説明資料のとなりに、アプリの動きを。比較したい2つの資料も、ひとつの画面に。大きさ・位置・重なりを整え、必要な部分だけを切り抜いて見せられます。",
-      "en": "Put a live app demo beside your slides, or compare two documents in one view. Resize, position, layer, and crop your content for the audience."
-    }
-  },
-  "layout-detail": {
-    "html": {
-      "ja": "手元のウインドウ配置はそのまま。共有するStageの中だけで、見やすく整えられます。",
-      "en": "Keep your desktop arranged for you. Compose the Stage for everyone else."
+      "ja": "大きさも、位置も、ウインドウのように。手元の配置を変えずに、共有する映像だけを整えられます。",
+      "en": "Move and resize your sources like windows. Shape the shared view while keeping your own desktop arrangement."
     }
   },
   "workspace-caption": {
     "html": {
-      "ja": "手元で整えるWorkspace。編集用の道具は、Stageには映りません。",
-      "en": "Your Workspace for composing. Editing controls do not appear in the Stage."
-    }
-  },
-  "tools-title": {
-    "html": {
-      "ja": "<span class=\"phrase\">説明を、</span><span class=\"phrase\">わかりやすく。</span>",
-      "en": "Make your point clear."
+      "ja": "手元で整えるWorkspace。会議で共有するのはStageだけ。画面はサンプルです。",
+      "en": "Arrange in your Workspace; share only the Stage. Screens show sample content."
     }
   },
   "local-title": {
@@ -731,14 +533,14 @@ const translations = {
   },
   "local-copy": {
     "html": {
-      "ja": "StagePaneは画面内容をクラウドに送信しません。StagePaneのアカウントも不要。会議への配信は、お使いの会議アプリが行います。",
-      "en": "StagePane processes screen content locally, with no cloud upload or StagePane account. Your meeting app handles transmission to your audience."
+      "ja": "StagePaneは画面を開発者へ送信しません。アカウントも不要です。参加者への配信は、お使いの会議アプリが行います。",
+      "en": "StagePane processes your screen on your Mac and sends none of it to the developer. No account needed. Your meeting app handles transmission to participants."
     }
   },
   "plan-common": {
     "html": {
-      "ja": "配置・切り抜き・手書き・虫眼鏡・カーテンは、無料版でも使えます。",
-      "en": "Arranging, cropping, drawing, magnifying, and the Curtain are included in the free version."
+      "ja": "配置・切り抜き・手書き・虫眼鏡・カーテン。<br>基本の道具は、すべて無料で使えます。",
+      "en": "Arrange, crop, draw, magnify, and use the Curtain.<br>All the essentials are included for free."
     }
   },
   "faq-notifications": {
@@ -759,24 +561,208 @@ const translations = {
       "en": "Contact <a class=\"contact-link\" href=\"mailto:support@hinoshiba.com\">support@hinoshiba.com</a> for product support. For purchases, billing, or refunds, visit <a class=\"contact-link\" href=\"https://support.apple.com/billing\">Apple purchase support</a>."
     }
   },
-  "stage-image": {
-    "alt": {
-      "ja": "説明資料と予約アプリのデモを左右に並べたStageの表示例",
-      "en": "Sample Stage with presentation slides and a booking app demo side by side"
-    },
-    "src": {
-      "ja": "assets/screenshots/ja/product-stage.webp",
-      "en": "assets/screenshots/en/product-stage.webp"
+  "hero-description": {
+    "html": {
+      "ja": "ウインドウを個別に選び、共有専用のStageに。<br>会議では、そのStageだけを共有します。",
+      "en": "Choose individual windows for your Stage. <br>Then share only that Stage in your meeting."
     }
   },
-  "stage-zoom": {
-    "href": {
-      "ja": "assets/screenshots/ja/product-stage.webp",
-      "en": "assets/screenshots/en/product-stage.webp"
-    },
+  "demo-local": {
+    "html": {
+      "ja": "あなたのMac",
+      "en": "Your Mac"
+    }
+  },
+  "demo-audience": {
+    "html": {
+      "ja": "相手に見える画面",
+      "en": "What your audience sees"
+    }
+  },
+  "demo-slides": {
+    "html": {
+      "ja": "説明資料",
+      "en": "Slides"
+    }
+  },
+  "demo-app": {
+    "html": {
+      "ja": "アプリのデモ",
+      "en": "App demo"
+    }
+  },
+  "demo-notes": {
+    "html": {
+      "ja": "自分用のメモ",
+      "en": "Personal notes"
+    }
+  },
+  "demo-note-line": {
+    "html": {
+      "ja": "次は、デモの操作を紹介",
+      "en": "Next: walk through the demo"
+    }
+  },
+  "demo-notification": {
+    "html": {
+      "ja": "新しいメッセージが届きました",
+      "en": "You have a new message"
+    }
+  },
+  "demo-illustration": {
+    "html": {
+      "ja": "ウインドウを個別に選んだときのイメージ",
+      "en": "Illustration: individual windows selected"
+    }
+  },
+  "demo-condition": {
+    "html": {
+      "ja": "会議では「StagePane Stage」だけを共有します。選択したウインドウ内の通知・ダイアログは映る場合があります。",
+      "en": "Share only “StagePane Stage” in your meeting. Notifications and dialogs inside selected windows may appear."
+    }
+  },
+  "demo-boundary": {
+    "html": {
+      "ja": "選ばなかったものは、共有の外に。",
+      "en": "What you don’t select stays outside the Stage."
+    }
+  },
+  "local-link": {
+    "html": {
+      "ja": "画面の扱いを詳しく見る <span aria-hidden=\"true\">↗</span>",
+      "en": "How your screen content is handled <span aria-hidden=\"true\">↗</span>"
+    }
+  },
+  "plan-intro": {
+    "html": {
+      "ja": "4つの画面で、資料もデモも。",
+      "en": "Four views. Room for your whole story."
+    }
+  },
+  "plan-free-label": {
+    "html": {
+      "ja": "無料",
+      "en": "Free"
+    }
+  },
+  "plan-source-unit": {
+    "html": {
+      "ja": "同時に使える画面",
+      "en": "views at once"
+    }
+  },
+  "plan-pro-label": {
+    "html": {
+      "ja": "もっと使うなら、Pro",
+      "en": "Need more? Go Pro."
+    }
+  },
+  "plan-pro-description": {
+    "html": {
+      "ja": "ソース数の上限を解除。<br>StagePaneロゴも非表示に。",
+      "en": "Remove the app’s source limit.<br>Choose whether to show the StagePane mark."
+    }
+  },
+  "plan-one-time": {
+    "html": {
+      "ja": "買い切りのアプリ内課金",
+      "en": "One-time in-app purchase"
+    }
+  },
+  "faq-interact": {
+    "html": {
+      "ja": "Stageの中でアプリを操作できますか？",
+      "en": "Can I interact with apps inside the Stage?"
+    }
+  },
+  "faq-interact-copy": {
+    "html": {
+      "ja": "アプリ自体の操作は元のウインドウで行います。Workspaceでは、共有する映像の位置・大きさ・重なりを調整できます。",
+      "en": "Use the original windows to interact with your apps. The Workspace lets you arrange, resize, and layer their shared views."
+    }
+  },
+  "plans-nav": {
+    "html": {
+      "ja": "無料とPro",
+      "en": "Free & Pro"
+    }
+  },
+  "diagram-description": {
+    "html": {
+      "ja": "手元の説明資料とアプリのデモだけをStageに配置。選んでいないSlackの通知と個人メモは、手元の画面に残ります。",
+      "en": "Only the selected slides and app demo appear on the Stage. An unselected Slack notification and personal notes remain on your own desktop."
+    }
+  },
+  "sample-project": {
+    "html": {
+      "ja": "体験予約の改善",
+      "en": "Better bookings"
+    }
+  },
+  "sample-title": {
+    "html": {
+      "ja": "体験予約を、<br>3ステップで。",
+      "en": "Book a workshop.<br>In three steps."
+    }
+  },
+  "sample-step1": {
+    "html": {
+      "ja": "日程",
+      "en": "Date"
+    }
+  },
+  "sample-step2": {
+    "html": {
+      "ja": "人数",
+      "en": "Guests"
+    }
+  },
+  "sample-step3": {
+    "html": {
+      "ja": "確認",
+      "en": "Confirm"
+    }
+  },
+  "sample-app-title": {
+    "html": {
+      "ja": "陶芸ワークショップ",
+      "en": "Pottery workshop"
+    }
+  },
+  "sample-app-date": {
+    "html": {
+      "ja": "10月24日（土）",
+      "en": "Sat, Oct 24"
+    }
+  },
+  "sample-app-action": {
+    "html": {
+      "ja": "予約内容を確認",
+      "en": "Review booking"
+    }
+  },
+  "demo-arrange": {
+    "html": {
+      "ja": "並べる",
+      "en": "Side by side"
+    }
+  },
+  "demo-overlap": {
+    "html": {
+      "ja": "重ねる",
+      "en": "Overlap"
+    }
+  },
+  "image-zoom": {
+    "html": {
+      "ja": "拡大 ↗",
+      "en": "Enlarge ↗"
+    }
+  },
+  "demo-controls": {
     "aria-label": {
-      "ja": "画像を拡大: 説明資料と予約アプリのデモを左右に並べたStageの表示例",
-      "en": "Enlarge image: Sample Stage with presentation slides and a booking app demo side by side"
+      "ja": "Stageの配置例",
+      "en": "Example Stage layouts"
     }
   }
 };
@@ -787,7 +773,13 @@ function updatePreviewLinks() {
   document.querySelectorAll('[data-preview]').forEach(link => {
     const kind = link.dataset.preview;
     const filename = kind + (colorScheme.matches ? '-dark' : '-light');
-    link.href = 'assets/screenshots/' + currentLanguage + '/' + filename + '.webp';
+    link.href = 'assets/screenshots/' + currentLanguage + '/' + filename + '.webp?v=20261021-stage-lp';
+  });
+}
+
+function updateLanguageLinks() {
+  document.querySelectorAll('[data-language]').forEach(link => {
+    link.href = '?lang=' + link.dataset.language + location.hash;
   });
 }
 
@@ -804,9 +796,7 @@ function setLanguage(language, updateURL = false) {
   });
   document.documentElement.lang = lang;
   document.title = translations['meta-title'].content[lang];
-  document.querySelectorAll('[data-language]').forEach(link => {
-    link.href = '?lang=' + link.dataset.language + location.hash;
-  });
+  updateLanguageLinks();
   const applicationData = document.getElementById('application-data');
   if (applicationData) {
     const data = JSON.parse(applicationData.textContent);
@@ -823,6 +813,7 @@ function setLanguage(language, updateURL = false) {
 }
 
 document.addEventListener('click', event => {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   const language = event.target.closest('[data-language]');
   const anchor = event.target.closest('a[href^="#"]');
   if (language) {
@@ -832,8 +823,7 @@ document.addEventListener('click', event => {
   if (language || anchor) {
     document.querySelectorAll('.mobile-menu[open]').forEach(menu => menu.removeAttribute('open'));
   }
-  if (anchor && !event.defaultPrevented && event.button === 0
-      && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+  if (anchor && !event.defaultPrevented) {
     const target = document.getElementById(anchor.getAttribute('href').slice(1));
     if (target instanceof HTMLElement) {
       // Closing the mobile menu hides its focused link; continue from the destination.
@@ -842,6 +832,21 @@ document.addEventListener('click', event => {
     }
   }
 });
+addEventListener('hashchange', updateLanguageLinks);
 addEventListener('popstate', () => setLanguage(new URLSearchParams(location.search).get('lang')));
 colorScheme.addEventListener('change', updatePreviewLinks);
 setLanguage(new URLSearchParams(location.search).get('lang'));
+
+const demoToolbar = document.querySelector('.demo-toolbar');
+const stageExample = document.getElementById('stage-example');
+if (demoToolbar && stageExample) {
+  demoToolbar.hidden = false;
+  demoToolbar.addEventListener('click', event => {
+    const button = event.target.closest('button[data-layout]');
+    if (!button) return;
+    stageExample.classList.toggle('is-overlap', button.dataset.layout === 'overlap');
+    demoToolbar.querySelectorAll('button').forEach(item => {
+      item.setAttribute('aria-pressed', String(item === button));
+    });
+  });
+}
