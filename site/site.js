@@ -168,19 +168,19 @@ const translations = {
   "eyebrow": {
     "html": {
       "ja": "画面共有のためのmacOSアプリ",
-      "en": "A calmer way to share your screen"
+      "en": "Screen sharing for macOS"
     }
   },
   "hero-title": {
     "html": {
-      "ja": "見せたいものを、<br>ひとつの画面に。",
-      "en": "Your work, together.<br>Your space, private."
+      "ja": "伝えたいことに、<br>集中できる。",
+      "en": "Focus on<br>your message."
     }
   },
   "hero-lead": {
     "html": {
-      "ja": "資料とデモは、相手へ。<br>Slackの通知や個人メモは、手元に。",
-      "en": "Slides and demos for your audience. <br>Slack notifications and notes for you."
+      "ja": "いつもの作業環境のまま、<br>画面共有をもっと気軽に。",
+      "en": "Share with less fuss,<br>without changing how you work."
     }
   },
   "compatibility": {
@@ -455,8 +455,8 @@ const translations = {
   },
   "meta-title": {
     "content": {
-      "ja": "StagePane — 見せたいものを、ひとつの画面に。",
-      "en": "StagePane — Your work, together. Your space, private."
+      "ja": "StagePane — 伝えたいことに、集中できる。",
+      "en": "StagePane — Focus on your message."
     }
   },
   "meta-description": {
@@ -609,22 +609,10 @@ const translations = {
       "en": "You have a new message"
     }
   },
-  "demo-illustration": {
-    "html": {
-      "ja": "ウインドウを個別に選んだときのイメージ",
-      "en": "Illustration: individual windows selected"
-    }
-  },
   "demo-condition": {
     "html": {
       "ja": "会議では「StagePane Stage」だけを共有します。選択したウインドウ内の通知・ダイアログは映る場合があります。",
       "en": "Share only “StagePane Stage” in your meeting. Notifications and dialogs inside selected windows may appear."
-    }
-  },
-  "demo-boundary": {
-    "html": {
-      "ja": "選ばなかったものは、共有の外に。",
-      "en": "What you don’t select stays outside the Stage."
     }
   },
   "local-link": {
@@ -741,28 +729,10 @@ const translations = {
       "en": "Review booking"
     }
   },
-  "demo-arrange": {
-    "html": {
-      "ja": "並べる",
-      "en": "Side by side"
-    }
-  },
-  "demo-overlap": {
-    "html": {
-      "ja": "重ねる",
-      "en": "Overlap"
-    }
-  },
   "image-zoom": {
     "html": {
       "ja": "拡大 ↗",
       "en": "Enlarge ↗"
-    }
-  },
-  "demo-controls": {
-    "aria-label": {
-      "ja": "Stageの配置例",
-      "en": "Example Stage layouts"
     }
   }
 };
@@ -810,6 +780,7 @@ function setLanguage(language, updateURL = false) {
     url.searchParams.set('lang', lang);
     history.pushState(null, '', url);
   }
+  document.dispatchEvent(new Event('stagepane:languagechange'));
 }
 
 document.addEventListener('click', event => {
@@ -836,17 +807,3 @@ addEventListener('hashchange', updateLanguageLinks);
 addEventListener('popstate', () => setLanguage(new URLSearchParams(location.search).get('lang')));
 colorScheme.addEventListener('change', updatePreviewLinks);
 setLanguage(new URLSearchParams(location.search).get('lang'));
-
-const demoToolbar = document.querySelector('.demo-toolbar');
-const stageExample = document.getElementById('stage-example');
-if (demoToolbar && stageExample) {
-  demoToolbar.hidden = false;
-  demoToolbar.addEventListener('click', event => {
-    const button = event.target.closest('button[data-layout]');
-    if (!button) return;
-    stageExample.classList.toggle('is-overlap', button.dataset.layout === 'overlap');
-    demoToolbar.querySelectorAll('button').forEach(item => {
-      item.setAttribute('aria-pressed', String(item === button));
-    });
-  });
-}
