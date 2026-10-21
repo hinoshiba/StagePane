@@ -76,11 +76,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             #selector(AppController.toggleStageFullScreen),
             target: controller
         ))
-        menu.addItem(item(
-            L10n.text("Stage設定…", "Stage Settings…"),
-            #selector(AppController.showStageSettings),
-            target: controller
-        ))
+        menu.addItem(StagePaneMenus.makePointerMenuItem(controller: controller))
         let imagesTitle = L10n.text("Stage画像", "Stage Image")
         let imagesItem = NSMenuItem(title: imagesTitle, action: nil, keyEquivalent: "")
         let imagesMenu = NSMenu(title: imagesTitle)

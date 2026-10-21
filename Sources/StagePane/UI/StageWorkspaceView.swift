@@ -128,11 +128,6 @@ struct StageWorkspaceView: View {
                 .help(L10n.text("会議で共有するStageウインドウを表示（⌘2）", "Open the audience Stage window (⌘2)"))
                 stageWindowMenu
             }
-
-            Button(action: controller.showSettings) {
-                Label(L10n.text("設定", "Settings"), systemImage: "gearshape")
-            }
-            .help(L10n.text("アプリの設定（⌘,）", "App settings (⌘,)"))
         }
         .buttonStyle(.bordered)
         .controlSize(.regular)
@@ -155,12 +150,6 @@ struct StageWorkspaceView: View {
             }
             .disabled(!controller.stageIsVisible || controller.stageFullScreenTransitionInProgress)
             Divider()
-            Toggle(L10n.text("常に手前に表示", "Keep on Top"), isOn: $controller.isAlwaysOnTop)
-                .disabled(controller.stageIsFullScreen || controller.stageFullScreenTransitionInProgress)
-            Toggle(L10n.text("すべてのデスクトップに表示", "Show on All Desktops"), isOn: $controller.followsAllSpaces)
-                .disabled(controller.stageIsFullScreen || controller.stageFullScreenTransitionInProgress)
-            Toggle(L10n.text("閉じる・最小化を防止", "Prevent Closing and Minimizing"), isOn: $controller.presentationLock)
-            Divider()
             Button(action: controller.copyStageScreenshot) {
                 Label(L10n.text("Audience画像をコピー", "Copy Audience Image"), systemImage: "doc.on.clipboard")
             }
@@ -177,7 +166,7 @@ struct StageWorkspaceView: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel(L10n.text("Stageウインドウの操作", "Stage window actions"))
-        .help(L10n.text("Stageの表示方法と画像の保存", "Stage window behavior and audience images"))
+        .help(L10n.text("Stageの表示と画像の保存", "Stage display and audience images"))
     }
 
     private var layerRailWidth: Double {
@@ -285,21 +274,11 @@ struct StageWorkspaceView: View {
             WorkspaceOutputStatus(controller: controller, capture: capture, snapshotSourceCount: snapshotFixture?.sourceCount)
             Spacer(minLength: 8)
             layoutMenu
-            Button {
-                controller.beginWorkspaceInteraction()
-                controller.isStageSettingsPresented.toggle()
-            } label: {
-                Label(L10n.text("Stage設定", "Stage Settings"), systemImage: "slider.horizontal.3")
-            }
-            .popover(isPresented: $controller.isStageSettingsPresented, arrowEdge: .top) {
-                StageInspectorPanel(controller: controller, capture: capture)
-            }
-            .help(L10n.text("Stageの形・背景・カーテン・ポインタ", "Stage shape, background, curtain, and pointer"))
         }
         .font(.caption)
         .buttonStyle(.borderless)
         .padding(.horizontal, 20)
-        .frame(height: 52)
+        .frame(height: 40)
     }
 
     private var layoutMenu: some View {
@@ -474,7 +453,7 @@ struct StageWorkspaceView: View {
     }
 
     private var usesEditingShortcuts: Bool {
-        !controller.isStageSettingsPresented && !showsSharingGuide
+        !showsSharingGuide
     }
 
     private var globalInteractionModes: [StageInteractionMode] {
@@ -815,17 +794,19 @@ private struct WorkspaceOutputStatus: View {
     let snapshotSourceCount: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 10) {
             Label(statusTitle, systemImage: statusSymbol)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(controller.privacyCurtain && controller.stageIsVisible ? Color.orange : Color.primary)
-            Text(captureTitle)
-                .font(.system(size: 11))
-                .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
+            if needsAttention {
+                Label(L10n.text("要確認", "Needs attention"), systemImage: "exclamationmark.circle")
+                    .foregroundStyle(.orange)
+            }
         }
         .lineLimit(1)
-        .help(statusDetail)
+        .help("\(captureTitle)\n\(statusDetail)")
         .accessibilityElement(children: .combine)
+        .accessibilityValue(captureTitle)
         .accessibilityHint(statusDetail)
     }
 

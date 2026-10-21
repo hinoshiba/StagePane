@@ -1,4 +1,5 @@
 import AppKit
+import StagePaneCore
 import SwiftUI
 
 @main
@@ -14,9 +15,10 @@ enum StagePaneApplication {
 }
 
 @MainActor
-final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
+final class StagePaneAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var controller: AppController?
     private var configuredMainMenu: NSMenu?
+    private var pointerMenu: NSMenu?
     private var terminationReplyPending = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -243,8 +245,13 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             modifiers: [.command, .shift],
             target: controller
         ))
+        stageMenu.addItem(.separator())
+        let pointerItem = StagePaneMenus.makePointerMenuItem(controller: controller)
+        pointerMenu = pointerItem.submenu
+        pointerMenu?.delegate = self
+        stageMenu.addItem(pointerItem)
         stageMenu.addItem(menuItem(
-            L10n.text("Stage設定…", "Stage Settings…"),
+            L10n.text("ステージ設定…", "Stage Settings…"),
             action: #selector(AppController.showStageSettings),
             key: "", modifiers: [], target: controller
         ))
@@ -254,14 +261,9 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
             key: "", modifiers: [], target: controller
         ))
         stageMenu.addItem(menuItem(
-            L10n.text("画面共有について…", "About Screen Sharing…"),
-            action: #selector(AppController.showPermissions),
-            key: "",
-            modifiers: [],
-            target: controller
-        ))
-        stageMenu.addItem(menuItem(
-            L10n.text("カーテンを切り替え", "Toggle Curtain"),
+            controller.privacyCurtain
+                ? L10n.text("カーテンを開く", "Open Curtain")
+                : L10n.text("カーテンを閉じる", "Close Curtain"),
             action: #selector(AppController.toggleCurtain),
             key: "h",
             modifiers: [.command, .shift],
@@ -336,6 +338,11 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ] {
             windowMenu.addItem(menuItem(title, action: action, key: "", modifiers: [], target: controller))
         }
+        windowMenu.addItem(menuItem(
+            L10n.text("Stageウインドウの設定…", "Stage Window Settings…"),
+            action: #selector(AppController.showWindowSettings),
+            key: "", modifiers: [], target: controller
+        ))
         windowMenu.addItem(.separator())
         windowMenu.addItem(menuItem(
             L10n.text("すべてを手前に移動", "Bring All to Front"),
@@ -358,6 +365,11 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         ))
         helpMenu.addItem(.separator())
         helpMenu.addItem(menuItem(
+            L10n.text("アクセスとプライバシー…", "Access & Privacy…"),
+            action: #selector(AppController.showPermissions),
+            key: "", modifiers: [], target: controller
+        ))
+        helpMenu.addItem(menuItem(
             L10n.text("プライバシーポリシー", "Privacy Policy"),
             action: #selector(AppController.openPrivacyPolicy),
             key: "",
@@ -376,6 +388,11 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.helpMenu = helpMenu
 
         return main
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu === pointerMenu, let controller else { return }
+        StagePaneMenus.populatePointerMenu(menu, controller: controller)
     }
 
     private func installConfiguredMainMenu() {
@@ -401,5 +418,53 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate {
         item.keyEquivalentModifierMask = modifiers
         item.target = target
         return item
+    }
+}
+
+/// Main-menu and status-item commands use the same saved pointer preference.
+@MainActor
+enum StagePaneMenus {
+    static func makePointerMenuItem(controller: AppController) -> NSMenuItem {
+        let title = L10n.text("ポインタ", "Pointer")
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        let menu = NSMenu(title: title)
+        populatePointerMenu(menu, controller: controller)
+        item.submenu = menu
+        return item
+    }
+
+    static func populatePointerMenu(_ menu: NSMenu, controller: AppController) {
+        menu.removeAllItems()
+        for style in StagePaneCore.PointerStyle.allCases {
+            let item = NSMenuItem(
+                title: L10n.pointerStyleName(style),
+                action: #selector(AppController.selectPointerStyle(_:)),
+                keyEquivalent: ""
+            )
+            item.target = controller
+            item.representedObject = style.rawValue
+            item.state = controller.pointerStyle == style ? .on : .off
+            menu.addItem(item)
+        }
+        if controller.stageInteractionMode.suppressesAudiencePointer {
+            menu.addItem(.separator())
+            let status = NSMenuItem(
+                title: controller.stageInteractionMode == .annotate
+                    ? L10n.text("手書き中は一時的に非表示", "Temporarily hidden while drawing")
+                    : L10n.text("虫眼鏡中は一時的に非表示", "Temporarily hidden while magnifying"),
+                action: nil,
+                keyEquivalent: ""
+            )
+            status.isEnabled = false
+            menu.addItem(status)
+        }
+        menu.addItem(.separator())
+        let settings = NSMenuItem(
+            title: L10n.text("ポインタ設定…", "Pointer Settings…"),
+            action: #selector(AppController.showPointerSettings),
+            keyEquivalent: ""
+        )
+        settings.target = controller
+        menu.addItem(settings)
     }
 }

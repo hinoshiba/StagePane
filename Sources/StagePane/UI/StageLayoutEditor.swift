@@ -268,33 +268,16 @@ struct StageLayoutEditor: View {
     }
 
     private var idleContent: some View {
-        VStack(spacing: 15) {
-            BrandMark(size: 40)
-
-            VStack(spacing: 5) {
-                Text(L10n.text("最初のStageをつくりましょう", "Build your first Stage"))
-                    .font(.headline.weight(.bold))
-                Text(L10n.text(
-                    "選んだ内容だけを、整えて、ひとつの共有ウインドウへ。",
-                    "Choose only what you need, compose it, then share one clean window."
-                ))
-                .font(.caption)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            }
-
-            Button(action: controller.chooseSource) {
-                Label(L10n.text("最初のソースを追加", "Add Your First Source"), systemImage: "plus")
-                    .frame(minWidth: 154)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(StagePanePalette.indigo)
-            .disabled(!controller.canRequestSourceAddition)
-            .accessibilityHint(L10n.text(
-                "macOSの共有ピッカーを開きます。",
-                "Opens the macOS sharing picker."
-            ))
+        Button(action: controller.chooseSource) {
+            Label(L10n.text("ソースを追加…", "Add Source…"), systemImage: "plus")
         }
+        .buttonStyle(.borderedProminent)
+        .tint(StagePanePalette.indigo)
+        .disabled(!controller.canRequestSourceAddition)
+        .accessibilityHint(L10n.text(
+            "macOSの共有ピッカーを開きます。",
+            "Opens the macOS sharing picker."
+        ))
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(controller.theme.prefersDarkForeground ? Color.black.opacity(0.82) : .white)
@@ -1494,11 +1477,13 @@ private struct CaptureSourceRow: View {
                                     .accessibilityHidden(true)
                             }
                         }
-                        Text(phaseTitle)
-                            .font(.system(size: 12))
-                            .lineLimit(2, reservesSpace: true)
-                            .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        if source.phase != .active || capture.attentionSummary(for: source.id) != nil {
+                            Text(phaseTitle)
+                                .font(.system(size: 12))
+                                .lineLimit(2)
+                                .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -1662,14 +1647,6 @@ struct SelectedLayerTools: View {
            let source = capture.source(for: sourceID) {
             SelectedSourceTools(source: source, controller: controller, capture: capture)
                 .id(source.id)
-        } else if !capture.sources.isEmpty {
-            Text(L10n.text(
-                "一覧またはキャンバスでレイヤーを選択してください。",
-                "Select a layer in the list or canvas."
-            ))
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -1682,12 +1659,7 @@ private struct SelectedSourceTools: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(source.title)
-                .font(.callout)
-                .lineLimit(1)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .help(source.title)
-                .layoutPriority(-1)
+            Spacer(minLength: 0)
 
             SourceColorInversionToggle(source: source, controller: controller, capture: capture)
                 .toggleStyle(.switch)

@@ -6,19 +6,6 @@ import StoreKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable {
-    case canvas
-    case sources
-    case stage
-    case appearance
-    case pro
-    case permissions
-    case privacy
-    case about
-
-    var id: String { rawValue }
-}
-
 enum ProUpgradeTrigger: Equatable, Sendable {
     case direct
     case sourceLimit
@@ -63,8 +50,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published private(set) var selectedSourceID: StageSourceID?
     @Published private(set) var cropEditingSourceID: StageSourceID?
     @Published private(set) var cropDraft: NormalizedSourceRect?
-    @Published private(set) var workspaceSection: WorkspaceSection = .appearance
-    @Published var isStageSettingsPresented = false
     @Published private(set) var captureAccessIssueNotice: CaptureAccessIssueNotice?
     @Published private(set) var hasMacScreenRecordingAccess = false
     @Published private(set) var hasRequestedMacScreenRecordingAccess = false
@@ -225,8 +210,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private let defaults: UserDefaults
     private var workspaceWindowController: StageWorkspaceWindowController?
     private var stageWindowController: StageWindowController?
-    private var settingsWindowController: StagePrivateWindowController?
-    private var permissionsWindowController: StagePrivateWindowController?
+    private var settingsWindowController: SettingsWindowController?
+    private var aboutWindowController: StagePrivateWindowController?
     private var macScreenRecordingAccessWindowController: StagePrivateWindowController?
     private var checksMacScreenRecordingAccess = false
     private var proWindowController: StagePrivateWindowController?
@@ -239,8 +224,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var activeSessionStartedAt: Date?
     private var activeSessionReachedPreview = false
     private var previousHasProAccess = false
-    private var pendingProContinuation = false
-    private var proContinuationID: UUID?
+    private var proContinuation = ProUpgradeContinuation()
     private var reviewRequestIsScheduled = false
     private var transientNoticeDismissalTask: Task<Void, Never>?
 
@@ -352,45 +336,31 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     StagePaneAccess.sourceLimit(hasProAccess: nowHasProAccess)
                 )
                 objectWillChange.send()
-                if !nowHasProAccess {
-                    pendingProContinuation = false
-                    return
-                }
-                if gainedProAccess, proWindowIsVisible, proContinuationID != nil {
-                    pendingProContinuation = true
-                }
-                guard pendingProContinuation,
-                      operationState == .idle,
-                      proWindowIsVisible,
-                      let continuationID = proContinuationID else { return }
-                pendingProContinuation = false
-                // Allow the StoreKit sheet to dismiss before returning to the
-                // original action. Recheck its identity after that turn: closing
-                // Pro or beginning another task invalidates this continuation.
+                proContinuation.accessChanged(
+                    hasAccess: nowHasProAccess, gainedAccess: gainedProAccess
+                )
+                let generation = proContinuation.generation
+                // @Published emits before the store has committed the new state.
+                // Resume on the next turn, after purchase sheets can dismiss.
                 DispatchQueue.main.async { [weak self] in
-                    guard let self,
-                          self.hasProAccess,
-                          self.proWindowIsVisible,
-                          self.proContinuationID == continuationID else { return }
-                    let trigger = self.proUpgradeTrigger
-                    self.beginWorkspaceInteraction()
-                    switch trigger {
-                    case .sourceLimit:
-                        guard self.canRequestSourceAddition else { return }
-                        self.proWindowController?.close()
-                        self.chooseSource()
-                    case .watermark:
-                        self.prefersWatermark = false
-                        self.proWindowController?.close()
-                        self.showStageSettings()
-                        self.transientNotice = L10n.text(
-                            "StagePaneロゴを非表示にしました。",
-                            "The StagePane mark is now hidden."
-                        )
-                    case .direct:
-                        break
-                    }
+                    self?.resumeProContinuation(generation: generation)
                 }
+            }
+            .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)
+            .sink { [weak self] notification in
+                guard let self, let window = notification.object as? NSWindow,
+                      let proWindow = proWindowController?.window,
+                      window !== proWindow, window.sheetParent !== proWindow else { return }
+                proContinuation.cancel()
+            }
+            .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)
+            .sink { [weak self] _ in
+                // Do not resume an old action after the user works elsewhere.
+                // If authentication leaves this app too, Pro still unlocks;
+                // the purchase window retains explicit next-action buttons.
+                self?.proContinuation.cancel()
             }
             .store(in: &cancellables)
         annotations.$document
@@ -592,21 +562,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func presentPermissionCheck() {
-        beginWorkspaceInteraction()
-        if permissionsWindowController == nil {
-            permissionsWindowController = StagePrivateWindowController(
-                title: L10n.text("画面共有について — 手元用", "About Screen Sharing — Private"),
-                autosaveName: "StagePane.ScreenSharingAccess",
-                size: NSSize(width: 640, height: 500),
-                minimumSize: NSSize(width: 560, height: 440),
-                content: ScreenSharingAccessView(controller: self, capture: capture)
-            )
-        }
-        permissionsWindowController?.present()
+        presentSettings(pane: .access)
     }
 
     func closePermissionCheck() {
-        permissionsWindowController?.close()
+        settingsWindowController?.close()
     }
 
     func chooseSourceFromAccessGuide() {
@@ -775,7 +735,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         let originalPrivacyMessage = privacyMessage
         let originalPrivacyMessageSize = privacyMessageSize
         let originalCurtain = privacyCurtain
-        let originalWorkspaceSection = workspaceSection
         let originalInteractionMode = stageInteractionMode
         let originalStageRenderingSize = stageRenderingSize
         let originalInkPreferences = annotations.preferences
@@ -800,7 +759,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             privacyMessage = originalPrivacyMessage
             privacyMessageSize = originalPrivacyMessageSize
             privacyCurtain = originalCurtain
-            workspaceSection = originalWorkspaceSection
             stageRenderingSize = originalStageRenderingSize
             hasMacScreenRecordingAccess = originalMacScreenRecordingAccess
             hasRequestedMacScreenRecordingAccess = originalMacScreenRecordingRequest
@@ -829,13 +787,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         // of any meeting app's transmitted resolution or this Mac's display.
         stageRenderingSize = CGSize(width: 1_920, height: 1_080)
         try writePNG(
-            of: StageInspectorPanel(controller: self, capture: capture)
-                .frame(width: 360, height: 600)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .stage)
+                .frame(width: 680, height: 600)
                 .background(Color(nsColor: .windowBackgroundColor)),
-            pointSize: CGSize(width: 360, height: 600),
+            pointSize: CGSize(width: 680, height: 600),
             to: directory.appendingPathComponent("stage-settings.png")
         )
-        workspaceSection = .canvas
         try writePNG(
             of: StageWorkspaceView(controller: self, capture: capture)
                 .frame(width: 1_440, height: 900),
@@ -871,7 +828,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         setStageInteractionMode(.arrange)
         privacyCurtain = true
-        workspaceSection = .sources
         try writePNG(
             of: StageWorkspaceView(
                 controller: self,
@@ -884,7 +840,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         )
 
         try writePNG(
-            of: ScreenSharingAccessView(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .access)
                 .frame(width: 640, height: 500),
             pointSize: CGSize(width: 640, height: 500),
             to: directory.appendingPathComponent("permissions.png")
@@ -908,24 +864,22 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             )
         }
 
-        workspaceSection = .privacy
         try writePNG(
-            of: AppSettingsView(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .access)
                 .frame(width: 720, height: 650),
             pointSize: CGSize(width: 720, height: 650),
             to: directory.appendingPathComponent("privacy.png")
         )
         pointerAppearance = .presentationDefault
-        workspaceSection = .appearance
         try writePNG(
-            of: StageInspectorPanel(controller: self, capture: capture)
-                .frame(width: 360, height: 600)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .pointer)
+                .frame(width: 680, height: 600)
                 .background(Color(nsColor: .windowBackgroundColor)),
-            pointSize: CGSize(width: 360, height: 600),
+            pointSize: CGSize(width: 680, height: 600),
             to: directory.appendingPathComponent("appearance.png")
         )
         try writePNG(
-            of: AppSettingsView(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .pointer)
                 .frame(width: 720, height: 650),
             pointSize: CGSize(width: 720, height: 650),
             to: directory.appendingPathComponent("app-settings.png")
@@ -941,29 +895,28 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         // Exercise private windows and native controls in dark appearance too,
         // without changing the app's or the user's system appearance.
         try writePNG(
-            of: AppSettingsView(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .pointer)
                 .preferredColorScheme(.dark)
                 .frame(width: 720, height: 650),
             pointSize: CGSize(width: 720, height: 650),
             to: directory.appendingPathComponent("app-settings-dark.png")
         )
-        workspaceSection = .about
         try writePNG(
-            of: AppSettingsView(controller: self, capture: capture)
+            of: AboutPanel(controller: self)
                 .preferredColorScheme(.dark)
                 .frame(width: 640, height: 540),
             pointSize: CGSize(width: 640, height: 540),
             to: directory.appendingPathComponent("settings-640-about-dark.png")
         )
         try writePNG(
-            of: StageInspectorPanel(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .stage)
                 .preferredColorScheme(.dark)
-                .frame(width: 360, height: 600),
-            pointSize: CGSize(width: 360, height: 600),
+                .frame(width: 680, height: 600),
+            pointSize: CGSize(width: 680, height: 600),
             to: directory.appendingPathComponent("stage-inspector-dark.png")
         )
         try writePNG(
-            of: ScreenSharingAccessView(controller: self, capture: capture)
+            of: SettingsPaneView(controller: self, capture: capture, pane: .access)
                 .preferredColorScheme(.dark)
                 .frame(width: 640, height: 500),
             pointSize: CGSize(width: 640, height: 500),
@@ -1057,14 +1010,17 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             )
         }
 
-        for section in [WorkspaceSection.appearance, .about] {
-            workspaceSection = section
-            try writePNG(
-                of: AppSettingsView(controller: self, capture: capture)
-                    .frame(width: 640, height: 540),
-                pointSize: CGSize(width: 640, height: 540),
-                to: directory.appendingPathComponent("settings-640-\(section.rawValue).png")
-            )
+        for colorScheme in [ColorScheme.light, .dark] {
+            let appearanceName = colorScheme == .dark ? "dark" : "light"
+            for pane in SettingsPane.allCases {
+                try writePNG(
+                    of: SettingsPaneView(controller: self, capture: capture, pane: pane)
+                        .preferredColorScheme(colorScheme)
+                        .frame(width: 680, height: 600),
+                    pointSize: CGSize(width: 680, height: 600),
+                    to: directory.appendingPathComponent("settings-\(pane.rawValue)-\(appearanceName).png")
+                )
+            }
         }
         setStageInteractionMode(.annotate)
         try writePNG(
@@ -1228,65 +1184,69 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func showSettings() {
-        beginWorkspaceInteraction()
-        if workspaceSection == .privacy {
-            workspaceSection = .about
-        } else if workspaceSection != .about {
-            workspaceSection = .appearance
-        }
-        presentSettingsWindow()
+        presentSettings()
     }
 
-    @objc func showAbout() {
-        selectWorkspaceSection(.about)
+    @objc func showPointerSettings() {
+        presentSettings(pane: .pointer)
     }
 
     @objc func showStageSettings() {
+        presentSettings(pane: .stage)
+    }
+
+    @objc func showWindowSettings() {
+        presentSettings(pane: .window)
+    }
+
+    private func presentSettings(pane: SettingsPane? = nil) {
+        proContinuation.cancel()
+        if settingsWindowController == nil {
+            settingsWindowController = SettingsWindowController(
+                controller: self, capture: capture, defaults: defaults
+            )
+        }
+        settingsWindowController?.present(pane: pane)
+    }
+
+    @objc func selectPointerStyle(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let style = StagePaneCore.PointerStyle(rawValue: rawValue) else { return }
+        pointerStyle = style
+    }
+
+    @objc func showAbout() {
         beginWorkspaceInteraction()
-        if proWindowIsVisible { proWindowController?.close() }
-        presentWorkspace()
-        isStageSettingsPresented = true
+        if aboutWindowController == nil {
+            aboutWindowController = StagePrivateWindowController(
+                title: L10n.text("StagePaneについて", "About StagePane"),
+                autosaveName: "StagePane.About",
+                size: NSSize(width: 640, height: 540),
+                minimumSize: NSSize(width: 560, height: 440),
+                content: AboutPanel(controller: self)
+            )
+        }
+        aboutWindowController?.present()
     }
 
     @objc func showProUpgrade() {
         presentProUpgrade(trigger: .direct)
     }
 
-    func selectWorkspaceSection(_ section: WorkspaceSection) {
-        switch section {
-        case .canvas, .sources:
-            showStageWorkspace()
-        case .stage:
-            showStageSettings()
-        case .pro:
-            showProUpgrade()
-        case .permissions:
-            presentPermissionCheck()
-        case .appearance, .privacy, .about:
-            beginWorkspaceInteraction()
-            workspaceSection = section == .privacy ? .about : section
-            presentSettingsWindow()
-        }
-    }
-
-    private func presentSettingsWindow() {
-        if settingsWindowController == nil {
-            settingsWindowController = StagePrivateWindowController(
-                title: L10n.text("StagePane設定 — 手元用", "StagePane Settings — Private"),
-                autosaveName: "StagePane.Settings",
-                size: NSSize(width: 720, height: 650),
-                minimumSize: NSSize(width: 640, height: 540),
-                content: AppSettingsView(controller: self, capture: capture)
-            )
-        }
-        settingsWindowController?.present()
-    }
-
     func presentProUpgrade(trigger: ProUpgradeTrigger) {
         proUpgradeTrigger = trigger
-        pendingProContinuation = false
-        proContinuationID = trigger == .direct ? nil : UUID()
-        isStageSettingsPresented = false
+        let action: ProUpgradeContinuation.Action?
+        if hasProAccess || purchases.operationState == .purchasing ||
+            purchases.operationState == .restoring || purchases.operationState == .pending {
+            action = nil
+        } else {
+            switch trigger {
+            case .direct: action = nil
+            case .sourceLimit: action = .addSource
+            case .watermark: action = .hideWatermark
+            }
+        }
+        proContinuation.begin(action)
         if proWindowController == nil {
             proWindowController = StagePrivateWindowController(
                 title: L10n.text("StagePane Pro — 手元用", "StagePane Pro — Private"),
@@ -1302,11 +1262,33 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         proWindowController?.present()
     }
 
+    func dismissProUpgrade() {
+        proContinuation.cancel()
+        proWindowController?.close()
+    }
+
+    private func resumeProContinuation(generation: UUID) {
+        guard purchases.operationState == .idle else { return }
+        guard let action = proContinuation.consume(
+            generation: generation,
+            isIdle: purchases.operationState == .idle,
+            contextIsValid: NSApp.isActive && proWindowController?.window?.isVisible == true
+        ) else { return }
+        guard hasProAccess else { return }
+        dismissProUpgrade()
+        switch action {
+        case .addSource:
+            if canRequestSourceAddition { chooseSource() }
+        case .hideWatermark:
+            prefersWatermark = false
+            showStageSettings()
+        }
+    }
+
     /// Returning to editing cancels a deferred purchase action, never the
     /// purchase itself. Entitlements still update after the window closes.
     func beginWorkspaceInteraction() {
-        pendingProContinuation = false
-        proContinuationID = nil
+        proContinuation.cancel()
     }
 
     private func proWindowDidClose() {
@@ -1379,7 +1361,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         add(L10n.text("Stageウインドウを保護", "Protect Stage Window"), #selector(toggleStageProtection))
         menu.addItem(.separator())
         add(L10n.text("ステージワークスペースを表示", "Show Stage Workspace"), #selector(showStageWorkspace))
-        add(L10n.text("Stage設定…", "Stage Settings…"), #selector(showStageSettings))
+        add(L10n.text("ステージ設定…", "Stage Settings…"), #selector(showStageSettings))
         return menu
     }
 
@@ -1452,17 +1434,34 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         if !makeKey, stageIsFullScreen || stageFullScreenTransitionInProgress {
             return
         }
+        let previousKeyWindow = NSApp.keyWindow
+        defer {
+            // Native deminiaturization can make Stage key even when orderFront
+            // does not. Keep the current editor/settings field active.
+            if !makeKey, let previousKeyWindow,
+               previousKeyWindow.isVisible, !previousKeyWindow.isMiniaturized,
+               NSApp.keyWindow !== previousKeyWindow {
+                previousKeyWindow.makeKeyAndOrderFront(nil)
+            }
+        }
         if stageWindowController?.window?.isMiniaturized == true {
             stageWindowController?.window?.deminiaturize(nil)
         }
-        stageWindowController?.showWindow(nil)
         if makeKey {
+            stageWindowController?.showWindow(nil)
             stageWindowController?.window?.makeKeyAndOrderFront(nil)
+        } else if let previousKeyWindow,
+                  previousKeyWindow !== stageWindowController?.window,
+                  previousKeyWindow.isVisible,
+                  !previousKeyWindow.isMiniaturized {
+            // A Settings change can reveal or resize Stage without covering
+            // the field that initiated it. orderFront preserves key status,
+            // but still places the audience window over the private editor.
+            stageWindowController?.window?.order(.below, relativeTo: previousKeyWindow.windowNumber)
         } else {
             stageWindowController?.window?.orderFront(nil)
         }
         stageIsVisible = true
-        stageIsMiniaturized = false
     }
 
     @objc func chooseSource() {
@@ -1542,6 +1541,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
+        case #selector(selectPointerStyle(_:)):
+            guard let rawValue = menuItem.representedObject as? String,
+                  let style = StagePaneCore.PointerStyle(rawValue: rawValue) else { return false }
+            menuItem.state = pointerStyle == style ? .on : .off
+            return true
         case #selector(toggleStageMaximized):
             menuItem.title = stageMaximizeMenuTitle
             return !stageIsFullScreen && !stageFullScreenTransitionInProgress

@@ -17,6 +17,18 @@ Versioning once 1.0.0 is released.
 - Layers can be renamed from their list menu to make sources easier to identify.
   Names appear only in the private Workspace and last for the current session.
 
+### Changed
+
+- Moved Stage preferences from the Workspace into one Settings window, opened
+  from StagePane → Settings…, Command-comma, or the menu-bar icon. Its named
+  panes are Pointer, Stage, Window, Access & Privacy, and Pro; the Canvas and
+  layer list stay dedicated to composition.
+- Added Stage → Pointer for quick type changes and a direct link to Pointer
+  Settings. Both use the saved choice and identify temporary suppression
+  during Draw or Magnify.
+- Reduced repeated headings and explanatory text in Settings and Workspace,
+  keeping output state, recovery actions, and crop controls visible.
+
 ## [0.4.3] - Unreleased
 
 ### Added

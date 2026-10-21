@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / プライバシーポリシー
 
-Updated / 更新日: 2026-10-14
+Updated / 更新日: 2026-10-20
 
 ## Data and purpose / データと利用目的
 
@@ -17,9 +17,9 @@ StagePaneは、Appleの共有ピッカーで選んだ画面と手書きをMac上
 Preferences are saved on your Mac: the Stage shape and appearance, window
 behavior, the safe-area guide and StagePane mark settings, the pointer style,
 size, color, and glow, the Curtain message and its text size, drawing tool
-settings, the layer list width, whether the first Mac Screen Recording Access
-check has been completed, and the position and size of the Workspace, Stage,
-Settings, Pro, screen-sharing guide, and Mac Screen Recording Access windows.
+settings, the layer list width, the last selected Settings pane, whether the first
+Mac Screen Recording Access check has been completed, and the position and size
+of the Workspace, Stage, About, Pro, and Mac Screen Recording Access windows.
 The access status itself is read from macOS, not saved by StagePane. The
 Mac App Store build additionally saves three local values used only to decide
 when to show the App Store rating prompt: a count of successful sessions, the
@@ -33,8 +33,8 @@ app, because sharing the whole app or display can also reveal the Workspace.
 
 設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、
 セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、
-カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、Macの画面収録アクセスの
-初回確認が済んだかどうか、およびWorkspace・Stage・設定・Pro・画面共有の案内・Macの画面収録アクセスの
+カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に開いた設定項目、
+Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・About・Pro・Macの画面収録アクセスの
 各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。
 Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使う
 ローカルな3つの値（成功したセッションの回数、その最初の日付、
