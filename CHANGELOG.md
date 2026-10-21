@@ -19,6 +19,9 @@ Versioning once 1.0.0 is released.
 
 ### Changed
 
+- Rebuilt the Japanese and English website around selected-window sharing,
+  an interactive Stage layout illustration, and the current Workspace.
+  Reduced repeated feature copy and clarified the notification-sharing boundary.
 - Moved Stage preferences from the Workspace into one Settings window, opened
   from StagePane → Settings…, Command-comma, or the menu-bar icon. Its named
   panes are Pointer, Stage, Window, Access & Privacy, and Pro; the Canvas and
