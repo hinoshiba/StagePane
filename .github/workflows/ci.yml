@@ -127,7 +127,7 @@ jobs:
             assert_snapshot_size "$NAME" "$WIDTH" "$HEIGHT"
             SNAPSHOT_COUNT=$((SNAPSHOT_COUNT + 1))
           done <<'SNAPSHOT_SIZES'
-          stage-settings 720 1200
+          stage-settings 1360 1200
           workspace 2880 1800
           arrange 2880 1800
           draw 2880 1800
@@ -137,12 +137,12 @@ jobs:
           screen-recording-access-pending 1120 680
           screen-recording-access-allowed 1120 680
           privacy 1440 1300
-          appearance 720 1200
+          appearance 1360 1200
           app-settings 1440 1300
           pro 1560 1520
           app-settings-dark 1440 1300
           settings-640-about-dark 1280 1080
-          stage-inspector-dark 720 1200
+          stage-inspector-dark 1360 1200
           permissions-dark 1280 1000
           screen-recording-access-dark 1120 680
           screen-recording-access-pending-dark 1120 680
@@ -160,8 +160,16 @@ jobs:
           workspace-access-error-source-900-dark 1800 1240
           pro-comparison-light 1280 720
           pro-comparison-dark 1280 720
-          settings-640-appearance 1280 1080
-          settings-640-about 1280 1080
+          settings-pointer-light 1360 1200
+          settings-pointer-dark 1360 1200
+          settings-stage-light 1360 1200
+          settings-stage-dark 1360 1200
+          settings-window-light 1360 1200
+          settings-window-dark 1360 1200
+          settings-access-light 1360 1200
+          settings-access-dark 1360 1200
+          settings-pro-light 1360 1200
+          settings-pro-dark 1360 1200
           draw-900 1800 1240
           eraser-900-light 1800 1240
           eraser-900-dark 1800 1240

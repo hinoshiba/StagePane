@@ -45,7 +45,7 @@ enum L10n {
     static func pointerStyleName(_ style: PointerStyle) -> String {
         switch style {
         case .system: text("通常", "System")
-        case .redDot: text("レーザーポインター", "Laser pointer")
+        case .redDot: text("レーザーポインタ", "Laser pointer")
         case .hidden: text("非表示", "Hidden")
         }
     }

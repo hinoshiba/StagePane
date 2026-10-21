@@ -105,13 +105,13 @@ private struct SnapshotLayerRow: View {
                     Text(source.title)
                         .font(.system(size: 13, weight: source.isSelected ? .semibold : .regular))
                         .lineLimit(1)
-                    Text(source.isHidden
-                        ? L10n.text("非表示・取得停止", "Hidden · Capture paused")
-                        : L10n.text("画面取得中", "Capturing"))
-                        .font(.system(size: 12))
-                        .lineLimit(2, reservesSpace: true)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if source.isHidden {
+                        Text(L10n.text("非表示・取得停止", "Hidden · Capture paused"))
+                            .font(.system(size: 12))
+                            .lineLimit(2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -135,11 +135,7 @@ struct SnapshotSelectedLayerTools: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(fixture.selectedSourceTitle)
-                .font(.callout)
-                .lineLimit(1)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(-1)
+            Spacer(minLength: 0)
             Toggle(isOn: .constant(false)) {
                 Label(L10n.invertLayerColorsTitle, systemImage: "circle.lefthalf.filled")
             }

@@ -187,7 +187,7 @@ struct ProUpgradePanel: View {
                 }
 
                 Button {
-                    controller.selectWorkspaceSection(.canvas)
+                    controller.dismissProUpgrade()
                 } label: {
                     Text(L10n.text("無料版を続ける", "Continue Free"))
                 }
@@ -226,13 +226,17 @@ struct ProUpgradePanel: View {
             HStack(spacing: 10) {
                 if controller.proUpgradeTrigger == .sourceLimit,
                    controller.canRequestSourceAddition {
-                    Button(action: controller.chooseSource) {
+                    Button {
+                        controller.dismissProUpgrade()
+                        controller.chooseSource()
+                    } label: {
                         Label(L10n.text("次のソースを追加", "Add the Next Source"), systemImage: "plus")
                     }
                     .buttonStyle(PrimaryActionButtonStyle())
                 } else if controller.proUpgradeTrigger == .watermark {
                     Button {
                         controller.requestWatermarkVisibility(false)
+                        controller.dismissProUpgrade()
                         controller.showStageSettings()
                     } label: {
                         Label(L10n.text("ロゴを非表示", "Hide the StagePane Mark"), systemImage: "rectangle.badge.minus")
@@ -241,9 +245,9 @@ struct ProUpgradePanel: View {
                 }
 
                 Button {
-                    controller.selectWorkspaceSection(.canvas)
+                    controller.dismissProUpgrade()
                 } label: {
-                    Text(L10n.text("ワークスペースへ戻る", "Return to Workspace"))
+                    Text(L10n.text("閉じる", "Close"))
                 }
                 .buttonStyle(SecondaryActionButtonStyle())
             }

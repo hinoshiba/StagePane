@@ -44,324 +44,124 @@ struct StageOutputDetails: View {
     }
 }
 
-/// Stage-wide output settings which are distinct from visual styling.
-struct StageSettingsPanel: View {
+struct StageSettingsPane: View {
     @ObservedObject var controller: AppController
-    @ObservedObject var capture: CaptureCoordinator
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                HStack(alignment: .top, spacing: 18) {
-                    SectionHeading(
-                        eyebrow: L10n.text("STAGE SETTINGS", "STAGE SETTINGS"),
-                        title: L10n.text("共有Stageを準備", "Prepare the Share Stage"),
-                        detail: L10n.text(
-                            "出力の形と公開状態を、共有用ウインドウを汚さずに整えます。",
-                            "Set the output shape and audience state without putting controls in the shared window."
-                        )
-                    )
-
-                    Spacer(minLength: 12)
-                    WorkspaceCaptureBadge(capture: capture, curtain: controller.privacyCurtain)
-                }
-
-                VStack(alignment: .leading, spacing: 13) {
-                    HStack {
-                        Text(L10n.text("ステージの形", "Stage shape"))
-                            .font(.headline)
-                        Spacer()
-                        Text("Audience PNG · \(controller.preset.pixelWidth) × \(controller.preset.pixelHeight)")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(L10n.text(
-                                "Audience PNGのサイズ、\(controller.preset.pixelWidth)かける\(controller.preset.pixelHeight)ピクセル",
-                                "Audience PNG size, \(controller.preset.pixelWidth) by \(controller.preset.pixelHeight) pixels"
-                            ))
-                    }
-                    PresetPicker(controller: controller)
-                        .disabled(controller.stageFullScreenTransitionInProgress)
-
-                    Divider()
-
-                    HStack {
-                        Text(L10n.text("現在のStage描画サイズ", "Current Stage Rendering Size"))
-                            .font(.caption)
-                        Spacer()
-                        Text(stageRenderingSizeText)
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-
-                    Text(L10n.text(
-                        "Stageが小さいと、共有画質が低下することがあります。Stageを拡大し、手元の操作はWorkspaceで行ってください。実際の共有解像度は会議アプリが決めます。",
-                        "A small Stage can reduce sharing quality. Enlarge the Stage and use the Workspace to edit. Your meeting app determines the resolution it shares."
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-                .cardSurface()
-
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 210), spacing: 12)],
-                    spacing: 12
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 12) {
+                Picker(
+                    L10n.text("形", "Shape"),
+                    selection: Binding(get: { controller.preset }, set: { controller.setPreset($0) })
                 ) {
-                    StageSettingAction(
-                        title: controller.privacyCurtain
-                            ? L10n.text("カーテンを開く", "Reveal Stage")
-                            : L10n.text("カーテン", "Curtain"),
-                        detail: controller.privacyCurtain
-                            ? L10n.text("準備できた内容を相手に表示", "Show the prepared content")
-                            : L10n.text("相手側の出力をすぐ隠す", "Hide the audience output instantly"),
-                        symbol: controller.privacyCurtain ? "eye.fill" : "shield.lefthalf.filled",
-                        tint: controller.privacyCurtain
-                            ? StagePanePalette.mintReadable
-                            : StagePanePalette.coralReadable,
-                        action: controller.toggleCurtain
-                    )
-
-                    StageSettingAction(
-                        title: L10n.text("共有Stageを表示", "Show Share Stage"),
-                        detail: L10n.text("共有用ウインドウを前面へ", "Bring the share window forward"),
-                        symbol: "macwindow.on.rectangle",
-                        tint: StagePanePalette.indigo,
-                        action: controller.showStage
-                    )
-
-                    StageSettingAction(
-                        title: controller.stageIsFullScreen
-                            ? L10n.text("Stageのフルスクリーンを終了", "Exit Stage Full Screen")
-                            : L10n.text("Stageをフルスクリーンにする", "Enter Stage Full Screen"),
-                        detail: controller.stageIsFullScreen
-                            ? L10n.text("通常のウインドウへ戻す", "Return to a regular window")
-                            : L10n.text("専用Spaceで表示・Workspaceは手元用", "Use a separate Space; keep Workspace private"),
-                        symbol: controller.stageIsFullScreen
-                            ? "arrow.down.right.and.arrow.up.left"
-                            : "arrow.up.left.and.arrow.down.right",
-                        tint: StagePanePalette.indigo,
-                        action: controller.toggleStageFullScreen,
-                        isDisabled: controller.stageFullScreenTransitionInProgress
-                    )
-
-                    StageSettingAction(
-                        title: L10n.text("共有向けにStageを拡大", "Enlarge Stage for Sharing"),
-                        detail: L10n.text("画面に収まる共有向けサイズへ", "Fit a sharing size to your screen"),
-                        symbol: "arrow.up.left.and.arrow.down.right",
-                        tint: StagePanePalette.indigo,
-                        action: controller.enlargeStageForSharing,
-                        isDisabled: controller.stageIsFullScreen ||
-                            controller.stageFullScreenTransitionInProgress
-                    )
-
-                    StageSettingAction(
-                        title: capture.hasResettableFailure
-                            ? L10n.text("画面取得をリセット", "Reset Capture")
-                            : L10n.stopAllAndRemoveLayersTitle,
-                        detail: capture.hasResettableFailure
-                            ? L10n.text("エラーを消して選び直す", "Clear the error and choose again")
-                            : L10n.text(
-                                "全ソースの取得を終了し、レイヤーを削除",
-                                "End every capture and remove its layers"
-                            ),
-                        symbol: capture.hasResettableFailure
-                            ? "arrow.counterclockwise"
-                            : "stop.fill",
-                        tint: capture.hasResettableFailure ? .orange : .secondary,
-                        action: controller.stopPreview,
-                        isDisabled: (!capture.hasLayers &&
-                            !capture.isCaptureActive &&
-                            !capture.hasResettableFailure) ||
-                            capture.isPickerPresented
-                    )
-
-                    StageSettingAction(
-                        title: conferenceShareTitle,
-                        detail: L10n.text(
-                            "会議アプリで正確なStageを選択",
-                            "Choose the exact Stage in your meeting app"
-                        ),
-                        symbol: "arrow.up.forward.app",
-                        tint: StagePanePalette.aquaReadable,
-                        action: controller.requestConferenceShare
-                    )
-                }
-
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "eye.slash.fill")
-                        .foregroundStyle(StagePanePalette.aquaReadable)
-                        .accessibilityHidden(true)
-                    Text(L10n.text(
-                        "フルスクリーンを使う場合は共有前に切り替え、⌘1でWorkspaceに戻ります。会議アプリでは「StagePane Stage」だけを共有してください。⌃⌘FでStageのフルスクリーンを切り替えます。",
-                        "Enter full screen before sharing, then press ⌘1 to return to the private Workspace. In your meeting app, share only “StagePane Stage”. Use ⌃⌘F to toggle Stage full screen."
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-                .cardSurface()
-            }
-            .padding(.top, 30)
-            .padding(.horizontal, 30)
-            .padding(.bottom, 30)
-            .frame(maxWidth: 960, alignment: .topLeading)
-            .frame(maxWidth: .infinity, alignment: .top)
-        }
-    }
-
-    private var stageRenderingSizeText: String {
-        guard let size = controller.stageRenderingSize else {
-            return L10n.text("未取得", "Not Available")
-        }
-        return "\(Int(size.width.rounded())) × \(Int(size.height.rounded())) px"
-    }
-
-    private var conferenceShareTitle: String {
-        if #available(macOS 15.0, *) {
-            return L10n.text("共有先をStageへ切替", "Switch Active Share")
-        }
-        return L10n.text("共有方法を見る", "How to Share")
-    }
-}
-
-private struct WorkspaceCaptureBadge: View {
-    @ObservedObject var capture: CaptureCoordinator
-    let curtain: Bool
-
-    var body: some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 7, height: 7)
-            Text(statusTitle)
-                .lineLimit(1)
-        }
-        .font(.caption2.weight(.bold))
-        .foregroundStyle(statusColor)
-        .padding(.horizontal, 10)
-        .frame(minHeight: 29)
-        .background(statusColor.opacity(0.10), in: Capsule())
-        .overlay(Capsule().stroke(statusColor.opacity(0.22)))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(statusTitle)
-        .accessibilityValue(capture.statusDetail)
-    }
-
-    private var statusTitle: String {
-        if captureNeedsAttention {
-            return L10n.text("確認が必要", "Needs Attention")
-        }
-        if allSourcesPaused {
-            return L10n.text("すべて一時停止中", "All Paused")
-        }
-        if capture.isCaptureActive {
-            return curtain
-                ? L10n.text("取得中・カーテン中", "Active · Curtain On")
-                : L10n.text("画面取得中", "Capture Active")
-        }
-        return curtain
-            ? L10n.text("待機中・カーテン中", "Ready · Curtain On")
-            : L10n.text("待機中", "Ready")
-    }
-
-    private var statusColor: Color {
-        if captureNeedsAttention { return .orange }
-        if allSourcesPaused { return .secondary }
-        if capture.isCaptureActive { return StagePanePalette.mintReadable }
-        return StagePanePalette.aquaReadable
-    }
-
-    private var captureNeedsAttention: Bool {
-        if case .failed = capture.phase { return true }
-        return false
-    }
-
-    private var allSourcesPaused: Bool {
-        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
-    }
-}
-
-private struct StageSettingAction: View {
-    let title: String
-    let detail: String
-    let symbol: String
-    let tint: Color
-    let action: () -> Void
-    var isDisabled = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 11) {
-                Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(tint)
-                    .frame(width: 32, height: 32)
-                    .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 9))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.caption.weight(.semibold))
-                    Text(detail)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(SecondaryActionButtonStyle())
-        .disabled(isDisabled)
-    }
-}
-
-struct PresetPicker: View {
-    @ObservedObject var controller: AppController
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ForEach(StagePreset.allCases) { preset in
-                Button {
-                    controller.setPreset(preset)
-                } label: {
-                    VStack(spacing: 8) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .stroke(
-                                controller.preset == preset
-                                    ? StagePanePalette.aquaReadable
-                                    : Color.secondary.opacity(0.60),
-                                lineWidth: controller.preset == preset ? 2 : 1
-                            )
-                            .aspectRatio(preset.aspectRatio, contentMode: .fit)
-                            .frame(height: 34)
-                        Text(L10n.presetName(preset))
-                            .font(.caption2.weight(
-                                controller.preset == preset ? .bold : .medium
-                            ))
-                            .foregroundStyle(
-                                controller.preset == preset ? Color.primary : Color.secondary
-                            )
+                    ForEach(StagePreset.allCases) { preset in
+                        Text(L10n.presetName(preset)).tag(preset)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(
-                                controller.preset == preset
-                                    ? StagePanePalette.indigo.opacity(0.12)
-                                    : Color.primary.opacity(0.035)
-                            )
-                    )
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L10n.text(
-                    "\(L10n.presetName(preset))、Audience PNGは\(preset.pixelWidth)かける\(preset.pixelHeight)ピクセル",
-                    "\(L10n.presetName(preset)), Audience PNG is \(preset.pixelWidth) by \(preset.pixelHeight) pixels"
+                .pickerStyle(.menu)
+                .disabled(controller.stageFullScreenTransitionInProgress)
+                Text(L10n.text(
+                    "形を変えるとStageを表示します。",
+                    "Changing the shape shows Stage."
                 ))
-                .accessibilityValue(
-                    controller.preset == preset ? L10n.text("選択中", "Selected") : ""
-                )
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                Picker(
+                    L10n.text("背景", "Background"),
+                    selection: Binding(get: { controller.theme }, set: { controller.setTheme($0) })
+                ) {
+                    ForEach(StageTheme.allCases) { theme in
+                        Text(L10n.themeName(theme)).tag(theme)
+                    }
+                }
+                .pickerStyle(.menu)
             }
+
+            Divider()
+            curtainSettings
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(
+                    L10n.text("セーフエリア（外周5%）", "Safe area (outer 5%)"),
+                    isOn: $controller.showsSafeArea
+                )
+                .help(L10n.text(
+                    "投影や配信で切れやすい外周5%を確認します。",
+                    "Check the outer 5% that projectors and streams may crop."
+                ))
+                .accessibilityHint(L10n.text(
+                    "投影や配信で切れやすい外周5%を確認します。",
+                    "Check the outer 5% that projectors and streams may crop."
+                ))
+                Toggle(
+                    L10n.text("StagePaneロゴを表示", "Show StagePane mark"),
+                    isOn: Binding(
+                        get: { controller.showsWatermark },
+                        set: { controller.requestWatermarkVisibility($0) }
+                    )
+                )
+                .accessibilityHint(controller.hasProAccess
+                    ? L10n.text("Stageのロゴ表示を切り替えます。", "Toggles the StagePane mark on the Stage.")
+                    : L10n.text("オフにするとStagePane Proの画面を開きます。", "Turning this off opens StagePane Pro."))
+                if !controller.hasProAccess {
+                    Text(L10n.text(
+                        "非表示にはStagePane Proが必要です。",
+                        "Hiding the mark requires StagePane Pro."
+                    ))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+            StageOutputDetails(controller: controller)
+        }
+    }
+
+    private var curtainSettings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L10n.text("カーテンのメッセージ", "Curtain message"))
+                    .font(.body.weight(.medium))
+                    .accessibilityHeading(.h2)
+                Spacer()
+                Text("\(controller.privacyMessage.count)/\(StageMessage.characterLimit)")
+                    .font(.system(size: 12).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L10n.text("メッセージの文字数", "Message character count"))
+            }
+            TextField(
+                L10n.text("少々お待ちください", "Back in a moment"),
+                text: $controller.privacyMessage,
+                axis: .vertical
+            )
+            .lineLimit(2...4)
+            .textFieldStyle(.roundedBorder)
+            .accessibilityLabel(L10n.text("カーテンのメッセージ", "Curtain message"))
+            .help(L10n.text(
+                "カーテンを閉じている間だけ表示します。",
+                "Shown only while the curtain is closed."
+            ))
+            .accessibilityHint(L10n.text(
+                "カーテンを閉じている間だけ表示します。",
+                "Shown only while the curtain is closed."
+            ))
+            Stepper(
+                value: $controller.privacyMessageSize,
+                in: StageMessage.textSizeRange,
+                step: StageMessage.textSizeStep
+            ) {
+                HStack {
+                    Text(L10n.text("文字の大きさ", "Text size"))
+                    Spacer()
+                    Text("\(controller.privacyMessageSize)%")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityLabel(L10n.text("カーテンの文字の大きさ", "Curtain text size"))
+            .accessibilityValue("\(controller.privacyMessageSize)%")
         }
     }
 }
