@@ -3,7 +3,7 @@
 All notable changes will be documented here. This project follows Semantic
 Versioning once 1.0.0 is released.
 
-## [Unreleased]
+## [0.4.4] - Unreleased
 
 ### Added
 
