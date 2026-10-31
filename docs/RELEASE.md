@@ -424,8 +424,12 @@ Run the only authorized entrypoint from the clean tagged `main` checkout:
 ./Scripts/archive-app-store.sh
 ```
 
-The helper runs the complete source checks, creates a new temporary directory
-outside the checkout, and invokes Xcode with fixed project, scheme,
+The helper verifies source provenance before preflight tests compile or execute
+local code, then repeats that verification afterward. Source checks reject
+untracked files, ignored inputs under `Sources`, `Tests`, or `Resources`, and
+Git index flags that hide tracked-file changes; ordinary top-level build output
+remains allowed. The helper creates a new temporary directory outside the
+checkout and invokes Xcode with fixed project, scheme,
 configuration, platform, and archive path arguments. It deliberately omits
 upload/export options, `-allowProvisioningUpdates`, and signing-identity
 overrides. The target Archive guard independently verifies the canonical

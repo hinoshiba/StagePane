@@ -248,6 +248,113 @@ final class CaptureStreamLifecycleTests: XCTestCase {
         XCTAssertEqual(harness.events.geometry.first?.presentationGeneration, nextGeneration)
     }
 
+    @MainActor
+    func testDelegateStopRevokesBeforeQueueDrainAndRejectsLateCallbacks() async throws {
+        let harness = Harness()
+        let frame = try makeFrame(width: 200, height: 100)
+        let framesAccepted = expectation(description: "Both initial frames are accepted")
+        framesAccepted.expectedFulfillmentCount = 2
+        let observer: PresentationGeometryHandler = { update in
+            if update.geometry != nil { framesAccepted.fulfill() }
+        }
+        let stageObserver = harness.renderers.stage.addPresentationGeometryObserver(observer)
+        let previewObserver = harness.renderers.preview.addPresentationGeometryObserver(observer)
+        defer {
+            harness.renderers.stage.removePresentationGeometryObserver(stageObserver)
+            harness.renderers.preview.removePresentationGeometryObserver(previewObserver)
+            harness.renderers.deactivate(token: harness.token)
+        }
+        harness.renderers.activate(token: harness.token, showsCursor: true,
+                                   presentationGeneration: harness.generation)
+        await harness.onQueue {
+            harness.proxy.stream(harness.stream, didOutputSampleBuffer: frame.sampleBuffer, of: .screen)
+        }
+        await fulfillment(of: [framesAccepted], timeout: 3)
+        harness.renderers.stage.removePresentationGeometryObserver(stageObserver)
+        harness.renderers.preview.removePresentationGeometryObserver(previewObserver)
+
+        // Keep rendering/teardown queued while the delegate's lock-only export
+        // fence runs. No actual capture or permission is involved.
+        let queueEntered = expectation(description: "The output queue is waiting")
+        let releaseQueue = DispatchSemaphore(value: 0)
+        harness.queue.async {
+            queueEntered.fulfill()
+            releaseQueue.wait()
+        }
+        await fulfillment(of: [queueEntered], timeout: 3)
+        harness.proxy.stream(harness.stream, didStopWithError:
+            NSError(domain: SCStreamError.errorDomain, code: SCStreamError.Code.userStopped.rawValue))
+        XCTAssertNil(harness.renderers.stage.presentationGeometry())
+        XCTAssertNil(harness.renderers.preview.presentationGeometry())
+        releaseQueue.signal()
+        let eventCount = harness.events.geometry.count
+        await harness.onQueue {
+            harness.proxy.stream(harness.stream, didOutputSampleBuffer: frame.sampleBuffer, of: .screen)
+            // Late operation completions cannot reopen a terminal binding.
+            harness.proxy.beginExplicitResumeOnOutputQueue(presentationGeneration: UUID())
+            harness.proxy.cancelExplicitPauseOnOutputQueue()
+            harness.proxy.stream(harness.stream, didOutputSampleBuffer: frame.sampleBuffer, of: .screen)
+            harness.proxy.finishGeometryDeliveryOnOutputQueue(operationID: harness.generation)
+        }
+        XCTAssertNil(harness.renderers.stage.presentationGeometry())
+        XCTAssertNil(harness.renderers.preview.presentationGeometry())
+        XCTAssertEqual(harness.events.geometry.count, eventCount)
+    }
+
+    @MainActor
+    func testTerminalFlushIsIdempotentAndCannotEraseReconnectedFrames() async throws {
+        let harness = Harness()
+        harness.renderers.activate(token: harness.token, showsCursor: true,
+                                   presentationGeneration: harness.generation)
+        // This is the explicit teardown entrypoint's synchronous fence followed
+        // by its tracked output-queue invalidation and final drain.
+        harness.renderers.revokeSnapshotAcceptance(token: harness.token)
+        await harness.onQueue {
+            harness.proxy.endPresentationOnOutputQueue()
+            harness.proxy.endPresentationOnOutputQueue()
+        }
+        let drained = expectation(description: "All old paired flushes and deactivation complete")
+        harness.renderers.deactivate(token: harness.token) { drained.fulfill() }
+        await fulfillment(of: [drained], timeout: 3)
+
+        let nextToken = UUID()
+        let nextGeneration = UUID()
+        let nextFrame = try makeFrame(width: 300, height: 100)
+        let nextProxy = CaptureStreamProxy(
+            token: nextToken, renderers: harness.renderers, outputQueue: harness.queue,
+            initialPresentationGeneration: nextGeneration,
+            geometryHandler: { _, _, _, _ in }, presentationHandler: { _, _ in },
+            stopHandler: { _, _, _ in }
+        )
+        let framesAccepted = expectation(description: "Both reconnected frames are accepted")
+        framesAccepted.expectedFulfillmentCount = 2
+        let observer: PresentationGeometryHandler = { update in
+            if update.geometry?.surfaceSize.width == 300 { framesAccepted.fulfill() }
+        }
+        let stageObserver = harness.renderers.stage.addPresentationGeometryObserver(observer)
+        let previewObserver = harness.renderers.preview.addPresentationGeometryObserver(observer)
+        defer {
+            harness.renderers.stage.removePresentationGeometryObserver(stageObserver)
+            harness.renderers.preview.removePresentationGeometryObserver(previewObserver)
+            harness.renderers.deactivate(token: nextToken)
+        }
+        harness.renderers.activate(token: nextToken, showsCursor: true,
+                                   presentationGeneration: nextGeneration)
+        await harness.onQueue {
+            nextProxy.stream(harness.stream, didOutputSampleBuffer: nextFrame.sampleBuffer, of: .screen)
+        }
+        await fulfillment(of: [framesAccepted], timeout: 3)
+        // An old delegate may arrive after its logical layer has reconnected.
+        harness.proxy.stream(harness.stream, didStopWithError:
+            NSError(domain: SCStreamError.errorDomain, code: SCStreamError.Code.userStopped.rawValue))
+        await harness.onQueue {
+            harness.proxy.endPresentationOnOutputQueue()
+            harness.proxy.stream(harness.stream, didOutputSampleBuffer: nextFrame.sampleBuffer, of: .screen)
+        }
+        XCTAssertEqual(harness.renderers.stage.presentationGeometry()?.surfaceSize.width, 300)
+        XCTAssertEqual(harness.renderers.preview.presentationGeometry()?.surfaceSize.width, 300)
+    }
+
     private func makeFrame(
         width: Int,
         height: Int,

@@ -20,6 +20,16 @@ struct CaptureRendererProgressSnapshot: Sendable {
     let isReadyForMoreMediaData: Bool
 }
 
+/// A converted source image remains usable only while its presentation is
+/// authorized. The export checks this again after assembling all source images;
+/// ordinary newer frames with unchanged presentation do not revoke it.
+struct SourceBitmapSnapshot {
+    let image: CGImage
+    fileprivate let remainsAuthorized: @Sendable () -> Bool
+
+    var isStillAuthorized: Bool { remainsAuthorized() }
+}
+
 private typealias PointerAvailabilityHandler = @MainActor @Sendable () -> Void
 
 /// A monotonic presentation state delivered to AppKit consumers. Geometry is
@@ -548,7 +558,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
     ) {
         replaceSnapshotAcceptance(
             token: token,
-            presentationGeneration: presentationGeneration
+            presentationGeneration: presentationGeneration,
+            isActivation: true
         )
         pointerSnapshotLock.lock()
         requestedPointerToken = token
@@ -1243,15 +1254,19 @@ final class SampleBufferRenderer: @unchecked Sendable {
     /// snapshot. Reading is lock-backed because ScreenCaptureKit publishes
     /// frames on `renderQueue` while screenshot capture runs on the main actor.
     @MainActor
-    fileprivate func makeBitmapSnapshotImage(
+    func makeBitmapSnapshot(
         synchronizeGeometry: (SourcePresentationGeometry?) -> Void
-    ) -> CGImage? {
+    ) -> SourceBitmapSnapshot? {
         snapshotFrameLock.lock()
         let pixelBuffer = snapshotPixelBuffer
         let geometry = snapshotPresentationGeometry
+        let revision = snapshotPresentationRevision
+        let token = snapshotToken
+        let generation = snapshotPresentationGeneration
         let isPresentationAcknowledged = snapshotPresentationIsAcknowledged
         snapshotFrameLock.unlock()
-        guard isPresentationAcknowledged, let pixelBuffer else { return nil }
+        guard isPresentationAcknowledged, let pixelBuffer,
+              let token, let generation else { return nil }
         // Apply the geometry copied in the same critical section as the pixel
         // buffer. The synchronous Stage snapshot then rasterizes one coherent
         // accepted frame even if the render queue advances again meanwhile.
@@ -1261,7 +1276,26 @@ final class SampleBufferRenderer: @unchecked Sendable {
         guard !image.extent.isEmpty,
               image.extent.width.isFinite,
               image.extent.height.isFinite else { return nil }
-        return Self.snapshotImageContext.createCGImage(image, from: image.extent)
+        guard let bitmap = Self.snapshotImageContext.createCGImage(image, from: image.extent),
+              snapshotRemainsAuthorized(revision: revision, token: token,
+                                        presentationGeneration: generation) else { return nil }
+        return SourceBitmapSnapshot(image: bitmap) { [weak self] in
+            self?.snapshotRemainsAuthorized(revision: revision, token: token,
+                                            presentationGeneration: generation) == true
+        }
+    }
+
+    private func snapshotRemainsAuthorized(
+        revision: UInt64,
+        token: UUID,
+        presentationGeneration: UUID
+    ) -> Bool {
+        snapshotFrameLock.lock()
+        defer { snapshotFrameLock.unlock() }
+        return snapshotPresentationRevision == revision &&
+            snapshotToken == token &&
+            snapshotPresentationGeneration == presentationGeneration &&
+            snapshotPresentationIsAcknowledged && snapshotPixelBuffer != nil
     }
 
     /// Copies just the visible portion under the magnifier, at its display
@@ -1387,9 +1421,17 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
     private func replaceSnapshotAcceptance(
         token: UUID,
-        presentationGeneration: UUID
+        presentationGeneration: UUID,
+        isActivation: Bool = false
     ) {
         snapshotFrameLock.lock()
+        // Pause/resume or replacement work may already be queued when Stop
+        // synchronously revokes snapshots. Those generation updates cannot
+        // reclaim a revoked token; only an explicit activation can do so.
+        guard isActivation || snapshotToken == token else {
+            snapshotFrameLock.unlock()
+            return
+        }
         snapshotToken = token
         snapshotPresentationGeneration = presentationGeneration
         snapshotPixelBuffer = nil
@@ -1404,7 +1446,10 @@ final class SampleBufferRenderer: @unchecked Sendable {
         notifyPresentationGeometryObservers(with: update)
     }
 
-    private func revokeSnapshotAcceptance(token: UUID) {
+    /// Synchronously closes bitmap and magnifier access before asynchronous
+    /// stream teardown. The existing tracked teardown still owns AVF flushing;
+    /// queued frames and acknowledgements cannot restore this revoked token.
+    func revokeSnapshotAcceptance(token: UUID) {
         snapshotFrameLock.lock()
         var update: PresentationGeometryUpdate?
         if snapshotToken == token {
@@ -1851,7 +1896,11 @@ final class SampleBufferNSView: NSView {
     /// Prepares an immutable replacement for the media layer, which AppKit's
     /// `cacheDisplay(in:to:)` cannot rasterize directly.
     func makeBitmapSnapshotImage() -> CGImage? {
-        renderer.makeBitmapSnapshotImage { [weak self] geometry in
+        makeBitmapSnapshot()?.image
+    }
+
+    func makeBitmapSnapshot() -> SourceBitmapSnapshot? {
+        renderer.makeBitmapSnapshot { [weak self] geometry in
             (self?.superview as? CroppedSampleBufferNSView)?
                 .synchronizeSnapshotGeometry(geometry)
         }

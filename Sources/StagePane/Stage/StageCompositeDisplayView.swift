@@ -197,9 +197,13 @@ final class CroppedSampleBufferNSView: NSView {
     /// pixel buffer has matching presentation geometry; returning nil preserves
     /// the snapshotter's existing complete-frame requirement.
     func makeBitmapSnapshotImage() -> CGImage? {
-        guard let image = sourceView.makeBitmapSnapshotImage(),
+        makeBitmapSnapshot()?.image
+    }
+
+    func makeBitmapSnapshot() -> SourceBitmapSnapshot? {
+        guard let snapshot = sourceView.makeBitmapSnapshot(),
               !sourceView.isHidden else { return nil }
-        return image
+        return snapshot
     }
 
     func installBitmapSnapshotImage(

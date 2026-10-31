@@ -167,6 +167,9 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
     /// The operation ID stays stable if an unavailable frame advances the
     /// independent presentation generation while the operation is in flight.
     private var deferredGeometryOperation: UUID?
+    /// Ending this binding is terminal even while MainActor teardown or a
+    /// failed stop retry is pending. Only a new proxy may accept source pixels.
+    private var hasEndedPresentation = false
     /// Advanced on the same serial queue only after a content-filter update has
     /// completed, so callbacks already queued for the previous filter cannot be
     /// relabeled as geometry from its replacement.
@@ -201,7 +204,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
         of type: SCStreamOutputType
     ) {
-        guard type == .screen else { return }
+        guard !hasEndedPresentation, type == .screen else { return }
         guard let status = frameStatus(from: sampleBuffer) else { return }
 
         switch status {
@@ -257,6 +260,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         explicitPauseState = .none
         deferredGeometryOperation = presentationGeneration
         lastGeometry = nil
@@ -275,6 +279,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         geometryGeneration: Int
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         guard self.presentationGeneration == presentationGeneration,
               presentationState == .replacingContent else { return }
         self.geometryGeneration = geometryGeneration
@@ -286,6 +291,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         explicitPauseState = .paused
         deferredGeometryOperation = nil
         self.presentationGeneration = presentationGeneration
@@ -299,6 +305,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
 
     func cancelExplicitPauseOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         guard explicitPauseState == .paused else { return }
         // A failed stop can resume frame delivery before the coordinator has
         // cleared `.pausing`, just as an early Resume frame can precede start.
@@ -310,6 +317,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         presentationGeneration: UUID
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         explicitPauseState = .resuming
         deferredGeometryOperation = presentationGeneration
         self.presentationGeneration = presentationGeneration
@@ -323,6 +331,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
 
     func cancelExplicitResumeOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         // An early complete frame may already be displayed or pending. A
         // failed Resume needs the same paired remove-image barrier as Pause;
         // merely refusing later callbacks would retain those source pixels.
@@ -340,6 +349,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
     /// complete frame, which a static source may never produce.
     func finishGeometryDeliveryOnOutputQueue(operationID: UUID) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         guard deferredGeometryOperation == operationID else { return }
         deferredGeometryOperation = nil
         if let lastGeometry {
@@ -347,10 +357,30 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         }
     }
 
+    /// Shares the paired invalidation barrier with lifecycle finalization.
+    /// Repeated delegate/teardown notifications cannot start another flush, and
+    /// stale operation completions cannot reopen this capture binding.
+    func endPresentationOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
+        let previousGeneration = presentationGeneration
+        let endedGeneration = UUID()
+        beginExplicitPauseOnOutputQueue(presentationGeneration: endedGeneration)
+        hasEndedPresentation = true
+        presentationHandler(
+            token,
+            .unavailable(previous: previousGeneration, current: endedGeneration)
+        )
+    }
+
     func stream(_ stream: SCStream, didStopWithError error: Error) {
+        // Fence exports immediately, before either queue can finish teardown.
+        // This lock-only revocation never touches AVFoundation off its queue.
+        renderers.revokeSnapshotAcceptance(token: token)
         let streamBox = SendableBox(stream)
         let failure = StreamStopFailure(error)
         outputQueue.async { [self] in
+            endPresentationOnOutputQueue()
             stopHandler(token, streamBox, failure)
         }
     }
@@ -364,6 +394,7 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
 
     private func beginUnavailablePresentationOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard !hasEndedPresentation else { return }
         guard presentationState != .replacingContent else { return }
         if explicitPauseState == .paused {
             return
@@ -2082,6 +2113,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         }
         target.activeAttention = nil
         target.isStopping = true
+        // The model's hidden state reaches SwiftUI asynchronously. Revoke
+        // retained/exportable frames now, even if stopCapture later stalls.
+        target.source.renderers.revokeSnapshotAcceptance(token: target.token)
+        let proxy = target.proxy
+        outputQueue.async {
+            proxy.endPresentationOnOutputQueue()
+        }
         target.outputSuppressed = true
         target.source.isPresentationVisible = false
         target.source.isOutputSuppressed = true
@@ -2092,10 +2130,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         target.pendingSourceGeometry = nil
         target.teardownOutcome = outcome
         target.source.phase = .stopping
-        // Removing the entry is the immediate presentation boundary. Deactivate
-        // the shared renderers exactly once after ScreenCaptureKit has stopped;
-        // issuing an untracked flush here and another tracked flush during
-        // finalization could let the first completion erase a reconnected frame.
+        // The proxy's paired invalidation is tracked by CaptureSourceRenderers.
+        // Final deactivation waits behind that barrier before permitting a new
+        // binding, so no old flush can erase a later reconnection frame.
         target.source.renderers.setPointerStyle(.hidden)
         publishSteadyState()
 

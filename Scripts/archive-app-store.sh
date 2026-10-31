@@ -10,6 +10,9 @@ if [[ $# -ne 0 ]]; then
     exit 64
 fi
 
+# Check provenance before preflight tests can compile or execute local inputs,
+# and again afterward in case a build step changed the checkout.
+./Scripts/verify-app-store-source.sh
 ./Scripts/release-check.sh
 ./Scripts/verify-app-store-source.sh
 

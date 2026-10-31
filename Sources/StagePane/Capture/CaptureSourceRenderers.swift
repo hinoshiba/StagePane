@@ -109,6 +109,14 @@ final class CaptureSourceRenderers: @unchecked Sendable {
         )
     }
 
+    /// Lock-only export revocation is synchronous even when a tracked flush
+    /// delays deactivation on renderQueue. A later authorized activation is the
+    /// only operation that can restore snapshot acceptance for this binding.
+    func revokeSnapshotAcceptance(token: UUID) {
+        stage.revokeSnapshotAcceptance(token: token)
+        preview.revokeSnapshotAcceptance(token: token)
+    }
+
     func deactivate(token: UUID, completion: (@Sendable () -> Void)? = nil) {
         let request = PendingDeactivation(token: token, completion: completion)
         renderQueue.async { [self] in

@@ -280,6 +280,11 @@ renderers while retaining layout, crop, and z-order. Resume starts the same
 stream but remains transparent until stream startup and a new complete frame for
 the current generation have both succeeded; either arrival order is safe.
 Removal and Stop All additionally delete the retained logical layer state.
+Teardown revokes snapshot acceptance before waiting for ScreenCaptureKit's
+stop completion. A terminal stream callback fences later samples on the output
+queue and clears both surfaces through the paired presentation barrier, without
+waiting for the main actor to process the session outcome. Final deactivation
+joins that barrier before a retained layer can be reconnected.
 
 Pointer geometry is scoped to the same stream generation and cleared on stop,
 blank/suspended frames, or flush. Source replacement updates that geometry only
@@ -296,10 +301,14 @@ eligibility while preserving the same z-order.
 Each renderer also retains a lock-protected reference to its latest complete
 frame solely so an explicit screenshot can rasterize the already-authorized
 pixels. The reference is replaced as playback advances and cleared at Pause,
-deactivate, or flush. A paused layer is omitted from Audience PNG output until
-Resume accepts a new complete frame. Screenshot layer
-substitution and restoration run synchronously on the main actor; the generated
-PNG is independent before source removal or Stop All can drain the live layers.
+teardown, deactivate, or flush. A paused layer is omitted from Audience PNG
+output until Resume accepts a new complete frame. Bitmap conversion carries the
+accepted presentation revision and checks it again after conversion; the final
+composition rechecks every source before returning the PNG. A concurrent
+revocation or geometry change therefore rejects an in-progress export.
+Screenshot layer substitution and restoration run synchronously on the main
+actor. Once returned, the explicitly requested PNG is independent of the live
+sources, including while its Save panel remains open.
 
 Geometry delivery across Resume, source replacement, and a failed Pause is
 held on the stream-output queue until the coordinator commits the operation on

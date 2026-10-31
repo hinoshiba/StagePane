@@ -35,8 +35,24 @@ PREVIOUS_BUILD=$(awk '$1 == "STAGEPANE_PREVIOUS_UPLOADED_BUILD:" { gsub(/"/, "",
     fail "the generated project previous uploaded build differs"
 
 [[ -d "$PROJECT_DIR/.git" ]] || fail "the source is not the primary StagePane Git checkout"
-[[ -z "$(/usr/bin/git -C "$PROJECT_DIR" status --porcelain)" ]] || \
+# These flags make Git skip worktree content checks. A clean status with one
+# set cannot establish that the local build uses the reviewed commit's files.
+INDEX_ENTRIES=$(/usr/bin/git -C "$PROJECT_DIR" ls-files -v) || \
+    fail "the Archive source index could not be inspected"
+if /usr/bin/grep -qE '^[a-zS] ' <<< "$INDEX_ENTRIES"; then
+    fail "the Archive source index must not use assume-unchanged or skip-worktree flags"
+fi
+[[ -z "$(/usr/bin/git -C "$PROJECT_DIR" status --porcelain --untracked-files=all)" ]] || \
     fail "the StagePane worktree must be clean before Archive"
+# SwiftPM discovers sources and tests independently of Git, and resource
+# directories can be copied recursively. Git's normal clean check omits ignored
+# files, so a file below an ignored build/ directory could enter a reviewed build.
+# Keep ordinary top-level build output allowed; reject extra inputs themselves.
+IGNORED_INPUTS=$(/usr/bin/git -C "$PROJECT_DIR" ls-files --others --ignored \
+    --exclude-standard -- Sources Tests Resources) || \
+    fail "the Archive source, test, and resource inputs could not be inspected"
+[[ -z "$IGNORED_INPUTS" ]] || \
+    fail "the Archive source, test, and resource directories must not contain ignored files"
 BRANCH=$(/usr/bin/git -C "$PROJECT_DIR" symbolic-ref --short -q HEAD || true)
 [[ "$BRANCH" == main ]] || fail "official archives must be created from main"
 HEAD_COMMIT=$(/usr/bin/git -C "$PROJECT_DIR" rev-parse HEAD)
