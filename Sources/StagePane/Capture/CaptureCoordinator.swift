@@ -104,7 +104,7 @@ final class CaptureSource: ObservableObject, Identifiable {
     }
 }
 
-private final class SendableBox<Value>: @unchecked Sendable {
+final class SendableBox<Value>: @unchecked Sendable {
     let value: Value
 
     init(_ value: Value) {
@@ -112,7 +112,7 @@ private final class SendableBox<Value>: @unchecked Sendable {
     }
 }
 
-private struct StreamStopFailure: Sendable {
+struct StreamStopFailure: Sendable {
     let message: String
     let domain: String
     let code: Int
@@ -129,16 +129,16 @@ private struct StreamStopFailure: Sendable {
     }
 }
 
-private enum CapturePresentationUpdate: Sendable {
+enum CapturePresentationUpdate: Sendable {
     case unavailable(previous: UUID, current: UUID)
     case ready(UUID)
 }
 
 /// A stream-specific output/delegate prevents callbacks from one source or an
 /// old stream generation from being routed into another source tile.
-private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
+final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     typealias StopHandler = @Sendable (UUID, SendableBox<SCStream>, StreamStopFailure) -> Void
-    typealias GeometryHandler = @Sendable (UUID, Int, CaptureSourceGeometry) -> Void
+    typealias GeometryHandler = @Sendable (UUID, Int, UUID, CaptureSourceGeometry) -> Void
     typealias PresentationHandler = @Sendable (UUID, CapturePresentationUpdate) -> Void
 
     private enum PresentationState: Equatable {
@@ -161,6 +161,12 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     private let presentationHandler: PresentationHandler
     /// Screen callbacks are delivered serially on CaptureCoordinator.outputQueue.
     private var lastGeometry: CaptureSourceGeometry?
+    /// A complete frame can precede an operation's MainActor completion. Keep
+    /// its latest geometry until the coordinator can accept it, rather than
+    /// suppressing identical later frames after the first notification is lost.
+    /// The operation ID stays stable if an unavailable frame advances the
+    /// independent presentation generation while the operation is in flight.
+    private var deferredGeometryOperation: UUID?
     /// Advanced on the same serial queue only after a content-filter update has
     /// completed, so callbacks already queued for the previous filter cannot be
     /// relabeled as geometry from its replacement.
@@ -223,7 +229,9 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
                 comparedTo: lastGeometry
             ) {
                 lastGeometry = geometry
-                geometryHandler(token, geometryGeneration, geometry)
+                if deferredGeometryOperation == nil {
+                    geometryHandler(token, geometryGeneration, presentationGeneration, geometry)
+                }
             }
         default:
             // Start/stop lifecycle markers carry no replacement pixels.
@@ -250,6 +258,8 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .none
+        deferredGeometryOperation = presentationGeneration
+        lastGeometry = nil
         self.presentationGeneration = presentationGeneration
         presentationState = .replacingContent
         renderers.invalidatePresentationOnRenderQueue(
@@ -277,6 +287,7 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .paused
+        deferredGeometryOperation = nil
         self.presentationGeneration = presentationGeneration
         presentationState = .awaitingFreshFrame
         lastGeometry = nil
@@ -289,6 +300,9 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     func cancelExplicitPauseOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         guard explicitPauseState == .paused else { return }
+        // A failed stop can resume frame delivery before the coordinator has
+        // cleared `.pausing`, just as an early Resume frame can precede start.
+        deferredGeometryOperation = presentationGeneration
         explicitPauseState = .none
     }
 
@@ -297,6 +311,7 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
     ) {
         dispatchPrecondition(condition: .onQueue(outputQueue))
         explicitPauseState = .resuming
+        deferredGeometryOperation = presentationGeneration
         self.presentationGeneration = presentationGeneration
         presentationState = .awaitingFreshFrame
         lastGeometry = nil
@@ -308,10 +323,28 @@ private final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelega
 
     func cancelExplicitResumeOnOutputQueue() {
         dispatchPrecondition(condition: .onQueue(outputQueue))
-        // A complete callback can race ahead of startCapture's failure and may
-        // already have advanced this state to `.none`. The failed Resume still
-        // returns the stream to an explicit paused boundary in every ordering.
-        explicitPauseState = .paused
+        // An early complete frame may already be displayed or pending. A
+        // failed Resume needs the same paired remove-image barrier as Pause;
+        // merely refusing later callbacks would retain those source pixels.
+        let previousGeneration = presentationGeneration
+        let failedGeneration = UUID()
+        beginExplicitPauseOnOutputQueue(presentationGeneration: failedGeneration)
+        presentationHandler(
+            token,
+            .unavailable(previous: previousGeneration, current: failedGeneration)
+        )
+    }
+
+    /// Called only after the coordinator has committed Resume, replacement,
+    /// or a failed Pause. Releasing cached geometry does not require another
+    /// complete frame, which a static source may never produce.
+    func finishGeometryDeliveryOnOutputQueue(operationID: UUID) {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        guard deferredGeometryOperation == operationID else { return }
+        deferredGeometryOperation = nil
+        if let lastGeometry {
+            geometryHandler(token, geometryGeneration, presentationGeneration, lastGeometry)
+        }
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -1282,11 +1315,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             renderers: renderers,
             outputQueue: outputQueue,
             initialPresentationGeneration: initialPresentationGeneration,
-            geometryHandler: { [weak self] token, generation, geometry in
-                Task { @MainActor [weak self] in
+            geometryHandler: { [weak self] token, generation, presentationGeneration, geometry in
+                // Match the output queue's geometry/presentation ordering.
+                DispatchQueue.main.async { [weak self] in
                     self?.observeSourceGeometry(
                         token: token,
                         generation: generation,
+                        presentationGeneration: presentationGeneration,
                         geometry: geometry
                     )
                 }
@@ -1461,6 +1496,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                             filter: filterBox.value,
                             errorMessage: message
                         )
+                        if message == nil {
+                            outputQueue.async {
+                                proxy.finishGeometryDeliveryOnOutputQueue(
+                                    operationID: presentationGeneration
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1560,6 +1602,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                             stream: streamBox.value,
                             errorMessage: message
                         )
+                        if message != nil {
+                            outputQueue.async {
+                                proxy.finishGeometryDeliveryOnOutputQueue(
+                                    operationID: presentationGeneration
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1651,6 +1700,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                             stream: streamBox.value,
                             errorMessage: message
                         )
+                        if message == nil {
+                            outputQueue.async {
+                                proxy.finishGeometryDeliveryOnOutputQueue(
+                                    operationID: presentationGeneration
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1759,10 +1815,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func observeSourceGeometry(
         token: UUID,
         generation: Int,
+        presentationGeneration: UUID,
         geometry: CaptureSourceGeometry
     ) {
         guard let session = sessions.values.first(where: { $0.token == token }),
               session.sourceGeometryGeneration == generation,
+              session.presentationGeneration == presentationGeneration,
               !session.isStopping,
               !session.isFinalizing,
               !session.outputSuppressed,
@@ -1783,6 +1841,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                   let current = self.sessions[sourceID],
                   current.token == token,
                   current.sourceGeometryGeneration == generation,
+                  current.presentationGeneration == presentationGeneration,
                   current.pendingSourceGeometry == geometry,
                   !current.isStopping,
                   !current.isFinalizing,

@@ -3,9 +3,22 @@ import AVFoundation
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreMedia
+import OSLog
 import QuartzCore
 import ScreenCaptureKit
 import StagePaneCore
+
+/// Counts only local pipeline activity; never includes source pixels or names.
+struct CaptureRendererProgressSnapshot: Sendable {
+    let completeFrames: UInt64
+    let idleFrames: UInt64
+    let enqueuedFrames: UInt64
+    let recoveryFlushes: UInt64
+    let hasPendingFrame: Bool
+    let isRecovering: Bool
+    let isFlushingPresentation: Bool
+    let isReadyForMoreMediaData: Bool
+}
 
 private typealias PointerAvailabilityHandler = @MainActor @Sendable () -> Void
 
@@ -163,6 +176,20 @@ final class SampleBufferRenderer: @unchecked Sendable {
 
     private let videoRenderer: AVSampleBufferVideoRenderer
     private let renderQueue: DispatchQueue
+    private static let progressLogger = Logger(
+        subsystem: "com.hinoshiba.stagepane", category: "CaptureProgress"
+    )
+    /// Ephemeral diagnostic identity, unrelated to source titles or permissions.
+    private let progressID = UUID().uuidString
+    private var progressTimer: DispatchSourceTimer?
+    private var completeFrameCount: UInt64 = 0
+    private var idleFrameCount: UInt64 = 0
+    private var enqueuedFrameCount: UInt64 = 0
+    private var recoveryFlushCount: UInt64 = 0
+    private var lastInputTime: TimeInterval?
+    private var pendingObservationTime: TimeInterval?
+    private var reportedQuietInput = false
+    private var reportedPendingFrame = false
     /// Retains the exact complete frame most recently accepted by the live
     /// renderer. AppKit view caching does not rasterize
     /// `AVSampleBufferDisplayLayer`, so the Stage screenshot path converts
@@ -284,6 +311,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
     }
 
     deinit {
+        progressTimer?.cancel()
         let notificationCenter = NotificationCenter.default
         for observer in rendererNotificationObservers {
             notificationCenter.removeObserver(observer)
@@ -529,6 +557,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         pointerSnapshotLock.unlock()
         notifyPointerAvailabilityChange(using: availabilityHandler)
         renderQueue.async { [self] in
+            resetProgressTrackingOnRenderQueue()
             cancelGeometryTransitionOnRenderQueue()
             clearPendingVideoFrameOnRenderQueue()
             desiredToken = token
@@ -559,6 +588,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
         pointerSnapshotLock.unlock()
         notifyPointerAvailabilityChange(using: availabilityHandler)
         renderQueue.async { [self] in
+            if activeToken == token || desiredToken == token {
+                resetProgressTrackingOnRenderQueue()
+            }
             cancelGeometryTransitionOnRenderQueue()
             if desiredToken == token { desiredToken = nil }
             if activeToken == token {
@@ -590,6 +622,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
         pointerSnapshotLock.unlock()
         notifyPointerAvailabilityChange(using: availabilityHandler)
         renderQueue.async { [self] in
+            resetProgressTrackingOnRenderQueue()
             cancelGeometryTransitionOnRenderQueue()
             desiredToken = nil
             activeToken = nil
@@ -622,6 +655,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             completion()
             return
         }
+        resetProgressTrackingOnRenderQueue()
         cancelGeometryTransitionOnRenderQueue()
         activePresentationGeneration = presentationGeneration
         presentationFlushGeneration = presentationGeneration
@@ -673,6 +707,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
     ) {
         dispatchPrecondition(condition: .onQueue(renderQueue))
         guard activeToken == token, desiredToken == token else { return }
+        resetProgressTrackingOnRenderQueue()
         cancelGeometryTransitionOnRenderQueue()
         activePresentationGeneration = presentationGeneration
         clearPendingVideoFrameOnRenderQueue(token: token)
@@ -706,6 +741,9 @@ final class SampleBufferRenderer: @unchecked Sendable {
               let attachments = frameAttachments(for: sampleBuffer),
               let status = frameStatus(in: attachments) else { return }
 
+        if status == .complete || status == .idle {
+            recordInputProgressOnRenderQueue(status: status)
+        }
         guard status == .complete else {
             // An idle frame means the pixels did not change, so the most recent
             // geometry remains valid while the independent pointer ticker moves.
@@ -1006,6 +1044,13 @@ final class SampleBufferRenderer: @unchecked Sendable {
               desiredToken == frame.token,
               activePresentationGeneration == frame.presentationGeneration else { return }
         videoRenderer.enqueue(frame.sampleBuffer)
+        enqueuedFrameCount &+= 1
+        pendingObservationTime = nil
+        if reportedQuietInput || reportedPendingFrame {
+            Self.progressLogger.info("Presentation advanced renderer=\(self.progressID, privacy: .public) complete=\(self.completeFrameCount) idle=\(self.idleFrameCount) enqueued=\(self.enqueuedFrameCount)")
+        }
+        reportedQuietInput = false
+        reportedPendingFrame = false
         displayedFrameIsConfirmedCursorless = frame.isConfirmedCursorless
         // Pointer proof belongs to the same frame as the geometry publication.
         // Populate or clear it before a MainActor observer can reveal the view.
@@ -1041,6 +1086,78 @@ final class SampleBufferRenderer: @unchecked Sendable {
                 frame.qualifyingRedDotTransitionID == transition.id) else { return }
         redDotTransition = nil
         completeDeferredRedDotTransition(token: frame.token)
+    }
+
+    /// Queue-confined diagnostics, also usable by synthetic-frame tests.
+    func progressSnapshotOnRenderQueue() -> CaptureRendererProgressSnapshot {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        return CaptureRendererProgressSnapshot(
+            completeFrames: completeFrameCount,
+            idleFrames: idleFrameCount,
+            enqueuedFrames: enqueuedFrameCount,
+            recoveryFlushes: recoveryFlushCount,
+            hasPendingFrame: pendingVideoFrame != nil,
+            isRecovering: rendererRecoveryFlushID != nil,
+            isFlushingPresentation: presentationFlushGeneration != nil,
+            isReadyForMoreMediaData: videoRenderer.isReadyForMoreMediaData
+        )
+    }
+
+    private func recordInputProgressOnRenderQueue(status: SCFrameStatus) {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        let now = ProcessInfo.processInfo.systemUptime
+        lastInputTime = now
+        if status == .complete { completeFrameCount &+= 1 }
+        if status == .idle { idleFrameCount &+= 1 }
+        guard progressTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: renderQueue)
+        timer.schedule(deadline: .now() + 10, repeating: 10, leeway: .seconds(1))
+        timer.setEventHandler { [weak self] in
+            self?.reportQuietProgressOnRenderQueue()
+        }
+        progressTimer = timer
+        timer.resume()
+    }
+
+    private func reportQuietProgressOnRenderQueue() {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        guard activeToken != nil,
+              presentationFlushGeneration == nil,
+              rendererRecoveryFlushID == nil,
+              let lastInputTime else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        let progress = progressSnapshotOnRenderQueue()
+        if progress.hasPendingFrame {
+            if pendingObservationTime == nil { pendingObservationTime = now }
+        } else {
+            pendingObservationTime = nil
+        }
+        if let pendingObservationTime, now - pendingObservationTime >= 10,
+           !reportedPendingFrame {
+            reportedPendingFrame = true
+            Self.progressLogger.notice("Presentation waiting renderer=\(self.progressID, privacy: .public) complete=\(progress.completeFrames) idle=\(progress.idleFrames) enqueued=\(progress.enqueuedFrames) ready=\(progress.isReadyForMoreMediaData)")
+        }
+        // Quiet capture alone is not proof of failure: a static source can
+        // legitimately stop sending callbacks. Log once, without flushing or
+        // restarting it, and keep its image and cursor proof unchanged.
+        if now - lastInputTime >= 10, !reportedQuietInput {
+            reportedQuietInput = true
+            Self.progressLogger.info("Frame delivery quiet (possibly static source) renderer=\(self.progressID, privacy: .public) complete=\(progress.completeFrames) idle=\(progress.idleFrames) enqueued=\(progress.enqueuedFrames) pending=\(progress.hasPendingFrame) ready=\(progress.isReadyForMoreMediaData)")
+        }
+    }
+
+    private func resetProgressTrackingOnRenderQueue() {
+        dispatchPrecondition(condition: .onQueue(renderQueue))
+        progressTimer?.cancel()
+        progressTimer = nil
+        completeFrameCount = 0
+        idleFrameCount = 0
+        enqueuedFrameCount = 0
+        recoveryFlushCount = 0
+        lastInputTime = nil
+        pendingObservationTime = nil
+        reportedQuietInput = false
+        reportedPendingFrame = false
     }
 
     private func qualifyingRedDotTransitionID(for token: UUID) -> UUID? {
@@ -1087,6 +1204,8 @@ final class SampleBufferRenderer: @unchecked Sendable {
         clearPublishedPointerSnapshot(token: pointerToken)
         stopRequestingMediaDataOnRenderQueue()
 
+        recoveryFlushCount &+= 1
+        Self.progressLogger.notice("Decoder recovery renderer=\(self.progressID, privacy: .public) complete=\(self.completeFrameCount) idle=\(self.idleFrameCount) enqueued=\(self.enqueuedFrameCount) recoveries=\(self.recoveryFlushCount)")
         let recoveryID = UUID()
         rendererRecoveryFlushID = recoveryID
         videoRenderer.flush(removingDisplayedImage: false) { [weak self] in
@@ -1393,6 +1512,7 @@ final class SampleBufferRenderer: @unchecked Sendable {
             pendingVideoFrame = nil
         }
         if pendingVideoFrame == nil {
+            pendingObservationTime = nil
             stopRequestingMediaDataOnRenderQueue()
         }
     }

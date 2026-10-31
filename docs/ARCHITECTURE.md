@@ -301,6 +301,24 @@ Resume accepts a new complete frame. Screenshot layer
 substitution and restoration run synchronously on the main actor; the generated
 PNG is independent before source removal or Stop All can drain the live layers.
 
+Geometry delivery across Resume, source replacement, and a failed Pause is
+held on the stream-output queue until the coordinator commits the operation on
+the main actor. The latest complete-frame geometry is then delivered even if
+no further frame arrives. Operation IDs fence delayed completions; presentation
+generations and FIFO main-queue delivery fence geometry from an older source
+presentation. A failed Resume advances to a fresh empty paused generation and
+clears both renderers through their paired flush barrier before any later
+Resume can present new pixels.
+
+Capture-progress diagnostics use one low-frequency, queue-confined monitor per
+active renderer. Local unified-log events under `CaptureProgress` distinguish
+input silence from a pending frame that has not advanced, and count explicit
+decoder recovery. Events contain only counts, state, and an ephemeral renderer
+identifier. Each quiet condition is reported once until presentation progresses;
+Pause, replacement, and teardown reset the monitor. No content or source title
+is logged. A silent static source is not evidence of failure: the diagnostic
+monitor does not flush, restart capture, or change visible/pointer state.
+
 ## Failure behavior
 
 - Picker cancellation keeps all existing sources, or returns to idle if there

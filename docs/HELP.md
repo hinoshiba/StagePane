@@ -498,6 +498,28 @@ only the audience composition.
 独立したエラーウインドウは開かず、ピッカーのキャンセルもエラー扱いしません。
 非表示や停止の失敗は、レイヤーと画面取得の状態表示で確認できます。
 
+If video stops while layer controls still work, check whether the source image
+also stops inside StagePane. For a stopped local source, **Hide → Show** restarts
+its capture while keeping placement and crop. To collect diagnostic events
+while reproducing the problem, run this command in Terminal:
+
+```sh
+log stream --level info --style compact --predicate 'subsystem == "com.hinoshiba.stagepane" AND category == "CaptureProgress"'
+```
+
+These events contain frame counts, renderer state, and temporary identifiers,
+not images or window titles. A “Frame delivery quiet” event can also mean a
+normal static source; it does not by itself identify a fault. Note whether the
+Stage and Workspace both stop, roughly how long capture ran, and whether
+Hide → Show restores the image.
+
+レイヤー操作はできるのに映像が止まった場合は、StagePane内の映像も止まるか確認します。
+手元の映像も止まる場合、対象レイヤーの **非表示 → 表示** で配置と切り抜きを保ったまま
+取得を再開できます。再現中に上記コマンドをターミナルで実行すると、フレーム数・描画状態・
+一時的な識別子だけの診断情報を確認できます。画像やウインドウ名は含みません。
+`Frame delivery quiet` は静止画でも出るため、それだけでは故障を意味しません。
+StageとWorkspaceの両方で止まるか、利用時間、非表示→表示で戻るかを併せて確認してください。
+
 StagePane processes frames locally and does not upload them. When you share the
 Stage, transmission is performed by your meeting app under its own privacy
 policy. In the Mac App Store build, Apple StoreKit handles the optional Pro
