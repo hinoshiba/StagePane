@@ -1,8 +1,8 @@
 # App Store positioning and review notes
 
-## Metadata draft — 0.4.4 (build 11)
+## Metadata draft — 0.4.5 (build 12)
 
-This candidate follows 0.4.3 (build 10). Exact-candidate manual acceptance and
+This candidate follows 0.4.4 (build 11). Exact-candidate manual acceptance and
 StoreKit purchase evidence remain pending. These fields describe the current
 implementation; they are not a record of upload, review, or release.
 
@@ -35,30 +35,23 @@ Do not use competitor trademarks in metadata and do not use `virtual display`,
 `second monitor`, `independent desktop`, `real display`, or equivalents. The app
 creates a normal shareable window, not an `NSScreen`.
 
-### What's New 0.4.4 — Japanese
+### What's New 0.4.5 — Japanese
 
-> 設定を見つけやすく、Workspaceをすっきり使えるようにしました。
+> ソースの切り替えと再表示の安定性を改善しました。
 >
-> ・「StagePane → 設定…」（⌘,）に、ポインタ、ステージ、ウインドウ、アクセスとプライバシー、Proを集約。前回開いた項目を記憶します。
-> ・メニューバーから共有ポインタをすばやく切り替えられます。手書き・虫眼鏡中はポインタを一時的に隠し、選択した設定は保持します。
-> ・Workspaceの重複した説明や設定操作を整理。Workspaceと設定はmacOSのライト／ダーク表示に合わせて切り替わります。
-> ・レイヤーに名前を付けて整理できます。名前は手元だけに表示され、そのセッション中に保持されます。
-> ・レイヤーごとの色反転を追加。写真を含むソース全体の色を反転し、ほかのレイヤーや手書きの色は保ちます。
-> ・Stageの右クリックメニューから、最大化、共有向けの拡大、フルスクリーン、ウインドウの動作、ステージ設定を開けます。
+> ・非表示からの再表示やソースの選び直しで、最新の映像サイズが正しく反映されるようにしました。
+> ・ソースの再表示に失敗した後の表示と、再試行の動作を改善しました。
+> ・ソースの停止と、観客向け画像のコピー・PNG保存の処理を改善しました。
 
-### What's New 0.4.4 — English (U.S.)
+### What's New 0.4.5 — English (U.S.)
 
-> Find preferences more easily and work in a simpler Workspace.
+> Improved reliability when switching and showing sources.
 >
-> • StagePane → Settings… (Command-,) brings together Pointer, Stage, Window, Access & Privacy, and Pro, and remembers your last pane.
-> • Switch the audience pointer from the menu bar. Draw and Magnify temporarily hide it while preserving your selected style.
-> • A quieter Workspace removes repeated labels and preference controls. Workspace and Settings follow macOS Light or Dark appearance.
-> • Give layers your own names. Names stay private and last for the current session.
-> • Invert a layer’s colors, including photos, while other layers and annotations keep their colors.
-> • Right-click the Stage for maximize, sharing size, full screen, window behavior, and Stage Settings.
+> • Keep the latest source dimensions in sync when showing a hidden source or replacing it.
+> • Improve the display state and retry behavior after a source fails to resume.
+> • Improve source cleanup and Audience Image copying and PNG saving.
 
-These changes are relative to the 0.4.3 app. The website redesign is not an app
-feature and is not included in What's New.
+These changes are relative to the 0.4.4 app.
 
 ### Description draft — Japanese
 
@@ -184,10 +177,10 @@ from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English. Website illustrations and source-build fixtures do not
 establish StoreKit purchase behavior or exact-candidate acceptance.
 
-## 0.4.4 App Review notes draft
+## 0.4.5 App Review notes draft
 
 Exact-candidate manual acceptance is pending. Use this block only after the
-0.4.4 (build 11) candidate's acceptance checks have been recorded. Product
+0.4.5 (build 12) candidate's acceptance checks have been recorded. Product
 loading, localized price, purchase/restore/cancel/pending behavior, and IAP
 review images require the actual StoreKit review environment; synthetic
 source-build fixtures are not purchase evidence.
@@ -198,15 +191,15 @@ English block by default, or the Japanese alternative, never both concatenated.
 
 ### English (preferred)
 
-> StagePane 0.4.4, build 11. No sign-in or demo account is required.
+> StagePane 0.4.5, build 12. No sign-in or demo account is required.
 >
 > In Workspace, choose Add Source and approve a harmless window in Apple’s ScreenCaptureKit picker. Each selection authorizes that source for its capture session. Repeat to compose sources. In your meeting app share only “StagePane Stage”, check the target, then open the Curtain. Whole-app or whole-display sharing can expose Workspace and private settings. Notifications/dialogs inside a selected source may appear.
 >
 > The first launch may show an optional Mac Screen Recording Access guide. Only Allow requests broad access; Continue or Escape dismisses it. Apple’s picker remains usable without broad access. Recheck in StagePane > Settings > Access & Privacy > Check Mac Screen Recording Access. Accessibility and Input Monitoring access are never requested.
 >
-> New in 0.4.4: StagePane > Settings (Command-,) opens one native window with Pointer, Stage, Window, Access & Privacy, and Pro. The menu-bar status icon opens the same window. Settings apply immediately; opening/closing preserves the selected layer, tool, and crop draft. The last pane is remembered. Stage > Pointer changes the saved style; Draw/Magnify temporarily hide it without changing that choice. Workspace and Settings follow the system appearance.
+> Updated in 0.4.5: source sizing during Show and replacement, recovery after a failed Show, and capture cleanup. Please check Hide/Show, source replacement, Stop All, and Copy/Save Audience Image with harmless test content.
 >
-> Also test Rename in a layer’s menu, per-layer Invert Colors, and the Stage’s right-click menu for size, full screen, window behavior, Workspace and Stage Settings. Names are private and session-only. Inversion affects all colors of that source, including photos, across Workspace, Stage, Magnify and PNG output; other layers, background, drawings and laser pointer are unchanged.
+> StagePane > Settings (Command-,) and the menu-bar status icon open the same private window. The Stage’s right-click menu controls its size, full screen, and window behavior. Layer names stay private and session-only; per-layer Invert Colors affects that source across Workspace, Stage, Magnify, and PNG output.
 >
 > Free permits four simultaneous sources. A fifth Add Source attempt opens the private Pro purchase window. Settings > Pro > Purchase or Restore also opens it. Product com.hinoshiba.stagepane.pro is a one-time non-consumable IAP, not a subscription. Pro removes the app’s source-count limit and makes the Stage/Curtain/PNG mark optional; practical capacity depends on Mac and OS. Check the localized price, Restore Purchases, and Continue Free. Canceling leaves the Stage running.
 >
@@ -218,15 +211,15 @@ English block by default, or the Japanese alternative, never both concatenated.
 
 ### Japanese alternative
 
-> StagePane 0.4.4、ビルド11。ログインやデモアカウントは不要です。
+> StagePane 0.4.5、ビルド12。ログインやデモアカウントは不要です。
 >
 > Workspaceの「ソースを追加」からAppleのScreenCaptureKit選択画面で無害なテスト用ウインドウを許可します。許可は選択した内容と取得セッションに限定されます。会議アプリでは「StagePane Stage」だけを共有し、対象を確認してカーテンを開いてください。アプリ全体・画面全体の共有ではWorkspaceや設定が映る場合があります。選択したソース内の通知・ダイアログも映る場合があります。
 >
 > 初回は任意の「Macの画面収録アクセス」案内を表示する場合があります。「許可する」だけが広範なアクセスを要求し、「続ける」やEscapeで閉じられます。未許可でもAppleの選択画面を利用できます。再確認は「StagePane → 設定 → アクセスとプライバシー」から行います。アクセシビリティや入力監視は要求しません。
 >
-> 0.4.4では設定を独立した標準ウインドウへ集約しました。「StagePane → 設定」（⌘,）とメニューバー右側のアイコンは同じ設定を開きます。項目はポインタ、ステージ、ウインドウ、アクセスとプライバシー、Proで、前回の項目を記憶します。変更は即時反映し、開閉してもレイヤー・ツール・切り抜き下書きを保持します。「ステージ → ポインタ」は選択を保存し、手書き・虫眼鏡中だけ一時的に隠します。
+> 0.4.5では、再表示・選び直し時の映像サイズの反映、再表示に失敗した後の再試行、ソース停止時の処理を改善しました。無害なテスト用コンテンツで、非表示・再表示、選び直し、すべて停止、観客向け画像のコピー・PNG保存をご確認ください。
 >
-> 新機能として、レイヤーの「名前を変更」「色を反転」、Stageの右クリックメニューもご確認ください。名前は手元用でセッション中だけ保持します。反転は写真を含むそのソース全体に適用され、Workspace・Stage・虫眼鏡・PNGへ反映します。ほかのレイヤー、背景、手書き、レーザーポインタは変えません。
+> 「StagePane → 設定」（⌘,）とメニューバー右側のアイコンは同じ手元用の設定を開きます。Stageの右クリックメニューからサイズ、フルスクリーン、ウインドウの動作を変更できます。レイヤー名は手元用でセッション中だけ保持します。色反転はそのソースに適用され、Workspace・Stage・虫眼鏡・PNGへ反映します。
 >
 > 無料版は同時に4ソースまでです。5件目の追加、または「設定 → Pro → 購入・復元」でPro購入画面を開きます。com.hinoshiba.stagepane.proは1回限りの非消耗型アプリ内課金で、継続課金ではありません。Proはアプリ側の件数制限を解除し、Stage・カーテン・PNGのロゴを任意に非表示にします。実用上の件数はMacとOSに依存します。価格と「購入を復元」「無料版を続ける」をご確認ください。キャンセルしてもStageは動作を続けます。
 >
@@ -238,7 +231,7 @@ English block by default, or the Japanese alternative, never both concatenated.
 
 ## Detailed reviewer walkthrough reference
 
-This walkthrough describes the 0.4.4 candidate UI. The metadata and review-note
+This walkthrough describes the 0.4.5 candidate UI. The metadata and review-note
 drafts above remain pending exact-candidate acceptance. Prepare submission
 evidence only after validating the exact release candidate.
 

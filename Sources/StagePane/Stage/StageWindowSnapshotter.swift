@@ -90,11 +90,11 @@ enum StageWindowSnapshotter {
         }
 
         let sourceViews = visibleCroppedSourceViews(in: contentView)
-        let sourceImages = try sourceViews.enumerated().map { index, sourceView in
-            guard let image = sourceView.makeBitmapSnapshotImage() else {
+        let sourceSnapshots = try sourceViews.enumerated().map { index, sourceView in
+            guard let snapshot = sourceView.makeBitmapSnapshot() else {
                 throw StageWindowSnapshotError.sourceFrameUnavailable(index: index)
             }
-            return image
+            return snapshot
         }
         refreshMagnifierFrames(in: contentView)
 
@@ -110,8 +110,11 @@ enum StageWindowSnapshotter {
                 CATransaction.commit()
             }
 
-            for (index, pair) in zip(sourceViews, sourceImages).enumerated() {
-                guard let state = pair.0.installBitmapSnapshotImage(pair.1) else {
+            for (index, pair) in zip(sourceViews, sourceSnapshots).enumerated() {
+                guard pair.1.isStillAuthorized else {
+                    throw StageWindowSnapshotError.sourceFrameUnavailable(index: index)
+                }
+                guard let state = pair.0.installBitmapSnapshotImage(pair.1.image) else {
                     throw StageWindowSnapshotError.sourceBackingLayerUnavailable(
                         index: index
                     )
@@ -133,6 +136,14 @@ enum StageWindowSnapshotter {
                 properties: [:]
               ) else {
             throw StageWindowSnapshotError.imageEncodingFailed
+        }
+        // Conversion, composition, and encoding can overlap a render-queue
+        // permission/source boundary. Reject the entire in-progress export if
+        // any captured source was revoked, including one converted before a
+        // later source. A successfully returned PNG remains the user's explicit
+        // snapshot and is independent of subsequent live capture changes.
+        for (index, snapshot) in sourceSnapshots.enumerated() where !snapshot.isStillAuthorized {
+            throw StageWindowSnapshotError.sourceFrameUnavailable(index: index)
         }
         return StageSnapshot(image: image, pngData: pngData)
     }

@@ -280,6 +280,11 @@ renderers while retaining layout, crop, and z-order. Resume starts the same
 stream but remains transparent until stream startup and a new complete frame for
 the current generation have both succeeded; either arrival order is safe.
 Removal and Stop All additionally delete the retained logical layer state.
+Teardown revokes snapshot acceptance before waiting for ScreenCaptureKit's
+stop completion. A terminal stream callback fences later samples on the output
+queue and clears both surfaces through the paired presentation barrier, without
+waiting for the main actor to process the session outcome. Final deactivation
+joins that barrier before a retained layer can be reconnected.
 
 Pointer geometry is scoped to the same stream generation and cleared on stop,
 blank/suspended frames, or flush. Source replacement updates that geometry only
@@ -296,10 +301,32 @@ eligibility while preserving the same z-order.
 Each renderer also retains a lock-protected reference to its latest complete
 frame solely so an explicit screenshot can rasterize the already-authorized
 pixels. The reference is replaced as playback advances and cleared at Pause,
-deactivate, or flush. A paused layer is omitted from Audience PNG output until
-Resume accepts a new complete frame. Screenshot layer
-substitution and restoration run synchronously on the main actor; the generated
-PNG is independent before source removal or Stop All can drain the live layers.
+teardown, deactivate, or flush. A paused layer is omitted from Audience PNG
+output until Resume accepts a new complete frame. Bitmap conversion carries the
+accepted presentation revision and checks it again after conversion; the final
+composition rechecks every source before returning the PNG. A concurrent
+revocation or geometry change therefore rejects an in-progress export.
+Screenshot layer substitution and restoration run synchronously on the main
+actor. Once returned, the explicitly requested PNG is independent of the live
+sources, including while its Save panel remains open.
+
+Geometry delivery across Resume, source replacement, and a failed Pause is
+held on the stream-output queue until the coordinator commits the operation on
+the main actor. The latest complete-frame geometry is then delivered even if
+no further frame arrives. Operation IDs fence delayed completions; presentation
+generations and FIFO main-queue delivery fence geometry from an older source
+presentation. A failed Resume advances to a fresh empty paused generation and
+clears both renderers through their paired flush barrier before any later
+Resume can present new pixels.
+
+Capture-progress diagnostics use one low-frequency, queue-confined monitor per
+active renderer. Local unified-log events under `CaptureProgress` distinguish
+input silence from a pending frame that has not advanced, and count explicit
+decoder recovery. Events contain only counts, state, and an ephemeral renderer
+identifier. Each quiet condition is reported once until presentation progresses;
+Pause, replacement, and teardown reset the monitor. No content or source title
+is logged. A silent static source is not evidence of failure: the diagnostic
+monitor does not flush, restart capture, or change visible/pointer state.
 
 ## Failure behavior
 
