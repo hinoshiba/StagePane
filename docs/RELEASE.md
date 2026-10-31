@@ -388,7 +388,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 Record the exact commit, release-commit signature and DCO verification, pull
 request URL, review, pull-request and merged-`main` CI results, hardware, OS/app
 versions, manual results, and approved exceptions in the release record.
-The [0.4.4 acceptance template](RELEASE_0.4.4_ACCEPTANCE.md) lists pending work;
+The [0.4.5 acceptance template](RELEASE_0.4.5_ACCEPTANCE.md) lists pending work;
 it is not a completed acceptance record.
 
 Merge only after review, pull-request CI, and manual acceptance pass. Use a

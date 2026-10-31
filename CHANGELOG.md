@@ -3,7 +3,28 @@
 All notable changes will be documented here. This project follows Semantic
 Versioning once 1.0.0 is released.
 
-## [0.4.4] - Unreleased
+## [0.4.5] - Unreleased
+
+### Fixed
+
+- Preserve the latest source dimensions when frames arrive before Resume,
+  source replacement, or a failed Hide operation completes.
+- Clear both presentation surfaces and pending frames if Resume fails after
+  delivering an early frame; a later Resume waits for the existing cleanup.
+- Discard source presentation promptly when sharing stops and prevent delayed
+  callbacks from restoring it. Reject an in-progress Audience PNG if a source
+  presentation becomes invalid before the export finishes.
+
+### Changed
+
+- Add bounded local capture-progress diagnostics for investigating frozen
+  video. Diagnostics include counts and renderer state, never screen content
+  or window titles; static sources are not automatically restarted.
+- Declare the elapsed-time API used by local diagnostics in the privacy manifest.
+- Verify release source provenance before preflight tests and reject hidden or
+  ignored build inputs that are outside the reviewed source tree.
+
+## [0.4.4]
 
 ### Added
 
@@ -31,16 +52,6 @@ Versioning once 1.0.0 is released.
   during Draw or Magnify.
 - Reduced repeated headings and explanatory text in Settings and Workspace,
   keeping output state, recovery actions, and crop controls visible.
-
-### Fixed
-
-- Preserve the latest source dimensions when frames arrive before Resume,
-  source replacement, or a failed Hide operation completes.
-- Clear both presentation surfaces and pending frames if Resume fails after
-  delivering an early frame; a later Resume waits for the existing cleanup.
-- Add bounded local capture-progress diagnostics for investigating frozen
-  video. Diagnostics include counts and renderer state, never screen content
-  or window titles; static sources are not automatically restarted.
 
 ## [0.4.3] - Unreleased
 
