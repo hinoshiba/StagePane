@@ -92,12 +92,15 @@ sharing works without it.
 - Xcode 16 or newer, including matching Swift command-line tools, to build
 
 Choose a source in Apple's picker to authorize that content for its capture
-session. At first launch, StagePane checks app-wide Mac Screen Recording Access
-and shows an optional guide if it is not allowed. Only **Allow…** requests it;
-**Continue** lets you use picker-based sharing without it. Later launches check
-the status without repeating the guide. Recheck manually from **Settings →
-Access & Privacy → Check Mac Screen Recording Access…**. Creating and sharing an empty
-Stage does not capture your screen.
+session. Creating and sharing an empty Stage does not capture your screen.
+
+StagePane opens the Workspace at launch without a permission guide or request.
+**Add Source** opens Apple's sharing picker directly. For optional app-wide
+access, open **Settings → Access & Privacy → Request Screen Recording Access…**.
+That action goes directly to macOS; make the permission decision in the system
+dialog. Declining does not trigger another request automatically. The same
+Settings pane shows the current status and, after a request, offers
+**Open System Settings** to review your choice.
 
 If source selection or capture cannot start, an error remains in Workspace
 until dismissed or resolved. Use **Try Again** to retry. No separate error
@@ -309,9 +312,8 @@ never part of that flow. On the user's Mac the app stores only local settings in
 its sandboxed `UserDefaults`: the Stage preset and theme, window behavior, the
 safe-area guide and StagePane mark visibility, pointer appearance, the Curtain
 message and its text size, drawing tool settings, the layer list width, the last
-selected Settings pane, whether the first Mac Screen Recording Access check has
-been completed, and the position and size of the Workspace, Stage, About, Pro,
-and Mac Screen Recording Access windows. Access status is
+selected Settings pane, and the position and size of the Workspace, Stage,
+About, and Pro windows. Access status is
 read from macOS rather than saved. The Mac App Store build additionally stores
 three values used only to time the App Store rating prompt: a count of successful
 sessions, the date of the first one, and the app version in which the prompt was
@@ -399,10 +401,13 @@ Workspaceと設定はmacOSのライト／ダークに従います。**StagePane�
 権限の案内とMacの画面収録アクセスの再確認は **設定 → アクセスとプライバシー** にあります。
 会議での共有先の選び方はWorkspaceの **共有ガイド** から確認できます。
 共有対象はAppleの選択画面で1件ずつ、その取得セッションに限って許可されます。
-初回起動時にはアプリ全体の **Macの画面収録アクセス** を確認し、未許可なら任意の案内を表示します。
-**許可する…** を押した場合だけ要求し、**StagePaneを使う** を選べば未許可でもピッカーで共有できます。
-以降の起動では状態だけを確認し、案内を繰り返しません。**設定 → アクセスとプライバシー → Macの画面収録アクセスを確認…**
-から手動で再確認できます。選択や取得開始のエラーは、閉じるか問題が解消するまでWorkspace内に保持し、
+起動時は許可の案内や要求を表示せず、Workspaceを開きます。**ソースを追加** は
+Appleの共有ピッカーを直接開きます。任意のアプリ全体のアクセスは **設定 →
+アクセスとプライバシー → 画面収録アクセスを要求…** から要求できます。この操作は
+macOSの許可リクエストを直接開き、許可するかどうかはシステムの画面で選びます。
+拒否しても自動では再要求しません。同じ設定項目で現在の状態を確認でき、要求後は
+**システム設定を開く** から選択を見直せます。
+選択や取得開始のエラーは、閉じるか問題が解消するまでWorkspace内に保持し、
 **もう一度試す** から再試行できます。独立したエラーウインドウは開かず、キャンセルもエラー扱いしません。
 非表示・停止の失敗はレイヤーと取得状態で確認できます。
 明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。

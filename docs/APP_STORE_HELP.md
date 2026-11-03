@@ -271,17 +271,25 @@ independently of the audience Stage theme.
 独立して、macOSのライト／ダークに従います。
 
 Each source is approved in Apple's picker for that capture session; canceling
-it grants no new access. At first launch, StagePane checks app-wide **Mac Screen
-Recording Access** and shows an optional guide if it is not allowed. Only
-**Allow…** requests access. **Continue** lets you use picker-based sharing
-without it. Later launches check the status without repeating the guide.
-Recheck manually from **Settings → Access & Privacy → Check Mac Screen Recording Access…**.
+it grants no new access.
+
+StagePane opens the Workspace at launch without a permission guide or request.
+**Add Source** opens Apple's sharing picker directly. For optional app-wide
+access, open **Settings → Access & Privacy → Request Screen Recording Access…**.
+That action goes directly to macOS; make the permission decision in the system
+dialog. Declining does not trigger another request automatically. The same
+Settings pane shows the current status and, after a request, offers
+**Open System Settings** to review your choice.
 
 各ソースはAppleの共有ピッカーで取得セッションごとに承認され、キャンセルでは新しい取得を
-始めません。初回起動時にアプリ全体の **Macの画面収録アクセス** を確認し、未許可なら任意の
-案内を表示します。**許可する…** を押した場合だけ許可を要求し、**StagePaneを使う** を
-選べば未許可のままピッカーで共有できます。以降の起動では状態だけを確認し、案内を繰り返しません。
-手動の再確認は **設定 → アクセスとプライバシー → Macの画面収録アクセスを確認…** から行えます。
+始めません。
+
+起動時は許可の案内や要求を表示せず、Workspaceを開きます。**ソースを追加** は
+Appleの共有ピッカーを直接開きます。任意のアプリ全体のアクセスは **設定 →
+アクセスとプライバシー → 画面収録アクセスを要求…** から要求できます。この操作は
+macOSの許可リクエストを直接開き、許可するかどうかはシステムの画面で選びます。
+拒否しても自動では再要求しません。同じ設定項目で現在の状態を確認でき、要求後は
+**システム設定を開く** から選択を見直せます。
 
 Arrange, Crop, Draw, and Magnify stay inside StagePane. StagePane does not forward clicks, keys, or drags to source applications, and it never requests Accessibility or Input Monitoring permission.
 

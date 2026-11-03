@@ -212,8 +212,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var stageWindowController: StageWindowController?
     private var settingsWindowController: SettingsWindowController?
     private var aboutWindowController: StagePrivateWindowController?
-    private var macScreenRecordingAccessWindowController: StagePrivateWindowController?
     private var checksMacScreenRecordingAccess = false
+    private let screenRecordingPreflight: () -> Bool
+    private let screenRecordingRequest: () -> Bool
     private var proWindowController: StagePrivateWindowController?
     private var pendingStageSnapshot: StageSnapshot?
     private var stopAllConfirmationAlert: NSAlert?
@@ -228,7 +229,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var reviewRequestIsScheduled = false
     private var transientNoticeDismissalTask: Task<Void, Never>?
 
-    override init() {
+    override convenience init() {
+        self.init(
+            screenRecordingPreflight: CGPreflightScreenCaptureAccess,
+            screenRecordingRequest: CGRequestScreenCaptureAccess
+        )
+    }
+
+    init(
+        screenRecordingPreflight: @escaping () -> Bool,
+        screenRecordingRequest: @escaping () -> Bool
+    ) {
+        self.screenRecordingPreflight = screenRecordingPreflight
+        self.screenRecordingRequest = screenRecordingRequest
         let defaults = UserDefaults.standard
         self.defaults = defaults
         self.preset = StagePreset(
@@ -620,55 +633,27 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
-    private func checkMacScreenRecordingAccessAtLaunch() {
+    func checkMacScreenRecordingAccess() {
+        // Only the native Access & Privacy settings pane starts status checks.
+        // Launch, activation, and synthetic snapshots never request access.
         checksMacScreenRecordingAccess = true
         refreshMacScreenRecordingAccess()
-        guard !defaults.bool(forKey: Keys.macScreenRecordingAccessChecked) else { return }
-        // Remember the initial check separately from the live macOS status.
-        // A denied or deferred request must never create a launch prompt loop.
-        defaults.set(true, forKey: Keys.macScreenRecordingAccessChecked)
-        if !hasMacScreenRecordingAccess {
-            presentMacScreenRecordingAccess()
-        }
     }
 
     func refreshMacScreenRecordingAccess() {
-        // Snapshot launches never run a preflight, including activation events.
         guard checksMacScreenRecordingAccess else { return }
-        hasMacScreenRecordingAccess = CGPreflightScreenCaptureAccess()
-    }
-
-    func showMacScreenRecordingAccess() {
-        beginWorkspaceInteraction()
-        checksMacScreenRecordingAccess = true
-        refreshMacScreenRecordingAccess()
-        presentMacScreenRecordingAccess()
-    }
-
-    private func presentMacScreenRecordingAccess() {
-        if macScreenRecordingAccessWindowController == nil {
-            macScreenRecordingAccessWindowController = StagePrivateWindowController(
-                title: L10n.text("Macの画面収録アクセス — 手元用", "Mac Screen Recording Access — Private"),
-                autosaveName: "StagePane.MacScreenRecordingAccess",
-                size: NSSize(width: 560, height: 340),
-                minimumSize: NSSize(width: 520, height: 320),
-                content: MacScreenRecordingAccessView(controller: self)
-            )
-        }
-        macScreenRecordingAccessWindowController?.present()
+        hasMacScreenRecordingAccess = screenRecordingPreflight()
     }
 
     func requestMacScreenRecordingAccess() {
-        guard checksMacScreenRecordingAccess, !hasMacScreenRecordingAccess else { return }
+        beginWorkspaceInteraction()
+        checkMacScreenRecordingAccess()
+        guard !hasMacScreenRecordingAccess, !hasRequestedMacScreenRecordingAccess else { return }
         hasRequestedMacScreenRecordingAccess = true
-        // Only the explicit Allow button calls this prompting API. Picker
-        // sharing remains available regardless of the app-wide result.
-        _ = CGRequestScreenCaptureAccess()
+        // This Settings action goes directly to macOS. There is no custom
+        // pre-alert, app-controlled Allow choice, or dismissal before it.
+        _ = screenRecordingRequest()
         refreshMacScreenRecordingAccess()
-    }
-
-    func closeMacScreenRecordingAccess() {
-        macScreenRecordingAccessWindowController?.close()
     }
 
     func openMacSystemSettings() {
@@ -717,7 +702,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         if showWindows {
             showStage()
             showStageWorkspace()
-            checkMacScreenRecordingAccessAtLaunch()
         }
     }
 
@@ -856,13 +840,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             hasMacScreenRecordingAccess = fixture.allowed
             hasRequestedMacScreenRecordingAccess = fixture.requested
             try writePNG(
-                of: MacScreenRecordingAccessView(controller: self)
+                of: SettingsPaneView(controller: self, capture: capture, pane: .access)
                     .preferredColorScheme(.light)
-                    .frame(width: 560, height: 340),
-                pointSize: CGSize(width: 560, height: 340),
+                    .frame(width: 680, height: 600),
+                pointSize: CGSize(width: 680, height: 600),
                 to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix).png")
             )
         }
+        hasMacScreenRecordingAccess = false
+        hasRequestedMacScreenRecordingAccess = false
 
         try writePNG(
             of: SettingsPaneView(controller: self, capture: capture, pane: .access)
@@ -926,13 +912,15 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             hasMacScreenRecordingAccess = fixture.allowed
             hasRequestedMacScreenRecordingAccess = fixture.requested
             try writePNG(
-                of: MacScreenRecordingAccessView(controller: self)
+                of: SettingsPaneView(controller: self, capture: capture, pane: .access)
                     .preferredColorScheme(.dark)
-                    .frame(width: 560, height: 340),
-                pointSize: CGSize(width: 560, height: 340),
+                    .frame(width: 680, height: 600),
+                pointSize: CGSize(width: 680, height: 600),
                 to: directory.appendingPathComponent("screen-recording-access\(fixture.suffix)-dark.png")
             )
         }
+        hasMacScreenRecordingAccess = false
+        hasRequestedMacScreenRecordingAccess = false
         try writePNG(
             of: ProUpgradePanel(controller: self, purchases: purchases)
                 .preferredColorScheme(.dark)
@@ -2052,7 +2040,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         static let showsWatermark = "stage.showsWatermark"
         static let privacyMessage = "stage.privacyMessage"
         static let privacyMessageSize = "stage.privacyMessageSize"
-        static let macScreenRecordingAccessChecked = "onboarding.macScreenRecordingAccessChecked"
         static let successfulSessionCount = "review.successfulSessionCount"
         static let firstSuccessfulSessionDate = "review.firstSuccessfulSessionDate"
         static let lastReviewRequestVersion = "review.lastRequestedVersion"

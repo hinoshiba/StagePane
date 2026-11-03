@@ -235,21 +235,24 @@ source. Turn the switch off to restore the original colors.
 **Settings → Access & Privacy** explains source access. Apple's sharing picker
 authorizes the window, app, or display you select for that capture session; canceling grants no new source access.
 
-At first launch, StagePane checks app-wide **Mac Screen Recording Access**. If
-it is not allowed, an optional guide appears. Only **Allow…** requests access;
-**Continue** lets you use picker-based sharing without it. Later launches check
-the status without repeating this guide. To check again manually, use
-**Settings → Access & Privacy → Check Mac Screen Recording Access…**.
+StagePane opens the Workspace at launch without a permission guide or request.
+**Add Source** opens Apple's sharing picker directly. For optional app-wide
+access, open **Settings → Access & Privacy → Request Screen Recording Access…**.
+That action goes directly to macOS; make the permission decision in the system
+dialog. Declining does not trigger another request automatically. The same
+Settings pane shows the current status and, after a request, offers
+**Open System Settings** to review your choice.
 
 **設定 → アクセスとプライバシー** で、取得への同意について確認できます。
 Appleの共有ピッカーで選んだウインドウ、アプリ、
 または画面が、その取得セッション中に許可されます。キャンセルでは新しいアクセスを始めません。
 
-初回起動時に、アプリ全体の **Macの画面収録アクセス** を確認します。未許可なら任意の
-案内を表示し、**許可する…** を押した場合だけ許可を要求します。**StagePaneを使う** を
-選べば、未許可のままピッカーで選んだ内容を共有できます。以降の起動では状態だけを確認し、
-この案内を繰り返しません。手動で再確認するには **設定 → アクセスとプライバシー →
-Macの画面収録アクセスを確認…** を選びます。
+起動時は許可の案内や要求を表示せず、Workspaceを開きます。**ソースを追加** は
+Appleの共有ピッカーを直接開きます。任意のアプリ全体のアクセスは **設定 →
+アクセスとプライバシー → 画面収録アクセスを要求…** から要求できます。この操作は
+macOSの許可リクエストを直接開き、許可するかどうかはシステムの画面で選びます。
+拒否しても自動では再要求しません。同じ設定項目で現在の状態を確認でき、要求後は
+**システム設定を開く** から選択を見直せます。
 
 In **Settings → Pointer / 設定 → ポインタ**, set the pointer type
 to **System / 通常**, **Laser pointer / レーザーポインター**, or **Hidden /

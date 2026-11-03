@@ -144,7 +144,7 @@ Update and review these values in one pull request:
   | `stage-settings`, `appearance`, `stage-inspector-dark` | 1360×1200 |
   | `settings-{pointer,stage,window,access,pro}-{light,dark}` (10 fixtures) | 1360×1200 |
   | `permissions`, `permissions-dark` | 1280×1000 |
-  | `screen-recording-access`, its `-pending` and `-allowed` states, and each `-dark` variant | 1120×680 |
+  | `screen-recording-access` (Access & Privacy settings), its `-pending` and `-allowed` states, and each `-dark` variant | 1360×1200 |
   | `privacy`, `app-settings`, `app-settings-dark` | 1440×1300 |
   | `settings-640-about-dark` | 1280×1080 |
   | Source-build `pro`, `pro-dark` | 1560×1520 |
@@ -193,10 +193,12 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 - per-selection `SCContentSharingPicker` approval and cancellation; source
   sharing remains usable without app-wide Screen Recording access, and removing
   the source or stopping all sources ends its access;
-- first-launch app-wide Screen Recording preflight: already-allowed access
-  shows no panel, while missing access shows an optional panel only once;
-  only its explicit Allow action requests access, later launches do not repeat
-  the panel, and Settings → Access & Privacy offers the manual access check;
+- first and repeat launch open Workspace without a permission guide or request;
+  Access & Privacy reads the app-wide status, its explicit Request Screen
+  Recording Access action opens the macOS request directly, and only the system
+  dialog makes the permission decision. Test existing access, denial, the
+  post-request System Settings action, and returning after an access change;
+  no denial/activation loop or custom pre-alert may appear;
 - one-item window/application/display selection; Free mixed-source addition
   through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
   Pro mixed-source addition at source five and beyond while Mac performance and

@@ -37,7 +37,7 @@ enum SettingsPane: String, CaseIterable {
         case .pointer: 340
         case .stage: 500
         case .window: 240
-        case .access: 420
+        case .access: 560
         case .pro: 220
         }
     }
@@ -128,7 +128,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
             originatingResponder = nil
             mayRestoreOrigin = false
         }
-        if let pane { select(pane) }
+        if let pane {
+            select(pane)
+        } else if selectedPane == .access {
+            controller.checkMacScreenRecordingAccess()
+        }
         resizeToFitScreen()
         showWindow(nil)
         window.makeKeyAndOrderFront(nil)
@@ -137,6 +141,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
 
     private func select(_ pane: SettingsPane) {
         guard let window else { return }
+        if pane == .access { controller.checkMacScreenRecordingAccess() }
         if pane != selectedPane {
             selectedPane = pane
             host.rootView = SettingsPaneView(controller: controller, capture: capture, pane: pane)
