@@ -80,9 +80,9 @@ and end capture with no retained frame or orphaned state.
   excluding Workspace chrome; no automatic screenshot, recording, or network path
 - all-Spaces, always-on-top compatibility, Presentation Lock
 - menu-bar recovery and keyboard shortcuts
-- About Screen Sharing guide with a manual Mac Screen Recording Access check;
-  an optional first-check guide appears if access is not allowed, requests it
-  only through Allow, and does not repeat on later launches
+- Access & Privacy settings with app-wide Screen Recording status and an explicit
+  request that goes directly to macOS; no launch-time or custom permission
+  pre-alert, no automatic retry after denial, and System Settings recovery
 - Japanese/English UI selected from system language
 - App Sandbox, privacy manifest, no publisher-operated network service,
   analytics, StagePane account, or cross-application Accessibility/input-forwarding

@@ -7,8 +7,8 @@ const translations = {
   },
   "t99": {
     "html": {
-      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に選択した設定項目、Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・このアプリについて・Pro・Macの画面収録アクセスの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
-      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, the last selected Settings pane, whether the first Mac Screen Recording Access check has been completed, and the position and size of the Workspace, Stage, About, Pro, and Mac Screen Recording Access windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
+      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に選択した設定項目、およびWorkspace・Stage・このアプリについて・Proの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
+      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, the last selected Settings pane, and the position and size of the Workspace, Stage, About, and Pro windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
     }
   },
   "t100": {
@@ -19,8 +19,8 @@ const translations = {
   },
   "t101": {
     "html": {
-      "ja": "画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。アプリ全体のMacの画面収録アクセスは任意で、「許可する」を選んだ場合だけ要求します。macOSのシステム設定で変更でき、未許可でもピッカーで選んだ内容は共有できます。",
-      "en": "Use Apple’s sharing picker to change the selected content. Cropping changes the displayed area, while the complete selected source is still captured. The Curtain covers the Stage; use Stop All to end capture. App-wide Mac Screen Recording Access is optional and requested only when you choose Allow. You can change it in macOS System Settings; picker-based sharing works without it."
+      "ja": "画面の選択はAppleの共有ピッカーで変更できます。切り抜きは表示範囲を変える機能で、選択したソース全体の取得範囲は変わりません。カーテンはStageの表示を覆い、取得を終了するには「すべて停止」を使います。アプリ全体のMacの画面収録アクセスは任意で、「設定 → アクセスとプライバシー → 画面収録アクセスを要求」から直接要求します。許可の選択はmacOSが表示・管理します。起動時の案内や許可リクエスト前の独自ダイアログはありません。選択はmacOSのシステム設定で変更できます。",
+      "en": "Use Apple’s sharing picker to change the selected content. Cropping changes the displayed area, while the complete selected source is still captured. The Curtain covers the Stage; use Stop All to end capture. App-wide Mac Screen Recording Access is optional. Request it directly from Settings → Access & Privacy → Request Screen Recording Access; macOS presents and manages the permission decision. There is no launch-time guide or custom pre-permission dialog. You can review or change your choice in macOS System Settings."
     }
   },
   "privacy-sharing": {
@@ -305,8 +305,8 @@ const translations = {
   },
   "faq-access-copy": {
     "html": {
-      "ja": "アプリ全体の画面収録アクセスは任意です。初回の案内を閉じても、Appleの選択画面で選んだ内容を共有できます。macOSによるソース選択や共有の確認は、その都度表示されることがあります。",
-      "en": "App-wide Screen Recording Access is optional. You can dismiss the initial guide and still share content selected in Apple’s picker. macOS may show source selection or sharing confirmation each time."
+      "ja": "起動時に画面収録アクセスを要求する案内は表示しません。「ソースを追加」はAppleの選択画面を開きます。任意のアプリ全体のアクセスは「設定 → アクセスとプライバシー」からmacOSへ直接要求できます。画面取得はmacOSのアクセス許可に従います。",
+      "en": "StagePane does not present a permission guide at launch. Add Source opens Apple’s picker. Request optional app-wide access directly through macOS from Settings > Access & Privacy. Capture remains subject to macOS permissions."
     }
   },
   "privacy-title": {

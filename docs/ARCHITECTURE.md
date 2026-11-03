@@ -27,7 +27,7 @@ StagePaneApplication
         │       ├── Layer list        persistent, front-to-back lifecycle controls
         │       └── StageInspectorPanel
         ├── StagePrivateWindowController
-        │   └── Settings / Pro / About Screen Sharing / optional Mac access guide
+        │   └── Settings / Pro / About Screen Sharing
         ├── StageWindowController
         │   └── StageView             chrome-free public share surface
         ├── StageWindowSnapshotter    explicit clean Stage PNG copy/save
@@ -173,22 +173,23 @@ it does not order the Stage window to the front.
 
 ## Permission model
 
-The separate **About Screen Sharing** guide describes picker-scoped sharing
-and offers a manual **Check Mac Screen Recording Access** action.
+**Settings → Access & Privacy** describes picker-scoped sharing and shows
+app-wide access status without presenting a custom permission guide.
 
 - Each `SCContentSharingPicker` interaction authorizes the selected window,
   application, or display for that capture session. Cancel grants nothing;
   removing the source or stopping all sources ends the scoped access.
-- Normal startup and app activation read app-wide access with
-  `CGPreflightScreenCaptureAccess`. The first startup check saves a completed
-  flag and opens an optional guide if access is not allowed. Later launches
-  update the status without repeating the guide. Only the explicit **Allow**
-  action calls `CGRequestScreenCaptureAccess`; **Continue** leaves picker-based
-  sharing available without this access. A false result does not diagnose an
-  individual source error. Snapshot-only startup performs no access check,
-  request, or first-check preference write.
-- Preferences retain the completed-check flag and access-window frame, not the
-  permission status. Individual source errors stay in Workspace, not this guide.
+- Launch does not check or request broad access. Opening the native Access &
+  Privacy settings pane starts `CGPreflightScreenCaptureAccess` checks; app
+  activation refreshes that status only after this point. A false result does
+  not diagnose an individual source error or gate the picker.
+- **Request Screen Recording Access…** calls `CGRequestScreenCaptureAccess`
+  directly. There is no intermediate app-controlled Allow/Continue dialog.
+  After a request, the pane offers **Open System Settings**; denial and later
+  activation do not automatically repeat the request.
+- No permission status or onboarding flag is written to preferences.
+  Snapshot-only startup uses synthetic settings states without permission API
+  calls. Source errors remain in Workspace until dismissed or resolved.
 
 StagePane contains no cross-application input path and requests neither
 Accessibility nor Input Monitoring permission.
@@ -360,9 +361,10 @@ Huddles, Discord, and OBS.
 Mac App Store acceptance requires a sandboxed, consistently signed candidate
 that contains no cross-application input or Accessibility implementation and
 requests no Accessibility permission on any supported OS.
-Its About Screen Sharing guide must distinguish picker-scoped sharing from
-optional app-wide access. Verify first-check-only guidance, explicit Allow,
-Continue without access, and manual rechecking. Arrange and Draw remain available.
+Access & Privacy must distinguish picker-scoped sharing from optional app-wide
+access. Verify no launch-time pre-alert, the direct system request from Settings,
+status refresh, denial without repeated requests, and System Settings recovery.
+Arrange and Draw remain available.
 The private Workspace must host those modes with a persistent layer list while
 the public Stage stays chrome-free. Acceptance includes selecting fully covered
 and hidden layers, selection/drag/resize preserving z-order, all four explicit

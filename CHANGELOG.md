@@ -3,6 +3,19 @@
 All notable changes will be documented here. This project follows Semantic
 Versioning once 1.0.0 is released.
 
+## [0.4.6] - Unreleased
+
+### Fixed
+
+- Remove the custom Screen Recording permission pre-alert and its launch-time
+  Allow/Continue choices. Add Source continues to open Apple's system picker.
+- Request optional app-wide access directly from Settings → Access & Privacy,
+  leaving the permission decision to macOS. Show status and post-request
+  System Settings recovery in that pane without automatically repeating a
+  declined request.
+- Stop writing the obsolete first-launch access-guide preference and update
+  English/Japanese help, privacy text, review notes, and settings fixtures.
+
 ## [0.4.5] - Unreleased
 
 ### Fixed

@@ -1,6 +1,6 @@
 # StagePane Privacy Policy / プライバシーポリシー
 
-Updated / 更新日: 2026-10-20
+Updated / 更新日: 2026-11-03
 
 ## Data and purpose / データと利用目的
 
@@ -17,9 +17,8 @@ StagePaneは、Appleの共有ピッカーで選んだ画面と手書きをMac上
 Preferences are saved on your Mac: the Stage shape and appearance, window
 behavior, the safe-area guide and StagePane mark settings, the pointer style,
 size, color, and glow, the Curtain message and its text size, drawing tool
-settings, the layer list width, the last selected Settings pane, whether the first
-Mac Screen Recording Access check has been completed, and the position and size
-of the Workspace, Stage, About, Pro, and Mac Screen Recording Access windows.
+settings, the layer list width, the last selected Settings pane, and the position
+and size of the Workspace, Stage, About, and Pro windows.
 The access status itself is read from macOS, not saved by StagePane. The
 Mac App Store build additionally saves three local values used only to decide
 when to show the App Store rating prompt: a count of successful sessions, the
@@ -34,8 +33,7 @@ app, because sharing the whole app or display can also reveal the Workspace.
 設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、
 セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、
 カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に開いた設定項目、
-Macの画面収録アクセスの初回確認が済んだかどうか、およびWorkspace・Stage・About・Pro・Macの画面収録アクセスの
-各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。
+およびWorkspace・Stage・About・Proの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。
 Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使う
 ローカルな3つの値（成功したセッションの回数、その最初の日付、
 評価依頼を最後に表示したアプリのバージョン）を保存します。
@@ -49,14 +47,17 @@ Copy Image places a PNG on the system clipboard, where other apps may access it.
 Save PNG writes to your selected location. You can delete saved images and clear
 local app data using macOS controls. Revoke a source’s session access by removing
 it or choosing Stop All. App-wide Mac Screen Recording Access is optional and
-is requested only when you choose Allow. You can change it in macOS System
-Settings; picker-based sharing works without it.
+is requested directly from Settings → Access & Privacy → Request Screen
+Recording Access. macOS presents and manages the permission decision. There
+is no launch-time guide or custom pre-permission dialog. You can review or
+change your choice in macOS System Settings.
 
 「画像をコピー」は他のアプリからも参照できるシステムのクリップボードへPNGを置きます。
 「PNGを保存」は選んだ場所へ書き込みます。保存画像とアプリのローカルデータはmacOSの機能で削除できます。
 ソースの解除または「すべて停止」で、その取得セッションを終了できます。
-アプリ全体のMacの画面収録アクセスは任意で、「許可する」を選んだ場合だけ要求します。
-macOSのシステム設定で変更でき、未許可でもピッカーで選んだ内容は共有できます。
+アプリ全体のMacの画面収録アクセスは任意で、「設定 → アクセスとプライバシー →
+画面収録アクセスを要求」から直接要求します。許可の選択はmacOSが表示・管理します。
+起動時の案内や許可リクエスト前の独自ダイアログはありません。選択はmacOSのシステム設定で変更できます。
 
 ## Sharing and retention / 提供と保持期間
 

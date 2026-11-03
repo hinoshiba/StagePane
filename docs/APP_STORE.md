@@ -1,10 +1,12 @@
 # App Store positioning and review notes
 
-## Metadata draft — 0.4.5 (build 12)
+## Metadata draft — 0.4.6 (build 13)
 
-This candidate follows 0.4.4 (build 11). Exact-candidate manual acceptance and
-StoreKit purchase evidence remain pending. These fields describe the current
-implementation; they are not a record of upload, review, or release.
+The release owner assigned 0.4.6 (build 13), following uploaded build 12, and
+authorized automatic release after App Review approval. Exact-candidate manual
+acceptance and StoreKit purchase evidence remain pending. These fields describe
+the current implementation; they are not a record of upload, review, or release.
+Set and verify automatic release in App Store Connect before submission.
 
 - **Name:** StagePane
 - **Subtitle (EN):** Arrange windows for sharing
@@ -35,23 +37,24 @@ Do not use competitor trademarks in metadata and do not use `virtual display`,
 `second monitor`, `independent desktop`, `real display`, or equivalents. The app
 creates a normal shareable window, not an `NSScreen`.
 
-### What's New 0.4.5 — Japanese
+### What's New 0.4.6 — Japanese
 
-> ソースの切り替えと再表示の安定性を改善しました。
+> 画面収録のアクセス許可の流れを改善しました。
 >
-> ・非表示からの再表示やソースの選び直しで、最新の映像サイズが正しく反映されるようにしました。
-> ・ソースの再表示に失敗した後の表示と、再試行の動作を改善しました。
-> ・ソースの停止と、観客向け画像のコピー・PNG保存の処理を改善しました。
+> ・起動時の独自の許可案内を削除しました。
+> ・任意のアプリ全体のアクセスは「設定 → アクセスとプライバシー」からmacOSへ直接要求できます。
+> ・許可の状態とシステム設定への導線を同じ設定画面にまとめました。
 
-### What's New 0.4.5 — English (U.S.)
+### What's New 0.4.6 — English (U.S.)
 
-> Improved reliability when switching and showing sources.
+> Improved the Screen Recording permission flow.
 >
-> • Keep the latest source dimensions in sync when showing a hidden source or replacing it.
-> • Improve the display state and retry behavior after a source fails to resume.
-> • Improve source cleanup and Audience Image copying and PNG saving.
+> • Removed the custom permission guide at launch.
+> • Request optional app-wide access directly through macOS from Settings > Access & Privacy.
+> • Review access status and open System Settings from the same settings pane.
 
-These changes are relative to the 0.4.4 app.
+These changes are relative to the 0.4.5 candidate. The 0.4.5 capture and PNG
+fixes are also included; their outstanding live-validation limitations remain.
 
 ### Description draft — Japanese
 
@@ -125,7 +128,7 @@ These changes are relative to the 0.4.4 app.
 > Processed on your Mac
 > No account is required. StagePane sends no screen content to the developer and includes no video recording, audio capture, advertising, or analytics. Screen content and drawings stay in memory during use; an image persists only when you explicitly copy it or save a PNG. Your meeting app handles transmission to participants.
 >
-> Requires macOS 14 or later on Apple Silicon or Intel. App-wide Screen Recording Access is optional: Apple’s picker can share selected content without it.
+> Requires macOS 14 or later on Apple Silicon or Intel. Sources are selected with Apple’s sharing picker and remain subject to macOS permissions. Optional app-wide Screen Recording Access can be requested separately in Settings.
 
 ## Shipping build route
 
@@ -177,10 +180,10 @@ from the exact Store candidate, and localize screenshots and alt text for
 Japanese and English. Website illustrations and source-build fixtures do not
 establish StoreKit purchase behavior or exact-candidate acceptance.
 
-## 0.4.5 App Review notes draft
+## 0.4.6 App Review notes draft
 
 Exact-candidate manual acceptance is pending. Use this block only after the
-0.4.5 (build 12) candidate's acceptance checks have been recorded. Product
+0.4.6 (build 13) candidate's acceptance checks have been recorded. Product
 loading, localized price, purchase/restore/cancel/pending behavior, and IAP
 review images require the actual StoreKit review environment; synthetic
 source-build fixtures are not purchase evidence.
@@ -191,13 +194,13 @@ English block by default, or the Japanese alternative, never both concatenated.
 
 ### English (preferred)
 
-> StagePane 0.4.5, build 12. No sign-in or demo account is required.
+> StagePane 0.4.6, build 13. No sign-in or demo account is required.
 >
 > In Workspace, choose Add Source and approve a harmless window in Apple’s ScreenCaptureKit picker. Each selection authorizes that source for its capture session. Repeat to compose sources. In your meeting app share only “StagePane Stage”, check the target, then open the Curtain. Whole-app or whole-display sharing can expose Workspace and private settings. Notifications/dialogs inside a selected source may appear.
 >
-> The first launch may show an optional Mac Screen Recording Access guide. Only Allow requests broad access; Continue or Escape dismisses it. Apple’s picker remains usable without broad access. Recheck in StagePane > Settings > Access & Privacy > Check Mac Screen Recording Access. Accessibility and Input Monitoring access are never requested.
+> To address guideline 5.1.1(iv), 0.4.6 removes the custom Screen Recording permission guide and its Allow/Continue buttons. First and repeat launch open Workspace directly. Add Source opens Apple's picker. Optional app-wide access is requested directly through Settings > Access & Privacy > Request Screen Recording Access; macOS handles the decision. Denial does not trigger an automatic retry. The same pane offers Open System Settings after a request. Accessibility and Input Monitoring access are never requested.
 >
-> Updated in 0.4.5: source sizing during Show and replacement, recovery after a failed Show, and capture cleanup. Please check Hide/Show, source replacement, Stop All, and Copy/Save Audience Image with harmless test content.
+> Validation limitation carried forward: on our macOS 26.5.2 Apple Silicon test Mac, picker capture without app-wide access failed with a TCC rejection. Broad access has not been verified as a remedy. Live capture lifecycle, one-hour soak, purchase and restore acceptance remain pending. This permission-UI change does not claim to fix the reported long-session freeze.
 >
 > StagePane > Settings (Command-,) and the menu-bar status icon open the same private window. The Stage’s right-click menu controls its size, full screen, and window behavior. Layer names stay private and session-only; per-layer Invert Colors affects that source across Workspace, Stage, Magnify, and PNG output.
 >
@@ -205,19 +208,19 @@ English block by default, or the Japanese alternative, never both concatenated.
 >
 > Operate source apps in their original windows. Arrange/Crop/Draw/Magnify never forward input. Crop is private until Apply, and never narrows the complete picker-approved capture source. Hide pauses one source and clears its pixels while retaining its layer; Show waits for a fresh frame. Curtain covers audience output but capture continues. Stop All ends all streams and removes all layers, including disconnected ones. Copy/Save Audience Image creates one local PNG only when chosen.
 >
-> The sandboxed app has no network entitlement and sends no screen content, drawings or other data to the developer or third parties. No video/audio recording, analytics or ads. Frames stay in memory and are released on Hide, removal, Stop All or quit. Only explicitly copied/saved PNGs persist; clipboard/file synchronization can transmit those images. Meeting apps transmit the Stage. Local preferences include appearance, window behavior, last Settings pane, an access-guide flag and rating-prompt timing; Apple handles IAP without screen content.
+> The sandboxed app has no network entitlement and sends no screen content, drawings or other data to the developer or third parties. No video/audio recording, analytics or ads. Frames stay in memory and are released on Hide, removal, Stop All or quit. Only explicitly copied/saved PNGs persist; clipboard/file synchronization can transmit those images. Meeting apps transmit the Stage. Local preferences include appearance, window behavior, last Settings pane and rating-prompt timing; Apple handles IAP without screen content.
 >
 > Privacy: https://stagepane.hinoshiba.com/#privacy (JA), https://stagepane.hinoshiba.com/en/privacy/ (EN), and bundled PRIVACY.md.
 
 ### Japanese alternative
 
-> StagePane 0.4.5、ビルド12。ログインやデモアカウントは不要です。
+> StagePane 0.4.6、ビルド13。ログインやデモアカウントは不要です。
 >
 > Workspaceの「ソースを追加」からAppleのScreenCaptureKit選択画面で無害なテスト用ウインドウを許可します。許可は選択した内容と取得セッションに限定されます。会議アプリでは「StagePane Stage」だけを共有し、対象を確認してカーテンを開いてください。アプリ全体・画面全体の共有ではWorkspaceや設定が映る場合があります。選択したソース内の通知・ダイアログも映る場合があります。
 >
-> 初回は任意の「Macの画面収録アクセス」案内を表示する場合があります。「許可する」だけが広範なアクセスを要求し、「続ける」やEscapeで閉じられます。未許可でもAppleの選択画面を利用できます。再確認は「StagePane → 設定 → アクセスとプライバシー」から行います。アクセシビリティや入力監視は要求しません。
+> 5.1.1(iv)への対応として、0.4.6では起動時の独自の画面収録アクセス案内と「許可する／続ける」ボタンを削除しました。起動時はWorkspaceを開き、「ソースを追加」はAppleの選択画面を直接開きます。任意のアプリ全体のアクセスは「設定 → アクセスとプライバシー → 画面収録アクセスを要求」からmacOSへ直接要求し、許可はシステム画面で選びます。拒否しても自動では再要求しません。要求後は同じ設定からシステム設定を開けます。アクセシビリティや入力監視は要求しません。
 >
-> 0.4.5では、再表示・選び直し時の映像サイズの反映、再表示に失敗した後の再試行、ソース停止時の処理を改善しました。無害なテスト用コンテンツで、非表示・再表示、選び直し、すべて停止、観客向け画像のコピー・PNG保存をご確認ください。
+> 継続中の検証制限：macOS 26.5.2のApple Siliconテスト機では、アプリ全体のアクセスなしの取得がTCC拒否で失敗しました。広範なアクセスによる改善は未確認です。実映像のライフサイクル、1時間の連続動作、購入・復元の受入確認は未完了です。この許可UIの変更が長時間利用時の停止を修正したとは主張しません。
 >
 > 「StagePane → 設定」（⌘,）とメニューバー右側のアイコンは同じ手元用の設定を開きます。Stageの右クリックメニューからサイズ、フルスクリーン、ウインドウの動作を変更できます。レイヤー名は手元用でセッション中だけ保持します。色反転はそのソースに適用され、Workspace・Stage・虫眼鏡・PNGへ反映します。
 >
@@ -225,13 +228,13 @@ English block by default, or the Japanese alternative, never both concatenated.
 >
 > 元アプリの操作は元のウインドウで行い、StagePaneは入力を転送しません。切り抜きは適用まで手元の下書きで、許可したソース全体の取得範囲を狭めません。「非表示」は1ソースを一時停止して映像を消し、再表示では新しいフレームを待ちます。カーテンは表示を覆いますが取得は続きます。「すべて停止」は全取得を終了し、切断中を含む全レイヤーを削除します。
 >
-> アプリはサンドボックス化され、ネットワーク接続の権限を持ちません。画面等を開発者や第三者に送信せず、録画・音声取得・分析・広告はありません。映像はメモリ内で扱い、非表示・解除・すべて停止・終了で解放します。明示的にコピー・保存したPNGだけが残ります。会議アプリやクリップボード・ファイル同期は別途送信する場合があります。設定、最後の設定項目、初回案内済みフラグ、評価依頼の時期を判断する値はローカルに保存します。購入はAppleが処理し、画面を含みません。
+> アプリはサンドボックス化され、ネットワーク接続の権限を持ちません。画面等を開発者や第三者に送信せず、録画・音声取得・分析・広告はありません。映像はメモリ内で扱い、非表示・解除・すべて停止・終了で解放します。明示的にコピー・保存したPNGだけが残ります。会議アプリやクリップボード・ファイル同期は別途送信する場合があります。設定、最後の設定項目、評価依頼の時期を判断する値はローカルに保存します。購入はAppleが処理し、画面を含みません。
 >
 > Privacy: https://stagepane.hinoshiba.com/#privacy (JA), https://stagepane.hinoshiba.com/en/privacy/ (EN), bundled PRIVACY.md.
 
 ## Detailed reviewer walkthrough reference
 
-This walkthrough describes the 0.4.5 candidate UI. The metadata and review-note
+This walkthrough describes the 0.4.6 candidate UI. The metadata and review-note
 drafts above remain pending exact-candidate acceptance. Prepare submission
 evidence only after validating the exact release candidate.
 
@@ -261,15 +264,14 @@ evidence only after validating the exact release candidate.
 > full screen, and size changes are disabled during full-screen transitions.
 >
 > The app can be tested without permission by sharing its neutral Stage window.
-> At launch, a public API reads the app-wide Mac Screen Recording Access status.
-> On the first check only, if access is not allowed, an optional private guide
-> appears. Only its “Allow…” button requests access; “Continue” leaves
-> picker-based sharing available without it. Later launches do not repeat the
-> guide. Reopen it from Settings → Access & Privacy → Check Mac Screen
-> Recording Access.
-> Local preferences store the first-check-completed flag and this window's frame,
-> not the permission status. Source-selection or capture-start errors remain in
-> Workspace until dismissed or resolved, with retry and detail controls; they do
+> Launch opens Workspace without checking or requesting app-wide permission.
+> Settings → Access & Privacy reads the current status. Its Request Screen
+> Recording Access action calls macOS directly without a custom pre-alert;
+> the system dialog handles the decision. After a request the pane offers
+> Open System Settings, with no automatic request retry after denial.
+> There is no access-guide flag or separate access window in this version.
+> Source-selection or capture-start errors remain in Workspace until dismissed
+> or resolved, with retry and detail controls; they do
 > not open a separate error window or imply missing app-wide access.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
