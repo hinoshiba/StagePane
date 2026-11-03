@@ -1,13 +1,16 @@
 # StagePane 0.4.6 acceptance preparation
 
-Status: **Not accepted. Proposed build 13 awaits release-owner assignment.**
+Status: **Not accepted. Version 0.4.6 (build 13) is assigned by the release owner;
+review and exact-candidate manual acceptance remain pending.**
 
 The permission-flow fix is prepared on `codex/release-0.4.6`, starting from clean
 canonical `main` at `a2830bc858ca749e70afdc2f9adfd7b66d9f5888`.
-The last uploaded build observed in App Store Connect on 2026-11-03 was
-0.4.5 (12). The checked-in version/build and uploaded-build floor still describe
-that previous candidate until the release owner assigns the next build. No tag,
-archive, upload, or submission is represented by this document.
+The latest uploaded build was rechecked in App Store Connect on 2026-11-03:
+0.4.5 (12). The checked-in version/build is 0.4.6 (13), and the uploaded-build
+floor is 12. The release owner authorized automatic release after App Review
+approval. That mode still needs to be saved and verified in App Store Connect
+before submission. No tag, archive, upload, or submission is represented by this
+document.
 
 Follow [RELEASE.md](RELEASE.md) and [AGENTS.md](../AGENTS.md). Keep private test
 content, account details, credentials, signing inventory, and Organizer output
@@ -45,8 +48,10 @@ head. Synthetic fixtures do not exercise real macOS permission prompts.
 
 ## Before merge, tag, and archive
 
-- Assign the next version/build, record the live uploaded-build floor again,
-  update `Info.plist`, `project.yml`, generated Xcode project/lock and SBOM.
+- Version/build assignment, the live uploaded-build floor, `Info.plist`,
+  `project.yml`, generated Xcode project/lock, and SBOM are prepared for
+  0.4.6 (13). Recheck the live upload history before archiving; do not reuse
+  build 13 if another upload has consumed it.
 - Complete review and passing PR CI against the final signed, DCO-signed-off
   release commit. Complete the full exact-candidate manual matrix in RELEASE.md,
   including the permission cases below and all outstanding capture/StoreKit
@@ -57,8 +62,9 @@ head. Synthetic fixtures do not exercise real macOS permission prompts.
   Distribution Summary privately and performs the authorized Organizer upload
   manually. Wait for the exact build to finish processing.
 - Save matching Japanese/English metadata and review notes, select the exact
-  processed build, and verify release mode before the authorized submission.
-  Automatic release requires authorization of the future public release.
+  processed build, and save and verify automatic release after approval before
+  the authorized submission. The release owner's authorization includes that
+  future public release.
 
 ## Exact-candidate permission matrix
 

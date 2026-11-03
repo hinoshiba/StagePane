@@ -2,9 +2,11 @@
 
 ## Metadata draft — 0.4.6 (build 13)
 
-This proposed candidate follows 0.4.5 (build 12). Build 13 awaits release-owner assignment. Exact-candidate manual acceptance and
-StoreKit purchase evidence remain pending. These fields describe the current
-implementation; they are not a record of upload, review, or release.
+The release owner assigned 0.4.6 (build 13), following uploaded build 12, and
+authorized automatic release after App Review approval. Exact-candidate manual
+acceptance and StoreKit purchase evidence remain pending. These fields describe
+the current implementation; they are not a record of upload, review, or release.
+Set and verify automatic release in App Store Connect before submission.
 
 - **Name:** StagePane
 - **Subtitle (EN):** Arrange windows for sharing
