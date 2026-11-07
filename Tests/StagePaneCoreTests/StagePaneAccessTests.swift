@@ -2,6 +2,16 @@ import XCTest
 @testable import StagePaneCore
 
 final class StagePaneAccessTests: XCTestCase {
+    func testScreenGroupLimitsIncludeTheInitialGroup() {
+        XCTAssertEqual(StagePaneAccess.screenGroupLimit(hasProAccess: false), 2)
+        XCTAssertEqual(StagePaneAccess.screenGroupLimit(hasProAccess: true), 10)
+        XCTAssertTrue(StagePaneAccess.canAddScreenGroup(currentCount: 1, hasProAccess: false))
+        XCTAssertFalse(StagePaneAccess.canAddScreenGroup(currentCount: 2, hasProAccess: false))
+        XCTAssertFalse(StagePaneAccess.canAddScreenGroup(currentCount: 10, hasProAccess: false))
+        XCTAssertTrue(StagePaneAccess.canAddScreenGroup(currentCount: 9, hasProAccess: true))
+        XCTAssertFalse(StagePaneAccess.canAddScreenGroup(currentCount: 10, hasProAccess: true))
+    }
+
     func testFreePlanAllowsFourSources() {
         XCTAssertEqual(StagePaneAccess.sourceLimit(hasProAccess: false), 4)
         XCTAssertTrue(StagePaneAccess.canAddSource(currentCount: 0, hasProAccess: false))

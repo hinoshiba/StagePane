@@ -3,22 +3,32 @@ import SwiftUI
 
 struct StageView: View {
     @ObservedObject var controller: AppController
+
+    var body: some View {
+        StageContentView(controller: controller, group: controller.outputScreenGroup, capture: controller.outputScreenGroup.capture)
+            .id(controller.outputScreenGroupID)
+    }
+}
+
+private struct StageContentView: View {
+    @ObservedObject var controller: AppController
+    @ObservedObject var group: StageScreenGroup
     @ObservedObject var capture: CaptureCoordinator
 
     var body: some View {
         ZStack {
-            StageBackground(theme: controller.theme)
+            StageBackground(theme: group.theme)
 
             if capture.isCaptureActive && !controller.privacyCurtain {
                 ZStack {
                     StageCompositeDisplayView(entries: stageEntries)
-                    StageAnnotationOverlay(store: controller.annotations)
-                    if controller.stageInteractionMode == .magnify {
+                    StageAnnotationOverlay(store: group.annotations)
+                    if controller.showsAudienceMagnifier {
                         StageMagnifierPresentation(
                             store: controller.magnifier,
                             entries: stageEntries,
-                            theme: controller.theme,
-                            annotations: controller.annotations
+                            theme: group.theme,
+                            annotations: group.annotations
                         )
                     }
                 }
@@ -39,7 +49,7 @@ struct StageView: View {
 
             if controller.showsWatermark {
                 StageWatermark(
-                    prefersDarkForeground: controller.theme.prefersDarkForeground
+                    prefersDarkForeground: group.theme.prefersDarkForeground
                 )
             }
         }
@@ -141,7 +151,7 @@ struct StageView: View {
                     .tracking(1.1)
                     .foregroundStyle(foreground.opacity(0.52))
                     .padding(.horizontal, 8)
-                    .background(controller.theme.prefersDarkForeground ? Color.white.opacity(0.75) : Color.black.opacity(0.42))
+                    .background(group.theme.prefersDarkForeground ? Color.white.opacity(0.75) : Color.black.opacity(0.42))
                     .offset(y: -proxy.size.height * 0.45)
             }
         }
@@ -149,7 +159,7 @@ struct StageView: View {
     }
 
     private var foreground: Color {
-        controller.theme.prefersDarkForeground ? Color.black.opacity(0.82) : Color.white
+        group.theme.prefersDarkForeground ? Color.black.opacity(0.82) : Color.white
     }
 
     private var stageEntries: [StageCompositeEntry] {

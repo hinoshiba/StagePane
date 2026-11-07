@@ -80,7 +80,7 @@ final class SettingsMenuTests: XCTestCase {
             controller.pointerStyle = .redDot
 
             let settings = SettingsWindowController(
-                controller: controller, capture: controller.capture, defaults: defaults
+                controller: controller, defaults: defaults
             )
             let window = try XCTUnwrap(settings.window)
             defer { window.close() }
@@ -109,7 +109,7 @@ final class SettingsMenuTests: XCTestCase {
             let stage = try XCTUnwrap(toolbar.items.first { $0.label == SettingsPane.stage.title })
             XCTAssertTrue(NSApp.sendAction(try XCTUnwrap(stage.action), to: stage.target, from: stage))
             let reopened = SettingsWindowController(
-                controller: controller, capture: controller.capture, defaults: defaults
+                controller: controller, defaults: defaults
             )
             defer { reopened.close() }
             XCTAssertEqual(reopened.selectedPane, .stage)

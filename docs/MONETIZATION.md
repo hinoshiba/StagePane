@@ -11,7 +11,8 @@ non-consumable In-App Purchase:
 
 | | Free | StagePane Pro |
 |---|---:|---:|
-| Simultaneous sources | 4 | No app-imposed limit¹ |
+| Screen groups | 2 | 10 |
+| Sources per group | 4 | No app-imposed limit¹ |
 | StagePane mark | Always shown | Optional |
 | Curtain, Stop All, pause, replace, and remove | Included | Included |
 | Arrange, Crop, Draw, layouts, pointer, and stage shapes | Included | Included |
@@ -19,7 +20,11 @@ non-consumable In-App Purchase:
 | Billing | None | One-time purchase |
 
 ¹ The practical source total depends on Mac performance and operating-system
-constraints.
+constraints. Inactive groups continue capturing; source counts apply within
+each group, and Stop All covers every group. The third group opens the Pro
+purchase flow; the eleventh group is unavailable on every plan. If Pro ends,
+groups beyond the first two are locked and capture ends without discarding
+their in-memory layout or drawings. Restoring Pro requires source reselection.
 
 - Product ID: `com.hinoshiba.stagepane.pro`
 - App Store Connect Apple ID: `6805630496`
@@ -201,12 +206,15 @@ Security and lifecycle requirements:
 - Never persist a Boolean “isPro” as an entitlement source.
 - Fail closed for Pro-only operations while entitlement is checking or cannot
   be verified; keep every free and safety feature available.
-- Keep the Free plan limit at four and give Pro no app-imposed source-count
+- Keep the Free source limit at four per screen and give Pro no app-imposed source-count
   limit. Enforce the plan again immediately before creating a stream because
   ScreenCaptureKit's system video menu can bypass the app's Add Source button.
   System resources may still limit the number that can run on a particular Mac.
-- If access is revoked with more than four sources active, preserve that live
-  session and block only new additions. Do not destructively stop a presentation.
+- If access is revoked, retain existing sources in the first two screens,
+  blocking only additions past four. Lock screens beyond the first two and end
+  their capture; retain their layouts in memory. If output becomes unavailable,
+  close Curtain and route to the first screen. Restoring Pro requires fresh
+  source selection for unlocked screens.
 - Official builds use StoreKit. Source builds have full feature access so the
   Apache-licensed repository remains useful to contributors.
 
@@ -288,7 +296,10 @@ References:
 - Product loads with Japanese and English localization.
 - Price is read from `Product.displayPrice`.
 - Successful purchase unlocks immediately.
-- Fifth-source purchase resumes the picker.
+- Fifth-source purchase resumes the picker for the originating screen.
+- Third-screen purchase adds exactly one screen only while its request is current.
+- Ten-screen ceiling remains enforced for Pro. Free downgrade/restore covers
+  editing and output screens independently.
 - Mark-removal purchase immediately hides the mark.
 - Cancel preserves current state and is not shown as an error.
 - Ask to Buy/pending prevents duplicate purchase attempts and later unlocks
@@ -306,8 +317,10 @@ References:
 - App Store product missing/not-yet-approved behavior.
 - VoiceOver and keyboard completion of purchase, restore, retry, and Continue Free.
 - No purchase or review UI appears in the audience Stage.
-- An existing session with more than four sources remains stable if entitlement
-  changes; only new additions are blocked after Pro access is lost.
+- Existing sources in the first two screens remain when Pro is lost; only new
+  source additions past four are blocked there. Screens beyond the first two
+  lock and stop capture, with Curtain/output fallback and retained in-memory
+  layouts verified separately.
 - Mac App Store receipt and transaction behavior offline after a prior purchase.
 
 ### Regression

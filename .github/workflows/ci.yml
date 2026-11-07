@@ -148,16 +148,16 @@ jobs:
           screen-recording-access-pending-dark 1360 1200
           screen-recording-access-allowed-dark 1360 1200
           pro-dark 1560 1520
-          workspace-900-light 1800 1240
-          workspace-900-dark 1800 1240
-          product-workspace-light 1800 1240
-          product-workspace-dark 1800 1240
-          workspace-empty-900-light 1800 1240
-          workspace-empty-900-dark 1800 1240
-          workspace-access-error-empty-900-light 1800 1240
-          workspace-access-error-empty-900-dark 1800 1240
-          workspace-access-error-source-900-light 1800 1240
-          workspace-access-error-source-900-dark 1800 1240
+          workspace-1040-light 2080 1240
+          workspace-1040-dark 2080 1240
+          product-workspace-light 2080 1240
+          product-workspace-dark 2080 1240
+          workspace-empty-1040-light 2080 1240
+          workspace-empty-1040-dark 2080 1240
+          workspace-access-error-empty-1040-light 2080 1240
+          workspace-access-error-empty-1040-dark 2080 1240
+          workspace-access-error-source-1040-light 2080 1240
+          workspace-access-error-source-1040-dark 2080 1240
           pro-comparison-light 1280 720
           pro-comparison-dark 1280 720
           settings-pointer-light 1360 1200
@@ -170,12 +170,24 @@ jobs:
           settings-access-dark 1360 1200
           settings-pro-light 1360 1200
           settings-pro-dark 1360 1200
-          draw-900 1800 1240
-          eraser-900-light 1800 1240
-          eraser-900-dark 1800 1240
+          draw-1040 2080 1240
+          eraser-1040-light 2080 1240
+          eraser-1040-dark 2080 1240
           privacy-curtain 1920 1080
           stage-ready 1920 1080
           product-stage 1920 1080
+          screen-groups-1440-light 2880 1800
+          screen-groups-1040-light 2080 1240
+          screen-groups-output-1040-light 2080 1240
+          compact-rails-screens-1040-light 2080 1240
+          compact-rails-layers-1040-light 2080 1240
+          compact-rails-both-1040-light 2080 1240
+          screen-groups-1440-dark 2880 1800
+          screen-groups-1040-dark 2080 1240
+          screen-groups-output-1040-dark 2080 1240
+          compact-rails-screens-1040-dark 2080 1240
+          compact-rails-layers-1040-dark 2080 1240
+          compact-rails-both-1040-dark 2080 1240
           SNAPSHOT_SIZES
           echo "Verified $SNAPSHOT_COUNT snapshot dimensions"
 

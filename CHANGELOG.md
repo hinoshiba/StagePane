@@ -3,6 +3,38 @@
 All notable changes will be documented here. This project follows Semantic
 Versioning once 1.0.0 is released.
 
+## [Unreleased]
+
+## [0.5.0] - Unreleased
+
+### Added
+
+- Collapse Screens and Layers independently into compact rails, keeping source
+  selection, context menus, and Stage-output/hidden-state indicators available.
+  Remember both choices across groups and app launches; restore the previous
+  layer-list width when expanded.
+- Prepare screen groups using compact vertical preview tabs at the left of
+  Workspace, then choose Send to Stage to switch output. Blue marks the editor;
+  a red frame and Stage output label identify the audience composition.
+  Free supports two groups and Pro ten, with the existing source limit applied
+  per group. Rename and delete groups from their menus.
+- Keep each group's capture, layout, crops, ink, shape, and background separate
+  for the app session, while sharing the same audience Stage window.
+- Stop All and Quit cover capture in every group. Preserve the Curtain during
+  switching, and lock excess groups with capture ended if Pro access expires.
+
+### Changed
+
+- Remove the repeated meeting-sharing caption below the Workspace canvas.
+- Reuse a single ScreenCaptureKit input for matching picker-authorized windows
+  across layers and groups on macOS 15.2 or later. The largest active layer's
+  resolution demand drives capture; crop, placement, and color effects remain
+  local to each layer without copying incoming frame buffers.
+- Hiding, removing, or replacing one layer leaves other subscribers running.
+  Stop capture when its last active subscriber stops. Native-cursor modes stay
+  isolated; inputs without a reliable window identity reuse only the same
+  filter instance. System sharing-stop events revoke every affected layer.
+
 ## [0.4.6] - Unreleased
 
 ### Fixed

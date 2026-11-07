@@ -85,7 +85,7 @@ final class StageWindowMenuTests: XCTestCase {
     func testMaximizeRestoresSameWindowAndIgnoresFullScreenTransition() throws {
         try withController { controller in
             let screen = try XCTUnwrap(NSScreen.main)
-            let stage = StageWindowController(controller: controller, capture: controller.capture)
+            let stage = StageWindowController(controller: controller)
             let window = try XCTUnwrap(stage.window)
             window.setFrameAutosaveName("")
             defer {

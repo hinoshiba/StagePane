@@ -4,24 +4,22 @@ import Combine
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
     private weak var controller: AppController?
-    private weak var capture: CaptureCoordinator?
+    private var capture: CaptureCoordinator? { controller?.capture }
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
     private var cancellables = Set<AnyCancellable>()
 
-    init(controller: AppController, capture: CaptureCoordinator) {
+    init(controller: AppController) {
         self.controller = controller
-        self.capture = capture
         super.init()
 
         menu.delegate = self
         statusItem.menu = menu
         updateIcon()
 
-        capture.$isCaptureActive
-            .combineLatest(capture.$statusDetail)
+        controller.objectWillChange
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _ in self?.updateIcon() }
+            .sink { [weak self] _ in self?.updateIcon() }
             .store(in: &cancellables)
         controller.$privacyCurtain
             .receive(on: RunLoop.main)
@@ -65,7 +63,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             #selector(AppController.stopPreview),
             target: controller
         )
-        stop.isEnabled = capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
+        stop.isEnabled = controller.canStopAllGroups
         menu.addItem(stop)
         menu.addItem(.separator())
 
@@ -113,10 +111,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func updateIcon() {
-        let isPreviewing = capture?.isCaptureActive == true
-        let isPaused = capture.map {
-            !$0.sources.isEmpty && $0.sources.allSatisfy(\.isPaused)
-        } ?? false
+        let isPreviewing = controller?.hasAnyCaptureActive == true
+        let sources = controller?.screenGroups.flatMap { $0.capture.sources } ?? []
+        let isPaused = !sources.isEmpty && sources.allSatisfy(\.isPaused)
         let isCovered = controller?.privacyCurtain == true
         let symbol = isPaused
             ? "pause.fill"

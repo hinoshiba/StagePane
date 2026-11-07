@@ -7,8 +7,8 @@ const translations = {
   },
   "t99": {
     "html": {
-      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、最後に選択した設定項目、およびWorkspace・Stage・このアプリについて・Proの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
-      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, the last selected Settings pane, and the position and size of the Workspace, Stage, About, and Pro windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
+      "ja": "設定はMacに保存します。保存するのはStageの形状と外観、ウインドウの動作、セーフエリアガイドとStagePaneマークの設定、ポインタのスタイル・大きさ・色・グロー、カーテンの文言と文字の大きさ、手書きツールの設定、レイヤー一覧の幅、「画面」と「レイヤー」の縮小状態、最後に選択した設定項目、およびWorkspace・Stage・このアプリについて・Proの各ウインドウの位置と大きさです。許可状態そのものは保存せず、macOSから確認します。Mac App Store版はこれに加えて、App Storeの評価依頼を表示する時期の判断にだけ使うローカルな3つの値（成功したセッションの回数、その最初の日付、評価依頼を最後に表示したアプリのバージョン）を保存します。画面の映像、画面グループとその名前、ソース名、Stage上のソースの配置、手書きは保存しません。手書きは作業中のメモリで扱い、「すべて停止」または終了で破棄します。「画像をコピー」はシステムのクリップボードへPNGを置き、ほかのアプリから参照できます。「PNGを保存」は選択した場所へ書き込みます。不要な画像は利用者が削除できます。",
+      "en": "Preferences are stored on your Mac: the Stage shape and appearance, window behavior, the safe-area guide and StagePane mark settings, the pointer style, size, color, and glow, the Curtain message and its text size, drawing tool settings, the layer list width, whether Screens and Layers are collapsed, the last selected Settings pane, and the position and size of the Workspace, Stage, About, and Pro windows. The access status itself is read from macOS, not saved by StagePane. The Mac App Store build additionally stores three local values used only to decide when to show the App Store rating prompt: a count of successful sessions, the date of the first one, and the app version in which the prompt was last shown. Screen content, screen groups and their names, source names, the Stage layout of your sources, and drawings are not stored. Drawings are held in memory during use and are discarded when you choose Stop All or quit. Copy Image places a PNG on the system clipboard, where other apps may access it; Save PNG writes to your chosen location. You can delete saved images when no longer needed."
     }
   },
   "t100": {
@@ -25,8 +25,8 @@ const translations = {
   },
   "privacy-sharing": {
     "html": {
-      "ja": "StagePaneは、画面、手書き、その他のデータを開発者や第三者へ送信しません。このアプリはネットワークのエンタイトルメントを持たずに配布されており、アプリ自身がネットワーク接続を開くことはできません。画面はソースが動作している間だけメモリで保持し、そのソースを非表示または解除したとき、「すべて停止」を選んだとき、終了したときに解放します。画面に由来するデータで残るのは、利用者自身が「画像をコピー」「PNGを保存」で作成した画像だけで、クリップボードまたは選択した場所に残ります。Proの購入・復元はAppleが処理し、その処理に画面は一切含まれません。",
-      "en": "StagePane does not transmit screen content, drawings, or any other data to the developer or to any third party. The app ships without a network entitlement and cannot open network connections of its own. Screen content is held only in memory while a source is live and is released when you hide or remove that source, choose Stop All, or quit. The only screen-derived data that persists is an image you create yourself with Copy Image or Save PNG, on your clipboard or at the location you chose. Apple processes Pro purchases and restores; no screen content is part of that flow."
+      "ja": "StagePaneは、画面、手書き、その他のデータを開発者や第三者へ送信しません。このアプリはネットワークのエンタイトルメントを持たずに配布されており、アプリ自身がネットワーク接続を開くことはできません。映像は入力が動作している間だけメモリで保持します。「非表示」や解除はそのレイヤーの表示を消します。同じ入力を別の動作中のレイヤーや画面が使っている場合、取得と最新フレームの保持は続きます。最後の動作中のレイヤーが停止すると、共有入力と保持フレームを解放します。「すべて停止」と終了は全画面が対象です。プレビューの切り替えやカーテンでは取得を停止しません。画面に由来するデータで残るのは、利用者自身が「画像をコピー」「PNGを保存」で作成した画像だけで、クリップボードまたは選択した場所に残ります。Proの購入・復元はAppleが処理し、その処理に画面は一切含まれません。",
+      "en": "StagePane does not transmit screen content, drawings, or any other data to the developer or to any third party. The app ships without a network entitlement and cannot open network connections of its own. Screen content is held only in memory while an input is live. Hide or Remove clears that layer’s presentation. If another active layer or screen uses the same input, capture and its latest frame remain available to those layers. The shared input and its retained frame are cleared when the last active layer stops. Stop All and quitting cover every screen. Changing the preview or closing the Curtain does not stop capture. The only screen-derived data that persists is an image you create yourself with Copy Image or Save PNG, on your clipboard or at the location you chose. Apple processes Pro purchases and restores; no screen content is part of that flow."
     }
   },
   "privacy-static-en": {
@@ -239,8 +239,8 @@ const translations = {
   },
   "step-2-copy": {
     "html": {
-      "ja": "Workspaceで、大きさ・位置・表示範囲を整えます。",
-      "en": "Set the size, position, and crop of your sources in the Workspace."
+      "ja": "画面タブで大きさ・位置・表示範囲を整え、準備できたら「Stageに出す」を選びます。",
+      "en": "Arrange size, position, and crop in a screen tab, then choose Send to Stage when ready."
     }
   },
   "step-3": {
@@ -433,24 +433,24 @@ const translations = {
   },
   "workspace-image": {
     "alt": {
-      "ja": "2つのレイヤーを並べたWorkspace。左にレイヤー一覧、右に資料と予約アプリの合成画面",
-      "en": "Workspace with two layers: a layer list on the left and slides beside a booking app demo on the canvas"
+      "ja": "2つのレイヤーを並べたWorkspace。左に画面タブとレイヤー一覧、右に資料と予約アプリの合成画面",
+      "en": "Workspace with two layers: screen tabs and a layer list on the left and slides beside a booking app demo on the canvas"
     },
     "src": {
-      "ja": "assets/screenshots/ja/product-workspace-light.webp?v=20261021-stage-lp",
-      "en": "assets/screenshots/en/product-workspace-light.webp?v=20261021-stage-lp"
+      "ja": "assets/screenshots/ja/product-workspace-light.webp?v=20261107-screen-tabs",
+      "en": "assets/screenshots/en/product-workspace-light.webp?v=20261107-screen-tabs"
     }
   },
   "workspace-dark": {
     "srcset": {
-      "ja": "assets/screenshots/ja/product-workspace-dark.webp?v=20261021-stage-lp",
-      "en": "assets/screenshots/en/product-workspace-dark.webp?v=20261021-stage-lp"
+      "ja": "assets/screenshots/ja/product-workspace-dark.webp?v=20261107-screen-tabs",
+      "en": "assets/screenshots/en/product-workspace-dark.webp?v=20261107-screen-tabs"
     }
   },
   "workspace-zoom": {
     "aria-label": {
-      "ja": "画像を拡大: 2つのレイヤーを並べたWorkspace。左にレイヤー一覧、右に資料と予約アプリの合成画面",
-      "en": "Enlarge image: Workspace with two layers: a layer list on the left and slides beside a booking app demo on the canvas"
+      "ja": "画像を拡大: 2つのレイヤーを並べたWorkspace。左に画面タブとレイヤー一覧、右に資料と予約アプリの合成画面",
+      "en": "Enlarge image: Workspace with two layers: screen tabs and a layer list on the left and slides beside a booking app demo on the canvas"
     }
   },
   "meta-title": {
@@ -461,8 +461,8 @@ const translations = {
   },
   "meta-description": {
     "content": {
-      "ja": "資料とデモは相手へ、Slackの通知やメモは手元に。ウインドウを個別に選んで並べ、会議ではStageだけを共有するmacOSアプリ。選択したウインドウ内の通知は映る場合があります。4ソースまで無料。",
-      "en": "Keep unselected Slack windows and notes out of your presentation. Choose individual windows and share only the Stage in your meeting. Notifications within selected windows may appear. Free for four sources."
+      "ja": "資料とデモは相手へ、Slackの通知やメモは手元に。ウインドウを個別に選んで並べ、会議ではStageだけを共有するmacOSアプリ。選択したウインドウ内の通知は映る場合があります。2画面・各4ソースまで無料。",
+      "en": "Keep unselected Slack windows and notes out of your presentation. Choose individual windows and share only the Stage in your meeting. Notifications within selected windows may appear. Free for two screens with four sources each."
     }
   },
   "meta-locale": {
@@ -485,8 +485,8 @@ const translations = {
   },
   "meta-image": {
     "content": {
-      "ja": "https://stagepane.hinoshiba.com/assets/screenshots/ja/product-stage.webp?v=20261021-stage-lp",
-      "en": "https://stagepane.hinoshiba.com/assets/screenshots/en/product-stage.webp?v=20261021-stage-lp"
+      "ja": "https://stagepane.hinoshiba.com/assets/screenshots/ja/product-stage.webp?v=20261107-screen-tabs",
+      "en": "https://stagepane.hinoshiba.com/assets/screenshots/en/product-stage.webp?v=20261107-screen-tabs"
     }
   },
   "meta-image-alt": {
@@ -515,14 +515,14 @@ const translations = {
   },
   "layout-copy": {
     "html": {
-      "ja": "大きさも、位置も、ウインドウのように。手元の配置を変えずに、共有する映像だけを整えられます。",
-      "en": "Move and resize your sources like windows. Shape the shared view while keeping your own desktop arrangement."
+      "ja": "画面タブで次の構成を準備し、「Stageに出す」で切り替え。大きさ・位置・切り抜きを画面ごとに整えられます。",
+      "en": "Prepare the next composition in a screen tab, then choose Send to Stage. Arrange sizes, positions, and crops separately for each screen."
     }
   },
   "workspace-caption": {
     "html": {
-      "ja": "手元で整えるWorkspace。会議で共有するのはStageだけ。画面はサンプルです。",
-      "en": "Arrange in your Workspace; share only the Stage. Screens show sample content."
+      "ja": "画面タブは準備用、赤枠はStage出力中。「画面」と「レイヤー」は縮小できます。会議ではStageだけを共有。画像はサンプルです。",
+      "en": "Screen tabs select your preview; the red frame marks Stage output. Collapse Screens and Layers to make more room. Share only Stage in your meeting. Sample content."
     }
   },
   "local-title": {
@@ -623,8 +623,8 @@ const translations = {
   },
   "plan-intro": {
     "html": {
-      "ja": "4つの画面で、資料もデモも。",
-      "en": "Four views. Room for your whole story."
+      "ja": "2つの画面を準備し、切り替えて共有。",
+      "en": "Prepare two screens and switch when ready."
     }
   },
   "plan-free-label": {
@@ -635,8 +635,8 @@ const translations = {
   },
   "plan-source-unit": {
     "html": {
-      "ja": "同時に使える画面",
-      "en": "views at once"
+      "ja": "各画面のソース",
+      "en": "sources per screen"
     }
   },
   "plan-pro-label": {
@@ -647,8 +647,8 @@ const translations = {
   },
   "plan-pro-description": {
     "html": {
-      "ja": "ソース数の上限を解除。<br>StagePaneロゴも非表示に。",
-      "en": "Remove the app’s source limit.<br>Choose whether to show the StagePane mark."
+      "ja": "10画面まで準備。ソース数の上限を解除。<br>StagePaneロゴも非表示に。",
+      "en": "Prepare up to ten screens with no app-imposed source limit.<br>Choose whether to show the StagePane mark."
     }
   },
   "plan-one-time": {
@@ -743,7 +743,7 @@ function updatePreviewLinks() {
   document.querySelectorAll('[data-preview]').forEach(link => {
     const kind = link.dataset.preview;
     const filename = kind + (colorScheme.matches ? '-dark' : '-light');
-    link.href = 'assets/screenshots/' + currentLanguage + '/' + filename + '.webp?v=20261021-stage-lp';
+    link.href = 'assets/screenshots/' + currentLanguage + '/' + filename + '.webp?v=20261107-screen-tabs';
   });
 }
 

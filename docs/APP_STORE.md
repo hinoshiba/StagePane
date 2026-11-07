@@ -1,12 +1,12 @@
 # App Store positioning and review notes
 
-## Metadata draft — 0.4.6 (build 13)
+## Metadata draft — 0.5.0 (build 14)
 
-The release owner assigned 0.4.6 (build 13), following uploaded build 12, and
-authorized automatic release after App Review approval. Exact-candidate manual
-acceptance and StoreKit purchase evidence remain pending. These fields describe
-the current implementation; they are not a record of upload, review, or release.
-Set and verify automatic release in App Store Connect before submission.
+The latest published and uploaded version was checked in App Store Connect on
+2026-11-07: 0.4.6 (build 13). The release owner assigned 0.5.0 (build 14).
+Review and exact-candidate manual acceptance are not complete. The release mode
+must be confirmed before submission.
+These fields describe the candidate, not an upload, submission, or release.
 
 - **Name:** StagePane
 - **Subtitle (EN):** Arrange windows for sharing
@@ -15,8 +15,8 @@ Set and verify automatic release in App Store Connect before submission.
 - **Secondary category:** Utilities
 - **Tagline (EN):** Your work, together. Your space, private.
 - **Tagline (JA):** 見せたいものを、ひとつの画面に。
-- **Promotional Text (EN):** Put slides and demos together on a dedicated sharing Stage. Keep your own layout. Start free with four sources; Pro is a one-time purchase.
-- **Promotional Text (JA):** 資料とデモを、ひとつの共有画面に。ウインドウを個別に選び、会議ではStageだけを共有。手元の配置を変えずに、見せる内容を整えられます。無料で4ソース、Proは買い切りです。
+- **Promotional Text (EN):** Prepare two screens with four sources each for free. Preview privately, then send to Stage. Pro adds up to ten screens and removes the source limit with one purchase.
+- **Promotional Text (JA):** 次の画面を手元で準備し、「Stageに出す」で切り替え。無料で2画面・各4ソースまで。買い切りのProは10画面まで作成でき、ソース数制限の解除とロゴ非表示も利用できます。
 - **Privacy Policy URL (JA):** https://stagepane.hinoshiba.com/#privacy
 - **Privacy Policy URL (EN):** https://stagepane.hinoshiba.com/en/privacy/
 
@@ -37,24 +37,27 @@ Do not use competitor trademarks in metadata and do not use `virtual display`,
 `second monitor`, `independent desktop`, `real display`, or equivalents. The app
 creates a normal shareable window, not an `NSScreen`.
 
-### What's New 0.4.6 — Japanese
+### What's New 0.5.0 — Japanese
 
-> 画面収録のアクセス許可の流れを改善しました。
+> 複数の画面を準備して、共有内容を切り替えられるようになりました。
 >
-> ・起動時の独自の許可案内を削除しました。
-> ・任意のアプリ全体のアクセスは「設定 → アクセスとプライバシー」からmacOSへ直接要求できます。
-> ・許可の状態とシステム設定への導線を同じ設定画面にまとめました。
-
-### What's New 0.4.6 — English (U.S.)
-
-> Improved the Screen Recording permission flow.
+> ・左の「画面」タブで次の構成をプレビューし、「Stageに出す」で共有内容を切り替えます。Stageへ出力中の画面は赤枠で表示します。
+> ・無料版は2画面、Proは10画面まで。無料版のソース数は1画面あたり4つまでです。
+> ・「画面」と「レイヤー」を個別に縮小し、編集スペースを広く使えます。
+> ・対応するmacOSでは、同じウインドウを複数のレイヤーで使うときの画面取得を共用します。切り抜きや大きさは個別に設定できます。
 >
-> • Removed the custom permission guide at launch.
-> • Request optional app-wide access directly through macOS from Settings > Access & Privacy.
-> • Review access status and open System Settings from the same settings pane.
+> 作成した画面や配置は、アプリの終了まで保持します。
 
-These changes are relative to the 0.4.5 candidate. The 0.4.5 capture and PNG
-fixes are also included; their outstanding live-validation limitations remain.
+### What's New 0.5.0 — English (U.S.)
+
+> Prepare multiple screens and switch what your audience sees.
+>
+> • Select a screen tab to preview privately, then choose Send to Stage. A red frame marks the screen currently on Stage.
+> • Free includes two screens with up to four sources each. Pro supports up to ten screens.
+> • Collapse Screens and Layers independently to give the canvas more room.
+> • On supported macOS versions, layers using the same window share one capture input while keeping separate crops and sizes.
+>
+> Screens and their layouts last until you quit the app.
 
 ### Description draft — Japanese
 
@@ -66,7 +69,9 @@ fixes are also included; their outstanding live-validation limitations remain.
 > Appleの選択画面で、ウインドウ、アプリ、または画面を追加します。範囲を絞るにはウインドウを個別に選び、会議アプリでは「StagePane Stage」だけを共有してください。選ばなかった別アプリの通知や個人メモはStageに含まれません。選択したウインドウ内の通知・ダイアログは映る場合があります。画面全体やアプリ全体を選ぶと共有範囲が広がり、会議でデスクトップやStagePane全体を共有するとWorkspaceも映る場合があります。
 >
 > 無料で使える主な機能
-> ・同時に4つのソースを配置。自由配置とグリッドなどの配置プリセット
+> ・2画面まで作成し、それぞれに4つのソースを配置。自由配置と配置プリセット
+> ・手元のプレビューと「Stageに出す」による出力切り替え
+> ・「画面」と「レイヤー」の縮小表示
 > ・レイヤー名の変更と、レイヤーごとの色の反転
 > ・手元で範囲を下書きし、「適用」で反映するレイヤーごとの切り抜き
 > ・ペン、蛍光ペン、部分消しゴムと、2倍・3倍・4倍の虫眼鏡
@@ -80,9 +85,10 @@ fixes are also included; their outstanding live-validation limitations remain.
 > 元のアプリの操作は、元のウインドウで行います。StagePaneは共有映像の構図や注釈を編集するもので、ソースアプリへクリックやキー入力を送信しません。
 >
 > 表示と取得を分けて管理
-> 切り抜きは表示範囲だけを変え、取得対象はAppleの選択画面で許可したソース全体です。カーテンはStageを覆いますが、画面取得は続きます。レイヤーの「非表示」はそのソースの取得を一時停止し、「すべて停止」はすべての取得を終了して全レイヤーを削除します。
+> 切り抜きは表示範囲だけを変え、取得対象はAppleの選択画面で許可したソース全体です。カーテンはStageを覆いますが、画面取得は続きます。レイヤーの「非表示」はそのレイヤーの利用を一時停止します。同じ入力を別のレイヤーや画面が使っている間は取得が続きます。「すべて停止」は全画面の取得を終了して全レイヤーを削除します。画面・名前・配置はアプリ終了後には保存されません。
 >
 > StagePane Pro — 1回限りのアプリ内課金
+> ・10画面まで作成
 > ・アプリ側のソース件数制限を解除。利用可能数はMacの性能とOSの制約に依存します
 > ・Stage、カーテン、保存・コピーするStage画像のStagePaneロゴを非表示にできます
 >
@@ -103,7 +109,9 @@ fixes are also included; their outstanding live-validation limitations remain.
 > Add a window, app, or display through Apple’s picker. For a narrow scope, choose individual windows and share only “StagePane Stage” in your meeting app. Other apps’ notifications and personal notes outside those selected windows are not included in the Stage. Notifications or dialogs inside a selected window may appear. Selecting an entire app or display widens the source scope; sharing your desktop or the whole StagePane app in a meeting may also expose Workspace.
 >
 > Included free
-> • Compose four simultaneous sources with freeform and preset layouts
+> • Prepare two screens with up to four sources each and freeform or preset layouts
+> • Preview privately and switch output explicitly with Send to Stage
+> • Collapse Screens and Layers independently
 > • Rename layers and invert colors for each layer
 > • Draft a layer’s crop privately, then apply it explicitly
 > • Pen, highlighter, partial eraser, and a 2×, 3×, or 4× magnifying lens
@@ -117,9 +125,10 @@ fixes are also included; their outstanding live-validation limitations remain.
 > Operate your source apps in their original windows. StagePane edits the shared composition and annotations; it does not send clicks or keystrokes to source apps.
 >
 > Control display and capture separately
-> Crop changes only the displayed area; the complete source approved in Apple’s picker remains the capture source. Curtain covers the Stage while capture continues. Hide pauses one source. Stop All ends every capture session and removes all layers.
+> Crop changes only the displayed area; the complete source approved in Apple’s picker remains the capture source. Curtain covers the Stage while capture continues. Hide pauses that layer’s use of the input; another active layer or screen can keep the input running. Stop All ends capture and removes layers across every screen. Screens, names, and layouts last until you quit the app.
 >
 > StagePane Pro — one-time In-App Purchase
+> • Prepare up to ten screens
 > • Remove the app’s source-count limit. Practical capacity depends on your Mac’s performance and operating-system constraints
 > • Optionally hide the StagePane mark on the Stage, Curtain, and copied or saved Stage images
 >
@@ -161,9 +170,10 @@ direct-distribution build currently ships.
 1. **見せたいものを、ひとつの画面に。** — individually selected windows in the
    audience Stage beside the private Workspace. Make the condition explicit:
    the meeting app shares only the Stage window, not the display or whole app.
-2. **無料で4つ。Proは買い切り。** — the current Workspace and private Pro purchase
+2. **無料で2画面・各4ソース。Proは10画面。** — the current Workspace and private Pro purchase
    screen, localized StoreKit price, Mac/OS capacity qualification, and the
-   distinction between free features and optional mark removal.
+   distinction between two Free screens, ten Pro screens, the per-screen source
+   limit, and optional mark removal.
 3. **並べる。切り抜く。伝える。** — the layer list, Arrange/Draw/Magnify tools,
    per-layer Crop with Apply/Cancel, and explicit Copy/Save Audience Image.
    Show real layer naming and color inversion where useful; names stay private.
@@ -194,47 +204,43 @@ English block by default, or the Japanese alternative, never both concatenated.
 
 ### English (preferred)
 
-> StagePane 0.4.6, build 13. No sign-in or demo account is required.
+> StagePane 0.5.0, build 14. No sign-in or demo account is required.
 >
-> In Workspace, choose Add Source and approve a harmless window in Apple’s ScreenCaptureKit picker. Each selection authorizes that source for its capture session. Repeat to compose sources. In your meeting app share only “StagePane Stage”, check the target, then open the Curtain. Whole-app or whole-display sharing can expose Workspace and private settings. Notifications/dialogs inside a selected source may appear.
+> Choose Add Source and approve a harmless window in Apple’s ScreenCaptureKit picker. Select individual windows, then share only “StagePane Stage” in your meeting app and open the Curtain. Whole-app/display sharing can expose Workspace; dialogs inside selected sources may appear.
 >
-> To address guideline 5.1.1(iv), 0.4.6 removes the custom Screen Recording permission guide and its Allow/Continue buttons. First and repeat launch open Workspace directly. Add Source opens Apple's picker. Optional app-wide access is requested directly through Settings > Access & Privacy > Request Screen Recording Access; macOS handles the decision. Denial does not trigger an automatic retry. The same pane offers Open System Settings after a request. Accessibility and Input Monitoring access are never requested.
+> New: Screens on the left select a private preview. Add another screen, arrange it, then choose Send to Stage to change the audience composition in the same Stage window. Blue identifies editing and a red frame/On Stage label identifies output; these do not detect meeting-app sharing. Editing the output screen applies immediately. Curtain stays unchanged when switching. Screens, names, layouts, and drawings are session-only. Collapse Screens and Layers with their header buttons; these display preferences persist.
 >
-> Validation limitation carried forward: on our macOS 26.5.2 Apple Silicon test Mac, picker capture without app-wide access failed with a TCC rejection. Broad access has not been verified as a remedy. Live capture lifecycle, one-hour soak, purchase and restore acceptance remain pending. This permission-UI change does not claim to fix the reported long-session freeze.
+> Free includes two screens with four sources each. A third screen or fifth source in one screen opens the private Pro window. Settings > Pro > Purchase or Restore also opens it. Product com.hinoshiba.stagepane.pro is a one-time non-consumable IAP. Pro supports ten screens, removes the source-count limit, and makes the Stage/Curtain/PNG mark optional. Practical source capacity depends on Mac/OS. Check the localized price, Restore Purchases, and Continue Free. Canceling preserves output. Entitlement loss locks screens beyond the first two and ends their capture; unavailable output closes the Curtain. Layouts remain in memory, and restoration requires fresh selection.
 >
-> StagePane > Settings (Command-,) and the menu-bar status icon open the same private window. The Stage’s right-click menu controls its size, full screen, and window behavior. Layer names stay private and session-only; per-layer Invert Colors affects that source across Workspace, Stage, Magnify, and PNG output.
+> On macOS 15.2+, matching picker-authorized single windows share native input across layers/screens; crop, placement, and color stay independent. Cursor modes may require separate inputs. Older systems and other selection types reuse only the identical filter instance. Hide clears one layer; another active subscriber keeps the input and latest frame. The last active subscriber stops capture. Stop All and Quit cover all screens. Changing preview or closing Curtain does not stop capture.
 >
-> Free permits four simultaneous sources. A fifth Add Source attempt opens the private Pro purchase window. Settings > Pro > Purchase or Restore also opens it. Product com.hinoshiba.stagepane.pro is a one-time non-consumable IAP, not a subscription. Pro removes the app’s source-count limit and makes the Stage/Curtain/PNG mark optional; practical capacity depends on Mac and OS. Check the localized price, Restore Purchases, and Continue Free. Canceling leaves the Stage running.
+> Launch opens Workspace directly. Optional app-wide access is requested through Settings > Access & Privacy > Request Screen Recording Access; macOS makes the decision. There is no custom pre-alert or automatic retry after denial. Accessibility and Input Monitoring access are never requested. Operate source apps in their original windows; StagePane never forwards input. Crop does not narrow the picker-approved source. Only explicit Copy/Save Audience Image creates a local PNG.
 >
-> Operate source apps in their original windows. Arrange/Crop/Draw/Magnify never forward input. Crop is private until Apply, and never narrows the complete picker-approved capture source. Hide pauses one source and clears its pixels while retaining its layer; Show waits for a fresh frame. Curtain covers audience output but capture continues. Stop All ends all streams and removes all layers, including disconnected ones. Copy/Save Audience Image creates one local PNG only when chosen.
+> Validation remains pending for live capture/meeting workflows across supported systems, long-session behavior, and StoreKit purchase/restore. Earlier testing on macOS 26.5.2 Apple Silicon encountered a picker TCC rejection without app-wide access. Input reuse is not a claim that this or the reported long-session freeze is resolved; synthetic tests do not measure CPU/GPU savings.
 >
-> The sandboxed app has no network entitlement and sends no screen content, drawings or other data to the developer or third parties. No video/audio recording, analytics or ads. Frames stay in memory and are released on Hide, removal, Stop All or quit. Only explicitly copied/saved PNGs persist; clipboard/file synchronization can transmit those images. Meeting apps transmit the Stage. Local preferences include appearance, window behavior, last Settings pane and rating-prompt timing; Apple handles IAP without screen content.
->
-> Privacy: https://stagepane.hinoshiba.com/#privacy (JA), https://stagepane.hinoshiba.com/en/privacy/ (EN), and bundled PRIVACY.md.
+> The sandboxed app has no network entitlement, video/audio recording, analytics, or ads. Frames remain in memory; only explicit PNG copies/exports persist. Apple handles IAP without screen content; meeting apps transmit the Stage. Privacy: https://stagepane.hinoshiba.com/#privacy (JA), https://stagepane.hinoshiba.com/en/privacy/ (EN), and bundled PRIVACY.md.
 
 ### Japanese alternative
 
-> StagePane 0.4.6、ビルド13。ログインやデモアカウントは不要です。
+> StagePane 0.5.0、ビルド14。ログインやデモアカウントは不要です。
 >
-> Workspaceの「ソースを追加」からAppleのScreenCaptureKit選択画面で無害なテスト用ウインドウを許可します。許可は選択した内容と取得セッションに限定されます。会議アプリでは「StagePane Stage」だけを共有し、対象を確認してカーテンを開いてください。アプリ全体・画面全体の共有ではWorkspaceや設定が映る場合があります。選択したソース内の通知・ダイアログも映る場合があります。
+> 「ソースを追加」でAppleの選択画面から無害なウインドウを許可し、会議アプリでは「StagePane Stage」だけを共有してカーテンを開きます。アプリ全体・画面全体の共有ではWorkspaceが、選択したソース内では通知やダイアログが映る場合があります。
 >
-> 5.1.1(iv)への対応として、0.4.6では起動時の独自の画面収録アクセス案内と「許可する／続ける」ボタンを削除しました。起動時はWorkspaceを開き、「ソースを追加」はAppleの選択画面を直接開きます。任意のアプリ全体のアクセスは「設定 → アクセスとプライバシー → 画面収録アクセスを要求」からmacOSへ直接要求し、許可はシステム画面で選びます。拒否しても自動では再要求しません。要求後は同じ設定からシステム設定を開けます。アクセシビリティや入力監視は要求しません。
+> 左の「画面」は手元のプレビューです。別の画面を追加して配置し、「Stageに出す」で同じStageウインドウの出力を切り替えます。青は編集中、赤枠と「Stage出力」は出力中を示します。会議アプリの共有状態を検出する表示ではありません。出力中の画面の編集は即時反映し、切り替え時もカーテンを保持します。画面・名前・配置・手書きは終了まで保持。「画面」「レイヤー」の見出しで個別に縮小でき、その表示設定は保存します。
 >
-> 継続中の検証制限：macOS 26.5.2のApple Siliconテスト機では、アプリ全体のアクセスなしの取得がTCC拒否で失敗しました。広範なアクセスによる改善は未確認です。実映像のライフサイクル、1時間の連続動作、購入・復元の受入確認は未完了です。この許可UIの変更が長時間利用時の停止を修正したとは主張しません。
+> 無料版は2画面・各4ソースまで。3画面目または同じ画面の5ソース目で手元のPro画面が開きます。「設定 → Pro → 購入・復元」からも開けます。com.hinoshiba.stagepane.proは買い切りの非消耗型IAPで、10画面、ソース数制限解除、ロゴ非表示を利用できます。ソース数はMacとOSにも依存します。価格・購入を復元・無料版を続けるをご確認ください。権利失効時は3画面目以降をロックし取得を終了。出力先が利用できない場合はカーテンを閉じます。配置はメモリ内に残り、復元後はソースを再選択します。
 >
-> 「StagePane → 設定」（⌘,）とメニューバー右側のアイコンは同じ手元用の設定を開きます。Stageの右クリックメニューからサイズ、フルスクリーン、ウインドウの動作を変更できます。レイヤー名は手元用でセッション中だけ保持します。色反転はそのソースに適用され、Workspace・Stage・虫眼鏡・PNGへ反映します。
+> macOS 15.2以降では同じウインドウの許可済み入力をレイヤー間で共用し、切り抜き・配置・色は個別に処理します。カーソル設定によって入力は分かれます。旧OS等では同一フィルタのみ再利用。「非表示」は1レイヤーの映像を消しますが、別の利用中レイヤーがあれば取得と最新フレームの保持は続きます。最後の利用中レイヤーが停止すると入力を終了。「すべて停止」と終了は全画面が対象です。
 >
-> 無料版は同時に4ソースまでです。5件目の追加、または「設定 → Pro → 購入・復元」でPro購入画面を開きます。com.hinoshiba.stagepane.proは1回限りの非消耗型アプリ内課金で、継続課金ではありません。Proはアプリ側の件数制限を解除し、Stage・カーテン・PNGのロゴを任意に非表示にします。実用上の件数はMacとOSに依存します。価格と「購入を復元」「無料版を続ける」をご確認ください。キャンセルしてもStageは動作を続けます。
+> 起動時の許可案内はありません。任意の画面収録アクセスは設定からmacOSへ直接要求し、拒否後に自動再要求しません。アクセシビリティ・入力監視は要求せず、元アプリへの入力転送もしません。カーテン・切り抜きは取得を止めません。コピー・保存を明示した場合だけPNGを作成します。
 >
-> 元アプリの操作は元のウインドウで行い、StagePaneは入力を転送しません。切り抜きは適用まで手元の下書きで、許可したソース全体の取得範囲を狭めません。「非表示」は1ソースを一時停止して映像を消し、再表示では新しいフレームを待ちます。カーテンは表示を覆いますが取得は続きます。「すべて停止」は全取得を終了し、切断中を含む全レイヤーを削除します。
+> 実映像・会議共有・長時間動作・購入復元の実機受入は未完了です。以前のmacOS 26.5.2 Apple Siliconテストでは包括アクセスなしでTCC拒否が発生しました。今回の入力共用がこの問題や長時間の停止を解消したとは主張しません。
 >
-> アプリはサンドボックス化され、ネットワーク接続の権限を持ちません。画面等を開発者や第三者に送信せず、録画・音声取得・分析・広告はありません。映像はメモリ内で扱い、非表示・解除・すべて停止・終了で解放します。明示的にコピー・保存したPNGだけが残ります。会議アプリやクリップボード・ファイル同期は別途送信する場合があります。設定、最後の設定項目、評価依頼の時期を判断する値はローカルに保存します。購入はAppleが処理し、画面を含みません。
->
-> Privacy: https://stagepane.hinoshiba.com/#privacy (JA), https://stagepane.hinoshiba.com/en/privacy/ (EN), bundled PRIVACY.md.
+> アプリはネットワーク権限を持たず、映像はメモリ内で処理します。録画・音声取得・分析・広告はありません。明示的なPNGだけが残ります。会議アプリがStageを送信し、Appleが画面を含めず購入を処理します。プライバシーは同梱PRIVACY.mdと https://stagepane.hinoshiba.com/#privacy を参照してください。
 
 ## Detailed reviewer walkthrough reference
 
-This walkthrough describes the 0.4.6 candidate UI. The metadata and review-note
+This walkthrough describes the 0.5.0 candidate UI. The metadata and review-note
 drafts above remain pending exact-candidate acceptance. Prepare submission
 evidence only after validating the exact release candidate.
 
@@ -242,7 +248,7 @@ evidence only after validating the exact release candidate.
 > “StagePane Stage” is the clean window to share, while “Stage Workspace” is the
 > private live Canvas for arranging, cropping, drawing, magnifying, and taking an Audience
 > Stage PNG. A persistent layer list stays beside the Canvas, including at the
-> minimum 900×620-point Workspace size. StagePane → Settings… (Command-,)
+> minimum 1040×620-point Workspace size. StagePane → Settings… (Command-,)
 > opens a separate native window with Pointer, Stage, Window, Access & Privacy,
 > and Pro. The status icon opens the same Settings window. It starts on Pointer
 > and remembers the last pane; changes apply immediately without discarding the
@@ -275,19 +281,25 @@ evidence only after validating the exact release candidate.
 > not open a separate error window or imply missing app-wide access.
 > To test source composition, choose “Add Source,” approve exactly one test
 > window, app, or display in the macOS ScreenCaptureKit system picker, and
-> repeat for up to four sources in Free. A StagePane Pro non-consumable purchase
+> repeat for up to four sources per screen in Free. Free supports two screens;
+> Pro supports ten, selected in the left rail with separate preview/output. A StagePane Pro non-consumable purchase
 > removes StagePane's source-count limit, so source five and additional sources
 > can be added while Mac performance and operating-system constraints permit.
 > To verify entitlement loss, first keep more than four sources active with Pro,
-> then revoke or refund the test entitlement: the existing session remains
-> intact, the StagePane mark returns, and only new source additions are blocked.
+> then revoke or refund the test entitlement: sources in the first two screens
+> remain, the StagePane mark returns, and new source additions past four are
+> blocked. Screens beyond the first two lock and end capture; their layouts stay
+> in memory. If output locks, Curtain closes and output returns to an available
+> screen. Restoring Pro requires selecting sources again for unlocked screens.
 > Each source appears in the private layer list from front to back,
-> where “Hide” pauses only that stream and makes its layer transparent in the
+> where “Hide” pauses only that layer’s subscription and makes its layer transparent in the
 > Stage, private Workspace, and Audience PNG output while preserving placement,
 > crop, and z-order. The hidden layer remains selectable in the list. “Show”
-> resumes it and reveals it only after a new complete frame arrives.
+> resumes it after a complete frame is available: a running shared input can
+> provide its current frame; a stopped input waits for a new frame.
 > “Replace” reopens the picker for only that item, and
-> “Remove” asks for confirmation, ends only its stream, and deletes its layer.
+> “Remove” asks for confirmation, ends its subscription, and deletes its layer. Other active subscribers
+> keep the shared input running until its last active subscriber stops.
 > If macOS ends sharing outside StagePane, the old frame is immediately removed
 > while that layer's placement, crop, and stacking order remain. “Select Again”
 > reconnects a new picker choice to the same layer; Remove or Stop All explicitly
@@ -344,7 +356,7 @@ evidence only after validating the exact release candidate.
 > Stage Workspace must remain private.
 >
 > StagePane Pro is reachable from Settings → Pro → Purchase or Restore, the app menu,
-> a fifth Add Source attempt in Free, or an attempt to turn off the StagePane
+> a third-screen or fifth-source attempt in Free, or an attempt to turn off the StagePane
 > mark. It is a one-time non-consumable purchase. The screen shows StoreKit's
 > localized price, clearly says it is not a subscription, offers Continue Free
 > and Restore Purchases, and never appears in the audience Stage. Only a

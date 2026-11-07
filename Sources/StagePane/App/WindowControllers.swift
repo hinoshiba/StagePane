@@ -66,7 +66,7 @@ private final class StageShareWindow: NSWindow {
 final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate {
     private weak var controller: AppController?
 
-    init(controller: AppController, capture: CaptureCoordinator) {
+    init(controller: AppController) {
         self.controller = controller
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1280, height: 820),
@@ -81,14 +81,14 @@ final class StageWorkspaceWindowController: NSWindowController, NSWindowDelegate
         window.isReleasedWhenClosed = false
         // The private editor always keeps the layer list beside the canvas.
         // Settings and purchases use independent private windows.
-        window.contentMinSize = NSSize(width: 900, height: 620)
+        window.contentMinSize = NSSize(width: 1040, height: 620)
         window.setFrameAutosaveName("StagePane.Workspace")
         window.tabbingMode = .disallowed
         // AppKit no longer provides a supported window-capture exclusion
         // boundary. The visible KEEP PRIVATE guidance directs users to share
         // the exact Stage window; full-display sharing can include Workspace.
         window.contentViewController = NSHostingController(
-            rootView: StageWorkspaceView(controller: controller, capture: capture)
+            rootView: StageWorkspaceView(controller: controller)
         )
 
         super.init(window: window)
@@ -200,10 +200,10 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         fullScreenPhase == .windowed && window?.styleMask.contains(.fullScreen) == false
     }
 
-    init(controller: AppController, capture: CaptureCoordinator) {
+    init(controller: AppController) {
         self.controller = controller
-        canvasHost = StageCanvasHostViewController(controller: controller, capture: capture)
-        let suggested = StageWindowSizing.suggestedContentSize(for: controller.preset)
+        canvasHost = StageCanvasHostViewController(controller: controller)
+        let suggested = StageWindowSizing.suggestedContentSize(for: controller.outputPreset)
         let window = StageShareWindow(
             contentRect: NSRect(
                 x: 0,
@@ -225,7 +225,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.isOpaque = true
         window.alphaValue = 1
         window.backgroundColor = .black
-        window.contentMinSize = StageWindowSizing.minimumContentSize(for: controller.preset)
+        window.contentMinSize = StageWindowSizing.minimumContentSize(for: controller.outputPreset)
         window.tabbingMode = .disallowed
         window.sharingType = .readOnly
         let initialFrame = window.frame
@@ -238,7 +238,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         window.toggleMaximized = { [weak self] in self?.toggleMaximized() }
         window.contentView?.menu = controller.makeStageContextMenu()
         canvasHost.onCanvasLayout = { [weak self] in self?.updateRenderingSize() }
-        applyPreset(controller.preset, resize: false)
+        applyPreset(controller.outputPreset, resize: false)
         // Assigning contentViewController resizes the window to the hosting
         // view's current size. Restore the intended frame only afterward, and
         // register autosaving last so that temporary minimum size is not saved.
@@ -296,7 +296,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         } else {
             guard let maximized = StageWindowSizing.fittedCanvasRect(
                 in: available,
-                aspectRatio: controller.preset.aspectRatio
+                aspectRatio: controller.outputPreset.aspectRatio
             ) else { return }
             contentRectBeforeMaximize = window.contentRect(forFrameRect: window.frame)
             contentRect = maximized
@@ -311,7 +311,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
         guard allowsWindowGeometryChanges else { return }
         guard let controller, let window, let contentView = window.contentView,
               let screen = window.screen ?? NSScreen.main else { return }
-        let preset = controller.preset
+        let preset = controller.outputPreset
         let target = contentView.convertFromBacking(NSRect(
             x: 0, y: 0, width: preset.pixelWidth, height: preset.pixelHeight
         )).size
@@ -396,7 +396,7 @@ final class StageWindowController: NSWindowController, NSWindowDelegate {
             }
             if pendingPresetResize, let controller {
                 pendingPresetResize = false
-                applyPreset(controller.preset, resize: true)
+                applyPreset(controller.outputPreset, resize: true)
             }
         }
         applyWindowBehavior()

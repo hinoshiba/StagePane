@@ -74,13 +74,13 @@ final class StagePaneAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegat
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let capture = controller?.capture, capture.isCaptureActive else {
+        guard let controller, controller.hasAnyCaptureActive else {
             return .terminateNow
         }
         guard !terminationReplyPending else { return .terminateLater }
 
         terminationReplyPending = true
-        capture.stop { [weak self, weak sender] _ in
+        controller.stopAllGroups { [weak self, weak sender] _ in
             guard let self, self.terminationReplyPending else { return }
             self.terminationReplyPending = false
             // A failed ScreenCaptureKit stop remains truthfully marked active

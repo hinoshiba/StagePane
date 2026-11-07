@@ -373,6 +373,21 @@ final class CaptureStreamProxy: NSObject, SCStreamOutput, SCStreamDelegate, @unc
         )
     }
 
+    func revokeInputSnapshots() {
+        renderers.revokeSnapshotAcceptance(token: token)
+    }
+
+    func inputStoppedOnOutputQueue(_ stream: SCStream, failure: StreamStopFailure) {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        endPresentationOnOutputQueue()
+        stopHandler(token, SendableBox(stream), failure)
+    }
+
+    func inputBecameUnavailableOnOutputQueue() {
+        dispatchPrecondition(condition: .onQueue(outputQueue))
+        beginUnavailablePresentationOnOutputQueue()
+    }
+
     func stream(_ stream: SCStream, didStopWithError error: Error) {
         // Fence exports immediately, before either queue can finish teardown.
         // This lock-only revocation never touches AVFoundation off its queue.
@@ -501,10 +516,12 @@ private final class CaptureSession {
 
     let source: CaptureSource
     let token: UUID
-    let stream: SCStream
+    let stream: CaptureStreamLease
     let proxy: CaptureStreamProxy
     var filter: SCContentFilter
     var isStarted = false
+    /// Activity of this layer's subscription. Other layers can keep its
+    /// native input running while this subscription is paused.
     var isStreamRunning = false
     /// True only after a complete frame for the current presentation generation
     /// has been accepted. Delegate activity alone is not sufficient proof.
@@ -554,7 +571,7 @@ private final class CaptureSession {
     init(
         source: CaptureSource,
         token: UUID,
-        stream: SCStream,
+        stream: CaptureStreamLease,
         proxy: CaptureStreamProxy,
         filter: SCContentFilter,
         presentationGeneration: UUID,
@@ -599,11 +616,15 @@ private final class CaptureStopBatch {
 
 /// Bridges Apple's consent-preserving picker to a local multi-source stage.
 ///
-/// Each source owns one filter and one stream. StagePane never enumerates all
+/// Each source owns a filter and a lease on a shared input stream. StagePane never enumerates all
 /// screen content to implement its own picker, and it never records, encodes,
 /// persists, or transmits captured frames.
 @MainActor
 final class CaptureCoordinator: NSObject, ObservableObject {
+    // Unscoped callbacks belong only to the presented picker, or to the
+    // selected group for Control Center.
+    private static weak var pickerPresentationOwner: CaptureCoordinator?
+    private(set) var acceptsNewSources: Bool
     @Published private(set) var phase: CapturePhase = .idle
     @Published private(set) var statusDetail = ""
     @Published private(set) var isCaptureActive = false
@@ -612,13 +633,13 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     @Published private(set) var layout = StageLayout()
 
     var canAddSource: Bool {
-        hasAvailableSourceSlot && !isPickerPresented
+        hasAvailableSourceSlot && canRequestSourceAddition
     }
 
     /// Keeps the add action available at the Free limit so it can explain Pro,
     /// while still enforcing a single picker presentation at a time.
     var canRequestSourceAddition: Bool {
-        !isPickerPresented
+        acceptsNewSources && Self.pickerPresentationOwner == nil && !isPickerPresented
     }
 
     var occupiedSourceSlots: Int {
@@ -669,10 +690,6 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     var sourceLimitReachedHandler: (() -> Void)?
     var sourceAccessIssueHandler: ((CaptureAccessIssue) -> Void)?
 
-    // SCStreamConfiguration does not retain its backgroundColor. Keep this
-    // object alive while any stream configuration can refer to it.
-    private static let streamBackgroundColor = CGColor(gray: 0, alpha: 1)
-
     private enum PickerIntent: Equatable {
         case add
         case replace(StageSourceID)
@@ -683,8 +700,12 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     private let outputQueue: DispatchQueue
+    private let streamPool: SharedCaptureStreamPool
     private var sessions: [StageSourceID: CaptureSession] = [:]
     private var pickerIntent: PickerIntent?
+    // Keep routing a canceled replacement after Stop All has removed its
+    // session. The picker itself cannot be dismissed programmatically.
+    private var pickerReplacementStream: SCStream?
     private var pointerStyle: StagePaneCore.PointerStyle = .system
     private var pointerAppearance: PointerAppearance = .presentationDefault
     private var outputWidth = 1920
@@ -715,7 +736,17 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
     private var lastFailure: String?
 
-    override init() {
+    override convenience init() {
+        self.init(acceptsNewSources: true)
+    }
+
+    convenience init(acceptsNewSources: Bool) {
+        self.init(acceptsNewSources: acceptsNewSources, streamPool: .shared)
+    }
+
+    init(acceptsNewSources: Bool, streamPool: SharedCaptureStreamPool) {
+        self.streamPool = streamPool
+        self.acceptsNewSources = acceptsNewSources
         self.outputQueue = DispatchQueue(
             label: "com.hinoshiba.stagepane.capture.video",
             qos: .userInteractive
@@ -728,12 +759,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         // so StagePane can explain Pro there too. `beginCapture` rechecks the
         // local plan before it creates any source, session, layout, or stream.
         picker.maximumStreamCount = nil
-        picker.add(self)
+        CapturePickerRouter.shared.add(self)
         picker.isActive = true
-    }
-
-    deinit {
-        SCContentSharingPicker.shared.remove(self)
     }
 
     func chooseSource() {
@@ -744,8 +771,46 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         allowedSourceLimit = limit.map { max(0, $0) }
     }
 
+    func setAcceptsNewSources(_ accepts: Bool) {
+        acceptsNewSources = accepts
+        if !accepts { invalidatePickerIntent() }
+    }
+
+    /// Entitlement loss ends capture without destroying the user's layout.
+    /// Restoring Pro still requires fresh, explicit picker consent.
+    func endCaptureKeepingLayers() {
+        invalidatePickerIntent()
+        let message = L10n.text(
+            "このグループを再開するにはProを有効にして、ソースを選び直してください。",
+            "Activate Pro and select the sources again to resume this group."
+        )
+        for session in Array(sessions.values) {
+            beginTeardown(of: session, outcome: .needsReselection(message))
+        }
+    }
+
+    func handlesPickerCallback(for stream: SCStream?) -> Bool {
+        if let stream {
+            return session(for: stream) != nil ||
+                (Self.pickerPresentationOwner === self && pickerReplacementStream === stream)
+        }
+        if let owner = Self.pickerPresentationOwner { return owner === self }
+        return acceptsNewSources
+    }
+
+    /// Reserve routing before asking macOS to show its asynchronous picker.
+    @discardableResult
+    func beginPickerPresentation(replacing sourceID: StageSourceID? = nil, stream: SCStream? = nil) -> Bool {
+        guard canRequestSourceAddition else { return false }
+        pickerIntent = sourceID.map(PickerIntent.replace) ?? .add
+        pickerReplacementStream = stream
+        Self.pickerPresentationOwner = self
+        isPickerPresented = true
+        return true
+    }
+
     func addSource() {
-        guard !isPickerPresented else {
+        guard canRequestSourceAddition else {
             if !publishStopFailureIfPresent() {
                 statusDetail = L10n.text(
                     "現在の選択を完了してから、次のソースを追加してください。",
@@ -765,8 +830,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
 
-        pickerIntent = .add
-        isPickerPresented = true
+        guard beginPickerPresentation() else { return }
         if !publishStopFailureIfPresent() {
             phase = .choosing
             statusDetail = L10n.text(
@@ -778,7 +842,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     func replaceSource(_ sourceID: StageSourceID) {
-        guard !isPickerPresented, canReplaceSource(sourceID) else { return }
+        guard canRequestSourceAddition, canReplaceSource(sourceID) else { return }
 
         if let session = sessions[sourceID],
            let retainedOutcome = retainedTeardownOutcomeForReconnectRetry(session) {
@@ -792,8 +856,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             return
         }
 
-        pickerIntent = .replace(sourceID)
-        isPickerPresented = true
+        guard beginPickerPresentation(replacing: sourceID) else { return }
         if let session = sessions[sourceID] {
             if !publishStopFailureIfPresent() {
                 phase = .choosing
@@ -802,7 +865,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                     "Choose one new item for “\(session.source.title)”."
                 )
             }
-            SCContentSharingPicker.shared.present(for: session.stream)
+            // A native stream may serve several layers. An app-initiated
+            // replacement selects a new filter for this lease only.
+            SCContentSharingPicker.shared.present()
             return
         }
 
@@ -1149,9 +1214,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     /// records it as the requested one, bumping the source configuration
     /// revision only when that is an actual change.
     ///
-    /// Every accepted change costs one `SCStream.updateConfiguration`, which
-    /// resizes the IOSurface and therefore costs one hide/reveal cycle on the
-    /// public Stage. Both callers share this one decision so that a layout or
+    /// The shared input updates ScreenCaptureKit only when the largest active
+    /// consumer's required surface changes. A smaller consumer's layout edits
+    /// do not resize that IOSurface or interrupt other consumers. Both callers share this one decision so that a layout or
     /// crop commit landing on the surface already running, and a content
     /// replacement landing on the same shape, are equally free.
     private func recordRequestedSourceConfiguration(for session: CaptureSession) {
@@ -1382,10 +1447,11 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             frame: proposedFrame,
             sourceCrop: proposedSourceCrop
         )
-        let stream = SCStream(filter: filter, configuration: configuration, delegate: proxy)
-
+        let stream: CaptureStreamLease
         do {
-            try stream.addStreamOutput(proxy, type: .screen, sampleHandlerQueue: outputQueue)
+            stream = try streamPool.acquire(
+                filter: filter, configuration: configuration, proxy: proxy, queue: outputQueue
+            )
         } catch {
             if isReconnectingLayer {
                 // Reused renderers cannot be activated for another picker
@@ -1440,7 +1506,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
             showsCursor: configuration.showsCursor,
             presentationGeneration: initialPresentationGeneration
         )
-        SCContentSharingPicker.shared.setConfiguration(makePickerConfiguration(), for: stream)
+        SCContentSharingPicker.shared.setConfiguration(makePickerConfiguration(), for: stream.nativeStream)
         publishSteadyState()
 
         let streamBox = SendableBox(stream)
@@ -1543,7 +1609,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func handleStartCompletion(
         sourceID: StageSourceID,
         token: UUID,
-        stream: SCStream,
+        stream: CaptureStreamLease,
         errorMessage: String?
     ) {
         guard let session = sessions[sourceID],
@@ -1649,7 +1715,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func handlePauseCompletion(
         sourceID: StageSourceID,
         token: UUID,
-        stream: SCStream,
+        stream: CaptureStreamLease,
         errorMessage: String?
     ) {
         guard let session = sessions[sourceID],
@@ -1704,8 +1770,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.presentationGeneration = presentationGeneration
         session.awaitsFreshPresentationFrame = true
         session.isStreamContentActive = false
-        // Remain transparent until ScreenCaptureKit has restarted this stream
-        // and a complete frame from this exact generation is accepted.
+        // Remain transparent until this input subscription has resumed and a
+        // complete frame from this exact presentation generation is accepted.
         session.source.renderers.setPointerStyle(.hidden)
         publishSteadyState()
 
@@ -1747,7 +1813,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func handleResumeCompletion(
         sourceID: StageSourceID,
         token: UUID,
-        stream: SCStream,
+        stream: CaptureStreamLease,
         errorMessage: String?
     ) {
         guard let session = sessions[sourceID],
@@ -1761,10 +1827,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         if let errorMessage {
             session.isStreamRunning = false
             if session.isStopping {
-                finalizeStoppedSession(
-                    session,
-                    outcome: session.teardownOutcome ?? .removed
-                )
+                continueTeardown(of: session)
                 return
             }
             let message = L10n.text(
@@ -2021,6 +2084,9 @@ final class CaptureCoordinator: NSObject, ObservableObject {
                         }
                         self.applyPointerStyleToRenderersIfSafe(for: current)
                     }
+                    // Queue replay after cursor-state commits so joining an
+                    // already-running static input can enable the laser safely.
+                    current.stream.replayCurrentFrame()
                     if self.startPendingContentUpdateIfNeeded(for: current) { return }
                     current.source.phase = self.liveSourcePhase(for: current)
                     self.updateConfigurationIfNeeded(for: current)
@@ -2145,7 +2211,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
               !target.isFinalizing,
               !target.isTeardownStopRequested,
               target.pauseTransition == nil else { return }
-        if target.source.isPaused, !target.isStreamRunning {
+        if target.source.isPaused, !target.isStreamRunning, !target.stream.needsStopBeforeRelease {
             finalizeStoppedSession(
                 target,
                 outcome: target.teardownOutcome ?? .removed
@@ -2173,7 +2239,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     private func handleStopCompletion(
         sourceID: StageSourceID,
         token: UUID,
-        stream: SCStream,
+        stream: CaptureStreamLease,
         errorMessage: String?
     ) {
         guard let session = sessions[sourceID],
@@ -2182,7 +2248,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
               !session.isFinalizing else { return }
         session.isTeardownStopRequested = false
         if let errorMessage {
-            if session.isStarted || !session.startDidFail {
+            if session.isStarted || !session.startDidFail || stream.needsStopBeforeRelease {
                 let callbacks = session.stopCompletions
                 session.stopCompletions.removeAll()
                 session.isStopping = false
@@ -2271,7 +2337,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         session.source.phase = .stopping
         var finalOutcome = outcome
         do {
-            try session.stream.removeStreamOutput(session.proxy, type: .screen)
+            try session.stream.removeStreamOutput()
         } catch {
             let message = L10n.text(
                 "画面取得は停止しましたが、出力の後処理に失敗しました。",
@@ -2336,8 +2402,8 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         stream: SCStream,
         failure: StreamStopFailure
     ) {
-        guard let session = session(for: stream),
-              session.token == token,
+        guard let session = sessions.values.first(where: { $0.token == token }),
+              session.stream.nativeStream === stream,
               !session.isFinalizing else { return }
         if session.pauseTransition != nil {
             if session.pendingUnexpectedStop == nil {
@@ -2437,7 +2503,7 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     private func session(for stream: SCStream) -> CaptureSession? {
-        sessions.values.first { $0.stream === stream }
+        sessions.values.first { $0.stream.nativeStream === stream }
     }
 
     private func makePickerConfiguration() -> SCContentSharingPickerConfiguration {
@@ -2475,32 +2541,16 @@ final class CaptureCoordinator: NSObject, ObservableObject {
         sourceCrop: NormalizedSourceRect = .fullSource,
         surfaceSize: CaptureSurfaceSize? = nil
     ) -> SCStreamConfiguration {
-        let configuration = SCStreamConfiguration()
         let surfaceSize = surfaceSize ?? captureSurfaceSize(
             for: filter,
             sourceGeometry: sourceGeometry,
             frame: frame,
             sourceCrop: sourceCrop
         )
-        configuration.width = surfaceSize.width
-        configuration.height = surfaceSize.height
-        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 30)
-        configuration.queueDepth = 3
-        configuration.pixelFormat = kCVPixelFormatType_32BGRA
-        configuration.scalesToFit = true
-        configuration.preservesAspectRatio = true
-        configuration.showsCursor = pointerStyle.showsSystemCursor
-        configuration.capturesAudio = false
-        configuration.backgroundColor = Self.streamBackgroundColor
-        configuration.shouldBeOpaque = true
-        configuration.ignoreShadowsSingleWindow = true
-        configuration.ignoreGlobalClipSingleWindow = true
-        configuration.captureResolution = .best
-        configuration.streamName = "StagePane Local Source"
-        if #available(macOS 14.2, *) {
-            configuration.includeChildWindows = true
-        }
-        return configuration
+        return CaptureStreamSettings(
+            width: surfaceSize.width, height: surfaceSize.height,
+            showsCursor: pointerStyle.showsSystemCursor
+        ).makeConfiguration()
     }
 
     private func captureSurfaceSize(
@@ -2862,8 +2912,65 @@ final class CaptureCoordinator: NSObject, ObservableObject {
     }
 
     private func finishPickerPresentation() {
+        if Self.pickerPresentationOwner === self { Self.pickerPresentationOwner = nil }
+        pickerReplacementStream = nil
         pickerIntent = nil
         isPickerPresented = false
+    }
+}
+
+/// Select the recipient once per system event. Registering every group as a
+/// separate observer would let a later observer consume the same nil-stream
+/// callback after the first observer releases its pending picker ownership.
+@MainActor
+final class CapturePickerRouter: NSObject, SCContentSharingPickerObserver {
+    static let shared = CapturePickerRouter()
+    private struct Recipient {
+        weak var coordinator: CaptureCoordinator?
+    }
+    private var recipients: [Recipient] = []
+
+    private override init() {
+        super.init()
+        SCContentSharingPicker.shared.add(self)
+    }
+
+    func add(_ coordinator: CaptureCoordinator) {
+        recipients.removeAll { $0.coordinator == nil }
+        recipients.append(Recipient(coordinator: coordinator))
+    }
+
+    private func recipient(for stream: SCStream?) -> CaptureCoordinator? {
+        recipients.compactMap(\.coordinator).first { $0.handlesPickerCallback(for: stream) }
+    }
+
+    nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
+        let streamBox = SendableBox(stream)
+        Task { @MainActor in
+            self.recipient(for: streamBox.value)?.contentSharingPicker(
+                .shared, didCancelFor: streamBox.value
+            )
+        }
+    }
+
+    nonisolated func contentSharingPicker(
+        _ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?
+    ) {
+        let streamBox = SendableBox(stream)
+        let filterBox = SendableBox(filter)
+        Task { @MainActor in
+            let targets = self.recipients.compactMap(\.coordinator)
+                .filter { $0.handlesPickerCallback(for: streamBox.value) }
+            for target in targets {
+                target.applyPickerUpdate(filterBox.value, for: streamBox.value)
+            }
+        }
+    }
+
+    nonisolated func contentSharingPickerStartDidFailWithError(_ error: Error) {
+        Task { @MainActor in
+            self.recipient(for: nil)?.contentSharingPickerStartDidFailWithError(error)
+        }
     }
 }
 
@@ -2874,7 +2981,7 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
     ) {
         let streamBox = SendableBox(stream)
         Task { @MainActor [weak self] in
-            guard let self else { return }
+            guard let self, self.handlesPickerCallback(for: streamBox.value) else { return }
             if self.pickerIntent == .invalidated {
                 self.finishPickerPresentation()
                 self.publishSteadyState()
@@ -2908,52 +3015,52 @@ extension CaptureCoordinator: SCContentSharingPickerObserver {
         let filterBox = SendableBox(filter)
         let streamBox = SendableBox(stream)
         Task { @MainActor [weak self] in
-            guard let self else { return }
-            if self.pickerIntent == .invalidated {
-                self.finishPickerPresentation()
-                self.publishSteadyState()
-                return
-            }
-            if let callbackStream = streamBox.value {
-                guard let session = self.session(for: callbackStream),
-                      !session.isStopping,
-                      !session.outputSuppressed else {
-                    self.finishPickerPresentation()
-                    self.publishSteadyState()
-                    return
-                }
-                if self.pickerIntent == .replace(session.source.id) {
-                    self.finishPickerPresentation()
-                }
-                self.updateContent(of: session, with: filterBox.value)
-            } else {
-                // A nil stream with no local intent can originate from the
-                // system video menu and is still an explicit user selection.
-                if case let .replace(sourceID) = self.pickerIntent,
-                   self.sessions[sourceID] == nil,
-                   self.source(for: sourceID)?.needsReselection == true {
-                    self.finishPickerPresentation()
-                    self.beginCapture(
-                        with: filterBox.value,
-                        reusingLayer: sourceID
-                    )
-                    return
-                }
-                guard self.pickerIntent == nil || self.pickerIntent == .add else {
-                    self.finishPickerPresentation()
-                    self.publishSteadyState()
-                    return
-                }
-                if self.pickerIntent == .add { self.finishPickerPresentation() }
-                self.beginCapture(with: filterBox.value)
-            }
+            self?.applyPickerUpdate(filterBox.value, for: streamBox.value)
         }
+    }
+
+    fileprivate func applyPickerUpdate(_ filter: SCContentFilter, for callbackStream: SCStream?) {
+        guard handlesPickerCallback(for: callbackStream) else { return }
+        if pickerIntent == .invalidated {
+            finishPickerPresentation()
+            publishSteadyState()
+            return
+        }
+        if let callbackStream {
+            // A system-menu change targets a native input, including every
+            // layer/group consuming it. App replacements use nil below.
+            let targets = sessions.values.filter {
+                $0.stream.nativeStream === callbackStream && !$0.isStopping && !$0.outputSuppressed
+            }
+            if pickerIntent != nil { finishPickerPresentation() }
+            for session in targets { updateContent(of: session, with: filter) }
+            if targets.isEmpty { publishSteadyState() }
+            return
+        }
+        if case let .replace(sourceID) = pickerIntent {
+            finishPickerPresentation()
+            if let session = sessions[sourceID], !session.isStopping, !session.outputSuppressed {
+                updateContent(of: session, with: filter)
+            } else if source(for: sourceID)?.needsReselection == true {
+                beginCapture(with: filter, reusingLayer: sourceID)
+            } else {
+                publishSteadyState()
+            }
+            return
+        }
+        guard pickerIntent == nil || pickerIntent == .add else {
+            finishPickerPresentation()
+            publishSteadyState()
+            return
+        }
+        if pickerIntent == .add { finishPickerPresentation() }
+        beginCapture(with: filter)
     }
 
     nonisolated func contentSharingPickerStartDidFailWithError(_ error: Error) {
         let message = error.localizedDescription
         Task { @MainActor [weak self] in
-            guard let self else { return }
+            guard let self, self.handlesPickerCallback(for: nil) else { return }
             let intent = self.pickerIntent
             self.finishPickerPresentation()
 

@@ -14,8 +14,9 @@ StagePane is deliberately **not** a virtual display driver or alternate
 desktop. It doesn't modify macOS display configuration and doesn't use private
 `CGVirtualDisplay` APIs. With your explicit approval, Apple's public
 ScreenCaptureKit picker can add a window, an app, or a display as an independent
-source. The free Mac App Store app supports four simultaneous sources, while
-the one-time StagePane Pro purchase removes StagePane's source-count limit.
+source. The free Mac App Store app supports two screen groups with four sources each.
+The one-time StagePane Pro purchase supports ten groups and removes StagePane's
+source-count limit within each group.
 The number that can run in practice depends on Mac performance and
 operating-system constraints. Picker approval is scoped to each selection and
 capture session. App-wide Mac Screen Recording Access is optional; picker-based
@@ -26,6 +27,19 @@ sharing works without it.
 - **A clean share target** — the audience Stage contains no editing chrome.
   The private Stage Workspace has an unmistakable title and keeps editing
   controls beside the live Canvas, with preferences in a separate Settings window.
+- **Screen groups** — select a leftmost tab to edit its preview, then choose
+  **Send to Stage** to switch the composition in the same shared window. Blue
+  marks the editor; a red frame marks the Stage output. Editing the output group
+  applies immediately. Free includes two groups; Pro includes ten. Layout,
+  crops, drawings, shape, and background stay with each group for the app
+  session. Inactive groups continue capturing; Stop All covers every group.
+  Collapse Screens and Layers independently with their header chevrons; compact
+  rails keep selection and context menus, and remember their state and width.
+- **Shared window inputs** — on macOS 15.2 or later, matching single-window
+  selections reuse one capture stream across layers and groups. Capture uses
+  the largest requested size; each layer keeps its own crop, size, and colors.
+  Different native-cursor settings require separate streams. Unidentified
+  inputs and earlier macOS versions share only an identical filter instance.
 - **Privacy Curtain** — cover the Stage instantly with `Shift-Command-H`.
 - **Exact shapes** — switch between 16:9, 4:3, 9:16, and 1:1 while preserving
   the Stage window identity used by meeting apps.
@@ -54,9 +68,11 @@ sharing works without it.
   If macOS ends one source's sharing session, its
   layer remains in place without an old frame and offers Select Again; its crop,
   placement, and stacking order survive the reconnection.
-- **Hide and show one layer** — the direct Hide action pauses that source and
+- **Hide and show one layer** — the direct Hide action pauses that layer and
   clears its visible pixels while keeping its placement, crop, and stacking
-  order. Show resumes it and waits for a new complete frame before revealing it.
+  order. Other layers using the same input continue. The last active layer
+  stops the input; Show uses its current complete frame, or waits for a new
+  frame if the input had stopped.
 - **Per-layer cropping** — use Crop in the fixed selected-layer tools below the
   Canvas or in that layer's More menu to
   open that layer alone in the private Workspace and draft its framed region.
@@ -147,7 +163,7 @@ instructions](docs/RELEASE.md).
 1. Open StagePane. Keep **StagePane Workspace — Keep Private** on your screen.
 2. Select **Add Source** and approve one window, app, or display in the macOS
    system picker. That choice authorizes the selected content for its capture
-   session; repeat for up to four sources in Free. StagePane Pro removes the
+   session; repeat for up to four sources per group in Free. StagePane Pro removes the
    app's source-count limit; the practical total depends on Mac performance and
    operating-system constraints.
 3. In **Workspace**, select a layer on the Canvas or in the list beside it and
@@ -194,12 +210,13 @@ are also available in the **Stage** and **Window** menus for keyboard and VoiceO
 
 Cropping changes only the local composition shown on the Stage and in an
 Audience PNG. Whenever a source stream is running, ScreenCaptureKit handles the
-complete window, app, or display approved in Apple's picker. **Hide** pauses
-that stream and makes its layer transparent in the Stage, private Workspace,
-and Audience PNG output. **Show** resumes capture and reveals the layer only
-after a new complete frame arrives;
-placement, crop, and z-order remain unchanged. Remove or Stop All ends its
-capture session. The private Workspace deliberately shows the complete source
+complete window, app, or display approved in Apple's picker. **Hide** makes
+that layer transparent in the Stage, private Workspace, and Audience PNG.
+Other layers using the same input continue capturing. The last active layer
+stops that input; **Stop All** stops every input. **Show** uses a complete frame
+from the running input, or waits for a new frame after restarting it.
+Placement, crop, and z-order remain unchanged; Remove deletes that layer.
+The private Workspace deliberately shows the complete source
 while Crop is active; only the selected source is shown there, and draft changes
 do not reach the Stage until Apply Crop. Keep the Workspace private and use the
 Curtain before applying content that is not ready for the audience.
@@ -285,8 +302,10 @@ or control every meeting app's sharing session.
 
 ```text
 User-approved windows / apps / displays
-       Free: up to four · Pro: no app-imposed source-count limit
-              │  one ScreenCaptureKit stream per source (video only)
+       Per group: Free up to four · Pro no app-imposed source-count limit
+              │  shared compatible window inputs (video only)
+              ▼
+         one SCStream per input → same buffers to its layers
               ▼
       normalized position / size / front-to-back order
               │  memory only; no encoder or writer
@@ -374,8 +393,13 @@ StagePaneは、画面共有で選択するための専用ウインドウを作�
 前面から背面の順でレイヤー一覧を常設し、重なったソースも一覧から選べます。
 選択とキャンバス上の移動・サイズ変更では重なり順は変わりません。一覧のつまみを
 ドラッグするか、各レイヤーのその他メニューから前面・背面への操作で変更できます。
-各レイヤーの「非表示」は取得を一時停止し、配置と切り抜きを保ちます。「再表示」は取得を
-再開し、新しい完全なフレームが届いてから映像を戻します。
+各レイヤーの「非表示」は配置と切り抜きを保ったまま映像を隠します。同じ入力を使う
+他のレイヤーがあれば取得を続け、最後の利用を止めたときに入力を停止します。
+「再表示」は動作中の入力の現在の映像を使い、入力が停止していた場合は新しいフレームを待ちます。
+macOS 15.2以降では、同じウインドウの入力をグループ間でも再利用します。
+取得サイズは必要な最大サイズにまとめ、切り抜きや表示サイズは各レイヤーで調整します。
+OSのカーソルを映像に含める設定が異なる場合は別の入力を使います。
+古いmacOSや同一性を確認できない入力では、同じフィルターを使う場合だけ再利用します。
 通常表示のStageは、表示内容をダブルクリックすると縦横比を保ったまま画面内で最大化し、
 もう一度ダブルクリックすると元の大きさと位置へ戻ります。メニューバーとDockは利用できます。
 Stageを右クリックまたはControlクリックすると、**Stageを最大化／Stageを元のサイズに戻す**、
@@ -412,6 +436,6 @@ macOSの許可リクエストを直接開き、許可するかどうかはシス
 非表示・停止の失敗はレイヤーと取得状態で確認できます。
 明示的な操作でだけ、観客側Stageの画像をコピーまたはPNG保存できます。
 画面の扱いと保存については[プライバシーポリシー](https://stagepane.hinoshiba.com/#privacy)を確認できます。
-Mac App Store版は無料で同時に4ソースまで利用でき、買い切りのStagePane Proでは
-アプリ側のソース件数制限がなくなり、ロゴ非表示も利用できます。実際に利用できる件数は
+Mac App Store版は無料で2グループ・各4ソースまで利用でき、買い切りのStagePane Proでは
+10グループまで利用でき、各グループのソース件数制限解除とロゴ非表示も利用できます。実際に利用できる件数は
 Macの性能とOSの制約に依存します。購入と購入状態の確認はAppleのStoreKitが処理します。

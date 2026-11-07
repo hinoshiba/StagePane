@@ -4,6 +4,7 @@ import Foundation
 public struct ProUpgradeContinuation: Sendable {
     public enum Action: Equatable, Sendable {
         case addSource
+        case addScreenGroup
         case hideWatermark
     }
 

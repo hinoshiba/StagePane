@@ -296,7 +296,7 @@ private struct PrivacyDetailsContent: View {
                     }
                 }
 
-                if capture.hasLayers || capture.isCaptureActive || captureNeedsAttention {
+                if controller.canStopAllGroups {
                     Button(action: controller.stopPreview) {
                         Label(
                             L10n.stopAllAndRemoveLayersTitle,
@@ -350,6 +350,7 @@ private struct PrivacyDetailsContent: View {
     }
 
     private var captureStatusSymbol: String {
+        if otherGroupsAreCapturing { return "rectangle.stack.fill" }
         if capture.hasDisconnectedLayers { return "rectangle.badge.exclamationmark" }
         if captureNeedsAttention { return "exclamationmark.triangle.fill" }
         if allSourcesPaused { return "pause.circle.fill" }
@@ -361,6 +362,7 @@ private struct PrivacyDetailsContent: View {
     }
 
     private var captureStatusColor: Color {
+        if otherGroupsAreCapturing { return StagePanePalette.mintReadable }
         if captureNeedsAttention { return .orange }
         if allSourcesPaused { return .secondary }
         if capture.isCaptureActive { return StagePanePalette.mintReadable }
@@ -368,6 +370,7 @@ private struct PrivacyDetailsContent: View {
     }
 
     private var captureStatusTitle: String {
+        if otherGroupsAreCapturing { return L10n.text("別のグループで画面取得中", "Other groups are capturing") }
         if capture.hasDisconnectedLayers {
             return L10n.text(
                 "選び直しが必要なレイヤーがあります",
@@ -391,6 +394,12 @@ private struct PrivacyDetailsContent: View {
     }
 
     private var captureStatusDetail: String {
+        if otherGroupsAreCapturing {
+            return L10n.text(
+                "選択していないグループも画面取得を継続します。下の停止ボタンで全グループの取得を終了します。",
+                "Unselected groups continue capturing. Use Stop below to end capture in every group."
+            )
+        }
         if capture.hasDisconnectedLayers {
             return L10n.text(
                 "配置と切り抜きは保持されています。ソース一覧の「選び直す」で同じレイヤーへ新しい対象を設定できます。下の削除操作は保持中のレイヤーをすべて削除します。",
@@ -426,8 +435,13 @@ private struct PrivacyDetailsContent: View {
         )
     }
 
+    private var otherGroupsAreCapturing: Bool {
+        controller.screenGroups.contains { $0.id != controller.activeScreenGroupID && $0.capture.isCaptureActive }
+    }
+
     private var allSourcesPaused: Bool {
-        !capture.sources.isEmpty && capture.sources.allSatisfy(\.isPaused)
+        let sources = controller.screenGroups.flatMap { $0.capture.sources }
+        return !sources.isEmpty && sources.allSatisfy(\.isPaused)
     }
 }
 

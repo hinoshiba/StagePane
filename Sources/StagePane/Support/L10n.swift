@@ -138,8 +138,8 @@ enum L10n {
 
     static var stopAllAndRemoveLayersConfirmationMessage: String {
         text(
-            "すべての画面取得を終了し、接続中と再接続待ちの全レイヤー、その配置と切り抜きを削除します。この操作は取り消せません。",
-            "This ends all screen capture and removes every connected or disconnected layer, including its placement and crop. This can’t be undone."
+            "全グループの画面取得を終了し、接続中と再接続待ちの全レイヤー、配置、切り抜き、手書きを削除します。この操作は取り消せません。",
+            "This ends capture in every group and removes all connected or disconnected layers, their placement, crops, and drawings. This can’t be undone."
         )
     }
 
@@ -272,8 +272,8 @@ enum L10n {
 
     static var cropCaptureScopeDetail: String {
         text(
-            "切り抜きは適用時にStageの表示だけを変えます。ストリームの動作中、ScreenCaptureKitはmacOSで選択したソース全体を扱います。一時停止はストリームを止め、解除またはすべて停止は取得セッションを終了します。",
-            "Applying a crop changes only Stage output. While the stream runs, ScreenCaptureKit handles the complete source selected in macOS. Pause stops the stream; Remove or Stop All ends its capture session."
+            "切り抜きは適用時にStageの表示だけを変えます。取得中は、macOSで選択したソース全体を扱います。同じ入力を使う他のレイヤーがあれば、非表示や解除の後も取得を続けます。最後の利用を止めるか「すべて停止」で取得を停止します。",
+            "Applying a crop changes only Stage output. Capture handles the complete source selected in macOS. Hiding or removing a layer keeps capture running if other layers use the same input. Capture stops when its last use ends, or with Stop All."
         )
     }
 
@@ -406,7 +406,8 @@ enum L10n {
 
     static func stageInteractionModeDetail(
         _ mode: StageInteractionMode,
-        annotationTool: StageInkTool = .pen
+        annotationTool: StageInkTool = .pen,
+        isStageOutput: Bool = true
     ) -> String {
         switch mode {
         case .arrange:
@@ -416,16 +417,24 @@ enum L10n {
             )
         case .crop:
             text(
-                "対象レイヤーの表示範囲を下書きします。Stageは適用まで変わりません。",
-                "Draft the target layer's visible area. The Stage changes only when you apply it."
+                "対象レイヤーの表示範囲を下書きします。適用するまで変更は反映されません。",
+                "Draft the target layer's visible area. Changes take effect only when applied."
             )
         case .magnify:
-            text(
+            isStageOutput ? text(
                 "キャンバス上のカーソル周辺を拡大し、共有Stageにも表示します。Escで配置に戻ります。",
                 "Move over the canvas to magnify the same area on the shared Stage. Press Esc to return to Arrange."
+            ) : text(
+                "プレビューのカーソル周辺を拡大します。Stage出力には表示しません。Escで配置に戻ります。",
+                "Magnify around the cursor in this preview. Stage output stays unchanged. Press Esc to return to Arrange."
             )
         case .annotate:
-            if annotationTool == .eraser {
+            if !isStageOutput {
+                text(
+                    "このプレビューの手書きを編集します。Stage出力は変わりません。",
+                    "Edit drawings in this preview. Stage output stays unchanged."
+                )
+            } else if annotationTool == .eraser {
                 text(
                     "共有Stageのポインターを隠したまま、手書きを部分消去します。",
                     "Partially erase drawing while the shared Stage pointer stays hidden."

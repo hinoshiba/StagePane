@@ -32,15 +32,18 @@ StagePaneApplication
         │   └── StageView             chrome-free public share surface
         ├── StageWindowSnapshotter    explicit clean Stage PNG copy/save
         ├── StatusItemController      menu-bar recovery path
-        ├── StageAnnotationStore      session-only Stage-wide vector ink
-        └── CaptureCoordinator
-            ├── SCContentSharingPicker
-            ├── StageLayout           normalized frame / z-order by SourceID
-            └── CaptureSession[0...]  one per selected source
-                ├── SCStream          one independently consented source
-                └── CaptureSourceRenderers
-                    ├── Stage SampleBufferRenderer
-                    └── Workspace Preview SampleBufferRenderer
+        ├── StageScreenGroup[1...10]   editor and audience selection are separate
+        │   ├── StageAnnotationStore  session-only vector ink
+        │   └── CaptureCoordinator
+        │       ├── SCContentSharingPicker (shared event router)
+        │       ├── StageLayout       normalized frame / z-order by SourceID
+        │       └── CaptureSession[0...]  one per layer
+        │           ├── CaptureStreamLease → shared input pool
+        │           └── CaptureSourceRenderers
+        │               ├── Stage SampleBufferRenderer
+        │               └── Workspace Preview SampleBufferRenderer
+        └── SharedCaptureStreamPool   compatible picker-authorized inputs
+            └── SCStream → SharedCaptureStreamOutput → active leases
 ```
 
 `StagePaneCore` contains platform-light preset, message, pointer
@@ -56,19 +59,28 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    returned approval is scoped to the chosen content and capture session;
    this path works without optional app-wide Mac Screen Recording Access.
 3. The returned `SCContentFilter` represents one window, application, or
-   display. StagePane creates one independent `SCStream` for it at up to 30 fps.
-   Repeating this flow adds up to four sources in Free. StagePane Pro removes
+   display. StagePane obtains a logical `CaptureStreamLease` backed by an input
+   in `SharedCaptureStreamPool` at up to 30 fps. On macOS 15.2+, single-window
+   filters with the same authorized window ID and owning process ID share one
+   native `SCStream`. Earlier macOS versions and unidentifiable/application/
+   display filters reuse only the exact filter object; title or geometry never
+   establish identity, and deduplication does not enumerate unrelated windows.
+   Native cursor inclusion is part of the key because it is baked into pixels.
+   Repeating this flow adds up to four sources per group in Free. StagePane Pro removes
    the app's source-count limit, although the practical total depends on Mac
    performance and operating-system constraints. Multiple-selection picker modes
    are deliberately disabled so every source can be configured and removed
    independently. Audio and microphone capture are disabled.
-4. Each valid `CMSampleBuffer` is enqueued into two macOS 14
+4. Each input fans out the same `CMSampleBuffer` to its active layer leases.
+   Each layer enqueues it into two macOS 14
    `AVSampleBufferVideoRenderer` surfaces: one in the public Stage composition
    and one in the private Stage Workspace editor. Both consume the same
    ScreenCaptureKit buffer; there is no pixel copy or encoded preview path.
-   Each stream uses an IOSurface capped to its tile's pixel budget that tracks
-   the source aspect to within the reconfiguration deadband below, so each
-   source avoids allocating a full-Stage surface. The display layer performs
+   Each layer requests a bounded surface fitted to its tile's pixel budget and
+   crop, tracking source aspect within the reconfiguration deadband below. The
+   pool takes the maximum requested width and height across active leases, so
+   a smaller layer does not trigger an unnecessary native update. Crop, color
+   effects, and destination size stay independent in each layer. The display layer performs
    the letterbox fit that positions the tile; any residual padding the deadband
    leaves inside the IOSurface is masked out by `surfaceCropRect` and never
    reaches a viewer. Complete-frame `contentRect`,
@@ -135,13 +147,18 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
    and ownership does not fall through to a lower source. Draw mode removes the
    overlay, stops pointer-location sampling, and configures streams without a
    captured system cursor. Video frames remain on the zero-copy display path.
-8. The direct per-layer **Hide** action uses **Pause** to stop that source's
-   `SCStream` and clear its presented
+8. The direct per-layer **Hide** action uses **Pause** to suspend that lease
+   and clear its presented
    pixels from both renderers, and keeps its tile, crop, and z-order in
    `StageLayout`. The layer is transparent in the Stage, private Workspace, and
    Audience PNG output. The layer remains selectable in the persistent list.
-   **Show** uses **Resume** to restart the same stream, but visibility
-   reopens only after a new complete frame for that presentation generation.
+   The last active lease stops the native input. **Show** resumes the lease;
+   the pool replays its current complete frame if another lease kept capture
+   running. Otherwise native capture restarts and waits for a new complete
+   frame. Visibility reopens only after that frame is accepted for the layer's
+   current presentation generation. The input's single retained buffer is
+   cleared on blank, inactive, stop, or failure boundaries, and suspended leases
+   receive no frame fan-out.
 9. A screenshot is created only after a person explicitly chooses **Copy
     Audience Image** or **Save Audience Image…** in the private Workspace.
     `StageWindowSnapshotter`
@@ -161,8 +178,14 @@ The executable target owns AppKit, SwiftUI, and ScreenCaptureKit integration.
     screenshot or file writer, OCR, network session, analytics SDK, or telemetry
     client. The explicit one-shot screenshot path above is the only frame export.
 11. Per-source **Remove**, **Stop All**, app termination, or stream failure first
-   invalidates output, stops the corresponding stream, removes its output, and
+   invalidates output, releases the corresponding subscription, and
    waits for both display renderers to drain and discard their last image.
+   The last active subscription stops the input; its final release removes the
+   native output. Stop All and app termination cover every group. An app-level
+   replacement migrates only that lease; a macOS picker update for a shared
+   native stream migrates all its layers. Native sharing-stop errors revoke
+   snapshots for every affected layer immediately, and an ended input can never
+   be reused by a later selection.
    Selected source metadata and layout are not persisted.
 
 The Privacy Curtain hides the public Stage but intentionally does not stop its
@@ -206,7 +229,7 @@ Accessibility nor Input Monitoring permission.
   warning, not an unsupported `sharingType = .none` capture-exclusion hint, are
   the boundary. Application sharing, full-display sharing, or a meeting app may
   include the private window.
-- Stage Workspace enforces a 900×620-point minimum for its Canvas, navigation,
+- Stage Workspace enforces a 1040×620-point minimum for its Canvas, navigation,
   source management, and settings. The layer list remains beside the Canvas at
   that minimum; source controls do not require switching away from the composition.
 - Canvas and layer-list selection have no audience-side effect. An obscured
@@ -255,15 +278,18 @@ Accessibility nor Input Monitoring permission.
 
 ## Threading
 
-ScreenCaptureKit delivers every source's video buffers on one dedicated serial
-queue. Both `AVSampleBufferVideoRenderer` instances for a source are enqueued
-and flushed through that queue; there is no per-frame hop to the main queue.
+ScreenCaptureKit delivers each input's video buffers on a dedicated serial
+queue. The input fans out references to each active layer's coordinator queue.
+Both `AVSampleBufferVideoRenderer` instances for a layer are enqueued and
+flushed through its coordinator queue; there is no per-frame hop to the main queue.
 Only AppKit view/layer hierarchy, normalized placement, and observable UI state
 run on the main actor. Stable source IDs are separate from stream-generation
 tokens, preventing callbacks from a retiring stream from affecting another
 source or replacement.
 
-Content-filter and configuration updates are serialized per source. A later
+The pool serializes native start, stop, migration, and configuration operations.
+Binding IDs fence queued deliveries after a lease migrates to a different input.
+Content-filter and configuration intents are serialized per layer. A later
 system-picker update replaces any pending filter, and output-size changes keep
 the last valid image visible until a frame from the new surface arrives. Removal
 sets a durable output-suppressed state before asking ScreenCaptureKit to stop,
@@ -277,13 +303,13 @@ work is added to the video path.
 
 Pause and resume use explicit transition states. A Pause request advances the
 presentation generation, immediately suppresses output, and flushes both
-renderers while retaining layout, crop, and z-order. Resume starts the same
-stream but remains transparent until stream startup and a new complete frame for
+renderers while retaining layout, crop, and z-order. Resume reactivates the same
+input subscription but remains transparent until activation and a complete frame for
 the current generation have both succeeded; either arrival order is safe.
 Removal and Stop All additionally delete the retained logical layer state.
 Teardown revokes snapshot acceptance before waiting for ScreenCaptureKit's
 stop completion. A terminal stream callback fences later samples on the output
-queue and clears both surfaces through the paired presentation barrier, without
+queues of all subscribers and clears their surfaces through the paired presentation barrier, without
 waiting for the main actor to process the session outcome. Final deactivation
 joins that barrier before a retained layer can be reconnected.
 
@@ -303,7 +329,7 @@ Each renderer also retains a lock-protected reference to its latest complete
 frame solely so an explicit screenshot can rasterize the already-authorized
 pixels. The reference is replaced as playback advances and cleared at Pause,
 teardown, deactivate, or flush. A paused layer is omitted from Audience PNG
-output until Resume accepts a new complete frame. Bitmap conversion carries the
+output until Resume accepts a current complete frame. Bitmap conversion carries the
 accepted presentation revision and checks it again after conversion; the final
 composition rechecks every source before returning the PNG. A concurrent
 revocation or geometry change therefore rejects an in-progress export.

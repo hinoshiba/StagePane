@@ -302,7 +302,7 @@ struct StageLayoutEditor: View {
         case .crop:
             L10n.cropEditorAccessibilityHint
         case .magnify:
-            L10n.stageInteractionModeDetail(.magnify)
+            L10n.stageInteractionModeDetail(.magnify, isStageOutput: controller.isEditingOutputGroup)
         case .annotate:
             if controller.annotationTool == .eraser {
                 L10n.text(
@@ -1302,6 +1302,7 @@ struct CaptureSourceList: View {
     var showsHeading = true
     var expandsSourceList = false
     var usesSecondaryAddAction = false
+    var isCompact = false
     @FocusState private var focusedSourceID: StageSourceID?
 
     var body: some View {
@@ -1341,6 +1342,7 @@ struct CaptureSourceList: View {
                             source: source,
                             controller: controller,
                             capture: capture,
+                            isCompact: isCompact,
                             focusedSourceID: $focusedSourceID,
                             canReorder: canReorderSource(sourceID),
                             moveSelection: { direction in
@@ -1438,6 +1440,7 @@ private struct CaptureSourceRow: View {
     @ObservedObject var source: CaptureSource
     @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    let isCompact: Bool
     var focusedSourceID: FocusState<StageSourceID?>.Binding
     let canReorder: Bool
     let moveSelection: (MoveCommandDirection) -> Void
@@ -1446,54 +1449,65 @@ private struct CaptureSourceRow: View {
     @State private var isRenamePresented = false
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 11))
-                .foregroundStyle(canReorder ? Color.secondary : Color.secondary.opacity(0.4))
-                .frame(width: 16, height: 44)
-                .contentShape(Rectangle())
-                .help(canReorder
-                    ? L10n.text("ドラッグで並べ替えます。上のレイヤーほど手前に表示します。", "Drag to reorder. Layers at the top appear in front.")
-                    : L10n.text("切り抜きやソース選択を終えると、複数のレイヤーを並べ替えられます。", "Finish cropping or source selection to reorder multiple layers."))
-                .accessibilityHidden(true)
+        HStack(spacing: isCompact ? 0 : 3) {
+            if !isCompact {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 11))
+                    .foregroundStyle(canReorder ? Color.secondary : Color.secondary.opacity(0.4))
+                    .frame(width: 16, height: 44)
+                    .contentShape(Rectangle())
+                    .help(canReorder
+                        ? L10n.text("ドラッグで並べ替えます。上のレイヤーほど手前に表示します。", "Drag to reorder. Layers at the top appear in front.")
+                        : L10n.text("切り抜きやソース選択を終えると、複数のレイヤーを並べ替えられます。", "Finish cropping or source selection to reorder multiple layers."))
+                    .accessibilityHidden(true)
+            }
             Button {
                 controller.selectSource(source.id)
             } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: source.kind.symbolName)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 18)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Text(source.title)
-                                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                                .lineLimit(1)
-                            if isColorInverted {
-                                Image(systemName: "circle.lefthalf.filled")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
-                                    .help(L10n.layerColorsInvertedStatus)
-                                    .accessibilityHidden(true)
+                if isCompact {
+                    CompactLayerLabel(
+                        symbol: source.kind.symbolName, ordinal: source.ordinal,
+                        isHidden: source.isPaused, needsAttention: needsAttention || source.needsReselection,
+                        isPreparing: source.phase == .preparing || source.phase == .pausing || source.phase == .resuming || source.phase == .stopping,
+                        isInverted: isColorInverted
+                    )
+                } else {
+                    HStack(spacing: 7) {
+                        Image(systemName: source.kind.symbolName)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 18)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(source.title)
+                                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                    .lineLimit(1)
+                                if isColorInverted {
+                                    Image(systemName: "circle.lefthalf.filled")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                        .help(L10n.layerColorsInvertedStatus)
+                                        .accessibilityHidden(true)
+                                }
+                            }
+                            if source.phase != .active || capture.attentionSummary(for: source.id) != nil {
+                                Text(phaseTitle)
+                                    .font(.system(size: 12))
+                                    .lineLimit(2)
+                                    .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        if source.phase != .active || capture.attentionSummary(for: source.id) != nil {
-                            Text(phaseTitle)
-                                .font(.system(size: 12))
-                                .lineLimit(2)
-                                .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .frame(minHeight: 44)
                 }
-                .contentShape(Rectangle())
-                .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
             .focused(focusedSourceID, equals: source.id)
             .disabled(source.phase == .stopping)
-            .help(errorMessage ?? source.title)
+            .help(isCompact ? "\(source.title)\n\(phaseTitle)" : (errorMessage ?? source.title))
             .accessibilityLabel(L10n.text("\(source.title)を選択", "Select \(source.title)"))
             .accessibilityValue([
                 isSelected ? L10n.text("選択中", "Selected") : "",
@@ -1501,32 +1515,37 @@ private struct CaptureSourceRow: View {
                 isColorInverted ? L10n.layerColorsInvertedStatus : ""
             ]
                 .filter { !$0.isEmpty }.joined(separator: ", "))
-            .accessibilityHint(L10n.text(
+            .accessibilityHint(isCompact ? L10n.text(
+                "上下キーで選択します。右クリックのメニューで非表示、並べ替え、名前変更などを操作できます。",
+                "Use Up and Down to select. Right-click for visibility, stacking order, renaming, and other actions."
+            ) : L10n.text(
                 "上下キーで選択します。ドラッグ、またはその他の操作メニューで重なり順を変更できます。上のレイヤーほど手前です。キャンバス上では矢印キーで配置を調整します。選択だけでは重なり順は変わりません。",
                 "Use Up and Down to select. Drag or use the actions menu to change stacking order. Top layers appear in front. Arrow keys on the canvas adjust placement. Selection alone preserves stacking order."
             ))
             .onMoveCommand(perform: moveSelection)
 
-            visibilityControl
+            if !isCompact {
+                visibilityControl
 
-            Menu {
-                rowActions
-            } label: {
-                Image(systemName: "ellipsis")
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
+                Menu {
+                    rowActions
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel(L10n.text(
+                    "\(source.title)レイヤーのその他の操作",
+                    "More actions for the \(source.title) layer"
+                ))
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .accessibilityLabel(L10n.text(
-                "\(source.title)レイヤーのその他の操作",
-                "More actions for the \(source.title) layer"
-            ))
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .frame(minHeight: 56)
+        .padding(.horizontal, isCompact ? 0 : 6)
+        .padding(.vertical, isCompact ? 4 : 6)
+        .frame(minHeight: isCompact ? 48 : 56)
         .background(isSelected ? Color.accentColor.opacity(0.13) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .contain)
@@ -1612,8 +1631,8 @@ private struct CaptureSourceRow: View {
                 : L10n.text("\(source.title)を非表示", "Hide \(source.title)"))
             .accessibilityValue(phaseTitle)
             .help(source.isPaused
-                ? L10n.text("新しい映像を受信して再表示します。", "Resume capture and show a fresh frame.")
-                : L10n.text("取得を一時停止し、位置と切り抜きを保持します。", "Pause capture, keeping placement and crop."))
+                ? L10n.text("入力の現在の映像を再表示します。", "Show the input’s current frame.")
+                : L10n.text("位置と切り抜きを保持して非表示にします。同じ入力を使う他のレイヤーは続行します。", "Hide this layer, keeping placement and crop. Other layers using the input continue."))
             .disabled(!capture.canTogglePause(source.id))
         }
     }
@@ -1629,11 +1648,58 @@ private struct CaptureSourceRow: View {
         case .preparing: return L10n.text("映像を準備中", "Preparing video")
         case .active: return L10n.text("画面取得中", "Capturing")
         case .pausing: return L10n.text("非表示にしています…", "Hiding…")
-        case .paused: return L10n.text("非表示・取得停止", "Hidden · Capture paused")
+        case .paused: return L10n.text("非表示", "Hidden")
         case .resuming: return L10n.text("再表示の準備中…", "Preparing to show…")
         case .stopping: return L10n.text("解除中…", "Removing…")
         case .needsAttention: return L10n.text("確認が必要", "Needs attention")
         }
+    }
+}
+
+/// No extra video surfaces or screenshots are needed for the compact list.
+struct CompactLayerLabel: View {
+    let symbol: String
+    let ordinal: Int
+    let isHidden: Bool
+    var needsAttention = false
+    var isPreparing = false
+    var isInverted = false
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(systemName: symbol)
+                .font(.system(size: 17))
+                .frame(height: 22)
+                .foregroundStyle(isHidden ? Color.secondary : Color.primary)
+            Text("\(ordinal)")
+                .font(.system(size: 9, weight: .medium).monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 40)
+        .overlay(alignment: .topTrailing) {
+            if let statusSymbol {
+                Image(systemName: statusSymbol)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(needsAttention ? Color.orange : Color.secondary)
+                    .padding(2)
+                    .background(Color(nsColor: .windowBackgroundColor), in: Circle())
+                    .padding(.trailing, 2)
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if isInverted {
+                Image(systemName: "circle.lefthalf.filled")
+                    .font(.system(size: 9)).foregroundStyle(.secondary).padding(.trailing, 4)
+            }
+        }
+        .contentShape(Rectangle())
+        .accessibilityHidden(true)
+    }
+
+    private var statusSymbol: String? {
+        if needsAttention { return "exclamationmark.triangle.fill" }
+        if isPreparing { return "clock" }
+        return isHidden ? "eye.slash" : nil
     }
 }
 
