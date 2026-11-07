@@ -78,6 +78,13 @@ The complete matrix in RELEASE.md remains applicable. Earlier TCC and
 long-session capture limitations are not claimed resolved by the shared-input
 change. Synthetic tests do not establish CPU/GPU/WindowServer savings.
 
+GitHub retired macOS 14 hosted runners on 2026-11-02. CI now uses the standard
+`macos-15-intel` and `macos-15` runners, preserving Xcode 16.2 SDK coverage on
+Intel. The app's minimum remains macOS 14; actual macOS 14 runtime acceptance
+is still required and is not established by those runners. See the
+[official retirement announcement](https://github.com/actions/runner-images/issues/13518)
+and [Intel image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md).
+
 ## Promotion gates
 
 1. Complete review, passing PR CI, and exact-candidate manual acceptance. Keep

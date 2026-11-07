@@ -18,7 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15]
+        # macOS 14 hosted images retired on 2026-11-02. Keep both CPU types
+        # on standard runners; macOS 14 runtime acceptance remains manual.
+        os: [macos-15-intel, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -37,8 +39,8 @@ jobs:
           unzip -q "${RUNNER_TEMP}/xcodegen.zip" -d "${RUNNER_TEMP}"
           echo "${RUNNER_TEMP}/xcodegen/bin" >> "${GITHUB_PATH}"
 
-      - name: Select the installed Xcode 16 SDK on macOS 14
-        if: matrix.os == 'macos-14'
+      - name: Select the oldest supported Xcode SDK on Intel
+        if: matrix.os == 'macos-15-intel'
         run: echo 'DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer' >> "$GITHUB_ENV"
 
       - name: Report Apple toolchain
