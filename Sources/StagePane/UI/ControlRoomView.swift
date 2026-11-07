@@ -60,10 +60,9 @@ struct StageSettingsPane: View {
                 }
                 .pickerStyle(.menu)
                 .disabled(controller.stageFullScreenTransitionInProgress)
-                Text(L10n.text(
-                    "形を変えるとStageを表示します。",
-                    "Changing the shape shows Stage."
-                ))
+                Text(controller.isEditingOutputGroup
+                    ? L10n.text("変更はStage出力に反映されます。", "Changes apply to the Stage output.")
+                    : L10n.text("このタブのプレビューを変更します。「Stageに出す」で出力に反映します。", "Changes apply to this tab’s preview. Choose Send to Stage to use it as output."))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 Picker(

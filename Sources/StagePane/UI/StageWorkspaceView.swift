@@ -6,7 +6,78 @@ import SwiftUI
 /// is rendered in the separate, chrome-free Stage window.
 struct StageWorkspaceView: View {
     @ObservedObject var controller: AppController
+    var snapshotFixture: StageWorkspaceSnapshotFixture? = nil
+    var snapshotScreenRailCollapsed: Bool? = nil
+    var snapshotLayerRailCollapsed: Bool? = nil
+    @AppStorage("workspace.screenRailCollapsed") private var savedScreenRailCollapsed = false
+    @AppStorage("workspace.layerRailCollapsed") private var savedLayerRailCollapsed = false
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
+        HStack(spacing: 0) {
+            StageScreenGroupRail(
+                controller: controller,
+                isCollapsed: screenRailCollapsed,
+                usesSnapshotFixture: snapshotFixture != nil
+            )
+            Divider()
+            StageWorkspaceContent(
+                controller: controller, capture: controller.capture,
+                isLayerRailCollapsed: layerRailCollapsed,
+                snapshotFixture: snapshotFixture
+            )
+                .id(controller.activeScreenGroupID)
+        }
+        .frame(minWidth: 1040, minHeight: 620)
+        .animation(accessibilityReduceMotion ? nil : .easeOut(duration: 0.18), value: savedScreenRailCollapsed)
+        .animation(accessibilityReduceMotion ? nil : .easeOut(duration: 0.18), value: savedLayerRailCollapsed)
+    }
+
+    private var screenRailCollapsed: Binding<Bool> {
+        if let snapshotScreenRailCollapsed { return .constant(snapshotScreenRailCollapsed) }
+        return snapshotFixture == nil ? $savedScreenRailCollapsed : .constant(false)
+    }
+
+    private var layerRailCollapsed: Binding<Bool> {
+        if let snapshotLayerRailCollapsed { return .constant(snapshotLayerRailCollapsed) }
+        return snapshotFixture == nil ? $savedLayerRailCollapsed : .constant(false)
+    }
+}
+
+/// The compact rail keeps its identity and an explicit way back to full width.
+struct WorkspaceRailToggle: View {
+    @Binding var isCollapsed: Bool
+    let title: String
+
+    var body: some View {
+        Button { isCollapsed.toggle() } label: {
+            VStack(spacing: 3) {
+                Image(systemName: isCollapsed ? "chevron.right" : "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                if isCollapsed {
+                    Text(title).font(.system(size: 9, weight: .medium)).lineLimit(1)
+                }
+            }
+            .frame(width: isCollapsed ? 52 : 24, height: isCollapsed ? 40 : 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(actionTitle)
+        .accessibilityValue(isCollapsed ? L10n.text("縮小表示", "Compact") : L10n.text("通常表示", "Expanded"))
+        .help(actionTitle)
+    }
+
+    private var actionTitle: String {
+        isCollapsed
+            ? L10n.text("\(title)を展開", "Expand \(title)")
+            : L10n.text("\(title)を縮小", "Collapse \(title)")
+    }
+}
+
+private struct StageWorkspaceContent: View {
+    @ObservedObject var controller: AppController
     @ObservedObject var capture: CaptureCoordinator
+    @Binding private var isLayerRailCollapsed: Bool
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     private let snapshotFixture: StageWorkspaceSnapshotFixture?
     @State private var isClearInkConfirmationPresented = false
@@ -17,10 +88,12 @@ struct StageWorkspaceView: View {
     init(
         controller: AppController,
         capture: CaptureCoordinator,
+        isLayerRailCollapsed: Binding<Bool>,
         snapshotFixture: StageWorkspaceSnapshotFixture? = nil
     ) {
         self.controller = controller
         self.capture = capture
+        self._isLayerRailCollapsed = isLayerRailCollapsed
         self.snapshotFixture = snapshotFixture
     }
 
@@ -29,8 +102,8 @@ struct StageWorkspaceView: View {
             workspaceToolbar
             Divider()
             HStack(spacing: 0) {
-                sourceRail.frame(width: layerRailWidth)
-                railDivider
+                sourceRail.frame(width: isLayerRailCollapsed ? 64 : layerRailWidth)
+                if isLayerRailCollapsed { Divider() } else { railDivider }
                 stageWorkspace
                     .frame(minWidth: 550, maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -105,7 +178,7 @@ struct StageWorkspaceView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(controller.stageInteractionMode == mode ? Color.accentColor : Color.primary)
                     .accessibilityValue(controller.stageInteractionMode == mode ? L10n.text("選択中", "Selected") : "")
-                    .help(L10n.stageInteractionModeDetail(mode))
+                    .help(L10n.stageInteractionModeDetail(mode, isStageOutput: controller.isEditingOutputGroup))
                 }
             }
             .padding(3)
@@ -211,26 +284,43 @@ struct StageWorkspaceView: View {
     private var sourceRail: some View {
         VStack(spacing: 0) {
             HStack(spacing: 7) {
-                Text(L10n.text("レイヤー", "Layers"))
-                    .font(.system(size: 13, weight: .semibold))
-                Text(controller.activeSourceLimit.map { "\(displayedSourceCount) / \($0)" } ?? "\(displayedSourceCount)")
-                    .foregroundStyle(.secondary)
-                    .font(.caption.monospacedDigit())
-                    .accessibilityLabel(controller.sourceCountAccessibilityDescription(displayedSourceCount))
-                Spacer()
-                layerActionsMenu
+                if !isLayerRailCollapsed {
+                    Text(L10n.text("レイヤー", "Layers"))
+                        .font(.system(size: 13, weight: .semibold))
+                    sourceCountLabel
+                    Spacer(minLength: 0)
+                }
+                WorkspaceRailToggle(isCollapsed: $isLayerRailCollapsed, title: L10n.text("レイヤー", "Layers"))
+                if !isLayerRailCollapsed { layerActionsMenu }
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, isLayerRailCollapsed ? 4 : 14)
             .frame(height: 46)
             if snapshotFixture?.hasCanvasComposition == true {
-                SnapshotSourceRailList(fixture: snapshotFixture ?? .arrange)
-                    .padding(.horizontal, 8)
+                SnapshotSourceRailList(fixture: snapshotFixture ?? .arrange, isCompact: isLayerRailCollapsed)
+                    .padding(.horizontal, isLayerRailCollapsed ? 6 : 8)
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {
-                CaptureSourceList(controller: controller, capture: capture, showsHeading: false, expandsSourceList: true, usesSecondaryAddAction: true)
-                    .padding(.horizontal, 8)
+                CaptureSourceList(controller: controller, capture: capture, showsHeading: false, expandsSourceList: true, usesSecondaryAddAction: true, isCompact: isLayerRailCollapsed)
+                    .padding(.horizontal, isLayerRailCollapsed ? 6 : 8)
                     .padding(.bottom, 8)
                     .frame(maxHeight: .infinity, alignment: .top)
+            }
+            if isLayerRailCollapsed {
+                Divider()
+                VStack(spacing: 3) {
+                    sourceCountLabel
+                    HStack(spacing: 0) {
+                        Button(action: controller.chooseSource) {
+                            Image(systemName: "plus").frame(width: 28, height: 28)
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(!controller.canRequestSourceAddition)
+                        .accessibilityLabel(L10n.text("ソースを追加", "Add Source"))
+                        .help(L10n.text("ソースを追加（⇧⌘P）", "Add Source (⇧⌘P)"))
+                        layerActionsMenu
+                    }
+                }
+                .padding(.vertical, 7)
             }
         }
         .background(.regularMaterial)
@@ -238,12 +328,19 @@ struct StageWorkspaceView: View {
         .accessibilityLabel(L10n.text("レイヤー一覧", "Layer list"))
     }
 
+    private var sourceCountLabel: some View {
+        Text(controller.activeSourceLimit.map { "\(displayedSourceCount) / \($0)" } ?? "\(displayedSourceCount)")
+            .foregroundStyle(.secondary)
+            .font(.system(size: isLayerRailCollapsed ? 10 : 11).monospacedDigit())
+            .accessibilityLabel(controller.sourceCountAccessibilityDescription(displayedSourceCount))
+    }
+
     private var layerActionsMenu: some View {
         Menu {
             Button(role: .destructive, action: controller.stopPreview) {
                 Label(capture.hasResettableFailure ? L10n.text("画面取得をリセット", "Reset Capture") : L10n.stopAllAndRemoveLayersTitle, systemImage: capture.hasResettableFailure ? "arrow.counterclockwise" : "stop.fill")
             }
-            .disabled((!capture.hasLayers && !capture.isCaptureActive && !capture.hasResettableFailure) || capture.isPickerPresented)
+            .disabled(!controller.canStopAllGroups || controller.hasAnyPickerPresented)
         } label: {
             Image(systemName: "ellipsis")
                 .frame(width: 28, height: 28)
@@ -274,6 +371,21 @@ struct StageWorkspaceView: View {
             WorkspaceOutputStatus(controller: controller, capture: capture, snapshotSourceCount: snapshotFixture?.sourceCount)
             Spacer(minLength: 8)
             layoutMenu
+            if !controller.isEditingOutputGroup {
+                Divider().frame(height: 16)
+                Button {
+                    controller.sendPreviewToStage()
+                } label: {
+                    Label(L10n.text("Stageに出す", "Send to Stage"), systemImage: "arrow.up.forward.square")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .fixedSize()
+                .disabled(!controller.canSendPreviewToStage)
+                .help(controller.cropEditingSourceID != nil
+                    ? L10n.text("切り抜きを適用またはキャンセルしてから、Stageに出せます。", "Apply or cancel cropping before sending this preview to Stage.")
+                    : L10n.text("この画面をStageに出します。カーテンの開閉状態は変わりません。", "Send this screen to Stage. The Curtain stays as it is."))
+            }
         }
         .font(.caption)
         .buttonStyle(.borderless)
@@ -311,7 +423,7 @@ struct StageWorkspaceView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(controller.isEditingOutputGroup ? StagePanePalette.coralReadable : Color.primary.opacity(0.15), lineWidth: controller.isEditingOutputGroup ? 2 : 1)
                     .allowsHitTesting(false)
             }
             .shadow(color: .black.opacity(0.14), radius: 12, y: 5)
@@ -400,8 +512,6 @@ struct StageWorkspaceView: View {
 
     private var sharingFooter: some View {
         HStack(spacing: 6) {
-            Text(L10n.text("会議では「StagePane Stage」を共有", "Share “StagePane Stage” in your meeting"))
-                .lineLimit(1)
             Spacer()
             Button(L10n.text("共有ガイド", "Sharing Guide")) { showsSharingGuide.toggle() }
                 .popover(isPresented: $showsSharingGuide, arrowEdge: .bottom) {
@@ -795,18 +905,25 @@ private struct WorkspaceOutputStatus: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Label(statusTitle, systemImage: statusSymbol)
+            Label(controller.isEditingOutputGroup ? L10n.text("Stage出力", "Stage output") : L10n.text("プレビュー", "Preview"), systemImage: controller.isEditingOutputGroup ? "circle.fill" : "rectangle.dashed")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(controller.privacyCurtain && controller.stageIsVisible ? Color.orange : Color.primary)
+                .foregroundStyle(controller.isEditingOutputGroup ? StagePanePalette.coralReadable : Color.accentColor)
+                .fixedSize()
+            Text(controller.activeScreenGroup.title)
+                .truncationMode(.tail)
+            if controller.isEditingOutputGroup && (controller.privacyCurtain || !controller.stageIsVisible) {
+                Image(systemName: statusSymbol).foregroundStyle(.secondary)
+                    .help(statusTitle)
+            }
             if needsAttention {
                 Label(L10n.text("要確認", "Needs attention"), systemImage: "exclamationmark.circle")
                     .foregroundStyle(.orange)
             }
         }
         .lineLimit(1)
-        .help("\(captureTitle)\n\(statusDetail)")
+        .help("\(statusTitle)\n\(captureTitle)\n\(statusDetail)")
         .accessibilityElement(children: .combine)
-        .accessibilityValue(captureTitle)
+        .accessibilityValue("\(statusTitle), \(captureTitle)")
         .accessibilityHint(statusDetail)
     }
 
@@ -817,6 +934,9 @@ private struct WorkspaceOutputStatus: View {
     }
 
     private var statusTitle: String {
+        if !controller.isEditingOutputGroup {
+            return L10n.text("プレビューを編集中 · Stage出力は「\(controller.outputScreenGroup.title)」", "Editing preview · Stage output is “\(controller.outputScreenGroup.title)”")
+        }
         if snapshotSourceCount != nil {
             return controller.privacyCurtain ? L10n.text("Stage · カーテン中", "Stage · Curtain On") : L10n.text("Stage · コンテンツ", "Stage · Content")
         }
@@ -853,7 +973,10 @@ private struct WorkspaceOutputStatus: View {
     private var statusDetail: String {
         let hint = L10n.text("会議アプリで共有中かどうかを示すものではありません。", "This does not indicate whether a meeting app is sharing.")
         if snapshotSourceCount != nil { return L10n.text("合成プレビューです。画面取得は行っていません。", "Synthetic preview. No screen capture is running.") }
-        return "\(capture.statusDetail) \(hint)"
+        let editing = controller.isEditingOutputGroup
+            ? L10n.text("この画面の編集はStage出力にすぐ反映されます。", "Edits to this screen apply immediately to Stage output.")
+            : L10n.text("編集はプレビュー内に留まります。「Stageに出す」で出力を切り替えます。", "Edits stay in this preview. Choose Send to Stage to switch the output.")
+        return "\(editing) \(capture.statusDetail) \(hint)"
     }
 }
 

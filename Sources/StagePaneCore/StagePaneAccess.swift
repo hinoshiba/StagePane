@@ -5,6 +5,16 @@
 /// remains useful before a person is asked to purchase anything.
 public enum StagePaneAccess {
     public static let freeSourceLimit = 4
+    public static let freeScreenGroupLimit = 2
+    public static let proScreenGroupLimit = 10
+
+    public static func screenGroupLimit(hasProAccess: Bool) -> Int {
+        hasProAccess ? proScreenGroupLimit : freeScreenGroupLimit
+    }
+
+    public static func canAddScreenGroup(currentCount: Int, hasProAccess: Bool) -> Bool {
+        currentCount < screenGroupLimit(hasProAccess: hasProAccess)
+    }
 
     /// The app-enforced simultaneous-source limit for the current plan.
     ///

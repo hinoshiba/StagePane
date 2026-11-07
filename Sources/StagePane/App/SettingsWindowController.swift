@@ -48,22 +48,20 @@ enum SettingsPane: String, CaseIterable {
 final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
     private static let selectedPaneKey = "StagePane.Settings.SelectedPane"
     private let controller: AppController
-    private let capture: CaptureCoordinator
     private let defaults: UserDefaults
-    private let host: NSHostingController<SettingsPaneView>
+    private let host: NSHostingController<SettingsRootView>
     private weak var originatingWindow: NSWindow?
     private weak var originatingResponder: NSResponder?
     private var mayRestoreOrigin = false
     private(set) var selectedPane: SettingsPane
 
-    init(controller: AppController, capture: CaptureCoordinator, defaults: UserDefaults) {
+    init(controller: AppController, defaults: UserDefaults) {
         self.controller = controller
-        self.capture = capture
         self.defaults = defaults
         selectedPane = defaults.string(forKey: Self.selectedPaneKey)
             .flatMap(SettingsPane.init(rawValue:)) ?? .pointer
         host = NSHostingController(
-            rootView: SettingsPaneView(controller: controller, capture: capture, pane: selectedPane)
+            rootView: SettingsRootView(controller: controller, pane: selectedPane)
         )
 
         let window = NSWindow(
@@ -144,7 +142,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         if pane == .access { controller.checkMacScreenRecordingAccess() }
         if pane != selectedPane {
             selectedPane = pane
-            host.rootView = SettingsPaneView(controller: controller, capture: capture, pane: pane)
+            host.rootView = SettingsRootView(controller: controller, pane: pane)
         }
         defaults.set(pane.rawValue, forKey: Self.selectedPaneKey)
         window.title = pane.title
@@ -255,5 +253,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
                 origin.makeFirstResponder(view)
             }
         }
+    }
+}
+
+private struct SettingsRootView: View {
+    @ObservedObject var controller: AppController
+    let pane: SettingsPane
+
+    var body: some View {
+        SettingsPaneView(controller: controller, capture: controller.capture, pane: pane)
+            .id(controller.activeScreenGroupID)
     }
 }

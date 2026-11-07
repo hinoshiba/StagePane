@@ -65,8 +65,8 @@ struct ProUpgradePanel: View {
                 .tracking(-0.7)
                 .accessibilityHeading(.h1)
                 Text(L10n.text(
-                    "買い切りでソース数の制限がなくなり、ロゴも非表示にできます。",
-                    "One purchase removes StagePane’s source limit and lets you hide the StagePane mark."
+                    "買い切りで画面グループを10個まで作成でき、ソース数の制限解除とロゴの非表示も利用できます。",
+                    "One purchase unlocks up to 10 screen groups, removes the source limit, and lets you hide the StagePane mark."
                 ))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -89,6 +89,15 @@ struct ProUpgradePanel: View {
     @ViewBuilder
     private var triggerCard: some View {
         switch controller.proUpgradeTrigger {
+        case .screenGroupLimit:
+            UpgradeReasonCard(
+                symbol: "rectangle.stack.fill",
+                title: L10n.text("3個目からの画面グループはProで", "More screen groups with Pro"),
+                detail: L10n.text(
+                    "無料版は2個、Proは10個まで。この画面で購入を終えると、新しいグループを追加します。",
+                    "Free includes 2 groups; Pro supports up to 10. Finish the purchase here to add a new group."
+                )
+            )
         case .sourceLimit:
             UpgradeReasonCard(
                 symbol: "rectangle.3.group.fill",
@@ -209,8 +218,8 @@ struct ProUpgradePanel: View {
                         : L10n.text("StagePane Proが有効です", "StagePane Pro is active"))
                         .font(.headline)
                     Text(L10n.text(
-                        "StagePaneによる件数制限なしでソースを追加し、ロゴ表示も切り替えられます。",
-                        "You can add sources without an app-imposed limit and choose whether to show the StagePane mark."
+                        "画面グループを10個まで作成でき、ソース数の制限解除とロゴの非表示も利用できます。",
+                        "Create up to 10 screen groups, add sources without an app-imposed limit, and choose whether to show the StagePane mark."
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -224,7 +233,16 @@ struct ProUpgradePanel: View {
             }
 
             HStack(spacing: 10) {
-                if controller.proUpgradeTrigger == .sourceLimit,
+                if controller.proUpgradeTrigger == .screenGroupLimit {
+                    Button {
+                        controller.dismissProUpgrade()
+                        controller.requestScreenGroupAddition()
+                    } label: {
+                        Label(L10n.text("画面グループを追加", "Add Screen Group"), systemImage: "plus")
+                    }
+                    .buttonStyle(PrimaryActionButtonStyle())
+                    .disabled(!controller.canChangeScreenGroup || controller.screenGroups.count >= controller.activeScreenGroupLimit)
+                } else if controller.proUpgradeTrigger == .sourceLimit,
                    controller.canRequestSourceAddition {
                     Button {
                         controller.dismissProUpgrade()
@@ -344,7 +362,13 @@ struct ProPlanComparison: View {
             .accessibilityHidden(true)
 
             PlanComparisonRow(
-                title: L10n.text("同時に使えるソース", "Simultaneous sources"),
+                title: L10n.text("画面グループ", "Screen groups"),
+                freeValue: L10n.text("2個", "2"),
+                proValue: L10n.text("10個", "10")
+            )
+            Divider()
+            PlanComparisonRow(
+                title: L10n.text("各グループのソース", "Sources per group"),
                 freeValue: L10n.text("4つ", "Four"),
                 proValue: L10n.text("アプリ側の上限なし", "No app limit")
             )

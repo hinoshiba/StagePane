@@ -2,6 +2,21 @@ import XCTest
 @testable import StagePaneCore
 
 final class ProUpgradeContinuationTests: XCTestCase {
+    func testGroupPurchaseContinuesOnceAndSwitchingContextCancelsIt() {
+        var state = ProUpgradeContinuation()
+        state.begin(.addScreenGroup)
+        state.accessChanged(hasAccess: true, gainedAccess: true)
+        let generation = state.generation
+        XCTAssertEqual(state.consume(generation: generation, isIdle: true, contextIsValid: true), .addScreenGroup)
+        XCTAssertNil(state.consume(generation: generation, isIdle: true, contextIsValid: true))
+
+        state.begin(.addScreenGroup)
+        let pending = state.generation
+        state.cancel()
+        state.accessChanged(hasAccess: true, gainedAccess: true)
+        XCTAssertNil(state.consume(generation: pending, isIdle: true, contextIsValid: true))
+    }
+
     func testWaitsForPurchaseToFinishAndResumesOnlyOnce() {
         var state = ProUpgradeContinuation()
         state.begin(.addSource)

@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 enum ProUpgradeTrigger: Equatable, Sendable {
     case direct
     case sourceLimit
+    case screenGroupLimit
     case watermark
 }
 
@@ -31,14 +32,21 @@ struct CaptureAccessIssueNotice: Identifiable {
 final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published var preset: StagePreset {
         didSet {
+            let changesGroupPreset = activeScreenGroup.preset != preset
+            activeScreenGroup.preset = preset
             defaults.set(preset.rawValue, forKey: Keys.preset)
-            stageWindowController?.applyPreset(preset, resize: true)
+            if isEditingOutputGroup && changesGroupPreset {
+                stageWindowController?.applyPreset(preset, resize: true)
+            }
             capture.setOutputSize(width: preset.pixelWidth, height: preset.pixelHeight)
         }
     }
 
     @Published var theme: StageTheme {
-        didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
+        didSet {
+            activeScreenGroup.theme = theme
+            defaults.set(theme.rawValue, forKey: Keys.theme)
+        }
     }
 
     @Published var privacyCurtain = true
@@ -81,7 +89,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     @Published var pointerStyle: StagePaneCore.PointerStyle {
         didSet {
             defaults.set(pointerStyle.rawValue, forKey: Keys.pointerStyle)
-            capture.setPointerStyle(effectivePointerStyle)
+            for group in screenGroups {
+                group.capture.setPointerStyle(group === activeScreenGroup ? effectivePointerStyle : pointerStyle)
+            }
         }
     }
 
@@ -90,7 +100,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             defaults.set(pointerAppearance.diameter, forKey: Keys.pointerDiameter)
             defaults.set(pointerAppearance.color.hexRGB, forKey: Keys.pointerColor)
             defaults.set(pointerAppearance.glow, forKey: Keys.pointerGlow)
-            capture.setPointerAppearance(pointerAppearance)
+            for group in screenGroups { group.capture.setPointerAppearance(pointerAppearance) }
         }
     }
 
@@ -143,9 +153,25 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
     }
 
-    let capture: CaptureCoordinator
+    @Published private(set) var screenGroups: [StageScreenGroup]
+    @Published private(set) var activeScreenGroup: StageScreenGroup
+    /// Audience routing is independent of the tab being edited.
+    @Published private(set) var outputScreenGroup: StageScreenGroup
+    @Published private(set) var activeScreenGroupLimit = StagePaneAccess.freeScreenGroupLimit
+    @Published private(set) var removingScreenGroupIDs = Set<UUID>()
+    @Published private(set) var isStoppingAllGroups = false
+    var activeScreenGroupID: UUID { activeScreenGroup.id }
+    var outputScreenGroupID: UUID { outputScreenGroup.id }
+    var outputPreset: StagePreset { outputScreenGroup.preset }
+    var isEditingOutputGroup: Bool { activeScreenGroup === outputScreenGroup }
+    var showsAudienceMagnifier: Bool { isEditingOutputGroup && stageInteractionMode == .magnify }
+    var canSendPreviewToStage: Bool {
+        !isEditingOutputGroup && canChangeScreenGroup && cropEditingSourceID == nil &&
+            isScreenGroupAvailable(activeScreenGroupID)
+    }
+    var capture: CaptureCoordinator { activeScreenGroup.capture }
+    var annotations: StageAnnotationStore { activeScreenGroup.annotations }
     let purchases: ProPurchaseStore
-    let annotations = StageAnnotationStore()
     let magnifier = StageMagnifierStore()
 
     var annotationTool: StageInkTool { annotations.preferences.tool }
@@ -186,7 +212,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     var canRequestSourceAddition: Bool {
-        capture.canRequestSourceAddition
+        canChangeScreenGroup && capture.canRequestSourceAddition
     }
 
     var showsWatermark: Bool {
@@ -220,6 +246,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     private var stopAllConfirmationAlert: NSAlert?
     private var statusItemController: StatusItemController?
     private var cancellables = Set<AnyCancellable>()
+    private var activeGroupSubscriptions = Set<AnyCancellable>()
+    private var screenGroupOrdinal = 1
+    private var groupsStoppedTogether = Set<UUID>()
     private var previousCapturePhase: CapturePhase = .idle
     private var previousCaptureWasActive = false
     private var activeSessionStartedAt: Date?
@@ -238,18 +267,20 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     init(
         screenRecordingPreflight: @escaping () -> Bool,
-        screenRecordingRequest: @escaping () -> Bool
+        screenRecordingRequest: @escaping () -> Bool,
+        defaults: UserDefaults = .standard
     ) {
         self.screenRecordingPreflight = screenRecordingPreflight
         self.screenRecordingRequest = screenRecordingRequest
-        let defaults = UserDefaults.standard
         self.defaults = defaults
-        self.preset = StagePreset(
+        let initialPreset = StagePreset(
             rawValue: defaults.string(forKey: Keys.preset) ?? ""
         ) ?? .widescreen
-        self.theme = StageTheme(
+        self.preset = initialPreset
+        let initialTheme = StageTheme(
             rawValue: defaults.string(forKey: Keys.theme) ?? ""
         ) ?? .aurora
+        self.theme = initialTheme
         self.isAlwaysOnTop = defaults.object(forKey: Keys.alwaysOnTop) as? Bool ?? false
         self.followsAllSpaces = defaults.object(forKey: Keys.followsAllSpaces) as? Bool ?? false
         self.presentationLock = defaults.object(forKey: Keys.presentationLock) as? Bool ?? false
@@ -272,65 +303,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             defaults.object(forKey: Keys.privacyMessageSize) as? Int ?? StageMessage.defaultTextSize
         )
         self.purchases = ProPurchaseStore()
-        self.capture = CaptureCoordinator()
+        let group = StageScreenGroup(ordinal: 1, preset: initialPreset, theme: initialTheme, isSelected: true)
+        self.screenGroups = [group]
+        self.activeScreenGroup = group
+        self.outputScreenGroup = group
         super.init()
         // Persist a canonical value after resolving the legacy Boolean setting.
         defaults.set(pointerStyle.rawValue, forKey: Keys.pointerStyle)
         defaults.set(pointerAppearance.diameter, forKey: Keys.pointerDiameter)
         defaults.set(pointerAppearance.color.hexRGB, forKey: Keys.pointerColor)
         defaults.set(pointerAppearance.glow, forKey: Keys.pointerGlow)
-        capture.setPointerStyle(effectivePointerStyle)
-        capture.setPointerAppearance(pointerAppearance)
-        capture.setOutputSize(width: preset.pixelWidth, height: preset.pixelHeight)
-        capture.setAllowedSourceLimit(activeSourceLimit)
-        capture.sourceLimitReachedHandler = { [weak self] in
-            self?.presentProUpgrade(trigger: .sourceLimit)
-        }
-        capture.sourceAccessIssueHandler = { [weak self] issue in
-            // Keep source failures in the editor; they do not establish that
-            // app-wide Screen Recording permission is missing.
-            self?.presentCaptureAccessIssue(issue)
-        }
+        configureScreenGroup(group)
+        bindActiveScreenGroup()
         previousHasProAccess = hasProAccess
-        previousCapturePhase = capture.phase
-        previousCaptureWasActive = capture.isCaptureActive
-        capture.$phase
-            .combineLatest(capture.$isCaptureActive)
-            .debounce(for: .milliseconds(50), scheduler: RunLoop.main)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] phase, isActive in
-                self?.captureStateDidChange(phase: phase, isActive: isActive)
-            }
-            .store(in: &cancellables)
-        capture.$sources
-            .map(\.isEmpty)
-            .removeDuplicates()
-            .dropFirst()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] isEmpty in
-                guard let self, isEmpty else { return }
-                annotations.removeAll()
-                setStageInteractionMode(.arrange)
-            }
-            .store(in: &cancellables)
-        capture.$sources
-            .map { $0.map(\.id) }
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] sourceIDs in
-                guard let self else { return }
-                if let selectedSourceID,
-                   !sourceIDs.contains(selectedSourceID),
-                   capture.source(for: selectedSourceID) == nil {
-                    self.selectedSourceID = nil
-                }
-                guard let cropEditingSourceID,
-                      !sourceIDs.contains(cropEditingSourceID) else { return }
-                discardCropEditing(announce: false)
-                setStageInteractionMode(.arrange)
-                transientNotice = L10n.cropSourceUnavailableNotice
-            }
-            .store(in: &cancellables)
         purchases.$entitlementState
             .combineLatest(purchases.$operationState)
             .removeDuplicates { previous, current in
@@ -345,9 +330,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     entitlementState == .sourceBuild
                 let gainedProAccess = !previousHasProAccess && nowHasProAccess
                 previousHasProAccess = nowHasProAccess
-                capture.setAllowedSourceLimit(
-                    StagePaneAccess.sourceLimit(hasProAccess: nowHasProAccess)
-                )
+                applyScreenGroupAccess(hasProAccess: nowHasProAccess)
                 objectWillChange.send()
                 proContinuation.accessChanged(
                     hasAccess: nowHasProAccess, gainedAccess: gainedProAccess
@@ -376,26 +359,272 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 self?.proContinuation.cancel()
             }
             .store(in: &cancellables)
+    }
+
+    private func bindActiveScreenGroup() {
+        activeGroupSubscriptions.removeAll()
+        let group = activeScreenGroup
+        let capture = group.capture
+        let annotations = group.annotations
+        hasAnnotations = !annotations.isEmpty
+        activeSessionStartedAt = capture.isCaptureActive ? Date() : nil
+        activeSessionReachedPreview = capture.phase == .previewing
+        previousCapturePhase = capture.phase
+        previousCaptureWasActive = capture.isCaptureActive
+        capture.$phase
+            .combineLatest(capture.$isCaptureActive)
+            .debounce(for: .milliseconds(50), scheduler: RunLoop.main)
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak group] phase, isActive in
+                guard let self, self.activeScreenGroup === group else { return }
+                self.captureStateDidChange(phase: phase, isActive: isActive)
+            }
+            .store(in: &activeGroupSubscriptions)
+        capture.$sources
+            .map(\.isEmpty)
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak group] isEmpty in
+                guard let self, self.activeScreenGroup === group, isEmpty else { return }
+                setStageInteractionMode(.arrange)
+            }
+            .store(in: &activeGroupSubscriptions)
+        capture.$sources
+            .map { $0.map(\.id) }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak group] sourceIDs in
+                guard let self, self.activeScreenGroup === group else { return }
+                if let selectedSourceID,
+                   !sourceIDs.contains(selectedSourceID),
+                   capture.source(for: selectedSourceID) == nil {
+                    self.selectedSourceID = nil
+                }
+                guard let cropEditingSourceID,
+                      !sourceIDs.contains(cropEditingSourceID) else { return }
+                discardCropEditing(announce: false)
+                setStageInteractionMode(.arrange)
+                transientNotice = L10n.cropSourceUnavailableNotice
+            }
+            .store(in: &activeGroupSubscriptions)
         annotations.$document
             .map { !$0.strokes.isEmpty }
             .removeDuplicates()
             .receive(on: RunLoop.main)
-            .sink { [weak self] hasAnnotations in
-                self?.hasAnnotations = hasAnnotations
+            .sink { [weak self, weak group] hasAnnotations in
+                guard let self, self.activeScreenGroup === group else { return }
+                self.hasAnnotations = hasAnnotations
             }
-            .store(in: &cancellables)
+            .store(in: &activeGroupSubscriptions)
         annotations.$preferences
             .map(\.tool)
             .removeDuplicates()
             .dropFirst()
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
+            .sink { [weak self, weak group] _ in
+                guard let self, self.activeScreenGroup === group else { return }
                 // Only a tool change affects parent-level mode descriptions.
                 // Ink points remain local to the annotation overlay so a long
                 // stroke never invalidates the full Workspace hierarchy.
-                self?.objectWillChange.send()
+                self.objectWillChange.send()
             }
-            .store(in: &cancellables)
+            .store(in: &activeGroupSubscriptions)
+    }
+
+    var hasAnyCaptureActive: Bool { screenGroups.contains { $0.capture.isCaptureActive } }
+    var hasAnyLayers: Bool { screenGroups.contains { $0.capture.hasLayers } }
+    var hasAnyPickerPresented: Bool { screenGroups.contains { $0.capture.isPickerPresented } }
+    var canStopAllGroups: Bool {
+        !isStoppingAllGroups && (hasAnyLayers || hasAnyCaptureActive ||
+            screenGroups.contains { $0.capture.hasResettableFailure })
+    }
+    var canChangeScreenGroup: Bool {
+        !hasAnyPickerPresented && !isStoppingAllGroups && removingScreenGroupIDs.isEmpty &&
+            !isStageScreenshotInProgress && !stageFullScreenTransitionInProgress && stopAllConfirmationAlert == nil
+    }
+
+    func isScreenGroupAvailable(_ id: UUID) -> Bool {
+        guard let index = screenGroups.firstIndex(where: { $0.id == id }) else { return false }
+        return index < activeScreenGroupLimit
+    }
+
+    func requestScreenGroupAddition() {
+        beginWorkspaceInteraction()
+        guard canChangeScreenGroup else { return }
+        if screenGroups.count >= activeScreenGroupLimit {
+            if activeScreenGroupLimit == StagePaneAccess.freeScreenGroupLimit {
+                presentProUpgrade(trigger: .screenGroupLimit)
+            } else {
+                transientNotice = L10n.text("画面グループは10個まで作成できます。", "You can create up to 10 screen groups.")
+            }
+            return
+        }
+        _ = addScreenGroup()
+    }
+
+    @discardableResult
+    func addScreenGroup() -> Bool {
+        guard canChangeScreenGroup, screenGroups.count < activeScreenGroupLimit else { return false }
+        beginWorkspaceInteraction()
+        screenGroupOrdinal += 1
+        let group = StageScreenGroup(ordinal: screenGroupOrdinal, preset: preset, theme: theme)
+        configureScreenGroup(group)
+        screenGroups.append(group)
+        activateScreenGroup(group)
+        return true
+    }
+
+    @discardableResult
+    func selectScreenGroup(_ id: UUID) -> Bool {
+        guard canChangeScreenGroup, isScreenGroupAvailable(id),
+              let group = screenGroups.first(where: { $0.id == id }) else { return false }
+        guard group !== activeScreenGroup else { return true }
+        beginWorkspaceInteraction()
+        activateScreenGroup(group)
+        return true
+    }
+
+    private func activateScreenGroup(_ group: StageScreenGroup) {
+        let previous = activeScreenGroup
+        previous.selectedSourceID = selectedSourceID
+        previous.accessIssueNotice = captureAccessIssueNotice
+        previous.annotations.endStroke()
+        previous.capture.setAcceptsNewSources(false)
+        previous.capture.setPointerStyle(pointerStyle)
+        discardCropEditing(announce: false)
+        magnifier.hide()
+        stageInteractionMode = .arrange
+        activeScreenGroup = group
+        group.capture.setAcceptsNewSources(true)
+        selectedSourceID = group.selectedSourceID.flatMap { group.capture.source(for: $0) == nil ? nil : $0 }
+        captureAccessIssueNotice = group.accessIssueNotice
+        if preset != group.preset { preset = group.preset }
+        if theme != group.theme { theme = group.theme }
+        group.capture.setPointerStyle(effectivePointerStyle)
+        bindActiveScreenGroup()
+        clearResolvedCaptureAccessIssue()
+        dismissTransientNotice()
+    }
+
+    @discardableResult
+    func sendPreviewToStage() -> Bool {
+        guard canSendPreviewToStage else { return false }
+        beginWorkspaceInteraction()
+        annotations.endStroke()
+        magnifier.hide()
+        routeStage(to: activeScreenGroup)
+        presentStage(makeKey: false)
+        return true
+    }
+
+    private func routeStage(to group: StageScreenGroup) {
+        outputScreenGroup = group
+        stageWindowController?.applyPreset(group.preset, resize: true)
+    }
+
+    func renameScreenGroup(_ id: UUID, to title: String) {
+        beginWorkspaceInteraction()
+        screenGroups.first(where: { $0.id == id })?.rename(to: title)
+    }
+
+    @discardableResult
+    func removeScreenGroup(_ id: UUID) -> Bool {
+        guard canChangeScreenGroup, screenGroups.count > 1,
+              let group = screenGroups.first(where: { $0.id == id }) else { return false }
+        beginWorkspaceInteraction()
+        removingScreenGroupIDs.insert(id)
+        if group === outputScreenGroup { privacyCurtain = true }
+        group.capture.stop { [weak self, weak group] error in
+            guard let self, let group else { return }
+            self.removingScreenGroupIDs.remove(id)
+            guard error == nil, !group.capture.isCaptureActive else {
+                self.transientNotice = L10n.text(
+                    "取得を停止できなかったため、グループを残しました。もう一度削除してください。",
+                    "The group was kept because capture could not stop. Try deleting it again."
+                )
+                return
+            }
+            if group === self.outputScreenGroup,
+               let next = self.screenGroups.first(where: { $0.id != id && self.isScreenGroupAvailable($0.id) }) {
+                self.routeStage(to: next)
+            }
+            if group === self.activeScreenGroup {
+                self.activateScreenGroup(self.outputScreenGroup)
+            }
+            self.screenGroups.removeAll { $0.id == id }
+        }
+        return true
+    }
+
+    func applyScreenGroupAccess(hasProAccess: Bool) {
+        activeScreenGroupLimit = StagePaneAccess.screenGroupLimit(hasProAccess: hasProAccess)
+        for (index, group) in screenGroups.enumerated() {
+            group.capture.setAllowedSourceLimit(StagePaneAccess.sourceLimit(hasProAccess: hasProAccess))
+            if index >= activeScreenGroupLimit {
+                group.capture.setAcceptsNewSources(false)
+                group.capture.endCaptureKeepingLayers()
+            }
+        }
+        if !isScreenGroupAvailable(outputScreenGroupID), let first = screenGroups.first {
+            privacyCurtain = true
+            routeStage(to: first)
+        }
+        if !isScreenGroupAvailable(activeScreenGroupID), let first = screenGroups.first {
+            activateScreenGroup(first)
+        }
+    }
+
+    private func configureScreenGroup(_ group: StageScreenGroup) {
+        let capture = group.capture
+        capture.setPointerStyle(pointerStyle)
+        capture.setPointerAppearance(pointerAppearance)
+        capture.setOutputSize(width: group.preset.pixelWidth, height: group.preset.pixelHeight)
+        capture.setAllowedSourceLimit(activeSourceLimit)
+        capture.sourceLimitReachedHandler = { [weak self] in
+            self?.presentProUpgrade(trigger: .sourceLimit)
+        }
+        capture.sourceAccessIssueHandler = { [weak self, weak group] issue in
+            guard let self, let group else { return }
+            if self.activeScreenGroup === group {
+                self.presentCaptureAccessIssue(issue)
+            } else {
+                group.accessIssueNotice = CaptureAccessIssueNotice(
+                    issue: issue, sourceIDsAtFailure: Set(group.capture.sources.map(\.id))
+                )
+            }
+        }
+        capture.$sources.map(\.isEmpty).removeDuplicates().dropFirst()
+            .sink { [weak group] isEmpty in
+                if isEmpty { group?.annotations.removeAll() }
+            }
+            .store(in: &group.subscriptions)
+        capture.objectWillChange.merge(with: group.objectWillChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &group.subscriptions)
+    }
+
+    func stopAllGroups(completion: ((String?) -> Void)? = nil) {
+        isStoppingAllGroups = true
+        groupsStoppedTogether = Set(screenGroups.map(\.id))
+        privacyCurtain = true
+        var remaining = screenGroups.count
+        var firstError: String?
+        for group in screenGroups {
+            group.annotations.removeAll()
+            group.capture.stop { [weak self, weak group] error in
+                if error == nil, let group {
+                    group.accessIssueNotice = nil
+                    if self?.activeScreenGroup === group { self?.captureAccessIssueNotice = nil }
+                }
+                if firstError == nil { firstError = error }
+                remaining -= 1
+                guard remaining == 0 else { return }
+                self?.isStoppingAllGroups = false
+                completion?(firstError)
+            }
+        }
     }
 
     func selectSource(_ sourceID: StageSourceID?) {
@@ -693,11 +922,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     func start(showWindows: Bool = true) {
-        let stage = StageWindowController(controller: self, capture: capture)
-        let workspace = StageWorkspaceWindowController(controller: self, capture: capture)
+        let stage = StageWindowController(controller: self)
+        let workspace = StageWorkspaceWindowController(controller: self)
         stageWindowController = stage
         workspaceWindowController = workspace
-        statusItemController = StatusItemController(controller: self, capture: capture)
+        statusItemController = StatusItemController(controller: self)
 
         if showWindows {
             showStage()
@@ -778,7 +1007,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             to: directory.appendingPathComponent("stage-settings.png")
         )
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture)
+            of: StageWorkspaceView(controller: self, snapshotScreenRailCollapsed: false, snapshotLayerRailCollapsed: false)
                 .frame(width: 1_440, height: 900),
             pointSize: CGSize(width: 1_440, height: 900),
             to: directory.appendingPathComponent("workspace.png")
@@ -789,7 +1018,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         try writePNG(
             of: StageWorkspaceView(
                 controller: self,
-                capture: capture,
                 snapshotFixture: .arrange
             )
                 .frame(width: 1_440, height: 900),
@@ -802,7 +1030,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         try writePNG(
             of: StageWorkspaceView(
                 controller: self,
-                capture: capture,
                 snapshotFixture: .draw
             )
                 .frame(width: 1_440, height: 900),
@@ -815,7 +1042,6 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         try writePNG(
             of: StageWorkspaceView(
                 controller: self,
-                capture: capture,
                 snapshotFixture: .sources
             )
                 .frame(width: 1_440, height: 900),
@@ -935,20 +1161,19 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             try writePNG(
                 of: StageWorkspaceView(
                     controller: self,
-                    capture: capture,
                     snapshotFixture: .arrange
                 )
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
-                to: directory.appendingPathComponent("workspace-900-\(appearanceName).png")
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
+                to: directory.appendingPathComponent("workspace-1040-\(appearanceName).png")
             )
             try writePNG(
-                of: StageWorkspaceView(controller: self, capture: capture)
+                of: StageWorkspaceView(controller: self, snapshotScreenRailCollapsed: false, snapshotLayerRailCollapsed: false)
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
-                to: directory.appendingPathComponent("workspace-empty-900-\(appearanceName).png")
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
+                to: directory.appendingPathComponent("workspace-empty-1040-\(appearanceName).png")
             )
             captureAccessIssueNotice = CaptureAccessIssueNotice(
                 issue: CaptureAccessIssue(
@@ -961,11 +1186,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 sourceIDsAtFailure: []
             )
             try writePNG(
-                of: StageWorkspaceView(controller: self, capture: capture)
+                of: StageWorkspaceView(controller: self, snapshotScreenRailCollapsed: false, snapshotLayerRailCollapsed: false)
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
-                to: directory.appendingPathComponent("workspace-access-error-empty-900-\(appearanceName).png")
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-empty-1040-\(appearanceName).png")
             )
             let failedSourceID = StageSourceID(rawValue: "snapshot-presentation")
             captureAccessIssueNotice = CaptureAccessIssueNotice(
@@ -980,11 +1205,11 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                 sourceIDsAtFailure: [failedSourceID]
             )
             try writePNG(
-                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .arrange)
+                of: StageWorkspaceView(controller: self, snapshotFixture: .arrange)
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
-                to: directory.appendingPathComponent("workspace-access-error-source-900-\(appearanceName).png")
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
+                to: directory.appendingPathComponent("workspace-access-error-source-1040-\(appearanceName).png")
             )
             captureAccessIssueNotice = nil
             try writePNG(
@@ -1012,20 +1237,20 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         }
         setStageInteractionMode(.annotate)
         try writePNG(
-            of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .draw)
-                .frame(width: 900, height: 620),
-            pointSize: CGSize(width: 900, height: 620),
-            to: directory.appendingPathComponent("draw-900.png")
+            of: StageWorkspaceView(controller: self, snapshotFixture: .draw)
+                .frame(width: 1040, height: 620),
+            pointSize: CGSize(width: 1040, height: 620),
+            to: directory.appendingPathComponent("draw-1040.png")
         )
         annotations.selectTool(.eraser)
         for colorScheme in [ColorScheme.light, .dark] {
             let appearanceName = colorScheme == .dark ? "dark" : "light"
             try writePNG(
-                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .draw)
+                of: StageWorkspaceView(controller: self, snapshotFixture: .draw)
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
-                to: directory.appendingPathComponent("eraser-900-\(appearanceName).png")
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
+                to: directory.appendingPathComponent("eraser-1040-\(appearanceName).png")
             )
         }
         annotations.selectTool(.pen)
@@ -1049,28 +1274,75 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         for colorScheme in [ColorScheme.light, .dark] {
             let appearanceName = colorScheme == .dark ? "dark" : "light"
             try writePNG(
-                of: StageWorkspaceView(controller: self, capture: capture, snapshotFixture: .product)
+                of: StageWorkspaceView(controller: self, snapshotFixture: .product)
                     .preferredColorScheme(colorScheme)
-                    .frame(width: 900, height: 620),
-                pointSize: CGSize(width: 900, height: 620),
+                    .frame(width: 1040, height: 620),
+                pointSize: CGSize(width: 1040, height: 620),
                 to: directory.appendingPathComponent("product-workspace-\(appearanceName).png")
             )
         }
 
         privacyCurtain = true
         try writePNG(
-            of: StageView(controller: self, capture: capture)
+            of: StageView(controller: self)
                 .frame(width: 960, height: 540),
             pointSize: CGSize(width: 960, height: 540),
             to: directory.appendingPathComponent("privacy-curtain.png")
         )
         privacyCurtain = false
         try writePNG(
-            of: StageView(controller: self, capture: capture)
+            of: StageView(controller: self)
                 .frame(width: 960, height: 540),
             pointSize: CGSize(width: 960, height: 540),
             to: directory.appendingPathComponent("stage-ready.png")
         )
+
+        // Synthetic multi-group fixtures use no capture or permission queries.
+        let originalGroupID = activeScreenGroupID
+        let originalGroupName = activeScreenGroup.title
+        if addScreenGroup() {
+            let fixtureGroupID = activeScreenGroupID
+            renameScreenGroup(originalGroupID, to: L10n.text("プレゼン", "Presentation"))
+            renameScreenGroup(fixtureGroupID, to: L10n.text("デモ", "Demo"))
+            defer {
+                _ = selectScreenGroup(originalGroupID)
+                renameScreenGroup(originalGroupID, to: originalGroupName)
+                _ = removeScreenGroup(fixtureGroupID)
+            }
+            for colorScheme in [ColorScheme.light, .dark] {
+                let appearance = colorScheme == .dark ? "dark" : "light"
+                _ = selectScreenGroup(fixtureGroupID)
+                for size in [CGSize(width: 1440, height: 900), CGSize(width: 1040, height: 620)] {
+                    try writePNG(
+                        of: StageWorkspaceView(controller: self, snapshotFixture: .arrange)
+                            .preferredColorScheme(colorScheme)
+                            .frame(width: size.width, height: size.height),
+                        pointSize: size,
+                        to: directory.appendingPathComponent("screen-groups-\(Int(size.width))-\(appearance).png")
+                    )
+                }
+                for (screens, layers, name) in [(true, false, "screens"), (false, true, "layers"), (true, true, "both")] {
+                    try writePNG(
+                        of: StageWorkspaceView(
+                            controller: self, snapshotFixture: .arrange,
+                            snapshotScreenRailCollapsed: screens, snapshotLayerRailCollapsed: layers
+                        )
+                            .preferredColorScheme(colorScheme)
+                            .frame(width: 1040, height: 620),
+                        pointSize: CGSize(width: 1040, height: 620),
+                        to: directory.appendingPathComponent("compact-rails-\(name)-1040-\(appearance).png")
+                    )
+                }
+                _ = selectScreenGroup(originalGroupID)
+                try writePNG(
+                    of: StageWorkspaceView(controller: self, snapshotFixture: .arrange)
+                        .preferredColorScheme(colorScheme)
+                        .frame(width: 1040, height: 620),
+                    pointSize: CGSize(width: 1040, height: 620),
+                    to: directory.appendingPathComponent("screen-groups-output-1040-\(appearance).png")
+                )
+            }
+        }
     }
 
     @MainActor
@@ -1102,6 +1374,9 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             window.contentView = nil
         }
 
+        // AppKit-backed controls can finish their first layout on the next
+        // run-loop pass. Let them settle before caching the off-screen view.
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
         hostingView.layoutSubtreeIfNeeded()
         hostingView.displayIfNeeded()
 
@@ -1191,7 +1466,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         proContinuation.cancel()
         if settingsWindowController == nil {
             settingsWindowController = SettingsWindowController(
-                controller: self, capture: capture, defaults: defaults
+                controller: self, defaults: defaults
             )
         }
         settingsWindowController?.present(pane: pane)
@@ -1231,6 +1506,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             switch trigger {
             case .direct: action = nil
             case .sourceLimit: action = .addSource
+            case .screenGroupLimit: action = .addScreenGroup
             case .watermark: action = .hideWatermark
             }
         }
@@ -1267,6 +1543,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         switch action {
         case .addSource:
             if canRequestSourceAddition { chooseSource() }
+        case .addScreenGroup:
+            _ = addScreenGroup()
         case .hideWatermark:
             prefersWatermark = false
             showStageSettings()
@@ -1463,7 +1741,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             return
         }
         if proWindowIsVisible { proWindowController?.close() }
-        presentStage(makeKey: false)
+        if isEditingOutputGroup { presentStage(makeKey: false) }
         presentWorkspace()
         capture.addSource()
     }
@@ -1571,7 +1849,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             menuItem.title = capture.hasResettableFailure
                 ? L10n.text("画面取得のエラーをリセット", "Reset Capture Error")
                 : L10n.stopAllAndRemoveLayersTitle
-            return capture.hasLayers || capture.isCaptureActive || capture.hasResettableFailure
+            return canStopAllGroups
         case #selector(toggleCurtain):
             menuItem.state = privacyCurtain ? .on : .off
             menuItem.title = privacyCurtain
@@ -1604,7 +1882,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
         do {
             return try StageWindowSnapshotter.capture(
                 contentView: canvasView,
-                outputSize: StageSnapshotSize(preset: preset)
+                outputSize: StageSnapshotSize(preset: outputPreset)
             )
         } catch {
             isStageScreenshotInProgress = false
@@ -1655,13 +1933,14 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
     @objc func stopPreview() {
         beginWorkspaceInteraction()
-        guard capture.hasLayers else {
-            if capture.isCaptureActive {
+        guard !isStoppingAllGroups else { return }
+        guard !hasAnyLayers else {
+            if hasAnyCaptureActive {
                 performStopAllAndRemoveLayers()
                 return
             }
-            let neededReset = capture.hasResettableFailure
-            capture.stop()
+            let neededReset = screenGroups.contains { $0.capture.hasResettableFailure }
+            stopAllGroups()
             if neededReset, let notice = captureAccessIssueNotice, notice.issue.sourceID == nil {
                 dismissCaptureAccessIssue(id: notice.id)
             }
@@ -1723,14 +2002,36 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             "すべてのソースを停止し、レイヤーを削除しています…",
             "Stopping every source and removing its layers…"
         )
-        // Completion announcements are derived from the atomic capture state
-        // subscription below so VoiceOver receives exactly one final result.
-        capture.stop()
+        // An inactive group's stop can finish last. Announce the entire batch,
+        // not only the selected group's state transition.
+        stopAllGroups { [weak self] error in
+            guard let self else { return }
+            if self.hasAnyCaptureActive {
+                self.transientNotice = L10n.text(
+                    "停止できなかったグループがあります。カーテンは閉じています。もう一度すべて停止してください。",
+                    "Some groups could not stop. Curtain is closed. Try Stop All again."
+                )
+            } else if error != nil {
+                self.transientNotice = L10n.text(
+                    "全グループの取得は停止しました。後処理の確認が必要です。",
+                    "Capture stopped in every group, but cleanup needs attention."
+                )
+            } else {
+                self.transientNotice = L10n.text(
+                    "全グループの取得を停止し、レイヤーを削除しました。",
+                    "Stopped capture and removed layers in every group."
+                )
+            }
+        }
     }
 
     func setPreset(_ value: StagePreset) {
+        let reselectingCurrentPreset = preset == value
         preset = value
-        presentStage(makeKey: false)
+        if isEditingOutputGroup {
+            if reselectingCurrentPreset { stageWindowController?.applyPreset(value, resize: true) }
+            presentStage(makeKey: false)
+        }
     }
 
     func setTheme(_ value: StageTheme) {
@@ -1740,7 +2041,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     func stageDidClose() {
         stageIsVisible = false
         stageIsMiniaturized = false
-        guard !capture.sources.isEmpty || capture.isPickerPresented else { return }
+        guard hasAnyLayers || hasAnyPickerPresented else { return }
         privacyCurtain = true
         if capture.isPickerPresented {
             transientNotice = L10n.text(
@@ -1868,8 +2169,12 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
 
         previousCapturePhase = phase
         previousCaptureWasActive = isActive
+        if !isStoppingAllGroups, phase == .choosing || phase == .preparing {
+            groupsStoppedTogether.remove(activeScreenGroupID)
+        }
         if isActive, phase == .previewing {
             activeSessionReachedPreview = true
+            if !isStoppingAllGroups { groupsStoppedTogether.remove(activeScreenGroupID) }
         }
 
         if wasActive && !isActive {
@@ -1883,7 +2188,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             let reachedPreview = activeSessionReachedPreview
             activeSessionStartedAt = nil
             activeSessionReachedPreview = false
-            if captureAccessIssueNotice == nil || (!needsAttention && !hasDisconnectedLayers) {
+            if !groupsStoppedTogether.contains(activeScreenGroupID),
+               captureAccessIssueNotice == nil || (!needsAttention && !hasDisconnectedLayers) {
                 if hasDisconnectedLayers {
                     transientNotice = L10n.text(
                         "画面取得は停止しました。レイヤーの配置と切り抜きは保持されています。対象を選び直してください。",
@@ -1896,8 +2202,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
                     )
                 } else {
                     transientNotice = L10n.text(
-                        "すべてのソースを完全に停止しました。",
-                        "All sources stopped completely."
+                        hasAnyCaptureActive ? "このグループの取得は停止しました。別のグループでは取得中です。" : "すべてのソースを完全に停止しました。",
+                        hasAnyCaptureActive ? "Capture stopped in this group. Other groups are still capturing." : "All sources stopped completely."
                     )
                 }
             }
@@ -1910,6 +2216,8 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             }
             return
         }
+
+        if groupsStoppedTogether.contains(activeScreenGroupID) { return }
 
         if capturePhaseNeedsAttention(phase) {
             // The persistent source-specific recovery stays authoritative;
@@ -2004,7 +2312,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
             guard let self else { return }
             defer { reviewRequestIsScheduled = false }
             guard NSApp.isActive,
-                  !capture.isCaptureActive,
+                  !hasAnyCaptureActive,
                   !capture.isPickerPresented,
                   !purchases.isBusy,
                   purchases.operationState != .pending,
@@ -2021,7 +2329,7 @@ final class AppController: NSObject, ObservableObject, NSMenuItemValidation {
     }
 
     @objc func terminate() {
-        capture.stop()
+        stopAllGroups()
         NSApp.terminate(nil)
     }
 

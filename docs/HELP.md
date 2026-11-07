@@ -5,7 +5,7 @@
 1. Keep **StagePane Workspace — Keep Private** on your Mac.<br>
    **StagePane Workspace — 共有しない編集画面** は手元に置きます。
 2. Choose **Add Source / ソースを追加** and approve one window, app, or
-   display in the macOS system picker. Free supports four simultaneous sources;
+   display in the macOS system picker. Free supports four sources per group;
    the one-time StagePane Pro purchase removes StagePane's source-count limit.
    The number that can run in practice depends on Mac performance and
    operating-system constraints.
@@ -24,6 +24,105 @@ window when you want to limit the source more narrowly.
 
 アプリを選ぶと、そのアプリが持つすべてのウインドウが含まれる場合があります。
 共有範囲を狭くしたい場合は、アプリではなく1つのウインドウを選んでください。
+
+## Screen groups / 画面グループ
+
+Use the vertical **Screens** tabs at the far left of Workspace to select the
+composition you want to edit. The blue selection is your editor; the red frame
+and **On Stage** label mark the composition routed to the audience window.
+Select another tab to prepare it privately, then choose **Send to Stage** to
+switch the contents of **the same Stage window**. The meeting app does not need
+to select another window. The Curtain stays open or closed as it was.
+
+Free includes up to **2 groups** with **4 sources per group**; Pro includes up to
+**10 groups** with no app-imposed source-count limit. The initial group counts
+toward the limit. Use **+** at the bottom of Screens to add one, and its context menu or
+**…** menu to rename or delete it. Up/Down moves between focused tabs. The last
+group cannot be deleted. The small tab images show layer placement, not live
+captured pixels.
+
+Use the chevron beside **Screens** or **Layers** to collapse either column to a
+narrow strip. Screens keep small layout thumbnails and the red Stage-output
+frame; layers keep source icons, numbers, and hidden/attention indicators.
+Hover to read names, click to select, and right-click for the usual actions.
+The right chevron expands that column again. Both choices are remembered across
+groups and app launches, and expanding Layers restores its previous width.
+Collapsing changes only the private Workspace, without switching Stage output
+or stopping capture.
+
+Each group keeps its sources, placement, stacking, crops, drawing, shape, and
+background for the current app session. Selecting a tab never changes the Stage
+output. **Editing the red-framed output group applies changes immediately**;
+select another group to prepare changes privately. Switching editor tabs ends
+gestures and discards an unapplied crop draft. Apply or cancel a crop before
+sending a preview to Stage. The red frame stays in Workspace and is not included
+in audience output. It indicates Stage routing, not whether a meeting app is
+actually sharing; the shield indicates that the Curtain is hiding the content.
+
+Inactive groups continue capturing. Use **Stop All and Remove Layers** to end
+capture and remove layers and drawings in **every group**. Deleting one group
+stops only that group's capture. Deleting the output group closes the Curtain
+and routes Stage to an available group. Deleting a preview-only group leaves
+the Stage output and Curtain unchanged.
+
+Groups and their content are held in memory for this app session, not restored
+after quitting. If Pro access ends, groups beyond the first two are locked and
+their capture is ended; their layout and drawings remain in memory. If the
+output group becomes unavailable, the Curtain closes before Stage is routed to
+the first group. Restore Pro and explicitly reselect sources to use locked
+groups again. Performance depends on the total sources and the Mac's resources.
+
+On macOS 15.2 or later, the same selected window shares one capture input across
+layers and groups. Capture uses the largest size needed by active layers; crop,
+placement, and color inversion remain independent. Different native-cursor
+settings need separate inputs. Earlier macOS versions and selections whose
+identity cannot be confirmed reuse only the same selection filter. Hiding,
+removing, or replacing one layer does not interrupt others using that input.
+Stopping sharing in macOS ends that input for all its layers.
+
+Workspaceの一番左にある**画面**タブで、編集する画面を選びます。青は編集中、
+赤枠と**Stage出力**は観客向けStageに出している画面です。別のタブを選んで手元で
+準備し、**Stageに出す**で**同じStageウインドウの内容**を切り替えます。
+会議アプリで共有ウインドウを選び直す必要はありません。カーテンの開閉状態は保ちます。
+
+無料版は**2グループ・各4ソースまで**、Proは**10グループ・各グループのソース数は
+アプリ側の上限なし**です。最初の画面も個数に含みます。画面欄の下の**＋**で追加し、
+タブの右クリックまたは**…**メニューから名前変更・削除ができます。
+上下キーでもタブを選べます。最後の1個は削除できません。
+タブの小さな画像は配置の見本で、実際の取得映像ではありません。
+
+**画面**・**レイヤー**の見出しにある左向き矢印で、それぞれを細い欄に縮小できます。
+画面は小さな配置サムネイルと赤いStage出力枠、レイヤーは種類のアイコン・番号・
+非表示や問題の目印を残します。名前はホバーで確認でき、クリックで選択、右クリックで
+通常の操作メニューを開けます。右向き矢印で展開します。縮小状態は画面の切り替えや
+アプリ再起動後も保ち、レイヤー欄を展開すると以前の幅へ戻します。
+変わるのは手元のWorkspaceだけで、Stage出力の切り替えや画面取得の停止は行いません。
+
+ソース、配置、重なり順、切り抜き、手書き、形、背景は画面ごとに保持します。
+タブを選ぶだけではStage出力は変わりません。**赤枠の画面を編集すると、変更は
+Stage出力にすぐ反映されます**。手元で準備するときは別の画面を選んでください。
+タブを移ると操作中のジェスチャーを終了し、未適用の切り抜きは破棄します。
+切り抜きを適用またはキャンセルしてから「Stageに出す」を押してください。
+赤枠はWorkspaceだけの目印で、観客向けStageには表示しません。
+会議アプリが実際に共有しているかは検知しません。盾の印はカーテン中を表します。
+
+非選択の画面も取得を続けます。**すべて停止してレイヤーを削除**は全グループの
+取得・レイヤー・手書きが対象です。削除はその画面だけを停止します。
+Stage出力中の画面を削除するとカーテンを閉じ、利用できる別の画面に切り替えます。
+プレビューだけの画面を削除しても、Stage出力とカーテンは変わりません。
+
+グループはメモリ内だけに保持し、終了後は復元しません。Proが無効になった場合、
+3個目以降をロックして取得を終了しますが、配置と手書きは起動中に保持します。
+Stage出力が対象の場合は、カーテンを閉じて最初の画面に切り替えます。
+Proを復元し、ソースを明示的に選び直すと再開できます。取得性能は
+全グループの合計ソース数とMacのリソースに依存します。
+
+macOS 15.2以降では、同じウインドウの取得をレイヤー・グループ間で再利用します。
+取得サイズは表示中のレイヤーが必要とする最大サイズにまとめ、切り抜き・配置・色反転は
+それぞれ独立して扱います。OSのカーソルを映像に含める設定が異なる場合は別の入力です。
+古いmacOSや同一性を確認できない選択では、同じ選択フィルターだけを再利用します。
+1つのレイヤーを非表示・解除・差し替えしても、同じ入力を使う他のレイヤーは続行します。
+macOS側で共有を停止すると、その入力を使うすべてのレイヤーが停止します。
 
 ## Settings / 設定
 
@@ -280,20 +379,22 @@ Workspace. It is always shown in Free and can be disabled with StagePane Pro.
 半透明の **StagePaneロゴ** は待機画面、共有内容、カーテンの右下に表示され、手元の
 Workspaceにも反映されます。無料版では常に表示され、StagePane Proでは無効にできます。
 
-**Hide / 非表示** pauses only that source's ScreenCaptureKit stream and
+**Hide / 非表示** pauses only that layer and
 makes its layer transparent in the Stage, private Workspace, and Audience PNG
-output. **Show / 再表示** resumes the same source and reveals it only after a
-new complete frame arrives. Placement, crop, and z-order remain unchanged.
+output. Other layers using the input continue; the last active layer stops
+capture. **Show / 再表示** uses the running input's current complete frame, or
+waits for a new frame if capture had stopped. Placement, crop, and z-order remain unchanged.
 
-**非表示** はそのソースのScreenCaptureKitストリームだけを一時停止し、Stage、手元用
-Workspace、Audience PNGでレイヤーを透明にします。**再表示** で同じソースの取得を再開し、
-新しい完全なフレームが届いた時点で再表示します。配置・切り抜き・重なり順は保持します。
+**非表示** はStage、手元用Workspace、Audience PNGでそのレイヤーを透明にします。
+同じ入力を使う他のレイヤーがあれば取得を続け、最後の利用を止めたときに取得を停止します。
+**再表示** は動作中の入力の現在の完全なフレームを使い、取得を停止していた場合は
+新しいフレームを待ちます。配置・切り抜き・重なり順は保持します。
 
-**Remove / 解除** always asks for confirmation because it stops that source and
-discards its pixels and retained layer state. Hide and Replace do not show
+**Remove / 解除** always asks for confirmation because it disconnects that layer
+and discards its pixels and retained layer state. Hide and Replace do not show
 this warning.
 
-**解除** は、そのソースを停止して映像と保持中のレイヤー状態を破棄するため、
+**解除** は、そのレイヤーを入力から外して映像と保持中のレイヤー状態を破棄するため、
 必ず確認を表示します。非表示と選び直しではこの警告は表示しません。
 
 When switching a completely static source from System to Laser pointer, StagePane
@@ -414,19 +515,22 @@ StagePaneではStage全体の **配置**・**手書き**・**虫眼鏡** モー�
 
 Cropping is a local composition mask, not a narrower macOS capture permission.
 Whenever the source stream runs, ScreenCaptureKit handles the complete window,
-app, or display approved in Apple's picker. Hide pauses that stream; Remove or
-Stop All ends its capture session. While hidden, that layer is transparent in
-the Stage, private Workspace, and Audience PNG output; Show resumes capture and
-reveals it only after a new complete frame arrives, without changing placement, crop, or
-z-order. Keep the Curtain on while
+app, or display approved in Apple's picker. Hide and Remove affect that layer;
+other layers using the same input continue. The last active layer stops its
+input, and Stop All stops all inputs. While hidden, that layer is transparent in
+the Stage, private Workspace, and Audience PNG output. Show uses a complete
+frame from the running input or waits for a new frame after restarting it,
+without changing placement, crop, or z-order. Keep the Curtain on while
 preparing content that is not ready for the audience. Crop edits remain a
 private draft until Apply Crop.
 
 切り抜きはStage内の表示マスクであり、macOSの取得許可範囲を狭めるものではありません。
 ソースのストリーム動作中、ScreenCaptureKitはAppleのピッカーで許可したウインドウ、
-アプリ、または画面全体を扱います。非表示はストリームを一時停止し、Stage、手元用Workspace、
-Audience PNGでそのレイヤーを透明にします。再表示を選ぶと取得を再開し、新しい完全なフレームが届いてから映像を戻し、
-配置・切り抜き・重なり順は保持します。解除またはすべて停止は取得セッションを終了します。
+アプリ、または画面全体を扱います。非表示と解除はそのレイヤーに作用し、同じ入力を
+使う他のレイヤーは続行します。最後の利用を止めると入力を停止し、すべて停止は
+全入力を停止します。非表示中のレイヤーはStage、手元用Workspace、Audience PNGで
+透明です。再表示では動作中の入力の現在の映像を使い、入力を停止していた場合は
+新しい完全なフレームを待ちます。配置・切り抜き・重なり順は保持します。
 観客へ見せる準備ができていない内容を調整するときはカーテンを
 有効にしてください。切り抜きの変更は「切り抜きを適用」まで手元の下書きです。
 
@@ -542,7 +646,7 @@ is available on the same screen. A canceled purchase never changes or stops the
 current Stage. **Settings → Pro** shows purchase status and opens the same window.
 
 Mac App Store版では **StagePane → StagePane Pro…** で、App Storeが提供する買い切り価格を
-確認できます。無料版は同時に4件まで利用でき、Proではアプリ側のソース件数制限がなくなり、
+確認できます。無料版は各グループ4件まで利用でき、Proではアプリ側のソース件数制限がなくなり、
 ロゴ非表示も開放します。実際に利用できる件数はMacの性能とOSの制約に依存します。同じ画面から
 **購入を復元** できます。**設定 → Pro** からも購入状態を確認し、同じウインドウを開けます。購入をキャンセルしても、現在のStageを変更・停止しません。
 

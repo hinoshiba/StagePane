@@ -13,6 +13,8 @@
 		108AE50A313BD77F4A8E4B9F /* StageLayoutEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8558A9B483CFAA7020CFDE1B /* StageLayoutEditor.swift */; };
 		11088905A22ABF665F31E0CD /* StageWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5D4DD5D4DF0BA9BF6D371E /* StageWorkspaceView.swift */; };
 		230962093574C81A6DC842E5 /* StageBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A39A84342B480FDE7C1A37 /* StageBackground.swift */; };
+		2334B0DDCE9EDDED8360048E /* StageScreenGroupRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD5D35EFE292B8FCF4DBC27 /* StageScreenGroupRail.swift */; };
+		28CA963C82E8D902ECC0F638 /* StageScreenGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC36D64253EEB16119BFC1BB /* StageScreenGroup.swift */; };
 		2AC792D386D766A586D6FEAE /* ProUpgradePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */; };
 		340F40C3FD28100274C31017 /* StageWorkspaceSnapshotFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1376D7B62EA8CC1F675B5447 /* StageWorkspaceSnapshotFixtures.swift */; };
 		3A6D2434DD8EEF2D5E58029C /* ScreenCaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */; };
@@ -33,6 +35,7 @@
 		7A17152E3CE5948AC8DBD4BD /* StageMagnifierPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E1C3DD3EE39D4F799957ED /* StageMagnifierPresentation.swift */; };
 		7D73A437CC21B24606971797 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAC6363CF27BD9718878C770 /* CoreVideo.framework */; };
 		871F006419367713351421E6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2586D980871883CDDCE3FD6E /* PrivacyInfo.xcprivacy */; };
+		8E599D13BA105B353C3C004B /* SharedCaptureStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4948098BD405497338203D4 /* SharedCaptureStream.swift */; };
 		948158E8D20587F6D1557CC2 /* ja.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 0CF679695D7BD47516703834 /* ja.lproj */; };
 		9B2A7447EFC3367F52185B08 /* StageWatermark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */; };
 		9DE213A78FC9D9868862769F /* StageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81367F4215FA9164C376C053 /* StageView.swift */; };
@@ -74,6 +77,7 @@
 		6CA879D13493B232D4A6B8F3 /* ScreenCaptureKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenCaptureKit.framework; path = System/Library/Frameworks/ScreenCaptureKit.framework; sourceTree = SDKROOT; };
 		6CAEF01305EAAAD5CB89FFC8 /* SampleBufferDisplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferDisplayView.swift; sourceTree = "<group>"; };
 		6DC55D435B4930AE66935E96 /* ProUpgradePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProUpgradePanel.swift; sourceTree = "<group>"; };
+		6FD5D35EFE292B8FCF4DBC27 /* StageScreenGroupRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageScreenGroupRail.swift; sourceTree = "<group>"; };
 		7A4193F05A5DCA7EBFA49832 /* CaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoordinator.swift; sourceTree = "<group>"; };
 		80B398F8070CD22D2B7A9C99 /* StageWatermark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageWatermark.swift; sourceTree = "<group>"; };
 		81367F4215FA9164C376C053 /* StageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageView.swift; sourceTree = "<group>"; };
@@ -83,6 +87,7 @@
 		93D4E0545042D6A53D741A26 /* StageAnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageAnnotationStore.swift; sourceTree = "<group>"; };
 		97E1C3DD3EE39D4F799957ED /* StageMagnifierPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageMagnifierPresentation.swift; sourceTree = "<group>"; };
 		A187DF3AD8950DC0D89FF161 /* AppController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppController.swift; sourceTree = "<group>"; };
+		A4948098BD405497338203D4 /* SharedCaptureStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedCaptureStream.swift; sourceTree = "<group>"; };
 		A8D57654F8399E7E8A0A7B69 /* StageMagnifierStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageMagnifierStore.swift; sourceTree = "<group>"; };
 		AAC6363CF27BD9718878C770 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		BEE540DD29563237E280E2F7 /* ProPurchaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPurchaseStore.swift; sourceTree = "<group>"; };
@@ -93,6 +98,7 @@
 		E10F2BEB81C9C02BBC4869A0 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		E414EC615F36272D6183D7B6 /* StagePane */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StagePane; path = .; sourceTree = SOURCE_ROOT; };
 		E74B4C7D06DA892995E1444A /* StageCanvasHostViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageCanvasHostViewController.swift; sourceTree = "<group>"; };
+		EC36D64253EEB16119BFC1BB /* StageScreenGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageScreenGroup.swift; sourceTree = "<group>"; };
 		EC69B33FC3962E2F201CE2A9 /* SampleBufferRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferRenderer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -161,6 +167,7 @@
 				A187DF3AD8950DC0D89FF161 /* AppController.swift */,
 				168F66E364B8E6F2962DA4E2 /* SettingsWindowController.swift */,
 				0708782832B5447426F6D917 /* StagePaneApp.swift */,
+				EC36D64253EEB16119BFC1BB /* StageScreenGroup.swift */,
 				5817048408BEEE4EAC86CEEB /* StatusItemController.swift */,
 				46D02C82127295AA9EC6B670 /* WindowControllers.swift */,
 			);
@@ -198,6 +205,7 @@
 				8FADEE52EAFFE9B6B61C64EC /* LayerReorderList.swift */,
 				06DC6DCF2EF30BCE2233851E /* SettingsPanels.swift */,
 				8558A9B483CFAA7020CFDE1B /* StageLayoutEditor.swift */,
+				6FD5D35EFE292B8FCF4DBC27 /* StageScreenGroupRail.swift */,
 				1376D7B62EA8CC1F675B5447 /* StageWorkspaceSnapshotFixtures.swift */,
 				6A5D4DD5D4DF0BA9BF6D371E /* StageWorkspaceView.swift */,
 			);
@@ -273,6 +281,7 @@
 				63A9AE96EE20D975670C1255 /* CaptureSourceRenderers.swift */,
 				6CAEF01305EAAAD5CB89FFC8 /* SampleBufferDisplayView.swift */,
 				EC69B33FC3962E2F201CE2A9 /* SampleBufferRenderer.swift */,
+				A4948098BD405497338203D4 /* SharedCaptureStream.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -465,6 +474,7 @@
 				63ED0B74BC94C4EA1EB5A4A0 /* SampleBufferRenderer.swift in Sources */,
 				74DE0C6A5F3D7568A216DFB3 /* SettingsPanels.swift in Sources */,
 				F7670C940B2C2EEDBA6E6FAB /* SettingsWindowController.swift in Sources */,
+				8E599D13BA105B353C3C004B /* SharedCaptureStream.swift in Sources */,
 				D9BBBE6D123BC48F370EBAF0 /* StageAnnotationStore.swift in Sources */,
 				230962093574C81A6DC842E5 /* StageBackground.swift in Sources */,
 				ABDEFB69A1355E03172C4C19 /* StageCanvasHostViewController.swift in Sources */,
@@ -474,6 +484,8 @@
 				7A17152E3CE5948AC8DBD4BD /* StageMagnifierPresentation.swift in Sources */,
 				3C4C78774223C5D332975572 /* StageMagnifierStore.swift in Sources */,
 				5304C588F87BE9C20116E65D /* StagePaneApp.swift in Sources */,
+				28CA963C82E8D902ECC0F638 /* StageScreenGroup.swift in Sources */,
+				2334B0DDCE9EDDED8360048E /* StageScreenGroupRail.swift in Sources */,
 				9DE213A78FC9D9868862769F /* StageView.swift in Sources */,
 				9B2A7447EFC3367F52185B08 /* StageWatermark.swift in Sources */,
 				B77832DF9B25AC9917DC08F0 /* StageWindowSnapshotter.swift in Sources */,
@@ -522,7 +534,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 94HVVWXLK3;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -542,13 +554,13 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.4.6;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 12;
+				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 13;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -646,7 +658,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 94HVVWXLK3;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -660,13 +672,13 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.4.6;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 12;
+				STAGEPANE_PREVIOUS_UPLOADED_BUILD = 13;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

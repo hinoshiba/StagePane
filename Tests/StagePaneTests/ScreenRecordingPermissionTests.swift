@@ -75,7 +75,7 @@ final class ScreenRecordingPermissionTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(SettingsPane.access.rawValue, forKey: "StagePane.Settings.SelectedPane")
-        let settings = SettingsWindowController(controller: controller, capture: controller.capture, defaults: defaults)
+        let settings = SettingsWindowController(controller: controller, defaults: defaults)
         defer { settings.close() }
 
         settings.present()

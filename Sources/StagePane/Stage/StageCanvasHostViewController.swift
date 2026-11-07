@@ -23,13 +23,13 @@ final class StageCanvasHostViewController: NSViewController {
         set { canvasHost.onCanvasLayout = newValue }
     }
 
-    init(controller: AppController, capture: CaptureCoordinator) {
+    init(controller: AppController) {
         hostingController = NSHostingController(
-            rootView: StageView(controller: controller, capture: capture)
+            rootView: StageView(controller: controller)
         )
         canvasHost = StageCanvasHostView(
             canvasView: hostingController.view,
-            preset: controller.preset
+            preset: controller.outputPreset
         )
         super.init(nibName: nil, bundle: nil)
         addChild(hostingController)

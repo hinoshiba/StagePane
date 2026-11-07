@@ -76,11 +76,19 @@ private struct SnapshotSourcePresentation: Identifiable {
 
 struct SnapshotSourceRailList: View {
     var fixture: StageWorkspaceSnapshotFixture = .arrange
+    var isCompact = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(fixture == .product ? SnapshotSourcePresentation.productFixtures : SnapshotSourcePresentation.fixtures) { source in
-                SnapshotLayerRow(source: source)
+                if isCompact {
+                    CompactLayerLabel(symbol: source.symbol, ordinal: source.id, isHidden: source.isHidden)
+                        .padding(.vertical, 4)
+                        .background(source.isSelected ? Color.accentColor.opacity(0.13) : Color.clear,
+                                    in: RoundedRectangle(cornerRadius: 6))
+                } else {
+                    SnapshotLayerRow(source: source)
+                }
             }
             Spacer(minLength: 0)
         }
@@ -106,7 +114,7 @@ private struct SnapshotLayerRow: View {
                         .font(.system(size: 13, weight: source.isSelected ? .semibold : .regular))
                         .lineLimit(1)
                     if source.isHidden {
-                        Text(L10n.text("非表示・取得停止", "Hidden · Capture paused"))
+                        Text(L10n.text("非表示", "Hidden"))
                             .font(.system(size: 12))
                             .lineLimit(2)
                             .foregroundStyle(.secondary)

@@ -133,14 +133,16 @@ Update and review these values in one pull request:
   ```
 
   Snapshots are opaque PNGs rendered at twice their native point dimensions.
-  `AppController.writeSnapshots` produces 49 fixtures per language (98 when
-  both Japanese and English are generated). CI checks the 49 English fixture
+  `AppController.writeSnapshots` produces 61 fixtures per language (122 when
+  both Japanese and English are generated). CI checks the 61 English fixture
   names and dimensions below; review both languages for the release:
 
   | Fixtures (`.png`) | Pixel dimensions |
   | --- | --- |
   | `workspace`, `arrange`, `draw`, `sources` | 2880×1800 |
-  | `workspace-900-*`, `workspace-empty-900-*`, `workspace-access-error-*-900-*`, `product-workspace-light`, `product-workspace-dark`, `draw-900`, `eraser-900-*` | 1800×1240 |
+  | `workspace-1040-*`, `workspace-empty-1040-*`, `workspace-access-error-*-1040-*`, `product-workspace-light`, `product-workspace-dark`, `draw-1040`, `eraser-1040-*` | 2080×1240 |
+  | `screen-groups-1440-*` | 2880×1800 |
+  | `screen-groups-1040-*`, `screen-groups-output-1040-*`, `compact-rails-*-1040-*` | 2080×1240 |
   | `stage-settings`, `appearance`, `stage-inspector-dark` | 1360×1200 |
   | `settings-{pointer,stage,window,access,pro}-{light,dark}` (10 fixtures) | 1360×1200 |
   | `permissions`, `permissions-dark` | 1280×1000 |
@@ -203,17 +205,33 @@ Manual acceptance must cover supported macOS versions and architectures plus:
   through 4/4 with the still-enabled fifth-source action opening StagePane Pro;
   Pro mixed-source addition at source five and beyond while Mac performance and
   operating-system constraints permit; no app-imposed Pro source-count ceiling;
-- direct per-layer Hide and Show backed by pause and resume (stop the stream,
+- direct per-layer Hide and Show backed by pause and resume (stop that layer’s
+  subscription; the native stream continues if another active layer uses it,
   make the layer transparent in Stage, Workspace, and Audience PNG while
   preserving placement/crop/z-order,
-  then reveal it only after Show/Resume receives a new complete frame); the
+  then reveal it only after Show/Resume has a complete frame; a running shared
+  input can supply its current complete frame, while a stopped input waits for a
+  new frame); the
   hidden layer remains selectable in the list; rapid repeated actions and
   resume failure must not reveal stale pixels; replace
   (with cancel preserving the old item), per-source removal while other streams
   remain live, and Stop All deleting pixels and logical state for every source;
+- Free’s two-screen and Pro’s ten-screen limits, per-screen source limits,
+  separate preview/output selection, and explicit Send to Stage with the same
+  audience window identity and Curtain state. Check edits to a preview-only
+  screen, edits to output, deleting either screen, crop/picker/export/full-screen
+  guards, and Pro loss/restoration with excess screens;
+- live same-window input reuse across layers and screens on macOS 15.2+, with
+  independent crop/size/color, different cursor modes, static and moving input,
+  Hide/Show, remove, replacement, system stop, last-subscriber stop, and all-screen
+  Stop All/Quit. On older supported macOS, verify the conservative fallback.
+  Compare native stream counts without assuming synthetic tests measure savings;
+- independent Screens/Layers collapse, keyboard and context-menu actions,
+  non-color editing/output/hidden indicators, restored layer width, saved collapse
+  preferences, VoiceOver, Reduce Motion, and Increase Contrast;
 - initial picture-in-picture placement, all four Quick Layout presets, boundary-clamped drag,
   proportional resize/minimum content size, matching Workspace/Stage
-  layouts, and the Workspace's 900×620-point minimum content size;
+  layouts, and the Workspace's 1040×620-point minimum content size;
 - Stage right-click and Control-click menus: Maximize/Restore, sharing
   enlargement, full screen, checked window behavior, Show Workspace, and
   Stage Settings must agree with the Stage/Window menu actions. Double-click
@@ -390,7 +408,7 @@ Manual acceptance must cover supported macOS versions and architectures plus:
 Record the exact commit, release-commit signature and DCO verification, pull
 request URL, review, pull-request and merged-`main` CI results, hardware, OS/app
 versions, manual results, and approved exceptions in the release record.
-The [0.4.6 acceptance preparation](RELEASE_0.4.6_ACCEPTANCE.md) lists pending work;
+The [0.5.0 acceptance preparation](RELEASE_0.5.0_ACCEPTANCE.md) lists pending work;
 it is not a completed acceptance record.
 
 Merge only after review, pull-request CI, and manual acceptance pass. Use a
